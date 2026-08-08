@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  gateway:
+    build:
+      context: ..
+      dockerfile: infrastructure/docker/Dockerfile.gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - AUTH_SERVICE_URL=http://auth-service:8001
+      - MARKETPLACE_SERVICE_URL=http://marketplace-service:8002
+      - EVENT_SERVICE_URL=http://event-service:8003
+      - BOOKING_SERVICE_URL=http://booking-service:8004
+      - INVITATION_SERVICE_URL=http://invitation-service:8005
+      - GUEST_SERVICE_URL=http://guest-service:8006
+    depends_on:
+      - auth-service
+      - marketplace-service
+
+  auth-service:
+    build:
+      context: ..
+      dockerfile: infrastructure/docker/Dockerfile.service
+      args:
+        SERVICE_NAME: auth-service
+    ports:
+      - "8001:8001"
+    environment:
+      - PORT=8001
+
+  marketplace-service:
+    build:
+      context: ..
+      dockerfile: infrastructure/docker/Dockerfile.service
+      args:
+        SERVICE_NAME: marketplace-service
+    ports:
+      - "8002:8002"
+    environment:
+      - PORT=8002
+    volumes:
+      - ../uploads:/app/uploads
+
+  web:
+    build:
+      context: ..
+      dockerfile: infrastructure/docker/Dockerfile.web
+    ports:
+      - "3000:3000"
+    depends_on:
+      - gateway

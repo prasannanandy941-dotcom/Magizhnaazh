@@ -1,0 +1,38 @@
+{
+  "name": "magizhnaazh-monorepo",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev:customer": "npm run dev --prefix apps/customer-web",
+    "dev:vendor": "npm run dev --prefix apps/vendor-web",
+    "dev:admin": "npm run dev --prefix apps/admin-web",
+    "dev:mobile": "npm run start --prefix apps/mobile",
+    "dev:gateway": "npx ts-node-dev services/gateway/index.ts",
+    "dev:auth": "npx ts-node-dev services/auth-service/index.ts",
+    "dev:marketplace": "npx ts-node-dev services/marketplace-service/index.ts",
+    "dev:event-budget": "npx ts-node-dev services/event-budget-service/index.ts",
+    "dev:booking": "npx ts-node-dev services/booking-payment-service/index.ts",
+    "dev:invitation": "npx ts-node-dev services/invitation-service/index.ts",
+    "dev:guest-feedback": "npx ts-node-dev services/guest-feedback-service/index.ts",
+    "build:all": "npm run build --prefix apps/customer-web && npm run build --prefix apps/vendor-web && npm run build --prefix apps/admin-web"
+  },
+  "workspaces": [
+    "apps/*",
+    "services/*",
+    "packages/*"
+  ],
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/fs-extra": "^11.0.4",
+    "@types/multer": "^2.2.0",
+    "@types/node": "^26.2.0",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "fs-extra": "^11.4.0",
+    "http-proxy-middleware": "^4.2.0",
+    "multer": "^2.2.0",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0"
+  }
+}
