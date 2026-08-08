@@ -24,6 +24,7 @@ const userSchema = new Schema<UserDoc>({
   businessName: { type: String },
   avatarUrl: { type: String },
   isVerified: { type: Boolean, default: false },
+  isSuspended: { type: Boolean, default: false },
   passwordHash: { type: String, required: true, select: false },
   createdAt: { type: String, default: () => new Date().toISOString() },
 });

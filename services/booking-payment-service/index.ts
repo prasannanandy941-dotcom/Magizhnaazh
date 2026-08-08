@@ -9,11 +9,11 @@ import { authMiddleware } from '../../packages/shared-utils/auth';
 import { requestLogger } from '../../packages/shared-utils/logging';
 import { registerHealthRoute } from '../../packages/shared-utils/health';
 import { BookingModel } from './models/Booking';
+import { PlatformSettingsModel, getSettings } from './models/PlatformSettings';
+import { CouponModel } from './models/Coupon';
 
 const app = express();
 const PORT = process.env.PORT || 8004;
-const PLATFORM_COMMISSION_RATE = 0.1;
-const ADVANCE_DEPOSIT_RATE = 0.3;
 const MARKETPLACE_SERVICE_URL = process.env.MARKETPLACE_SERVICE_URL || 'http://localhost:8002';
 
 app.use(cors());
@@ -68,10 +68,11 @@ app.post('/api/v1/bookings/quote', authMiddleware(), async (req: Request, res: R
     specialInstructions: specialInstructions || '',
   });
 
+  const { commissionRate } = await getSettings();
   res.status(201).json({
     success: true,
     message: 'Quotation request sent to vendor.',
-    data: { booking, platformCommission: Math.round(agreedPrice * PLATFORM_COMMISSION_RATE) },
+    data: { booking, platformCommission: Math.round(agreedPrice * commissionRate) },
   });
 });
 
@@ -121,7 +122,8 @@ app.put('/api/v1/bookings/:id/confirm', authMiddleware(), async (req: Request, r
   const booking = await BookingModel.findOne({ id: req.params.id });
   if (!booking) return res.status(404).json({ success: false, message: 'Booking not found.' });
 
-  const advance = Math.round(booking.agreedPrice * ADVANCE_DEPOSIT_RATE);
+  const { advanceDepositRate } = await getSettings();
+  const advance = Math.round(booking.agreedPrice * advanceDepositRate);
   booking.status = 'confirmed';
   booking.advanceAmountPaid = advance;
   booking.remainingAmount = booking.agreedPrice - advance;
@@ -137,9 +139,10 @@ app.get('/api/v1/bookings/admin/metrics', authMiddleware(), async (req: Request,
   }
 
   const bookings = await BookingModel.find();
+  const { commissionRate } = await getSettings();
   const totalVolume = bookings.reduce((acc, b) => acc + b.agreedPrice, 0);
   const totalAdvance = bookings.reduce((acc, b) => acc + b.advanceAmountPaid, 0);
-  const totalCommission = Math.round(totalVolume * PLATFORM_COMMISSION_RATE);
+  const totalCommission = Math.round(totalVolume * commissionRate);
 
   res.json({
     success: true,
@@ -150,6 +153,69 @@ app.get('/api/v1/bookings/admin/metrics', authMiddleware(), async (req: Request,
       platformCommissionEarned: totalCommission,
     },
   });
+});
+
+// --- Platform settings (commission rate, advance deposit rate) ---
+app.get('/api/v1/settings', authMiddleware(), async (req: Request, res: Response) => {
+  if (req.user!.role !== 'admin') {
+    return res.status(403).json({ success: false, message: 'Admin access required.' });
+  }
+  const settings = await getSettings();
+  res.json({ success: true, data: { settings } });
+});
+
+app.put('/api/v1/settings', authMiddleware(), async (req: Request, res: Response) => {
+  if (req.user!.role !== 'admin') {
+    return res.status(403).json({ success: false, message: 'Admin access required.' });
+  }
+
+  const { commissionRate, advanceDepositRate } = req.body;
+  let settings = await PlatformSettingsModel.findOne({});
+  if (!settings) settings = new PlatformSettingsModel({});
+
+  if (commissionRate !== undefined) settings.commissionRate = Number(commissionRate);
+  if (advanceDepositRate !== undefined) settings.advanceDepositRate = Number(advanceDepositRate);
+  settings.updatedAt = new Date().toISOString();
+  await settings.save();
+
+  res.json({ success: true, message: 'Platform settings updated.', data: { settings } });
+});
+
+// --- Coupons (admin-managed; not yet applied to booking pricing) ---
+app.get('/api/v1/coupons', authMiddleware(), async (req: Request, res: Response) => {
+  if (req.user!.role !== 'admin') {
+    return res.status(403).json({ success: false, message: 'Admin access required.' });
+  }
+  const coupons = await CouponModel.find().sort({ createdAt: -1 });
+  res.json({ success: true, data: { coupons } });
+});
+
+app.post('/api/v1/coupons', authMiddleware(), async (req: Request, res: Response) => {
+  if (req.user!.role !== 'admin') {
+    return res.status(403).json({ success: false, message: 'Admin access required.' });
+  }
+  const { code, discountPercent, expiresAt } = req.body;
+  if (!code || !discountPercent) {
+    return res.status(400).json({ success: false, message: 'code and discountPercent are required.' });
+  }
+
+  try {
+    const coupon = await CouponModel.create({ id: `cpn-${Date.now()}`, code, discountPercent: Number(discountPercent), expiresAt });
+    res.status(201).json({ success: true, message: 'Coupon created.', data: { coupon } });
+  } catch (err: any) {
+    if (err?.code === 11000) {
+      return res.status(409).json({ success: false, message: 'A coupon with this code already exists.' });
+    }
+    throw err;
+  }
+});
+
+app.delete('/api/v1/coupons/:id', authMiddleware(), async (req: Request, res: Response) => {
+  if (req.user!.role !== 'admin') {
+    return res.status(403).json({ success: false, message: 'Admin access required.' });
+  }
+  await CouponModel.deleteOne({ id: req.params.id });
+  res.json({ success: true, message: 'Coupon removed.' });
 });
 
 async function start() {

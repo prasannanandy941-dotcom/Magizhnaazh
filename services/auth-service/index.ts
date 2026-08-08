@@ -86,6 +86,10 @@ app.post('/api/v1/auth/login', async (req: Request, res: Response) => {
     return res.status(401).json({ success: false, message: 'Invalid credentials.' });
   }
 
+  if (user.isSuspended) {
+    return res.status(403).json({ success: false, message: 'This account has been suspended. Contact platform support.' });
+  }
+
   const token = signToken({ sub: user.id, email: user.email, role: user.role });
   const { passwordHash: _omit, ...userSafe } = user.toObject();
 
@@ -109,6 +113,16 @@ app.get('/api/v1/auth/me', authMiddleware(), async (req: Request, res: Response)
 app.get('/api/v1/auth/admin/users', authMiddleware(), requireRole('admin'), async (req: Request, res: Response) => {
   const users = await UserModel.find().limit(200);
   res.json({ success: true, data: { users, total: users.length } });
+});
+
+// 5. Suspend / unsuspend a user account
+app.put('/api/v1/auth/admin/users/:id/suspend', authMiddleware(), requireRole('admin'), async (req: Request, res: Response) => {
+  const user = await UserModel.findOne({ id: req.params.id });
+  if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
+
+  user.isSuspended = !user.isSuspended;
+  await user.save();
+  res.json({ success: true, message: `User ${user.isSuspended ? 'suspended' : 'reinstated'}.`, data: { user } });
 });
 
 async function start() {

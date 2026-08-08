@@ -34,6 +34,7 @@ const vendorSchema = new Schema<Vendor>({
   ratingAverage: { type: Number, default: 0 },
   reviewCount: { type: Number, default: 0 },
   isVerified: { type: Boolean, default: false },
+  isSuspended: { type: Boolean, default: false },
   featured: { type: Boolean, default: false },
   galleryImages: { type: [String], default: [] },
   galleryVideos: { type: [String], default: [] },

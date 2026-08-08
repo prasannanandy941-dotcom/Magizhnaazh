@@ -6,12 +6,13 @@ import { randomBytes } from 'crypto';
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import { connectDB } from '../../packages/shared-utils/db';
-import { authMiddleware } from '../../packages/shared-utils/auth';
+import { authMiddleware, requireRole } from '../../packages/shared-utils/auth';
 import { requestLogger } from '../../packages/shared-utils/logging';
 import { registerHealthRoute } from '../../packages/shared-utils/health';
 import { GuestModel } from './models/Guest';
 import { EventFeedbackModel } from './models/EventFeedback';
 import { ReviewModel } from './models/Review';
+import { ComplaintModel } from './models/Complaint';
 
 const app = express();
 const PORT = process.env.PORT || 8006;
@@ -70,8 +71,21 @@ async function seedIfEmpty() {
     });
   }
 
-  if (guestCount === 0 || feedbackCount === 0 || reviewCount === 0) {
-    console.log('[guest-feedback-service] Seeded demo guests/feedback/reviews.');
+  const complaintCount = await ComplaintModel.countDocuments();
+  if (complaintCount === 0) {
+    await ComplaintModel.create({
+      id: 'cmp-1',
+      eventId: 'evt-101',
+      bookingId: 'bk-1',
+      submittedBy: 'usr-customer-1',
+      subject: 'Catering ran late',
+      description: 'Lunch service started 45 minutes after the scheduled time.',
+      status: 'open',
+    });
+  }
+
+  if (guestCount === 0 || feedbackCount === 0 || reviewCount === 0 || complaintCount === 0) {
+    console.log('[guest-feedback-service] Seeded demo guests/feedback/reviews/complaints.');
   }
 }
 
@@ -199,6 +213,63 @@ app.post('/api/v1/reviews', authMiddleware(), async (req: Request, res: Response
     }
     throw err;
   }
+});
+
+// --- Admin moderation: reviews ---
+app.get('/api/v1/reviews', authMiddleware(), requireRole('admin'), async (req: Request, res: Response) => {
+  const reviews = await ReviewModel.find().sort({ createdAt: -1 }).limit(200);
+  res.json({ success: true, data: { reviews } });
+});
+
+app.delete('/api/v1/reviews/:id', authMiddleware(), requireRole('admin'), async (req: Request, res: Response) => {
+  await ReviewModel.deleteOne({ id: req.params.id });
+  res.json({ success: true, message: 'Review removed.' });
+});
+
+// --- Admin moderation: guest event feedback ---
+app.get('/api/v1/feedback', authMiddleware(), requireRole('admin'), async (req: Request, res: Response) => {
+  const feedback = await EventFeedbackModel.find().sort({ createdAt: -1 }).limit(200);
+  res.json({ success: true, data: { feedback } });
+});
+
+app.delete('/api/v1/feedback/:id', authMiddleware(), requireRole('admin'), async (req: Request, res: Response) => {
+  await EventFeedbackModel.deleteOne({ id: req.params.id });
+  res.json({ success: true, message: 'Feedback removed.' });
+});
+
+// --- Complaints ---
+app.post('/api/v1/complaints', authMiddleware(), async (req: Request, res: Response) => {
+  const { eventId, bookingId, subject, description } = req.body;
+  if (!subject || !description) {
+    return res.status(400).json({ success: false, message: 'subject and description are required.' });
+  }
+
+  const complaint = await ComplaintModel.create({
+    id: `cmp-${Date.now()}`,
+    eventId,
+    bookingId,
+    submittedBy: req.user!.sub,
+    subject,
+    description,
+  });
+
+  res.status(201).json({ success: true, message: 'Complaint submitted. Our team will review it shortly.', data: { complaint } });
+});
+
+app.get('/api/v1/complaints', authMiddleware(), requireRole('admin'), async (req: Request, res: Response) => {
+  const complaints = await ComplaintModel.find().sort({ createdAt: -1 }).limit(200);
+  res.json({ success: true, data: { complaints } });
+});
+
+app.put('/api/v1/complaints/:id', authMiddleware(), requireRole('admin'), async (req: Request, res: Response) => {
+  const complaint = await ComplaintModel.findOne({ id: req.params.id });
+  if (!complaint) return res.status(404).json({ success: false, message: 'Complaint not found.' });
+
+  const { status } = req.body;
+  if (status) complaint.status = status;
+  await complaint.save();
+
+  res.json({ success: true, message: 'Complaint updated.', data: { complaint } });
 });
 
 async function start() {

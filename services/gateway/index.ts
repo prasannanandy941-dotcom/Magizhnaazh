@@ -53,12 +53,19 @@ app.get('/health', (req: Request, res: Response) => {
 
 app.use('/api/v1/auth', createProxyMiddleware({ target: SERVICES.auth, changeOrigin: true }));
 app.use('/api/v1/vendors', createProxyMiddleware({ target: SERVICES.marketplace, changeOrigin: true }));
+app.use('/api/v1/categories', createProxyMiddleware({ target: SERVICES.marketplace, changeOrigin: true }));
+app.use('/api/v1/locations', createProxyMiddleware({ target: SERVICES.marketplace, changeOrigin: true }));
+app.use('/api/v1/banners', createProxyMiddleware({ target: SERVICES.marketplace, changeOrigin: true }));
 app.use('/api/v1/events', createProxyMiddleware({ target: SERVICES.eventBudget, changeOrigin: true }));
 app.use('/api/v1/bookings', createProxyMiddleware({ target: SERVICES.bookingPayment, changeOrigin: true }));
+app.use('/api/v1/settings', createProxyMiddleware({ target: SERVICES.bookingPayment, changeOrigin: true }));
+app.use('/api/v1/coupons', createProxyMiddleware({ target: SERVICES.bookingPayment, changeOrigin: true }));
+app.use('/api/v1/invitation-templates', createProxyMiddleware({ target: SERVICES.invitation, changeOrigin: true }));
 app.use('/api/v1/invitations', createProxyMiddleware({ target: SERVICES.invitation, changeOrigin: true }));
 app.use('/api/v1/guests', publicSubmissionLimiter, createProxyMiddleware({ target: SERVICES.guestFeedback, changeOrigin: true }));
 app.use('/api/v1/feedback', publicSubmissionLimiter, createProxyMiddleware({ target: SERVICES.guestFeedback, changeOrigin: true }));
 app.use('/api/v1/reviews', createProxyMiddleware({ target: SERVICES.guestFeedback, changeOrigin: true }));
+app.use('/api/v1/complaints', createProxyMiddleware({ target: SERVICES.guestFeedback, changeOrigin: true }));
 
 app.listen(PORT, () => {
   console.log(`[API Gateway] Running on http://localhost:${PORT}`);

@@ -10,7 +10,11 @@ import { authMiddleware, requireRole } from '../../packages/shared-utils/auth';
 import { requestLogger } from '../../packages/shared-utils/logging';
 import { registerHealthRoute } from '../../packages/shared-utils/health';
 import { LocalStorageProvider } from '../../packages/local-storage-provider';
+import { VENDOR_CATEGORIES } from '../../packages/shared-types';
 import { VendorModel } from './models/Vendor';
+import { CategoryModel } from './models/Category';
+import { CityModel } from './models/City';
+import { BannerModel } from './models/Banner';
 
 const app = express();
 const PORT = process.env.PORT || 8002;
@@ -64,6 +68,37 @@ async function seedIfEmpty() {
     policies: { cancellation: 'Full refund up to 30 days before event.', refund: '50% refund within 30 days.', advancePercentage: 30 },
   });
   console.log('[marketplace-service] Seeded demo vendor.');
+}
+
+async function seedCategoriesAndCities() {
+  try {
+    if ((await CategoryModel.countDocuments()) === 0) {
+      await CategoryModel.insertMany(
+        VENDOR_CATEGORIES.map((name, idx) => ({ id: `cat-${idx + 1}`, name, isActive: true })),
+        { ordered: false }
+      );
+      console.log('[marketplace-service] Seeded vendor categories.');
+    }
+  } catch (err: any) {
+    if (err?.code !== 11000) throw err; // benign: another instance seeded concurrently
+  }
+
+  try {
+    if ((await CityModel.countDocuments()) === 0) {
+      await CityModel.insertMany(
+        [
+          { id: 'city-1', name: 'Chennai', state: 'Tamil Nadu', isActive: true },
+          { id: 'city-2', name: 'Coimbatore', state: 'Tamil Nadu', isActive: true },
+          { id: 'city-3', name: 'Madurai', state: 'Tamil Nadu', isActive: true },
+          { id: 'city-4', name: 'Bangalore', state: 'Karnataka', isActive: true },
+        ],
+        { ordered: false }
+      );
+      console.log('[marketplace-service] Seeded serviceable cities.');
+    }
+  } catch (err: any) {
+    if (err?.code !== 11000) throw err;
+  }
 }
 
 // 1. Search / discover vendors
@@ -187,9 +222,77 @@ app.put('/api/v1/vendors/:id/verify', authMiddleware(), requireRole('admin'), as
   res.json({ success: true, message: `Vendor verification status updated to ${vendor.isVerified}.`, data: { vendor } });
 });
 
+// 8. Admin suspend/reinstate a vendor listing (hides it from a real storefront in future work).
+app.put('/api/v1/vendors/:id/suspend', authMiddleware(), requireRole('admin'), async (req: Request, res: Response) => {
+  const vendor = await VendorModel.findOne({ id: req.params.id });
+  if (!vendor) return res.status(404).json({ success: false, message: 'Vendor not found.' });
+
+  vendor.isSuspended = !vendor.isSuspended;
+  await vendor.save();
+  res.json({ success: true, message: `Vendor ${vendor.isSuspended ? 'suspended' : 'reinstated'}.`, data: { vendor } });
+});
+
+// --- Categories ---
+app.get('/api/v1/categories', async (req: Request, res: Response) => {
+  const categories = await CategoryModel.find().sort({ name: 1 });
+  res.json({ success: true, data: { categories } });
+});
+
+app.post('/api/v1/categories', authMiddleware(), requireRole('admin'), async (req: Request, res: Response) => {
+  const { name, icon } = req.body;
+  if (!name) return res.status(400).json({ success: false, message: 'name is required.' });
+
+  const category = await CategoryModel.create({ id: `cat-${Date.now()}`, name, icon });
+  res.status(201).json({ success: true, message: 'Category added.', data: { category } });
+});
+
+app.delete('/api/v1/categories/:id', authMiddleware(), requireRole('admin'), async (req: Request, res: Response) => {
+  await CategoryModel.deleteOne({ id: req.params.id });
+  res.json({ success: true, message: 'Category removed.' });
+});
+
+// --- Serviceable locations/cities ---
+app.get('/api/v1/locations', async (req: Request, res: Response) => {
+  const locations = await CityModel.find().sort({ name: 1 });
+  res.json({ success: true, data: { locations } });
+});
+
+app.post('/api/v1/locations', authMiddleware(), requireRole('admin'), async (req: Request, res: Response) => {
+  const { name, state } = req.body;
+  if (!name) return res.status(400).json({ success: false, message: 'name is required.' });
+
+  const location = await CityModel.create({ id: `city-${Date.now()}`, name, state });
+  res.status(201).json({ success: true, message: 'Location added.', data: { location } });
+});
+
+app.delete('/api/v1/locations/:id', authMiddleware(), requireRole('admin'), async (req: Request, res: Response) => {
+  await CityModel.deleteOne({ id: req.params.id });
+  res.json({ success: true, message: 'Location removed.' });
+});
+
+// --- Promotional banners ---
+app.get('/api/v1/banners', async (req: Request, res: Response) => {
+  const banners = await BannerModel.find().sort({ order: 1 });
+  res.json({ success: true, data: { banners } });
+});
+
+app.post('/api/v1/banners', authMiddleware(), requireRole('admin'), async (req: Request, res: Response) => {
+  const { title, imageUrl, linkUrl, order } = req.body;
+  if (!title || !imageUrl) return res.status(400).json({ success: false, message: 'title and imageUrl are required.' });
+
+  const banner = await BannerModel.create({ id: `ban-${Date.now()}`, title, imageUrl, linkUrl, order: Number(order) || 0 });
+  res.status(201).json({ success: true, message: 'Banner added.', data: { banner } });
+});
+
+app.delete('/api/v1/banners/:id', authMiddleware(), requireRole('admin'), async (req: Request, res: Response) => {
+  await BannerModel.deleteOne({ id: req.params.id });
+  res.json({ success: true, message: 'Banner removed.' });
+});
+
 async function start() {
   await connectDB(process.env.MONGODB_URI, 'marketplace-service');
   await seedIfEmpty();
+  await seedCategoriesAndCities();
   app.listen(PORT, () => {
     console.log(`[Marketplace Microservice] Running on http://localhost:${PORT}`);
   });
