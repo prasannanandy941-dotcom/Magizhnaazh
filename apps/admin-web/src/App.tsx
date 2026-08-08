@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { ShieldCheck, Server, Users, Store, Calendar, CreditCard, Check, X, Activity, RefreshCw } from 'lucide-react';
+import { ShieldCheck, Server, Users, Store, Calendar, CreditCard, Check, X, Activity, RefreshCw, LogOut } from 'lucide-react';
+import { User } from '../../../packages/shared-types';
+import { AuthGate } from './components/AuthGate';
 
 interface VendorItem {
   id: string;
@@ -12,6 +14,23 @@ interface VendorItem {
 }
 
 export function App() {
+  const [user, setUser] = useState<User | null>(() => {
+    const stored = localStorage.getItem('magizhnaazh_admin_user');
+    return stored ? JSON.parse(stored) : null;
+  });
+
+  const handleAuthSuccess = (loggedInUser: User, token: string) => {
+    localStorage.setItem('magizhnaazh_admin_user', JSON.stringify(loggedInUser));
+    localStorage.setItem('magizhnaazh_admin_token', token);
+    setUser(loggedInUser);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('magizhnaazh_admin_user');
+    localStorage.removeItem('magizhnaazh_admin_token');
+    setUser(null);
+  };
+
   const [vendors, setVendors] = useState<VendorItem[]>([
     { id: 'vnd-1', name: 'The Leela Palace Grand Ballroom', category: 'Venue', city: 'Chennai', startingPrice: 150000, rating: 4.9, isVerified: true },
     { id: 'vnd-2', name: 'Grand Chettinad Feast Caterers', category: 'Catering', city: 'Chennai', startingPrice: 450, rating: 4.8, isVerified: true },
@@ -28,9 +47,13 @@ export function App() {
   const grossVolume = 400000;
   const platformCommission = Math.round(grossVolume * 0.1); // 10% commission
 
+  if (!user) {
+    return <AuthGate onAuthSuccess={handleAuthSuccess} />;
+  }
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
-      
+
       {/* Header */}
       <header className="sticky top-0 z-50 glass-card border-b border-slate-800 bg-slate-950/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
@@ -45,6 +68,15 @@ export function App() {
           </div>
 
           <div className="flex items-center gap-6 text-xs font-semibold">
+            <span className="hidden sm:block text-slate-400">
+              <strong className="text-slate-200">{user.name}</strong>
+            </span>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-rose-500/40 text-rose-400 font-bold text-xs transition-colors"
+            >
+              <LogOut className="w-3.5 h-3.5" /> Sign Out
+            </button>
             <span className="flex items-center gap-1.5 text-emerald-400">
               <Activity className="w-4 h-4 animate-pulse" /> All Systems Operational
             </span>

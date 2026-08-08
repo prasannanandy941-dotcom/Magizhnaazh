@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
-import { Store, Calendar, CreditCard, Star, Upload, Package, Check, MessageSquare, IndianRupee, MapPin, Plus, ShieldCheck } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Store, Calendar, CreditCard, Star, Upload, Package, Check, MessageSquare, IndianRupee, MapPin, Plus, ShieldCheck, LogOut } from 'lucide-react';
+import { User } from '../../../packages/shared-types';
+import { AuthGate } from './components/AuthGate';
 
 interface VendorPackage {
   id: string;
@@ -22,6 +24,26 @@ interface Booking {
 }
 
 export function App() {
+  const [user, setUser] = useState<User | null>(() => {
+    const stored = localStorage.getItem('magizhnaazh_vendor_user');
+    return stored ? JSON.parse(stored) : null;
+  });
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem('magizhnaazh_vendor_token'));
+
+  const handleAuthSuccess = (loggedInUser: User, newToken: string) => {
+    localStorage.setItem('magizhnaazh_vendor_user', JSON.stringify(loggedInUser));
+    localStorage.setItem('magizhnaazh_vendor_token', newToken);
+    setUser(loggedInUser);
+    setToken(newToken);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('magizhnaazh_vendor_user');
+    localStorage.removeItem('magizhnaazh_vendor_token');
+    setUser(null);
+    setToken(null);
+  };
+
   const [activeTab, setActiveTab] = useState<'dashboard' | 'packages' | 'portfolio' | 'profile'>('dashboard');
 
   const [businessName, setBusinessName] = useState('The Leela Palace Grand Ballroom');
@@ -48,6 +70,12 @@ export function App() {
     { id: 'bk-2', bookingNumber: 'BK-20260808-9482', customerName: 'Anitha & Karthik', eventDate: '2026-11-20', packageName: 'Luxury Ocean View Deck', agreedPrice: 250000, advancePaid: 0, status: 'quote_requested', specialNotes: 'Requesting discount for 1000 guests.' },
   ]);
 
+  useEffect(() => {
+    if (user?.businessName) {
+      setBusinessName(user.businessName);
+    }
+  }, [user]);
+
   const handleLocalUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -59,8 +87,9 @@ export function App() {
       const formData = new FormData();
       formData.append('file', file);
 
-      const res = await fetch(`http://localhost:8002/api/v1/vendors/vnd-1/upload`, {
+      const res = await fetch(`http://localhost:8000/api/v1/vendors/vnd-1/upload`, {
         method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         body: formData,
       });
       const json = await res.json();
@@ -90,9 +119,13 @@ export function App() {
   const confirmedBookings = bookings.filter((b) => b.status === 'confirmed');
   const totalEarnings = confirmedBookings.reduce((acc, b) => acc + b.advancePaid, 0);
 
+  if (!user) {
+    return <AuthGate onAuthSuccess={handleAuthSuccess} />;
+  }
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
-      
+
       {/* Header */}
       <header className="sticky top-0 z-50 glass-card border-b border-slate-800 bg-slate-950/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
@@ -106,9 +139,16 @@ export function App() {
             </div>
           </div>
 
-          <div className="flex items-center gap-6 text-xs font-semibold">
-            <span>Server: <strong className="text-emerald-400">Local Disk Storage Active</strong></span>
-            <span className="text-slate-400">Port :3001</span>
+          <div className="flex items-center gap-4 text-xs font-semibold">
+            <span className="hidden sm:block text-slate-400">
+              Signed in as <strong className="text-slate-200">{user.name}</strong>
+            </span>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-rose-500/40 text-rose-400 font-bold text-xs transition-colors"
+            >
+              <LogOut className="w-3.5 h-3.5" /> Sign Out
+            </button>
           </div>
         </div>
       </header>
