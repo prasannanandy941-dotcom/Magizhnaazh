@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Store, Star, Upload, Check, LogOut, Loader2, Plus } from 'lucide-react';
-import { User, Vendor, VendorPackage, Booking } from '../../../packages/shared-types';
+import { User, Vendor, VendorPackage, Booking, VENDOR_CATEGORIES } from '../../../packages/shared-types';
 import { AuthGate } from './components/AuthGate';
 import { fetchMyVendor, createVendor, updateVendor, fetchVendorBookings, confirmBooking } from './api';
 
@@ -237,7 +237,15 @@ export function App() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs text-slate-400 mb-1">Category</label>
-                  <input value={category} onChange={(e) => setCategory(e.target.value)} className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm" />
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm"
+                  >
+                    {VENDOR_CATEGORIES.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-xs text-slate-400 mb-1">Starting Price (₹)</label>
@@ -463,12 +471,15 @@ export function App() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs text-slate-400 mb-1">Category</label>
-                <input
-                  type="text"
+                <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
                   className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white font-semibold text-xs"
-                />
+                >
+                  {VENDOR_CATEGORIES.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
               </div>
 
               <div>

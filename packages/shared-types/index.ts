@@ -83,6 +83,32 @@ export type VendorCategory =
   | 'Corporate Event Services'
   | 'Other';
 
+export const VENDOR_CATEGORIES: VendorCategory[] = [
+  'Catering',
+  'Venue',
+  'Decoration',
+  'Makeup & Beauty',
+  'Photography',
+  'Videography',
+  'Transport',
+  'Pujari/Priest',
+  'Invitation',
+  'Printing',
+  'Return Gifts',
+  'Entertainment',
+  'Music/DJ',
+  'Lighting',
+  'Flowers',
+  'Mehendi',
+  'Event Host/Anchor',
+  'Security',
+  'Cleaning',
+  'Rental Equipment',
+  'Wedding Planner',
+  'Corporate Event Services',
+  'Other',
+];
+
 export interface EventType {
   id: string;
   name: string;
