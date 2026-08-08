@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Role, Vendor, Event, Booking, Invitation, Guest, EventFeedback } from '../../../packages/shared-types';
+import { Role, User, Vendor, Event, Booking, Invitation, Guest, EventFeedback } from '../../../packages/shared-types';
 import { Header } from './components/Header';
+import { AuthModal } from './components/AuthModal';
 import { HeroSection } from './components/HeroSection';
 import { VendorMarketplace } from './components/VendorMarketplace';
 import { VendorDetailModal } from './components/VendorDetailModal';
@@ -245,6 +246,35 @@ export function App() {
   const [showPublicInviteModal, setShowPublicInviteModal] = useState(false);
   const [notification, setNotification] = useState('');
 
+  const [user, setUser] = useState<User | null>(() => {
+    const stored = localStorage.getItem('magizhnaazh_user');
+    return stored ? JSON.parse(stored) : null;
+  });
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
+  const handleAuthSuccess = (loggedInUser: User, token: string) => {
+    localStorage.setItem('magizhnaazh_user', JSON.stringify(loggedInUser));
+    localStorage.setItem('magizhnaazh_token', token);
+    setUser(loggedInUser);
+    setShowAuthModal(false);
+    triggerNotification(`Welcome, ${loggedInUser.name}!`);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('magizhnaazh_user');
+    localStorage.removeItem('magizhnaazh_token');
+    setUser(null);
+    triggerNotification('Signed out.');
+  };
+
+  const requireAuth = (action: () => void) => {
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
+    action();
+  };
+
   const toggleWishlist = (id: string) => {
     setWishlist((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
   };
@@ -266,7 +296,10 @@ export function App() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         wishlistCount={wishlist.length}
-        openEventWizard={() => setShowEventWizard(true)}
+        openEventWizard={() => requireAuth(() => setShowEventWizard(true))}
+        user={user}
+        onSignIn={() => setShowAuthModal(true)}
+        onLogout={handleLogout}
       />
 
       {notification && (
@@ -280,7 +313,7 @@ export function App() {
           <>
             <HeroSection
               onSearch={() => setActiveTab('marketplace')}
-              openEventWizard={() => setShowEventWizard(true)}
+              openEventWizard={() => requireAuth(() => setShowEventWizard(true))}
             />
 
             <VendorMarketplace
@@ -304,7 +337,7 @@ export function App() {
               </div>
 
               <button
-                onClick={() => setShowEventWizard(true)}
+                onClick={() => requireAuth(() => setShowEventWizard(true))}
                 className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-bold text-xs shadow-md"
               >
                 + Create New Event
@@ -440,16 +473,18 @@ export function App() {
         <VendorDetailModal
           vendor={selectedVendorForModal}
           onClose={() => setSelectedVendorForModal(null)}
-          onBookVendor={(v, pkgId, price) => {
-            const p = price || v.startingPrice;
-            const updatedSpent = activeEvent.spentBudget + p;
-            const updated = { ...activeEvent, spentBudget: updatedSpent };
-            setActiveEvent(updated);
-            setEvents((prev) => prev.map((e) => (e.id === updated.id ? updated : e)));
-            setSelectedVendorForModal(null);
-            triggerNotification(`Booking confirmed for ${v.businessName}! ₹${p.toLocaleString('en-IN')} allocated.`);
-            setActiveTab('budget');
-          }}
+          onBookVendor={(v, pkgId, price) =>
+            requireAuth(() => {
+              const p = price || v.startingPrice;
+              const updatedSpent = activeEvent.spentBudget + p;
+              const updated = { ...activeEvent, spentBudget: updatedSpent };
+              setActiveEvent(updated);
+              setEvents((prev) => prev.map((e) => (e.id === updated.id ? updated : e)));
+              setSelectedVendorForModal(null);
+              triggerNotification(`Booking confirmed for ${v.businessName}! ₹${p.toLocaleString('en-IN')} allocated.`);
+              setActiveTab('budget');
+            })
+          }
         />
       )}
 
@@ -493,6 +528,10 @@ export function App() {
             triggerNotification(`RSVP Response from ${data.name} recorded!`);
           }}
         />
+      )}
+
+      {showAuthModal && (
+        <AuthModal onClose={() => setShowAuthModal(false)} onAuthSuccess={handleAuthSuccess} />
       )}
 
       <footer className="border-t border-slate-800 py-6 text-center text-xs text-slate-500">
