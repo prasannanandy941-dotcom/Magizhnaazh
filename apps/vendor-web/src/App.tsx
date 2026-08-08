@@ -1,27 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Store, Calendar, CreditCard, Star, Upload, Package, Check, MessageSquare, IndianRupee, MapPin, Plus, ShieldCheck, LogOut } from 'lucide-react';
-import { User } from '../../../packages/shared-types';
+import { Store, Star, Upload, Check, LogOut, Loader2, Plus } from 'lucide-react';
+import { User, Vendor, VendorPackage, Booking } from '../../../packages/shared-types';
 import { AuthGate } from './components/AuthGate';
-
-interface VendorPackage {
-  id: string;
-  packageName: string;
-  price: number;
-  description: string;
-  includedServices: string[];
-}
-
-interface Booking {
-  id: string;
-  bookingNumber: string;
-  customerName: string;
-  eventDate: string;
-  packageName: string;
-  agreedPrice: number;
-  advancePaid: number;
-  status: 'confirmed' | 'quote_requested';
-  specialNotes?: string;
-}
+import { fetchMyVendor, createVendor, updateVendor, fetchVendorBookings, confirmBooking } from './api';
 
 export function App() {
   const [user, setUser] = useState<User | null>(() => {
@@ -42,43 +23,126 @@ export function App() {
     localStorage.removeItem('magizhnaazh_vendor_token');
     setUser(null);
     setToken(null);
+    setMyVendor(null);
+    setBookings([]);
   };
 
   const [activeTab, setActiveTab] = useState<'dashboard' | 'packages' | 'portfolio' | 'profile'>('dashboard');
 
-  const [businessName, setBusinessName] = useState('The Leela Palace Grand Ballroom');
+  const [myVendor, setMyVendor] = useState<Vendor | null>(null);
+  const [vendorLoading, setVendorLoading] = useState(true);
+  const [vendorNotFound, setVendorNotFound] = useState(false);
+
+  const [businessName, setBusinessName] = useState('');
   const [category, setCategory] = useState('Venue');
   const [city, setCity] = useState('Chennai');
-  const [startingPrice, setStartingPrice] = useState(150000);
-  const [description, setDescription] = useState('Luxury sea-facing banquets and grand ballroom in Chennai for royal weddings, grand receptions, and corporate galas.');
-  
-  const [galleryImages, setGalleryImages] = useState<string[]>([
-    'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=800',
-    'https://images.unsplash.com/photo-1545232979-fbf34fe37722?w=800',
-  ]);
+  const [startingPrice, setStartingPrice] = useState(50000);
+  const [description, setDescription] = useState('');
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileNotice, setProfileNotice] = useState('');
 
   const [uploading, setUploading] = useState(false);
   const [uploadNotice, setUploadNotice] = useState('');
 
-  const [packages, setPackages] = useState<VendorPackage[]>([
-    { id: 'pkg-1', packageName: 'Royal Ballroom Package', price: 150000, description: 'AC Ballroom hall for 600 guests, stage setup, basic lighting.', includedServices: ['Hall Rent', 'Stage Decor', 'Centralized AC', 'VIP Suite'] },
-    { id: 'pkg-2', packageName: 'Luxury Ocean View Deck', price: 250000, description: 'Outdoor seaside lawn + grand indoor hall for 1200 guests.', includedServices: ['Ocean Lawn', 'Valet Parking', 'Power Backup', '2 Executive Rooms'] },
-  ]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [bookingsLoading, setBookingsLoading] = useState(false);
 
-  const [bookings, setBookings] = useState<Booking[]>([
-    { id: 'bk-1', bookingNumber: 'BK-20260808-9481', customerName: 'Felix & Family', eventDate: '2026-12-15', packageName: 'Royal Ballroom Package', agreedPrice: 150000, advancePaid: 45000, status: 'confirmed', specialNotes: 'Need red carpet entry and stage microphone setup.' },
-    { id: 'bk-2', bookingNumber: 'BK-20260808-9482', customerName: 'Anitha & Karthik', eventDate: '2026-11-20', packageName: 'Luxury Ocean View Deck', agreedPrice: 250000, advancePaid: 0, status: 'quote_requested', specialNotes: 'Requesting discount for 1000 guests.' },
-  ]);
+  const [newPkgName, setNewPkgName] = useState('');
+  const [newPkgPrice, setNewPkgPrice] = useState(50000);
+  const [newPkgDesc, setNewPkgDesc] = useState('');
+  const [savingPackage, setSavingPackage] = useState(false);
+
+  const loadVendorAndBookings = async () => {
+    if (!token) return;
+    setVendorLoading(true);
+    setVendorNotFound(false);
+    try {
+      const res = await fetchMyVendor(token);
+      if (res.success && res.data?.vendor) {
+        const v = res.data.vendor;
+        setMyVendor(v);
+        setBusinessName(v.businessName);
+        setCategory(v.category);
+        setCity(v.location.city);
+        setStartingPrice(v.startingPrice);
+        setDescription(v.description);
+
+        setBookingsLoading(true);
+        const bkRes = await fetchVendorBookings(token, v.id);
+        setBookings(bkRes.data?.bookings || []);
+        setBookingsLoading(false);
+      } else {
+        setVendorNotFound(true);
+      }
+    } catch (err) {
+      setVendorNotFound(true);
+    } finally {
+      setVendorLoading(false);
+    }
+  };
 
   useEffect(() => {
-    if (user?.businessName) {
-      setBusinessName(user.businessName);
+    if (user && token) {
+      loadVendorAndBookings();
     }
-  }, [user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, token]);
+
+  const handleCreateListing = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token) return;
+    setSavingProfile(true);
+    try {
+      await createVendor(token, { businessName, category, description, startingPrice } as any);
+      await loadVendorAndBookings();
+    } catch (err: any) {
+      setProfileNotice(err.message || 'Could not create your listing.');
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    if (!token || !myVendor) return;
+    setSavingProfile(true);
+    setProfileNotice('');
+    try {
+      const res = await updateVendor(token, myVendor.id, { businessName, category, description, city, startingPrice } as any);
+      if (res.data?.vendor) setMyVendor(res.data.vendor);
+      setProfileNotice('Profile changes saved.');
+    } catch (err: any) {
+      setProfileNotice(err.message || 'Could not save changes.');
+    } finally {
+      setSavingProfile(false);
+      setTimeout(() => setProfileNotice(''), 4000);
+    }
+  };
+
+  const handleAddPackage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token || !myVendor || !newPkgName.trim()) return;
+    setSavingPackage(true);
+    try {
+      const newPackage: VendorPackage = {
+        id: `pkg-${Date.now()}`,
+        packageName: newPkgName,
+        price: newPkgPrice,
+        description: newPkgDesc,
+        includedServices: [],
+      };
+      const res = await updateVendor(token, myVendor.id, { packages: [...myVendor.packages, newPackage] } as any);
+      if (res.data?.vendor) setMyVendor(res.data.vendor);
+      setNewPkgName('');
+      setNewPkgPrice(50000);
+      setNewPkgDesc('');
+    } finally {
+      setSavingPackage(false);
+    }
+  };
 
   const handleLocalUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || !myVendor || !token) return;
 
     setUploading(true);
     setUploadNotice('');
@@ -87,37 +151,36 @@ export function App() {
       const formData = new FormData();
       formData.append('file', file);
 
-      const res = await fetch(`http://localhost:8000/api/v1/vendors/vnd-1/upload`, {
+      const res = await fetch(`http://localhost:8000/api/v1/vendors/${myVendor.id}/upload`, {
         method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
       const json = await res.json();
       if (json.success && json.data?.fileUrl) {
-        setGalleryImages((prev) => [...prev, json.data.fileUrl]);
+        setMyVendor((prev) => (prev ? { ...prev, galleryImages: [...prev.galleryImages, json.data.fileUrl] } : prev));
         setUploadNotice('Portfolio image saved to local disk storage (/uploads)!');
       } else {
-        const previewUrl = URL.createObjectURL(file);
-        setGalleryImages((prev) => [...prev, previewUrl]);
-        setUploadNotice('Uploaded file preview saved to local storage session!');
+        setUploadNotice(json.message || 'Upload failed.');
       }
     } catch (err) {
-      const previewUrl = URL.createObjectURL(file);
-      setGalleryImages((prev) => [...prev, previewUrl]);
-      setUploadNotice('Uploaded file preview saved to local storage session!');
+      setUploadNotice('Upload failed — is the gateway running?');
     } finally {
       setUploading(false);
     }
   };
 
-  const handleAcceptQuote = (id: string) => {
-    setBookings((prev) =>
-      prev.map((b) => (b.id === id ? { ...b, status: 'confirmed', advancePaid: Math.round(b.agreedPrice * 0.3) } : b))
-    );
+  const handleAcceptQuote = async (id: string) => {
+    if (!token) return;
+    await confirmBooking(token, id);
+    if (myVendor) {
+      const bkRes = await fetchVendorBookings(token, myVendor.id);
+      setBookings(bkRes.data?.bookings || []);
+    }
   };
 
-  const confirmedBookings = bookings.filter((b) => b.status === 'confirmed');
-  const totalEarnings = confirmedBookings.reduce((acc, b) => acc + b.advancePaid, 0);
+  const confirmedBookings = bookings.filter((b) => b.status === 'confirmed' || b.status === 'completed');
+  const totalEarnings = confirmedBookings.reduce((acc, b) => acc + b.advanceAmountPaid, 0);
 
   if (!user) {
     return <AuthGate onAuthSuccess={handleAuthSuccess} />;
@@ -153,14 +216,55 @@ export function App() {
         </div>
       </header>
 
-      {/* Main Workspace */}
+      {vendorLoading && (
+        <div className="flex-1 flex items-center justify-center py-32 text-slate-400 gap-2">
+          <Loader2 className="w-5 h-5 animate-spin" /> Loading your vendor listing...
+        </div>
+      )}
+
+      {!vendorLoading && vendorNotFound && (
+        <main className="flex-1 max-w-xl mx-auto px-4 py-16 w-full">
+          <div className="glass-card p-8 rounded-3xl border border-slate-800 space-y-4">
+            <h2 className="font-display font-bold text-2xl text-white">Create Your Vendor Listing</h2>
+            <p className="text-xs text-slate-400">
+              Your account doesn't have a marketplace listing yet. Set up the basics — you can add packages and photos after.
+            </p>
+            <form onSubmit={handleCreateListing} className="space-y-4">
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Business Name</label>
+                <input required value={businessName} onChange={(e) => setBusinessName(e.target.value)} className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">Category</label>
+                  <input value={category} onChange={(e) => setCategory(e.target.value)} className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">Starting Price (₹)</label>
+                  <input type="number" value={startingPrice} onChange={(e) => setStartingPrice(Number(e.target.value))} className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Description</label>
+                <textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm" />
+              </div>
+              {profileNotice && <p className="text-xs text-rose-400">{profileNotice}</p>}
+              <button disabled={savingProfile} type="submit" className="w-full py-3 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs shadow-md disabled:opacity-60 flex items-center justify-center gap-2">
+                {savingProfile && <Loader2 className="w-4 h-4 animate-spin" />} Create Listing
+              </button>
+            </form>
+          </div>
+        </main>
+      )}
+
+      {!vendorLoading && myVendor && (
       <main className="flex-1 max-w-7xl mx-auto px-4 py-10 w-full space-y-8">
-        
+
         {/* Vendor Header Summary */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="font-display font-bold text-3xl text-white">{businessName}</h1>
-            <p className="text-slate-400 text-sm mt-1">{category} • {city}</p>
+            <h1 className="font-display font-bold text-3xl text-white">{myVendor.businessName}</h1>
+            <p className="text-slate-400 text-sm mt-1">{myVendor.category} • {myVendor.location.city}</p>
           </div>
 
           <div className="p-4 rounded-2xl glass-card border border-emerald-500/30 flex items-center gap-6">
@@ -207,14 +311,14 @@ export function App() {
               <div className="glass-card p-5 rounded-2xl border border-slate-800">
                 <span className="text-xs font-bold text-amber-400 uppercase">Pending Quotes</span>
                 <div className="font-display font-extrabold text-2xl text-amber-400 mt-1">
-                  {bookings.filter((b) => b.status === 'quote_requested').length}
+                  {bookings.filter((b) => b.status === 'quote_requested' || b.status === 'enquiry').length}
                 </div>
               </div>
 
               <div className="glass-card p-5 rounded-2xl border border-slate-800">
                 <span className="text-xs font-bold text-slate-400 uppercase">Partner Rating</span>
                 <div className="font-display font-extrabold text-2xl text-amber-400 mt-1 flex items-center gap-1">
-                  <Star className="w-5 h-5 fill-amber-400" /> 4.9 (142 Reviews)
+                  <Star className="w-5 h-5 fill-amber-400" /> {myVendor.ratingAverage} ({myVendor.reviewCount} Reviews)
                 </div>
               </div>
             </div>
@@ -224,44 +328,52 @@ export function App() {
                 <h3 className="font-bold text-lg text-white">Client Bookings & Quote Requests</h3>
               </div>
 
-              <div className="divide-y divide-slate-800/80">
-                {bookings.map((b) => (
-                  <div key={b.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-900/40">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-white text-base">{b.bookingNumber}</span>
-                        <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-bold text-xs">
-                          {b.status}
-                        </span>
+              {bookingsLoading ? (
+                <div className="p-8 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" /> Loading bookings...
+                </div>
+              ) : bookings.length === 0 ? (
+                <div className="p-8 text-center text-xs text-slate-500">No bookings yet.</div>
+              ) : (
+                <div className="divide-y divide-slate-800/80">
+                  {bookings.map((b) => (
+                    <div key={b.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-900/40">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-white text-base">{b.bookingNumber}</span>
+                          <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-bold text-xs">
+                            {b.status}
+                          </span>
+                        </div>
+
+                        <p className="text-xs text-slate-400 mt-1">
+                          Package: <strong className="text-slate-200">{b.packageName}</strong> • Date: <strong className="text-amber-400">{b.eventDate}</strong>
+                        </p>
+
+                        {b.specialInstructions && <p className="text-xs text-slate-300 mt-2 italic">"{b.specialInstructions}"</p>}
                       </div>
 
-                      <p className="text-xs text-slate-400 mt-1">
-                        Client: <strong className="text-slate-200">{b.customerName}</strong> • Date: <strong className="text-amber-400">{b.eventDate}</strong>
-                      </p>
+                      <div className="text-right">
+                        <span className="font-display font-extrabold text-xl text-emerald-400 block">
+                          ₹{b.agreedPrice.toLocaleString('en-IN')}
+                        </span>
+                        <span className="text-[11px] text-slate-400 block">
+                          Advance Paid: ₹{b.advanceAmountPaid.toLocaleString('en-IN')}
+                        </span>
 
-                      {b.specialNotes && <p className="text-xs text-slate-300 mt-2 italic">"{b.specialNotes}"</p>}
+                        {(b.status === 'quote_requested' || b.status === 'enquiry') && (
+                          <button
+                            onClick={() => handleAcceptQuote(b.id)}
+                            className="mt-3 px-4 py-2 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs shadow-md"
+                          >
+                            Accept Booking Quote
+                          </button>
+                        )}
+                      </div>
                     </div>
-
-                    <div className="text-right">
-                      <span className="font-display font-extrabold text-xl text-emerald-400 block">
-                        ₹{b.agreedPrice.toLocaleString('en-IN')}
-                      </span>
-                      <span className="text-[11px] text-slate-400 block">
-                        Advance Paid: ₹{b.advancePaid.toLocaleString('en-IN')}
-                      </span>
-
-                      {b.status === 'quote_requested' && (
-                        <button
-                          onClick={() => handleAcceptQuote(b.id)}
-                          className="mt-3 px-4 py-2 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs shadow-md"
-                        >
-                          Accept Booking Quote
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -273,7 +385,7 @@ export function App() {
               <Upload className="w-12 h-12 text-amber-400 mx-auto mb-4 animate-pulse" />
               <h3 className="font-bold text-xl text-white">Local Storage Portfolio Upload</h3>
               <p className="text-xs text-slate-400 mt-2 mb-6">
-                Upload business images directly to local disk directory <code className="text-amber-400 font-mono">/uploads/vendor-vnd-1</code> using <code className="text-indigo-400 font-mono">LocalStorageProvider</code>.
+                Upload business images directly to local disk directory <code className="text-amber-400 font-mono">/uploads/vendor-{myVendor.id}</code> using <code className="text-indigo-400 font-mono">LocalStorageProvider</code>.
               </p>
 
               <label className="cursor-pointer inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-bold text-xs shadow-lg transition-all hover:scale-105">
@@ -286,7 +398,7 @@ export function App() {
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              {galleryImages.map((img, idx) => (
+              {myVendor.galleryImages.map((img, idx) => (
                 <div key={idx} className="h-44 rounded-2xl overflow-hidden bg-slate-900 border border-slate-800">
                   <img src={img} alt={`Portfolio ${idx}`} className="w-full h-full object-cover" />
                 </div>
@@ -297,27 +409,39 @@ export function App() {
 
         {/* Service Packages Tab */}
         {activeTab === 'packages' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {packages.map((pkg) => (
-              <div key={pkg.id} className="glass-card p-6 rounded-2xl border border-slate-800 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-bold text-white text-lg">{pkg.packageName}</h4>
-                  <span className="font-display font-extrabold text-amber-400 text-lg">
-                    ₹{pkg.price.toLocaleString('en-IN')}
-                  </span>
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {myVendor.packages.map((pkg) => (
+                <div key={pkg.id} className="glass-card p-6 rounded-2xl border border-slate-800 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-bold text-white text-lg">{pkg.packageName}</h4>
+                    <span className="font-display font-extrabold text-amber-400 text-lg">
+                      ₹{pkg.price.toLocaleString('en-IN')}
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-slate-400">{pkg.description}</p>
+
+                  <ul className="space-y-1.5 pt-2">
+                    {pkg.includedServices.map((s, i) => (
+                      <li key={i} className="text-xs text-slate-300 flex items-center gap-2">
+                        <Check className="w-3.5 h-3.5 text-emerald-400" /> {s}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
+              ))}
+            </div>
 
-                <p className="text-xs text-slate-400">{pkg.description}</p>
-
-                <ul className="space-y-1.5 pt-2">
-                  {pkg.includedServices.map((s, i) => (
-                    <li key={i} className="text-xs text-slate-300 flex items-center gap-2">
-                      <Check className="w-3.5 h-3.5 text-emerald-400" /> {s}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+            <form onSubmit={handleAddPackage} className="glass-card p-6 rounded-2xl border border-slate-800 space-y-3 max-w-xl">
+              <h4 className="font-bold text-white text-sm flex items-center gap-2"><Plus className="w-4 h-4 text-amber-400" /> Add a New Package</h4>
+              <input required placeholder="Package name" value={newPkgName} onChange={(e) => setNewPkgName(e.target.value)} className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm" />
+              <input type="number" placeholder="Price" value={newPkgPrice} onChange={(e) => setNewPkgPrice(Number(e.target.value))} className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm" />
+              <textarea rows={2} placeholder="Description" value={newPkgDesc} onChange={(e) => setNewPkgDesc(e.target.value)} className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm" />
+              <button disabled={savingPackage} type="submit" className="px-5 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs shadow-md disabled:opacity-60 flex items-center gap-2">
+                {savingPackage && <Loader2 className="w-4 h-4 animate-spin" />} Add Package
+              </button>
+            </form>
           </div>
         )}
 
@@ -359,6 +483,16 @@ export function App() {
             </div>
 
             <div>
+              <label className="block text-xs text-slate-400 mb-1">Starting Price (₹)</label>
+              <input
+                type="number"
+                value={startingPrice}
+                onChange={(e) => setStartingPrice(Number(e.target.value))}
+                className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white font-semibold text-xs"
+              />
+            </div>
+
+            <div>
               <label className="block text-xs text-slate-400 mb-1">Business Description</label>
               <textarea
                 rows={3}
@@ -368,13 +502,20 @@ export function App() {
               />
             </div>
 
-            <button className="px-6 py-3 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs shadow-md">
-              Save Profile Changes
+            {profileNotice && <p className="text-xs text-emerald-400 font-semibold">{profileNotice}</p>}
+
+            <button
+              onClick={handleSaveProfile}
+              disabled={savingProfile}
+              className="px-6 py-3 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs shadow-md disabled:opacity-60 flex items-center gap-2"
+            >
+              {savingProfile && <Loader2 className="w-4 h-4 animate-spin" />} Save Profile Changes
             </button>
           </div>
         )}
 
       </main>
+      )}
 
       <footer className="border-t border-slate-800 py-6 text-center text-xs text-slate-500">
         © 2026 Magizhnaazh Vendor Management Portal — Port 3001

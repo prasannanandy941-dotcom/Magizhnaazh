@@ -91,14 +91,21 @@ app.get('/api/v1/vendors', async (req: Request, res: Response) => {
   res.json({ success: true, count: vendors.length, data: { vendors } });
 });
 
-// 2. Vendor detail
+// 2. The logged-in vendor's own listing (must be registered before /:id).
+app.get('/api/v1/vendors/mine', authMiddleware(), requireRole('vendor', 'admin'), async (req: Request, res: Response) => {
+  const vendor = await VendorModel.findOne({ userId: req.user!.sub });
+  if (!vendor) return res.status(404).json({ success: false, message: 'No vendor listing found for this account yet.' });
+  res.json({ success: true, data: { vendor } });
+});
+
+// 3. Vendor detail
 app.get('/api/v1/vendors/:id', async (req: Request, res: Response) => {
   const vendor = await VendorModel.findOne({ id: req.params.id });
   if (!vendor) return res.status(404).json({ success: false, message: 'Vendor not found.' });
   res.json({ success: true, data: { vendor } });
 });
 
-// 3. Register a vendor profile — requires an authenticated vendor account.
+// 4. Register a vendor profile — requires an authenticated vendor account.
 app.post('/api/v1/vendors', authMiddleware(), requireRole('vendor', 'admin'), async (req: Request, res: Response) => {
   const { businessName, category, city, startingPrice, description, contactEmail, contactPhone } = req.body;
 
@@ -123,12 +130,40 @@ app.post('/api/v1/vendors', authMiddleware(), requireRole('vendor', 'admin'), as
   res.status(201).json({ success: true, message: 'Vendor profile created. Awaiting admin approval.', data: { vendor } });
 });
 
-// 4. Portfolio upload — stored via the shared LocalStorageProvider abstraction.
+// 5. Update own vendor profile (business info, packages, pricing).
+app.put('/api/v1/vendors/:id', authMiddleware(), async (req: Request, res: Response) => {
+  const vendor = await VendorModel.findOne({ id: req.params.id });
+  if (!vendor) return res.status(404).json({ success: false, message: 'Vendor not found.' });
+  if (vendor.userId !== req.user!.sub && req.user!.role !== 'admin') {
+    return res.status(403).json({ success: false, message: 'You do not own this vendor listing.' });
+  }
+
+  const { businessName, category, description, city, startingPrice, contactEmail, contactPhone, packages } = req.body;
+  if (businessName !== undefined) vendor.businessName = businessName;
+  if (category !== undefined) vendor.category = category;
+  if (description !== undefined) vendor.description = description;
+  if (city !== undefined) vendor.location.city = city;
+  if (startingPrice !== undefined) vendor.startingPrice = Number(startingPrice);
+  if (contactEmail !== undefined) vendor.contactEmail = contactEmail;
+  if (contactPhone !== undefined) vendor.contactPhone = contactPhone;
+  if (Array.isArray(packages)) vendor.packages = packages;
+
+  await vendor.save();
+  res.json({ success: true, message: 'Vendor profile updated.', data: { vendor } });
+});
+
+// 6. Portfolio upload — stored via the shared LocalStorageProvider abstraction.
 app.post('/api/v1/vendors/:id/upload', authMiddleware(), upload.single('file'), async (req: Request, res: Response) => {
   const file = req.file;
   if (!file) return res.status(400).json({ success: false, message: 'No file uploaded.' });
 
   const vendorId = req.params.id;
+  const vendorForUpload = await VendorModel.findOne({ id: vendorId });
+  if (!vendorForUpload) return res.status(404).json({ success: false, message: 'Vendor not found.' });
+  if (vendorForUpload.userId !== req.user!.sub && req.user!.role !== 'admin') {
+    return res.status(403).json({ success: false, message: 'You do not own this vendor listing.' });
+  }
+
   const fileUrl = await storageProvider.saveFile(file.buffer, file.originalname, `vendor-${vendorId}`);
 
   await VendorModel.updateOne({ id: vendorId }, { $push: { galleryImages: fileUrl } });
@@ -140,7 +175,7 @@ app.post('/api/v1/vendors/:id/upload', authMiddleware(), upload.single('file'), 
   });
 });
 
-// 5. Admin/vendor verification toggle
+// 7. Admin/vendor verification toggle
 app.put('/api/v1/vendors/:id/verify', authMiddleware(), requireRole('admin'), async (req: Request, res: Response) => {
   const vendor = await VendorModel.findOne({ id: req.params.id });
   if (!vendor) return res.status(404).json({ success: false, message: 'Vendor not found.' });

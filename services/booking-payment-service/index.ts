@@ -13,6 +13,7 @@ const app = express();
 const PORT = process.env.PORT || 8004;
 const PLATFORM_COMMISSION_RATE = 0.1;
 const ADVANCE_DEPOSIT_RATE = 0.3;
+const MARKETPLACE_SERVICE_URL = process.env.MARKETPLACE_SERVICE_URL || 'http://localhost:8002';
 
 app.use(cors());
 app.use(express.json());
@@ -72,9 +73,35 @@ app.post('/api/v1/bookings/quote', authMiddleware(), async (req: Request, res: R
   });
 });
 
-// 2. List bookings (scoped to the caller unless admin)
+// 2. List bookings. Customers/admins see their own via the default scoping.
+//    A vendor caller can pass ?vendorId=<marketplace vendor id> to see bookings
+//    for their own listing — verified server-to-server against
+//    marketplace-service's userId, since Booking.vendorId references the
+//    marketplace Vendor document, not this auth user's id.
 app.get('/api/v1/bookings', authMiddleware(), async (req: Request, res: Response) => {
-  const filter = req.user!.role === 'admin' ? {} : { $or: [{ customerId: req.user!.sub }, { vendorId: req.user!.sub }] };
+  const { vendorId } = req.query;
+
+  if (vendorId) {
+    if (req.user!.role !== 'admin') {
+      try {
+        const vendorRes = await fetch(`${MARKETPLACE_SERVICE_URL}/api/v1/vendors/${vendorId}`);
+        if (!vendorRes.ok) {
+          return res.status(404).json({ success: false, message: 'Vendor not found.' });
+        }
+        const vendorJson = await vendorRes.json();
+        if (vendorJson.data.vendor.userId !== req.user!.sub) {
+          return res.status(403).json({ success: false, message: 'This vendor listing does not belong to you.' });
+        }
+      } catch {
+        return res.status(502).json({ success: false, message: 'Could not verify vendor ownership.' });
+      }
+    }
+
+    const bookings = await BookingModel.find({ vendorId: String(vendorId) }).limit(200);
+    return res.json({ success: true, count: bookings.length, data: { bookings } });
+  }
+
+  const filter = req.user!.role === 'admin' ? {} : { customerId: req.user!.sub };
   const bookings = await BookingModel.find(filter).limit(200);
   res.json({ success: true, count: bookings.length, data: { bookings } });
 });
