@@ -8,6 +8,7 @@ import bcrypt from 'bcryptjs';
 import { connectDB } from '../../packages/shared-utils/db';
 import { signToken, authMiddleware, requireRole } from '../../packages/shared-utils/auth';
 import { requestLogger } from '../../packages/shared-utils/logging';
+import { registerHealthRoute } from '../../packages/shared-utils/health';
 import { Role } from '../../packages/shared-types';
 import { UserModel } from './models/User';
 
@@ -17,6 +18,7 @@ const PORT = process.env.PORT || 8001;
 app.use(cors());
 app.use(express.json());
 app.use(requestLogger('auth-service'));
+registerHealthRoute(app, 'auth-service');
 
 async function seedIfEmpty() {
   const count = await UserModel.countDocuments();

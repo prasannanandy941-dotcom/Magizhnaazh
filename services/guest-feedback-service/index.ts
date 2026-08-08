@@ -8,6 +8,7 @@ import cors from 'cors';
 import { connectDB } from '../../packages/shared-utils/db';
 import { authMiddleware } from '../../packages/shared-utils/auth';
 import { requestLogger } from '../../packages/shared-utils/logging';
+import { registerHealthRoute } from '../../packages/shared-utils/health';
 import { GuestModel } from './models/Guest';
 import { EventFeedbackModel } from './models/EventFeedback';
 import { ReviewModel } from './models/Review';
@@ -19,6 +20,7 @@ const BOOKING_SERVICE_URL = process.env.BOOKING_PAYMENT_SERVICE_URL || 'http://l
 app.use(cors());
 app.use(express.json());
 app.use(requestLogger('guest-feedback-service'));
+registerHealthRoute(app, 'guest-feedback-service');
 
 function secureToken(): string {
   return randomBytes(12).toString('base64url');

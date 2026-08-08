@@ -8,6 +8,7 @@ import multer from 'multer';
 import { connectDB } from '../../packages/shared-utils/db';
 import { authMiddleware, requireRole } from '../../packages/shared-utils/auth';
 import { requestLogger } from '../../packages/shared-utils/logging';
+import { registerHealthRoute } from '../../packages/shared-utils/health';
 import { LocalStorageProvider } from '../../packages/local-storage-provider';
 import { VendorModel } from './models/Vendor';
 
@@ -21,6 +22,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 app.use(cors());
 app.use(express.json());
 app.use(requestLogger('marketplace-service'));
+registerHealthRoute(app, 'marketplace-service');
 app.use('/uploads', express.static(UPLOADS_DIR));
 
 async function seedIfEmpty() {

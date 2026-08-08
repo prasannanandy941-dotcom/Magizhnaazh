@@ -7,6 +7,7 @@ import cors from 'cors';
 import { connectDB } from '../../packages/shared-utils/db';
 import { authMiddleware } from '../../packages/shared-utils/auth';
 import { requestLogger } from '../../packages/shared-utils/logging';
+import { registerHealthRoute } from '../../packages/shared-utils/health';
 import { BookingModel } from './models/Booking';
 
 const app = express();
@@ -18,6 +19,7 @@ const MARKETPLACE_SERVICE_URL = process.env.MARKETPLACE_SERVICE_URL || 'http://l
 app.use(cors());
 app.use(express.json());
 app.use(requestLogger('booking-payment-service'));
+registerHealthRoute(app, 'booking-payment-service');
 
 async function seedIfEmpty() {
   const count = await BookingModel.countDocuments();

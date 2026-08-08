@@ -7,6 +7,7 @@ import cors from 'cors';
 import { connectDB } from '../../packages/shared-utils/db';
 import { authMiddleware } from '../../packages/shared-utils/auth';
 import { requestLogger } from '../../packages/shared-utils/logging';
+import { registerHealthRoute } from '../../packages/shared-utils/health';
 import { calculateBudgetBreakdown } from '../../packages/shared-utils';
 import { EventModel } from './models/Event';
 
@@ -16,6 +17,7 @@ const PORT = process.env.PORT || 8003;
 app.use(cors());
 app.use(express.json());
 app.use(requestLogger('event-budget-service'));
+registerHealthRoute(app, 'event-budget-service');
 
 async function seedIfEmpty() {
   const count = await EventModel.countDocuments();

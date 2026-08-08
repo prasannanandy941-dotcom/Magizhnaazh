@@ -8,6 +8,7 @@ import cors from 'cors';
 import { connectDB } from '../../packages/shared-utils/db';
 import { authMiddleware } from '../../packages/shared-utils/auth';
 import { requestLogger } from '../../packages/shared-utils/logging';
+import { registerHealthRoute } from '../../packages/shared-utils/health';
 import { renderCanvasToSVG } from '../../packages/canvas-engine';
 import { InvitationModel } from './models/Invitation';
 
@@ -17,6 +18,7 @@ const PORT = process.env.PORT || 8005;
 app.use(cors());
 app.use(express.json());
 app.use(requestLogger('invitation-service'));
+registerHealthRoute(app, 'invitation-service');
 
 function generatePublicToken(): string {
   // Cryptographically secure, unguessable — public invitation links must never
