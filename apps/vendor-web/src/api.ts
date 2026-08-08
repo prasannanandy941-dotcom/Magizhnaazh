@@ -45,6 +45,12 @@ async function authedFetch(path: string, token: string, options: RequestInit = {
     },
   });
   const json = await res.json();
+  if (res.status === 401) {
+    localStorage.removeItem('magizhnaazh_vendor_user');
+    localStorage.removeItem('magizhnaazh_vendor_token');
+    window.location.reload();
+    throw new Error('Session expired — please sign in again.');
+  }
   if (!res.ok) {
     throw new Error(json.message || 'Request failed.');
   }
