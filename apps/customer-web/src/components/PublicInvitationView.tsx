@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Calendar as CalendarIcon, Clock, MapPin, CheckCircle } from 'lucide-react';
-import { Invitation } from '../shared/shared-types';
+import { Invitation } from '../../../../packages/shared-types';
 
 interface PublicInvitationViewProps {
   invitation: Invitation;

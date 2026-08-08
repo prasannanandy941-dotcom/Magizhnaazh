@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Role, Vendor, Event, Booking, Invitation, Guest, EventFeedback } from './shared/shared-types';
+import { Role, Vendor, Event, Booking, Invitation, Guest, EventFeedback } from '../../../packages/shared-types';
 import { Header } from './components/Header';
 import { HeroSection } from './components/HeroSection';
 import { VendorMarketplace } from './components/VendorMarketplace';
@@ -11,7 +11,7 @@ import { CanvaInvitationDesigner } from './components/CanvaInvitationDesigner';
 import { PublicInvitationView } from './components/PublicInvitationView';
 import { GuestManagement } from './components/GuestManagement';
 import { FeedbackModule } from './components/FeedbackModule';
-import { INVITATION_TEMPLATES } from './shared/canvas-engine';
+import { INVITATION_TEMPLATES } from '../../../packages/canvas-engine';
 import { MessageSquare, CheckCircle2 } from 'lucide-react';
 
 const INITIAL_VENDORS: Vendor[] = [

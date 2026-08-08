@@ -1,8 +1,10 @@
 import { VendorCategory, Vendor } from '../shared-types';
 
-export * from './auth';
-export * from './logging';
-export * from './db';
+// NOTE: this file must stay browser-safe (it's imported directly by the web
+// apps' Vite bundles). Server-only helpers (JWT/auth, Mongo, request logging)
+// live in ./auth, ./logging, ./db and must be imported from those files
+// directly by services — never re-exported from here, or bundlers will try
+// to pull mongoose/jsonwebtoken/express into the browser build.
 
 export const DEFAULT_BUDGET_PERCENTAGES: Record<string, Record<string, number>> = {
   Wedding: {

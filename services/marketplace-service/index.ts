@@ -5,7 +5,9 @@ dotenv.config({ path: path.resolve(__dirname, '.env') });
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import multer from 'multer';
-import { connectDB, authMiddleware, requireRole, requestLogger } from '../../packages/shared-utils';
+import { connectDB } from '../../packages/shared-utils/db';
+import { authMiddleware, requireRole } from '../../packages/shared-utils/auth';
+import { requestLogger } from '../../packages/shared-utils/logging';
 import { LocalStorageProvider } from '../../packages/local-storage-provider';
 import { VendorModel } from './models/Vendor';
 

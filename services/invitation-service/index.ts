@@ -5,7 +5,9 @@ dotenv.config({ path: path.resolve(__dirname, '.env') });
 import { randomBytes } from 'crypto';
 import express, { Request, Response } from 'express';
 import cors from 'cors';
-import { connectDB, authMiddleware, requestLogger } from '../../packages/shared-utils';
+import { connectDB } from '../../packages/shared-utils/db';
+import { authMiddleware } from '../../packages/shared-utils/auth';
+import { requestLogger } from '../../packages/shared-utils/logging';
 import { renderCanvasToSVG } from '../../packages/canvas-engine';
 import { InvitationModel } from './models/Invitation';
 

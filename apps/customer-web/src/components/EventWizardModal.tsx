@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Sparkles, Check, ArrowRight, ArrowLeft, MapPin } from 'lucide-react';
-import { Event } from '../shared/shared-types';
-import { calculateBudgetBreakdown } from '../shared/shared-utils';
+import { Event } from '../../../../packages/shared-types';
+import { calculateBudgetBreakdown } from '../../../../packages/shared-utils';
 
 interface EventWizardModalProps {
   onClose: () => void;

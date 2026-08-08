@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Star, MapPin, Check, ShieldCheck, Upload, Calendar as CalendarIcon, MessageSquare, Send, CreditCard, Sparkles } from 'lucide-react';
-import { Vendor } from '../shared/shared-types';
+import { Vendor } from '../../../../packages/shared-types';
 
 interface VendorDetailModalProps {
   vendor: Vendor;

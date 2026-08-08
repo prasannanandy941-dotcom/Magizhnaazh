@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Star, MessageSquare, Sparkles, QrCode, CheckCircle2 } from 'lucide-react';
-import { EventFeedback } from '../shared/shared-types';
+import { EventFeedback } from '../../../../packages/shared-types';
 
 interface FeedbackModuleProps {
   feedbackList: EventFeedback[];

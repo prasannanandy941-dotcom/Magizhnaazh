@@ -4,7 +4,10 @@ dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 import express, { Request, Response } from 'express';
 import cors from 'cors';
-import { connectDB, authMiddleware, requestLogger, calculateBudgetBreakdown } from '../../packages/shared-utils';
+import { connectDB } from '../../packages/shared-utils/db';
+import { authMiddleware } from '../../packages/shared-utils/auth';
+import { requestLogger } from '../../packages/shared-utils/logging';
+import { calculateBudgetBreakdown } from '../../packages/shared-utils';
 import { EventModel } from './models/Event';
 
 const app = express();

@@ -1,53 +1,29 @@
 version: '3.8'
 
+# For local development, only the datastore runs in Docker. Node services run
+# via `npm run dev:*` against this Mongo instance (see root package.json) —
+# containerizing the Node services themselves is future work, tracked
+# separately, since it needs real Dockerfiles this repo doesn't have yet.
 services:
-  gateway:
-    build:
-      context: ..
-      dockerfile: infrastructure/docker/Dockerfile.gateway
+  mongodb:
+    image: mongo:7
+    restart: unless-stopped
     ports:
-      - "8000:8000"
-    environment:
-      - PORT=8000
-      - AUTH_SERVICE_URL=http://auth-service:8001
-      - MARKETPLACE_SERVICE_URL=http://marketplace-service:8002
-      - EVENT_SERVICE_URL=http://event-service:8003
-      - BOOKING_SERVICE_URL=http://booking-service:8004
-      - INVITATION_SERVICE_URL=http://invitation-service:8005
-      - GUEST_SERVICE_URL=http://guest-service:8006
-    depends_on:
-      - auth-service
-      - marketplace-service
-
-  auth-service:
-    build:
-      context: ..
-      dockerfile: infrastructure/docker/Dockerfile.service
-      args:
-        SERVICE_NAME: auth-service
-    ports:
-      - "8001:8001"
-    environment:
-      - PORT=8001
-
-  marketplace-service:
-    build:
-      context: ..
-      dockerfile: infrastructure/docker/Dockerfile.service
-      args:
-        SERVICE_NAME: marketplace-service
-    ports:
-      - "8002:8002"
-    environment:
-      - PORT=8002
+      - "27017:27017"
     volumes:
-      - ../uploads:/app/uploads
+      - mongo_data:/data/db
 
-  web:
-    build:
-      context: ..
-      dockerfile: infrastructure/docker/Dockerfile.web
+  # Optional lightweight admin UI for the Mongo instance above.
+  mongo-express:
+    image: mongo-express:1
+    restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "8081:8081"
+    environment:
+      - ME_CONFIG_MONGODB_SERVER=mongodb
+      - ME_CONFIG_BASICAUTH=false
     depends_on:
-      - gateway
+      - mongodb
+
+volumes:
+  mongo_data:

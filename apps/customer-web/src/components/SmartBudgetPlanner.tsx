@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Event, Vendor } from '../shared/shared-types';
+import { Event, Vendor } from '../../../../packages/shared-types';
 import { IndianRupee, AlertTriangle, Sparkles, CheckCircle2, TrendingUp, Filter, Star, MapPin } from 'lucide-react';
-import { calculateVendorScore } from '../shared/shared-utils';
+import { calculateVendorScore } from '../../../../packages/shared-utils';
 
 interface SmartBudgetPlannerProps {
   event: Event;

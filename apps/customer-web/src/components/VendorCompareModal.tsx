@@ -1,6 +1,6 @@
 import React from 'react';
 import { X, Star, CheckCircle, Sparkles, Check, ArrowRight } from 'lucide-react';
-import { Vendor } from '../shared/shared-types';
+import { Vendor } from '../../../../packages/shared-types';
 
 interface VendorCompareModalProps {
   vendors: Vendor[];

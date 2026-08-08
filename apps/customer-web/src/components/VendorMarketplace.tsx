@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Star, MapPin, Heart, CheckCircle2, SlidersHorizontal, ArrowUpDown, Layers, Phone, Eye } from 'lucide-react';
-import { Vendor, VendorCategory } from '../shared/shared-types';
+import { Vendor, VendorCategory } from '../../../../packages/shared-types';
 
 interface VendorMarketplaceProps {
   vendors: Vendor[];

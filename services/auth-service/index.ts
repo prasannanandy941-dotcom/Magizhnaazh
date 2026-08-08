@@ -5,7 +5,9 @@ dotenv.config({ path: path.resolve(__dirname, '.env') });
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import bcrypt from 'bcryptjs';
-import { connectDB, signToken, authMiddleware, requireRole, requestLogger } from '../../packages/shared-utils';
+import { connectDB } from '../../packages/shared-utils/db';
+import { signToken, authMiddleware, requireRole } from '../../packages/shared-utils/auth';
+import { requestLogger } from '../../packages/shared-utils/logging';
 import { Role } from '../../packages/shared-types';
 import { UserModel } from './models/User';
 

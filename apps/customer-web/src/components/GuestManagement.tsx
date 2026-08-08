@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Guest } from '../shared/shared-types';
+import { Guest } from '../../../../packages/shared-types';
 import { Users, UserPlus, CheckCircle2, XCircle, Clock, Share2, Utensils } from 'lucide-react';
 
 interface GuestManagementProps {

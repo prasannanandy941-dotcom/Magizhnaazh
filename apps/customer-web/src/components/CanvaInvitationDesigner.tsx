@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Sparkles, Type, Palette, QrCode, Download, Share2, Eye, Plus, Trash2, Layout, RotateCw, Check } from 'lucide-react';
-import { CanvasElement, Invitation } from '../shared/shared-types';
-import { INVITATION_TEMPLATES } from '../shared/canvas-engine';
+import { CanvasElement, Invitation } from '../../../../packages/shared-types';
+import { INVITATION_TEMPLATES } from '../../../../packages/canvas-engine';
 
 interface CanvaInvitationDesignerProps {
   invitation: Invitation;
