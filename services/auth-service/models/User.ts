@@ -10,6 +10,7 @@ export interface UserDoc {
   businessName?: string;
   avatarUrl?: string;
   isVerified: boolean;
+  isSuspended: boolean;
   passwordHash: string;
   createdAt: string;
 }

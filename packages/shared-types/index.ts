@@ -8,6 +8,7 @@ export interface User {
   role: Role;
   avatarUrl?: string;
   isVerified: boolean;
+  isSuspended: boolean;
   createdAt: string;
 }
 
@@ -43,6 +44,7 @@ export interface Vendor {
   ratingAverage: number;
   reviewCount: number;
   isVerified: boolean;
+  isSuspended: boolean;
   featured: boolean;
   galleryImages: string[];
   galleryVideos?: string[];
@@ -300,4 +302,71 @@ export interface ApiResponse<T> {
   message: string;
   code?: string;
   data: T;
+}
+
+// --- Admin console entities ---
+
+export interface Category {
+  id: string;
+  name: string;
+  icon?: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface City {
+  id: string;
+  name: string;
+  state: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface Banner {
+  id: string;
+  title: string;
+  imageUrl: string;
+  linkUrl?: string;
+  isActive: boolean;
+  order: number;
+  createdAt: string;
+}
+
+export interface Coupon {
+  id: string;
+  code: string;
+  discountPercent: number;
+  isActive: boolean;
+  expiresAt?: string;
+  createdAt: string;
+}
+
+export type ComplaintStatus = 'open' | 'in_review' | 'resolved';
+
+export interface Complaint {
+  id: string;
+  eventId?: string;
+  bookingId?: string;
+  submittedBy: string;
+  subject: string;
+  description: string;
+  status: ComplaintStatus;
+  createdAt: string;
+}
+
+export interface InvitationTemplateDoc {
+  id: string;
+  name: string;
+  category: string;
+  previewUrl: string;
+  backgroundColor: string;
+  elements: CanvasElement[];
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface PlatformSettings {
+  commissionRate: number; // e.g. 0.1 = 10%
+  advanceDepositRate: number; // e.g. 0.3 = 30%
+  updatedAt: string;
 }
