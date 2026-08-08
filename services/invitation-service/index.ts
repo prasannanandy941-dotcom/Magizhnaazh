@@ -1,50 +1,35 @@
+import path from 'path';
+import dotenv from 'dotenv';
+dotenv.config({ path: path.resolve(__dirname, '.env') });
+
+import { randomBytes } from 'crypto';
 import express, { Request, Response } from 'express';
 import cors from 'cors';
+import { connectDB, authMiddleware, requestLogger } from '../../packages/shared-utils';
+import { renderCanvasToSVG } from '../../packages/canvas-engine';
+import { InvitationModel } from './models/Invitation';
 
 const app = express();
 const PORT = process.env.PORT || 8005;
 
 app.use(cors());
 app.use(express.json());
+app.use(requestLogger('invitation-service'));
 
-interface CanvasElement {
-  id: string;
-  type: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  content?: string;
-  fontFamily?: string;
-  fontSize?: number;
-  color?: string;
+function generatePublicToken(): string {
+  // Cryptographically secure, unguessable — public invitation links must never
+  // expose predictable/sequential IDs.
+  return randomBytes(12).toString('base64url');
 }
 
-interface Invitation {
-  id: string;
-  eventId: string;
-  inviteToken: string;
-  eventTitle: string;
-  hostName: string;
-  date: string;
-  time: string;
-  venueName: string;
-  venueAddress: string;
-  message: string;
-  canvasData: {
-    width: number;
-    height: number;
-    backgroundColor: string;
-    elements: CanvasElement[];
-  };
-  createdAt: string;
-}
+async function seedIfEmpty() {
+  const count = await InvitationModel.countDocuments();
+  if (count > 0) return;
 
-const INVITATIONS: Invitation[] = [
-  {
+  await InvitationModel.create({
     id: 'inv-101',
     eventId: 'evt-101',
-    inviteToken: 'wed-felix-2026',
+    inviteToken: generatePublicToken(),
     eventTitle: 'Felix & Priya Wedding Celebration',
     hostName: 'Felix & Family',
     date: '2026-12-15',
@@ -57,22 +42,22 @@ const INVITATIONS: Invitation[] = [
       height: 600,
       backgroundColor: '#1E1B4B',
       elements: [
-        { id: 'el-1', type: 'text', x: 40, y: 60, width: 320, height: 40, content: 'TOGETHER WITH THEIR FAMILIES', fontFamily: 'Playfair Display', fontSize: 14, color: '#FCD34D' },
-        { id: 'el-2', type: 'text', x: 20, y: 120, width: 360, height: 70, content: 'FELIX & PRIYA', fontFamily: 'Great Vibes', fontSize: 36, color: '#F59E0B' },
+        { id: 'el-1', type: 'text', x: 40, y: 60, width: 320, height: 40, rotation: 0, content: 'TOGETHER WITH THEIR FAMILIES', fontFamily: 'Playfair Display', fontSize: 14, color: '#FCD34D', zIndex: 1 },
+        { id: 'el-2', type: 'text', x: 20, y: 120, width: 360, height: 70, rotation: 0, content: 'FELIX & PRIYA', fontFamily: 'Great Vibes', fontSize: 36, color: '#F59E0B', zIndex: 2 },
       ],
     },
-    createdAt: new Date().toISOString(),
-  },
-];
+  });
+  console.log('[invitation-service] Seeded demo invitation.');
+}
 
-// 1. Create or Save Canva Invitation Design (Customer Role)
-app.post('/api/v1/invitations', (req: Request, res: Response) => {
+// 1. Save a Canva-style invitation document
+app.post('/api/v1/invitations', authMiddleware(), async (req: Request, res: Response) => {
   const { eventId, eventTitle, hostName, date, time, venueName, venueAddress, message, canvasData } = req.body;
 
-  const newInvite: Invitation = {
+  const invitation = await InvitationModel.create({
     id: `inv-${Date.now()}`,
     eventId: eventId || 'evt-101',
-    inviteToken: `invite-${Date.now()}`,
+    inviteToken: generatePublicToken(),
     eventTitle: eventTitle || 'Wedding Invitation',
     hostName: hostName || 'Host Family',
     date: date || '2026-12-15',
@@ -81,33 +66,54 @@ app.post('/api/v1/invitations', (req: Request, res: Response) => {
     venueAddress: venueAddress || 'Chennai',
     message: message || 'Please join us for our special day.',
     canvasData: canvasData || { width: 400, height: 600, backgroundColor: '#1E1B4B', elements: [] },
-    createdAt: new Date().toISOString(),
-  };
+  });
 
-  INVITATIONS.push(newInvite);
-  res.status(201).json({ success: true, message: 'Canva invitation document saved.', data: { invitation: newInvite } });
+  res.status(201).json({ success: true, message: 'Canva invitation document saved.', data: { invitation } });
 });
 
-// 2. Get Public Invitation Web View by Token (Public / Guest Access)
-app.get('/api/v1/invitations/:token', (req: Request, res: Response) => {
-  const invite = INVITATIONS.find((i) => i.inviteToken === req.params.token || i.id === req.params.token);
-  if (!invite) return res.status(404).json({ success: false, message: 'Invitation link invalid or expired.' });
-  res.json({ success: true, data: { invitation: invite } });
+// 2. Public invitation view by unguessable token — no auth required.
+app.get('/api/v1/invitations/:token', async (req: Request, res: Response) => {
+  const invitation = await InvitationModel.findOne({ inviteToken: req.params.token });
+  if (!invitation) return res.status(404).json({ success: false, message: 'Invitation link invalid or expired.' });
+  res.json({ success: true, data: { invitation } });
 });
 
-// 3. Update Invitation Canvas (Customer Role)
-app.put('/api/v1/invitations/:id', (req: Request, res: Response) => {
-  const invite = INVITATIONS.find((i) => i.id === req.params.id);
-  if (!invite) return res.status(404).json({ success: false, message: 'Invitation not found.' });
+// 3. Public SVG render of the invitation canvas (server-side, via canvas-engine).
+app.get('/api/v1/invitations/:token/svg', async (req: Request, res: Response) => {
+  const invitation = await InvitationModel.findOne({ inviteToken: req.params.token });
+  if (!invitation) return res.status(404).json({ success: false, message: 'Invitation link invalid or expired.' });
+
+  const svg = renderCanvasToSVG(
+    invitation.canvasData.elements,
+    invitation.canvasData.width,
+    invitation.canvasData.height,
+    invitation.canvasData.backgroundColor
+  );
+
+  res.setHeader('Content-Type', 'image/svg+xml');
+  res.send(svg);
+});
+
+// 4. Update invitation canvas
+app.put('/api/v1/invitations/:id', authMiddleware(), async (req: Request, res: Response) => {
+  const invitation = await InvitationModel.findOne({ id: req.params.id });
+  if (!invitation) return res.status(404).json({ success: false, message: 'Invitation not found.' });
 
   const { canvasData } = req.body;
   if (canvasData) {
-    invite.canvasData = canvasData;
+    invitation.canvasData = canvasData;
   }
+  await invitation.save();
 
-  res.json({ success: true, message: 'Invitation canvas updated.', data: { invitation: invite } });
+  res.json({ success: true, message: 'Invitation canvas updated.', data: { invitation } });
 });
 
-app.listen(PORT, () => {
-  console.log(`[Invitation Microservice] Running on http://localhost:${PORT}`);
-});
+async function start() {
+  await connectDB(process.env.MONGODB_URI, 'invitation-service');
+  await seedIfEmpty();
+  app.listen(PORT, () => {
+    console.log(`[Invitation Microservice] Running on http://localhost:${PORT}`);
+  });
+}
+
+start();

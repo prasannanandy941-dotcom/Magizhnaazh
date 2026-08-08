@@ -1,88 +1,118 @@
+import path from 'path';
+import dotenv from 'dotenv';
+dotenv.config({ path: path.resolve(__dirname, '.env') });
+
 import express, { Request, Response } from 'express';
 import cors from 'cors';
+import bcrypt from 'bcryptjs';
+import { connectDB, signToken, authMiddleware, requireRole, requestLogger } from '../../packages/shared-utils';
+import { Role } from '../../packages/shared-types';
+import { UserModel } from './models/User';
 
 const app = express();
 const PORT = process.env.PORT || 8001;
 
 app.use(cors());
 app.use(express.json());
+app.use(requestLogger('auth-service'));
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  role: 'customer' | 'vendor' | 'admin';
-  businessName?: string;
-  createdAt: string;
+async function seedIfEmpty() {
+  const count = await UserModel.countDocuments();
+  if (count > 0) return;
+
+  const demoPasswordHash = await bcrypt.hash('Passw0rd!', 10);
+  await UserModel.create([
+    { id: 'usr-customer-1', name: 'Felix Kumar', email: 'customer@magizhnaazh.com', phone: '+91 9840112233', role: 'customer', isVerified: true, passwordHash: demoPasswordHash },
+    { id: 'usr-vendor-1', name: 'Leela Management', email: 'vendor@magizhnaazh.com', phone: '+91 44 33661234', role: 'vendor', businessName: 'The Leela Palace Grand Ballroom', isVerified: true, passwordHash: demoPasswordHash },
+    { id: 'usr-admin-1', name: 'Super Admin', email: 'admin@magizhnaazh.com', phone: '+91 9999900000', role: 'admin', isVerified: true, passwordHash: demoPasswordHash },
+  ]);
+  console.log('[auth-service] Seeded demo users (password: Passw0rd!).');
 }
 
-// In-Memory Database for Auth Microservice
-const USERS: User[] = [
-  { id: 'usr-customer-1', name: 'Felix Kumar', email: 'customer@magizhnaazh.com', phone: '+91 9840112233', role: 'customer', createdAt: new Date().toISOString() },
-  { id: 'usr-vendor-1', name: 'Leela Management', email: 'vendor@magizhnaazh.com', phone: '+91 44 33661234', role: 'vendor', businessName: 'The Leela Palace Grand Ballroom', createdAt: new Date().toISOString() },
-  { id: 'usr-admin-1', name: 'Super Admin', email: 'admin@magizhnaazh.com', phone: '+91 9999900000', role: 'admin', createdAt: new Date().toISOString() },
-];
-
-// 1. Customer / Vendor / Admin Register
-app.post('/api/v1/auth/register', (req: Request, res: Response) => {
+// 1. Register
+app.post('/api/v1/auth/register', async (req: Request, res: Response) => {
   const { name, email, phone, password, role, businessName } = req.body;
-  if (!email || !name) {
-    return res.status(400).json({ success: false, message: 'Name and Email are required.' });
+  if (!email || !name || !password) {
+    return res.status(400).json({ success: false, message: 'Name, email and password are required.' });
   }
 
-  const newUser: User = {
+  const existing = await UserModel.findOne({ email: String(email).toLowerCase() });
+  if (existing) {
+    return res.status(409).json({ success: false, message: 'An account with this email already exists.' });
+  }
+
+  const passwordHash = await bcrypt.hash(password, 10);
+  const allowedRoles: Role[] = ['customer', 'vendor'];
+  const safeRole: Role = allowedRoles.includes(role) ? role : 'customer';
+
+  const user = await UserModel.create({
     id: `usr-${Date.now()}`,
     name,
     email,
     phone: phone || '',
-    role: role || 'customer',
-    businessName: businessName || '',
-    createdAt: new Date().toISOString(),
-  };
+    role: safeRole,
+    businessName: businessName || undefined,
+    passwordHash,
+  });
 
-  USERS.push(newUser);
+  const token = signToken({ sub: user.id, email: user.email, role: user.role });
+  const { passwordHash: _omit, ...userSafe } = user.toObject();
 
   return res.status(201).json({
     success: true,
-    message: `${role || 'Customer'} account registered successfully.`,
-    data: {
-      user: newUser,
-      token: `jwt-mock-token-${newUser.id}`,
-    },
+    message: `${safeRole} account registered successfully.`,
+    data: { user: userSafe, token },
   });
 });
 
-// 2. Login Endpoint for all roles
-app.post('/api/v1/auth/login', (req: Request, res: Response) => {
+// 2. Login
+app.post('/api/v1/auth/login', async (req: Request, res: Response) => {
   const { email, password } = req.body;
-  const user = USERS.find((u) => u.email.toLowerCase() === email?.toLowerCase());
-
-  if (!user) {
-    return res.status(401).json({ success: false, message: 'Invalid credentials or user not found.' });
+  if (!email || !password) {
+    return res.status(400).json({ success: false, message: 'Email and password are required.' });
   }
+
+  const user = await UserModel.findOne({ email: String(email).toLowerCase() }).select('+passwordHash');
+  if (!user) {
+    return res.status(401).json({ success: false, message: 'Invalid credentials.' });
+  }
+
+  const matches = await bcrypt.compare(password, user.passwordHash);
+  if (!matches) {
+    return res.status(401).json({ success: false, message: 'Invalid credentials.' });
+  }
+
+  const token = signToken({ sub: user.id, email: user.email, role: user.role });
+  const { passwordHash: _omit, ...userSafe } = user.toObject();
 
   return res.json({
     success: true,
     message: 'Authentication successful.',
-    data: {
-      user,
-      token: `jwt-mock-token-${user.id}`,
-    },
+    data: { user: userSafe, token },
   });
 });
 
-// 3. User Profile Endpoint
-app.get('/api/v1/auth/me', (req: Request, res: Response) => {
-  const user = USERS[0];
+// 3. Current user profile — requires a valid token, returns the caller, not a fixed user.
+app.get('/api/v1/auth/me', authMiddleware(), async (req: Request, res: Response) => {
+  const user = await UserModel.findOne({ id: req.user!.sub });
+  if (!user) {
+    return res.status(404).json({ success: false, message: 'User not found.' });
+  }
   res.json({ success: true, data: { user } });
 });
 
-// 4. Admin Users List Management Endpoint
-app.get('/api/v1/auth/admin/users', (req: Request, res: Response) => {
-  res.json({ success: true, data: { users: USERS, total: USERS.length } });
+// 4. Admin-only user directory
+app.get('/api/v1/auth/admin/users', authMiddleware(), requireRole('admin'), async (req: Request, res: Response) => {
+  const users = await UserModel.find().limit(200);
+  res.json({ success: true, data: { users, total: users.length } });
 });
 
-app.listen(PORT, () => {
-  console.log(`[Auth Microservice] Running on http://localhost:${PORT}`);
-});
+async function start() {
+  await connectDB(process.env.MONGODB_URI, 'auth-service');
+  await seedIfEmpty();
+  app.listen(PORT, () => {
+    console.log(`[Auth Microservice] Running on http://localhost:${PORT}`);
+  });
+}
+
+start();

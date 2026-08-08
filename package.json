@@ -14,7 +14,9 @@
     "dev:booking": "npx ts-node-dev services/booking-payment-service/index.ts",
     "dev:invitation": "npx ts-node-dev services/invitation-service/index.ts",
     "dev:guest-feedback": "npx ts-node-dev services/guest-feedback-service/index.ts",
-    "build:all": "npm run build --prefix apps/customer-web && npm run build --prefix apps/vendor-web && npm run build --prefix apps/admin-web"
+    "build:all": "npm run build --prefix apps/customer-web && npm run build --prefix apps/vendor-web && npm run build --prefix apps/admin-web",
+    "docker:up": "docker compose -f infrastructure/docker-compose.yml up -d",
+    "docker:down": "docker compose -f infrastructure/docker-compose.yml down"
   },
   "workspaces": [
     "apps/*",
@@ -22,17 +24,9 @@
     "packages/*"
   ],
   "devDependencies": {
-    "@types/cors": "^2.8.19",
-    "@types/express": "^5.0.6",
-    "@types/fs-extra": "^11.0.4",
-    "@types/multer": "^2.2.0",
-    "@types/node": "^26.2.0",
-    "cors": "^2.8.6",
-    "express": "^5.2.1",
-    "fs-extra": "^11.4.0",
-    "http-proxy-middleware": "^4.2.0",
-    "multer": "^2.2.0",
+    "@types/node": "^20.11.24",
     "ts-node": "^10.9.2",
-    "ts-node-dev": "^2.0.0"
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.3.3"
   }
 }

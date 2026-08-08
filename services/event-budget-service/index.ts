@@ -1,37 +1,24 @@
+import path from 'path';
+import dotenv from 'dotenv';
+dotenv.config({ path: path.resolve(__dirname, '.env') });
+
 import express, { Request, Response } from 'express';
 import cors from 'cors';
+import { connectDB, authMiddleware, requestLogger, calculateBudgetBreakdown } from '../../packages/shared-utils';
+import { EventModel } from './models/Event';
 
 const app = express();
 const PORT = process.env.PORT || 8003;
 
 app.use(cors());
 app.use(express.json());
+app.use(requestLogger('event-budget-service'));
 
-interface BudgetItem {
-  id: string;
-  category: string;
-  allocatedPercentage: number;
-  allocatedAmount: number;
-  actualSpent: number;
-}
+async function seedIfEmpty() {
+  const count = await EventModel.countDocuments();
+  if (count > 0) return;
 
-interface EventItem {
-  id: string;
-  userId: string;
-  title: string;
-  eventType: string;
-  date: string;
-  location: { city: string };
-  guestCount: number;
-  totalBudget: number;
-  spentBudget: number;
-  status: 'planning' | 'ongoing' | 'completed';
-  budgetBreakdown: BudgetItem[];
-  createdAt: string;
-}
-
-const EVENTS: EventItem[] = [
-  {
+  await EventModel.create({
     id: 'evt-101',
     userId: 'usr-customer-1',
     title: 'Felix & Priya Wedding Celebration',
@@ -48,43 +35,20 @@ const EVENTS: EventItem[] = [
       { id: 'b-3', category: 'Decoration', allocatedPercentage: 12, allocatedAmount: 96000, actualSpent: 80000 },
       { id: 'b-4', category: 'Photography', allocatedPercentage: 10, allocatedAmount: 80000, actualSpent: 65000 },
     ],
-    createdAt: new Date().toISOString(),
-  },
-];
-
-// Helper: Smart Budget Percentage Allocator Algorithm
-function calculateSmartBudget(eventType: string, totalBudget: number): BudgetItem[] {
-  const allocationMap: Record<string, number> = {
-    'Venue': 25,
-    'Catering': 25,
-    'Decoration': 12,
-    'Photography': 10,
-    'Makeup & Beauty': 5,
-    'Transport': 5,
-    'Invitation': 3,
-    'Return Gifts': 5,
-    'Other': 10,
-  };
-
-  return Object.entries(allocationMap).map(([category, percentage], idx) => ({
-    id: `bgt-${idx}-${Date.now()}`,
-    category,
-    allocatedPercentage: percentage,
-    allocatedAmount: Math.round((totalBudget * percentage) / 100),
-    actualSpent: 0,
-  }));
+  });
+  console.log('[event-budget-service] Seeded demo event.');
 }
 
-// 1. Create Event (Customer Role)
-app.post('/api/v1/events', (req: Request, res: Response) => {
+// 1. Create event — smart budget allocation via the shared budget percentage engine.
+app.post('/api/v1/events', authMiddleware(), async (req: Request, res: Response) => {
   const { title, eventType, city, date, guestCount, totalBudget } = req.body;
 
   const budget = Number(totalBudget) || 500000;
-  const breakdown = calculateSmartBudget(eventType || 'Wedding', budget);
+  const breakdown = calculateBudgetBreakdown(eventType || 'Wedding', budget);
 
-  const newEvent: EventItem = {
+  const event = await EventModel.create({
     id: `evt-${Date.now()}`,
-    userId: 'usr-customer-1',
+    userId: req.user!.sub,
     title: title || 'My Grand Event',
     eventType: eventType || 'Wedding',
     date: date || '2026-12-15',
@@ -94,31 +58,41 @@ app.post('/api/v1/events', (req: Request, res: Response) => {
     spentBudget: 0,
     status: 'planning',
     budgetBreakdown: breakdown,
-    createdAt: new Date().toISOString(),
-  };
+  });
 
-  EVENTS.push(newEvent);
-  res.status(201).json({ success: true, message: 'Event created & budget allocated successfully.', data: { event: newEvent } });
+  res.status(201).json({ success: true, message: 'Event created & budget allocated successfully.', data: { event } });
 });
 
-// 2. Get Events List
-app.get('/api/v1/events', (req: Request, res: Response) => {
-  res.json({ success: true, count: EVENTS.length, data: { events: EVENTS } });
+// 2. List events (scoped to the caller unless admin)
+app.get('/api/v1/events', authMiddleware(), async (req: Request, res: Response) => {
+  const filter = req.user!.role === 'admin' ? {} : { userId: req.user!.sub };
+  const events = await EventModel.find(filter).limit(200);
+  res.json({ success: true, count: events.length, data: { events } });
 });
 
-// 3. Update Budget Breakdown Allocation (Customer Role)
-app.put('/api/v1/events/:id/budget', (req: Request, res: Response) => {
-  const event = EVENTS.find((e) => e.id === req.params.id);
+// 3. Update budget allocation
+app.put('/api/v1/events/:id/budget', authMiddleware(), async (req: Request, res: Response) => {
+  const event = await EventModel.findOne({ id: req.params.id });
   if (!event) return res.status(404).json({ success: false, message: 'Event not found.' });
+  if (event.userId !== req.user!.sub && req.user!.role !== 'admin') {
+    return res.status(403).json({ success: false, message: 'You do not own this event.' });
+  }
 
   const { budgetBreakdown } = req.body;
   if (Array.isArray(budgetBreakdown)) {
     event.budgetBreakdown = budgetBreakdown;
   }
+  await event.save();
 
   res.json({ success: true, message: 'Smart budget allocations updated.', data: { event } });
 });
 
-app.listen(PORT, () => {
-  console.log(`[Event & Budget Microservice] Running on http://localhost:${PORT}`);
-});
+async function start() {
+  await connectDB(process.env.MONGODB_URI, 'event-budget-service');
+  await seedIfEmpty();
+  app.listen(PORT, () => {
+    console.log(`[Event & Budget Microservice] Running on http://localhost:${PORT}`);
+  });
+}
+
+start();
