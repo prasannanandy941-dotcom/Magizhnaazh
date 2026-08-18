@@ -73,6 +73,8 @@ app.use('/api/v1/reviews', createProxyMiddleware({ target: SERVICES.guestFeedbac
 app.use('/api/v1/complaints', createProxyMiddleware({ target: SERVICES.guestFeedback, changeOrigin: true }));
 app.use('/api/v1/monitor', createProxyMiddleware({ target: SERVICES.monitor, changeOrigin: true }));
 
-app.listen(PORT, () => {
-  console.log(`[API Gateway] Running on http://localhost:${PORT}`);
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Gateway running on port ${PORT}`);
 });
