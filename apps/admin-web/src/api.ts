@@ -14,7 +14,14 @@ import {
   PlatformSettings,
 } from '../../../packages/shared-types';
 
-export const GATEWAY_URL = 'http://localhost:8000';
+// In production this is baked in at build time from the VITE_GATEWAY_URL env
+// var (set in Render). Falls back to the local gateway for `npm run dev`.
+// Render exposes a service address as a bare hostname, so add https:// when the
+// value has no scheme; local dev values already start with http://localhost.
+const rawGatewayUrl = import.meta.env.VITE_GATEWAY_URL || 'http://localhost:8000';
+export const GATEWAY_URL = /^https?:\/\//i.test(rawGatewayUrl)
+  ? rawGatewayUrl
+  : `https://${rawGatewayUrl}`;
 
 export interface AuthResponse {
   success: boolean;
