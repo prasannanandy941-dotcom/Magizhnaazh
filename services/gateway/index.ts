@@ -76,3 +76,10 @@ app.use('/api/v1/monitor', createProxyMiddleware({ target: SERVICES.monitor, cha
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Gateway running on port ${PORT}`);
 });
+app.get("/", (_req, res) => {
+  res.json({
+    status: "ok",
+    service: "Magizhnaazh Gateway",
+    message: "Gateway is running"
+  });
+});
