@@ -9,7 +9,7 @@ import { createProxyMiddleware } from 'http-proxy-middleware';
 import { requestLogger } from '../../packages/shared-utils/logging';
 
 const app = express();
-const PORT = process.env.PORT || 8000;
+const PORT = Number(process.env.PORT) || 8000;
 
 const SERVICES = {
   auth: process.env.AUTH_SERVICE_URL || 'http://localhost:8001',
