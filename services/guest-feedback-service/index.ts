@@ -10,6 +10,7 @@ import { connectDB } from '../../packages/shared-utils/db';
 import { authMiddleware, requireRole } from '../../packages/shared-utils/auth';
 import { requestLogger } from '../../packages/shared-utils/logging';
 import { registerHealthRoute } from '../../packages/shared-utils/health';
+import { serviceUrl } from '../../packages/shared-utils/serviceUrl';
 import { GuestModel } from './models/Guest';
 import { EventFeedbackModel } from './models/EventFeedback';
 import { ReviewModel } from './models/Review';
@@ -17,8 +18,8 @@ import { ComplaintModel } from './models/Complaint';
 
 const app = express();
 const PORT = process.env.PORT || 8006;
-const BOOKING_SERVICE_URL = process.env.BOOKING_PAYMENT_SERVICE_URL || 'http://localhost:8004';
-const MARKETPLACE_SERVICE_URL = process.env.MARKETPLACE_SERVICE_URL || 'http://localhost:8002';
+const BOOKING_SERVICE_URL = serviceUrl(process.env.BOOKING_PAYMENT_SERVICE_URL, 'http://localhost:8004');
+const MARKETPLACE_SERVICE_URL = serviceUrl(process.env.MARKETPLACE_SERVICE_URL, 'http://localhost:8002');
 
 // Recompute a vendor's aggregate rating from all its reviews and push it to the
 // marketplace so the vendor's card + dashboard reflect verified reviews.

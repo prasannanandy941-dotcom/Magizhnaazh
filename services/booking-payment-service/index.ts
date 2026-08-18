@@ -8,13 +8,14 @@ import { connectDB } from '../../packages/shared-utils/db';
 import { authMiddleware } from '../../packages/shared-utils/auth';
 import { requestLogger } from '../../packages/shared-utils/logging';
 import { registerHealthRoute } from '../../packages/shared-utils/health';
+import { serviceUrl } from '../../packages/shared-utils/serviceUrl';
 import { BookingModel } from './models/Booking';
 import { PlatformSettingsModel, getSettings } from './models/PlatformSettings';
 import { CouponModel } from './models/Coupon';
 
 const app = express();
 const PORT = process.env.PORT || 8004;
-const MARKETPLACE_SERVICE_URL = process.env.MARKETPLACE_SERVICE_URL || 'http://localhost:8002';
+const MARKETPLACE_SERVICE_URL = serviceUrl(process.env.MARKETPLACE_SERVICE_URL, 'http://localhost:8002');
 
 app.use(cors());
 app.use(express.json());

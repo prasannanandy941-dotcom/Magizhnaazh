@@ -1,0 +1,178 @@
+# Render Blueprint for the Magizhnaazh monorepo.
+# Deploys 7 backend Node services + the customer-web frontend in one shot.
+# The MongoDB database is NOT here — Render has no managed MongoDB. Create a
+# free MongoDB Atlas cluster and paste its connection string into the
+# MONGODB_URI value of the "magizh-secrets" env group after the first deploy.
+#
+# All region = singapore (closest to India). All plan = free.
+# Free web services sleep after ~15 min idle and take ~30-60s to wake.
+
+# ---------------------------------------------------------------------------
+# Shared secrets, linked into every backend service via `fromGroup`.
+# ---------------------------------------------------------------------------
+envVarGroups:
+  - name: magizh-secrets
+    envVars:
+      # Paste your MongoDB Atlas connection string here in the Render dashboard.
+      - key: MONGODB_URI
+        sync: false
+      # Auto-generated once, shared identically across all services so JWTs
+      # signed by auth-service verify everywhere.
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 2h
+      # Guards the internal vendor-rating sync route (marketplace <-> feedback).
+      - key: INTERNAL_API_SECRET
+        generateValue: true
+
+services:
+  # -------------------------------------------------------------------------
+  # BACKEND — Node microservices (run with tsx, no build step)
+  # -------------------------------------------------------------------------
+  - type: web
+    name: magizh-auth
+    runtime: node
+    region: singapore
+    plan: free
+    buildCommand: npm install --include=dev
+    startCommand: npx tsx services/auth-service/index.ts
+    healthCheckPath: /health
+    envVars:
+      - fromGroup: magizh-secrets
+
+  - type: web
+    name: magizh-marketplace
+    runtime: node
+    region: singapore
+    plan: free
+    buildCommand: npm install --include=dev
+    startCommand: npx tsx services/marketplace-service/index.ts
+    healthCheckPath: /health
+    envVars:
+      - fromGroup: magizh-secrets
+
+  - type: web
+    name: magizh-event-budget
+    runtime: node
+    region: singapore
+    plan: free
+    buildCommand: npm install --include=dev
+    startCommand: npx tsx services/event-budget-service/index.ts
+    healthCheckPath: /health
+    envVars:
+      - fromGroup: magizh-secrets
+
+  - type: web
+    name: magizh-booking-payment
+    runtime: node
+    region: singapore
+    plan: free
+    buildCommand: npm install --include=dev
+    startCommand: npx tsx services/booking-payment-service/index.ts
+    healthCheckPath: /health
+    envVars:
+      - fromGroup: magizh-secrets
+      # booking-payment fetches vendor data from marketplace
+      - key: MARKETPLACE_SERVICE_URL
+        fromService:
+          type: web
+          name: magizh-marketplace
+          property: host
+
+  - type: web
+    name: magizh-invitation
+    runtime: node
+    region: singapore
+    plan: free
+    buildCommand: npm install --include=dev
+    startCommand: npx tsx services/invitation-service/index.ts
+    healthCheckPath: /health
+    envVars:
+      - fromGroup: magizh-secrets
+
+  - type: web
+    name: magizh-guest-feedback
+    runtime: node
+    region: singapore
+    plan: free
+    buildCommand: npm install --include=dev
+    startCommand: npx tsx services/guest-feedback-service/index.ts
+    healthCheckPath: /health
+    envVars:
+      - fromGroup: magizh-secrets
+      - key: MARKETPLACE_SERVICE_URL
+        fromService:
+          type: web
+          name: magizh-marketplace
+          property: host
+      - key: BOOKING_PAYMENT_SERVICE_URL
+        fromService:
+          type: web
+          name: magizh-booking-payment
+          property: host
+
+  # -------------------------------------------------------------------------
+  # GATEWAY — public API entrypoint; the frontend only ever talks to this.
+  # Service URLs are wired automatically from the services above.
+  # -------------------------------------------------------------------------
+  - type: web
+    name: magizh-gateway
+    runtime: node
+    region: singapore
+    plan: free
+    buildCommand: npm install --include=dev
+    startCommand: npx tsx services/gateway/index.ts
+    healthCheckPath: /health
+    envVars:
+      - key: AUTH_SERVICE_URL
+        fromService:
+          type: web
+          name: magizh-auth
+          property: host
+      - key: MARKETPLACE_SERVICE_URL
+        fromService:
+          type: web
+          name: magizh-marketplace
+          property: host
+      - key: EVENT_BUDGET_SERVICE_URL
+        fromService:
+          type: web
+          name: magizh-event-budget
+          property: host
+      - key: BOOKING_PAYMENT_SERVICE_URL
+        fromService:
+          type: web
+          name: magizh-booking-payment
+          property: host
+      - key: INVITATION_SERVICE_URL
+        fromService:
+          type: web
+          name: magizh-invitation
+          property: host
+      - key: GUEST_FEEDBACK_SERVICE_URL
+        fromService:
+          type: web
+          name: magizh-guest-feedback
+          property: host
+
+  # -------------------------------------------------------------------------
+  # FRONTEND — customer-web (Vite static build). VITE_GATEWAY_URL is baked in
+  # at build time from the gateway's address.
+  # -------------------------------------------------------------------------
+  - type: web
+    name: magizh-customer-web
+    runtime: static
+    buildCommand: npm install --include=dev && npm run build --prefix apps/customer-web
+    staticPublishPath: apps/customer-web/dist
+    envVars:
+      - key: VITE_GATEWAY_URL
+        fromService:
+          type: web
+          name: magizh-gateway
+          property: host
+    routes:
+      # SPA fallback so client-side routes resolve to index.html
+      - type: rewrite
+        source: /*
+        destination: /index.html

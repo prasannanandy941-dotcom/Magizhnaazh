@@ -7,18 +7,19 @@ import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { requestLogger } from '../../packages/shared-utils/logging';
+import { serviceUrl } from '../../packages/shared-utils/serviceUrl';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 8000;
 
 const SERVICES = {
-  auth: process.env.AUTH_SERVICE_URL || 'http://localhost:8001',
-  marketplace: process.env.MARKETPLACE_SERVICE_URL || 'http://localhost:8002',
-  eventBudget: process.env.EVENT_BUDGET_SERVICE_URL || 'http://localhost:8003',
-  bookingPayment: process.env.BOOKING_PAYMENT_SERVICE_URL || 'http://localhost:8004',
-  invitation: process.env.INVITATION_SERVICE_URL || 'http://localhost:8005',
-  guestFeedback: process.env.GUEST_FEEDBACK_SERVICE_URL || 'http://localhost:8006',
-  monitor: process.env.MONITOR_SERVICE_URL || 'http://localhost:8007',
+  auth: serviceUrl(process.env.AUTH_SERVICE_URL, 'http://localhost:8001'),
+  marketplace: serviceUrl(process.env.MARKETPLACE_SERVICE_URL, 'http://localhost:8002'),
+  eventBudget: serviceUrl(process.env.EVENT_BUDGET_SERVICE_URL, 'http://localhost:8003'),
+  bookingPayment: serviceUrl(process.env.BOOKING_PAYMENT_SERVICE_URL, 'http://localhost:8004'),
+  invitation: serviceUrl(process.env.INVITATION_SERVICE_URL, 'http://localhost:8005'),
+  guestFeedback: serviceUrl(process.env.GUEST_FEEDBACK_SERVICE_URL, 'http://localhost:8006'),
+  monitor: serviceUrl(process.env.MONITOR_SERVICE_URL, 'http://localhost:8007'),
 };
 
 app.use(cors());
