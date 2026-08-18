@@ -1,30 +1,51 @@
 # Render Blueprint for the Magizhnaazh monorepo.
-# Deploys 7 backend Node services + the customer-web frontend in one shot.
+# Deploys 7 backend Node services + the customer-web frontend.
 # The MongoDB database is NOT here — Render has no managed MongoDB. Create a
-# free MongoDB Atlas cluster and paste its connection string into the
-# MONGODB_URI value of the "magizh-secrets" env group after the first deploy.
+# free MongoDB Atlas cluster and put its connection string into MONGODB_URI in
+# the "magizh-secrets" env group.
 #
-# All region = singapore (closest to India). All plan = free.
-# Free web services sleep after ~15 min idle and take ~30-60s to wake.
+# All region = singapore. All plan = free.
+# Free web services sleep after ~15 min idle and take ~30-60s to wake, so the
+# services talk to each other over their PUBLIC https URLs (not the private
+# network, which can't wake a sleeping instance). Those URLs are filled in once
+# in the env group after the services exist — see the "*_SERVICE_URL" keys.
 
 # ---------------------------------------------------------------------------
-# Shared secrets, linked into every backend service via `fromGroup`.
+# Shared config, linked into every service via `fromGroup`.
+#
+# After the first deploy, open this group in the Render dashboard and paste:
+#   - MONGODB_URI            -> your Atlas connection string  (already done)
+#   - each *_SERVICE_URL     -> that service's https://...onrender.com URL
+#   - VITE_GATEWAY_URL       -> the gateway's https://...onrender.com URL
+# JWT_SECRET / INTERNAL_API_SECRET are auto-generated once and shared.
 # ---------------------------------------------------------------------------
 envVarGroups:
   - name: magizh-secrets
     envVars:
-      # Paste your MongoDB Atlas connection string here in the Render dashboard.
       - key: MONGODB_URI
         sync: false
-      # Auto-generated once, shared identically across all services so JWTs
-      # signed by auth-service verify everywhere.
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_EXPIRES_IN
         value: 2h
-      # Guards the internal vendor-rating sync route (marketplace <-> feedback).
       - key: INTERNAL_API_SECRET
         generateValue: true
+      # Public URLs of the services, filled in once after they're created.
+      - key: AUTH_SERVICE_URL
+        sync: false
+      - key: MARKETPLACE_SERVICE_URL
+        sync: false
+      - key: EVENT_BUDGET_SERVICE_URL
+        sync: false
+      - key: BOOKING_PAYMENT_SERVICE_URL
+        sync: false
+      - key: INVITATION_SERVICE_URL
+        sync: false
+      - key: GUEST_FEEDBACK_SERVICE_URL
+        sync: false
+      # Baked into the frontend at build time; = the gateway's public URL.
+      - key: VITE_GATEWAY_URL
+        sync: false
 
 services:
   # -------------------------------------------------------------------------
@@ -73,12 +94,6 @@ services:
     healthCheckPath: /health
     envVars:
       - fromGroup: magizh-secrets
-      # booking-payment fetches vendor data from marketplace
-      - key: MARKETPLACE_SERVICE_URL
-        fromService:
-          type: web
-          name: magizh-marketplace
-          property: host
 
   - type: web
     name: magizh-invitation
@@ -101,20 +116,9 @@ services:
     healthCheckPath: /health
     envVars:
       - fromGroup: magizh-secrets
-      - key: MARKETPLACE_SERVICE_URL
-        fromService:
-          type: web
-          name: magizh-marketplace
-          property: host
-      - key: BOOKING_PAYMENT_SERVICE_URL
-        fromService:
-          type: web
-          name: magizh-booking-payment
-          property: host
 
   # -------------------------------------------------------------------------
-  # GATEWAY — public API entrypoint; the frontend only ever talks to this.
-  # Service URLs are wired automatically from the services above.
+  # GATEWAY — public API entrypoint; the frontend only talks to this.
   # -------------------------------------------------------------------------
   - type: web
     name: magizh-gateway
@@ -125,40 +129,11 @@ services:
     startCommand: npx tsx services/gateway/index.ts
     healthCheckPath: /health
     envVars:
-      - key: AUTH_SERVICE_URL
-        fromService:
-          type: web
-          name: magizh-auth
-          property: host
-      - key: MARKETPLACE_SERVICE_URL
-        fromService:
-          type: web
-          name: magizh-marketplace
-          property: host
-      - key: EVENT_BUDGET_SERVICE_URL
-        fromService:
-          type: web
-          name: magizh-event-budget
-          property: host
-      - key: BOOKING_PAYMENT_SERVICE_URL
-        fromService:
-          type: web
-          name: magizh-booking-payment
-          property: host
-      - key: INVITATION_SERVICE_URL
-        fromService:
-          type: web
-          name: magizh-invitation
-          property: host
-      - key: GUEST_FEEDBACK_SERVICE_URL
-        fromService:
-          type: web
-          name: magizh-guest-feedback
-          property: host
+      - fromGroup: magizh-secrets
 
   # -------------------------------------------------------------------------
   # FRONTEND — customer-web (Vite static build). VITE_GATEWAY_URL is baked in
-  # at build time from the gateway's address.
+  # at build time from the env group.
   # -------------------------------------------------------------------------
   - type: web
     name: magizh-customer-web
@@ -166,11 +141,7 @@ services:
     buildCommand: npm install --include=dev && npm run build --prefix apps/customer-web
     staticPublishPath: apps/customer-web/dist
     envVars:
-      - key: VITE_GATEWAY_URL
-        fromService:
-          type: web
-          name: magizh-gateway
-          property: host
+      - fromGroup: magizh-secrets
     routes:
       # SPA fallback so client-side routes resolve to index.html
       - type: rewrite
