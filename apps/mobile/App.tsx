@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
   },
   tabButton: {
     alignItems: 'center',
-    justify: 'center',
+    justifyContent: 'center',
   },
   tabText: {
     color: '#64748b',
