@@ -4,9 +4,8 @@
   "private": true,
   "main": "index.ts",
   "scripts": {
-  "dev": "tsx watch index.ts",
-  "start": "tsx index.ts"
-}
+    "dev": "tsx watch index.ts",
+    "start": "tsx index.ts"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
