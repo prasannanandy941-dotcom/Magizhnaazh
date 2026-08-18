@@ -14,6 +14,7 @@
     "dev:booking": "npx tsx watch services/booking-payment-service/index.ts",
     "dev:invitation": "npx tsx watch services/invitation-service/index.ts",
     "dev:guest-feedback": "npx tsx watch services/guest-feedback-service/index.ts",
+    "dev:monitor": "npx tsx watch services/monitor-service/index.ts",
     "build:all": "npm run build --prefix apps/customer-web && npm run build --prefix apps/vendor-web && npm run build --prefix apps/admin-web",
     "docker:up": "docker compose -f infrastructure/docker-compose.yml up -d",
     "docker:down": "docker compose -f infrastructure/docker-compose.yml down"

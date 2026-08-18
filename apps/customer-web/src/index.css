@@ -2,6 +2,72 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ---------------------------------------------------------------------------
+   Light theme, driven by the admin's site-wide choice (shared via platform
+   settings; applied on <html data-theme="light">). The customer UI is a
+   committed wine + gold palette built from arbitrary hex utility classes, so
+   light mode is achieved by remapping each of those tokens: dark wine surfaces
+   → warm whites, wine borders → soft pink, near-white text → deep wine, muted
+   pinks/golds → darker readable tones. Brand CTA gradients (gold/rose buttons)
+   and dark-on-gold button text are intentionally preserved.
+--------------------------------------------------------------------------- */
+html[data-theme='light'] {
+  background: #faf3f7;
+}
+html[data-theme='light'] body {
+  background: #faf3f7;
+  color: #3a1524;
+}
+/* Dim the dark floral backdrop so it doesn't fight the light surfaces. */
+html[data-theme='light'] #app-bg { opacity: 0.06; }
+
+/* Dark wine surfaces → warm light surfaces */
+html[data-theme='light'] .bg-\[\#1a0a14\],
+html[data-theme='light'] .bg-\[\#1a0a14\]\/85 { background-color: #fbf5f8 !important; }
+html[data-theme='light'] .bg-\[\#26101c\],
+html[data-theme='light'] .bg-\[\#26101c\]\/80,
+html[data-theme='light'] .bg-\[\#26101c\]\/70 { background-color: #ffffff !important; }
+html[data-theme='light'] .bg-\[\#2a1220\],
+html[data-theme='light'] .bg-\[\#2a1220\]\/80 { background-color: #fbeef4 !important; }
+html[data-theme='light'] .bg-\[\#1a1c28\] { background-color: #f3f4f8 !important; }
+html[data-theme='light'] .bg-\[\#6b2140\]\/30,
+html[data-theme='light'] .bg-\[\#6b2140\]\/40 { background-color: #f7e3ec !important; }
+
+/* Wine borders → soft pink; slate borders → light */
+html[data-theme='light'] .border-\[\#6b2140\],
+html[data-theme='light'] .border-\[\#6b2140\]\/60,
+html[data-theme='light'] .border-\[\#6b2140\]\/50 { border-color: #eccbd9 !important; }
+html[data-theme='light'] .border-\[\#2e3142\] { border-color: #d8dee9 !important; }
+
+/* Text: near-white → deep wine; muted pinks → readable mauve; golds → bronze */
+html[data-theme='light'] .text-\[\#fdf1f5\] { color: #3a1524 !important; }
+html[data-theme='light'] .text-\[\#cf9bb3\],
+html[data-theme='light'] .text-\[\#e0b8cc\] { color: #8a5670 !important; }
+html[data-theme='light'] .text-\[\#f5c9dc\] { color: #9a4d6e !important; }
+html[data-theme='light'] .text-\[\#e8c874\],
+html[data-theme='light'] .text-\[\#f0c869\],
+html[data-theme='light'] .text-\[\#d4af37\],
+html[data-theme='light'] .text-\[\#c9a84c\] { color: #8a6d15 !important; }
+
+/* Slate-based surfaces used in a few components (e.g. marketplace filters) */
+html[data-theme='light'] .text-slate-200 { color: #27324a !important; }
+html[data-theme='light'] .text-slate-300 { color: #334155 !important; }
+html[data-theme='light'] .text-slate-400 { color: #475569 !important; }
+html[data-theme='light'] .bg-slate-900,
+html[data-theme='light'] .bg-slate-950 { background-color: #ffffff !important; }
+html[data-theme='light'] .glass-card {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(58, 21, 36, 0.1) !important;
+}
+html[data-theme='light'] .glass-card-gold {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-color: rgba(212, 175, 55, 0.4) !important;
+}
+html[data-theme='light'] .glass-card-gold-hover:hover {
+  background: rgba(255, 248, 251, 0.98) !important;
+  border-color: rgba(232, 93, 138, 0.45) !important;
+}
+
 @layer utilities {
   .glass-card {
     background: rgba(15, 23, 42, 0.75);
@@ -24,5 +90,122 @@
     background: linear-gradient(135deg, #c084fc 0%, #8b5cf6 50%, #3b82f6 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+  }
+
+  /* Rose-gold glass card for the romantic/celebration themed sections */
+  .glass-card-gold {
+    background: rgba(42, 18, 32, 0.72);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(212, 175, 55, 0.22);
+  }
+
+  .glass-card-gold-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .glass-card-gold-hover:hover {
+    background: rgba(58, 22, 42, 0.85);
+    border-color: rgba(232, 93, 138, 0.4);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px -10px rgba(232, 93, 138, 0.25);
+  }
+
+  /* Shimmering gold headline gradient */
+  .text-gradient-gold {
+    background: linear-gradient(120deg, #f5d78e 0%, #d4af37 35%, #f0c869 60%, #b8860b 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: gold-shimmer 6s linear infinite;
+  }
+
+  @keyframes gold-shimmer {
+    0% {
+      background-position: 0% center;
+    }
+    100% {
+      background-position: 200% center;
+    }
+  }
+
+  /* Hide scrollbars on horizontal filmstrips / chip rows while keeping scroll */
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Crisp twinkling star sparkles for the celebration background layer */
+  .animate-twinkle {
+    animation-name: twinkle;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+  }
+
+  @keyframes twinkle {
+    0%, 100% {
+      transform: scale(0.6) rotate(0deg);
+      opacity: 0.15;
+    }
+    50% {
+      transform: scale(1.15) rotate(20deg);
+      opacity: 0.9;
+    }
+  }
+
+  /* Diagonal shine sweep for primary celebration CTAs — apply alongside a
+     `relative overflow-hidden` container; the sweep is the ::after pseudo-element. */
+  .shine-sweep {
+    position: relative;
+    overflow: hidden;
+  }
+  .shine-sweep::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -60%;
+    width: 40%;
+    height: 100%;
+    background: linear-gradient(115deg, transparent 0%, rgba(255, 255, 255, 0.45) 50%, transparent 100%);
+    transform: skewX(-20deg);
+    transition: left 0.7s ease;
+  }
+  .shine-sweep:hover::after {
+    left: 130%;
+  }
+
+  /* Gentle drifting hearts for the romantic background layer */
+  .animate-float-slow {
+    animation-name: float-slow;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+  }
+
+  @keyframes float-slow {
+    0%, 100% {
+      transform: translateY(0) rotate(0deg);
+    }
+    50% {
+      transform: translateY(-18px) rotate(6deg);
+    }
+  }
+
+  /* Slow falling confetti flecks for the celebration background layer */
+  .animate-confetti-fall {
+    animation-name: confetti-fall;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+  }
+
+  @keyframes confetti-fall {
+    0% {
+      transform: translateY(-10px) rotate(0deg);
+    }
+    100% {
+      transform: translateY(110vh) rotate(360deg);
+    }
   }
 }

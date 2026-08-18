@@ -18,18 +18,23 @@ const SERVICES = {
   bookingPayment: process.env.BOOKING_PAYMENT_SERVICE_URL || 'http://localhost:8004',
   invitation: process.env.INVITATION_SERVICE_URL || 'http://localhost:8005',
   guestFeedback: process.env.GUEST_FEEDBACK_SERVICE_URL || 'http://localhost:8006',
+  monitor: process.env.MONITOR_SERVICE_URL || 'http://localhost:8007',
 };
 
 app.use(cors());
 app.use(requestLogger('gateway'));
 
-// General limiter across the whole gateway.
+// General limiter across the whole gateway. The monitoring endpoints are
+// polled continuously by the admin dashboard, so they're exempt — otherwise a
+// single open dashboard exhausts the shared budget and every service call
+// starts returning 429s.
 app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000,
     limit: 300,
     standardHeaders: true,
     legacyHeaders: false,
+    skip: (req) => req.path.startsWith('/api/v1/monitor') || req.path === '/health',
   })
 );
 
@@ -66,6 +71,7 @@ app.use('/api/v1/guests', publicSubmissionLimiter, createProxyMiddleware({ targe
 app.use('/api/v1/feedback', publicSubmissionLimiter, createProxyMiddleware({ target: SERVICES.guestFeedback, changeOrigin: true }));
 app.use('/api/v1/reviews', createProxyMiddleware({ target: SERVICES.guestFeedback, changeOrigin: true }));
 app.use('/api/v1/complaints', createProxyMiddleware({ target: SERVICES.guestFeedback, changeOrigin: true }));
+app.use('/api/v1/monitor', createProxyMiddleware({ target: SERVICES.monitor, changeOrigin: true }));
 
 app.listen(PORT, () => {
   console.log(`[API Gateway] Running on http://localhost:${PORT}`);

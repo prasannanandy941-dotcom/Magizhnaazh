@@ -4,14 +4,17 @@ import { Invitation } from '../../../../packages/shared-types';
 
 interface PublicInvitationViewProps {
   invitation: Invitation;
-  onClose: () => void;
+  onClose?: () => void;
   onSubmitRSVP: (rsvpData: { name: string; status: 'accepted' | 'declined'; adults: number; dietary: string }) => void;
+  /** Standalone mode drops the modal chrome (backdrop/close button) for use as a real full-page route. */
+  standalone?: boolean;
 }
 
 export const PublicInvitationView: React.FC<PublicInvitationViewProps> = ({
   invitation,
   onClose,
   onSubmitRSVP,
+  standalone,
 }) => {
   const [showRsvpForm, setShowRsvpForm] = useState(false);
   const [guestName, setGuestName] = useState('');
@@ -28,15 +31,16 @@ export const PublicInvitationView: React.FC<PublicInvitationViewProps> = ({
     setSubmitted(true);
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-xl overflow-y-auto">
-      <div className="glass-card max-w-2xl w-full rounded-3xl border border-slate-800 shadow-2xl overflow-hidden my-8 relative">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 z-10 w-9 h-9 rounded-full bg-slate-950/80 text-slate-400 hover:text-white flex items-center justify-center transition-colors"
-        >
-          <X className="w-5 h-5" />
-        </button>
+  const card = (
+    <div className="glass-card max-w-2xl w-full rounded-3xl border border-slate-800 shadow-2xl overflow-hidden my-8 relative">
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 z-10 w-9 h-9 rounded-full bg-slate-950/80 text-slate-400 hover:text-white flex items-center justify-center transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        )}
 
         <div className="h-48 w-full bg-gradient-to-r from-indigo-900 via-purple-900 to-slate-900 flex items-center justify-center relative overflow-hidden">
           <div className="text-center relative z-10 p-6">
@@ -123,11 +127,21 @@ export const PublicInvitationView: React.FC<PublicInvitationViewProps> = ({
                   <div>
                     <label className="block text-xs text-slate-400 mb-1">Adults Count</label>
                     <input
-                      type="number"
-                      min={1}
-                      max={10}
-                      value={adults}
-                      onChange={(e) => setAdults(Number(e.target.value))}
+                      type="text"
+                      inputMode="numeric"
+                      value={adults === 0 ? '' : adults}
+                      onChange={(e) => {
+                        // Keep digits only, strip leading zeros, then clamp to 1–10
+                        const digitsOnly = e.target.value.replace(/\D/g, '');
+                        const noLeadingZeros = digitsOnly.replace(/^0+(?=\d)/, '');
+                        if (noLeadingZeros === '') {
+                          setAdults(0);
+                          return;
+                        }
+                        const parsed = Math.min(10, Math.max(1, Number(noLeadingZeros)));
+                        setAdults(parsed);
+                      }}
+                      placeholder="1"
                       className="w-full p-3 rounded-xl bg-slate-950 border border-slate-800 text-white font-semibold text-xs"
                     />
                   </div>
@@ -156,7 +170,20 @@ export const PublicInvitationView: React.FC<PublicInvitationViewProps> = ({
             )}
           </div>
         </div>
+    </div>
+  );
+
+  if (standalone) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-slate-950">
+        {card}
       </div>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-xl overflow-y-auto">
+      {card}
     </div>
   );
 };

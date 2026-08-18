@@ -1,6 +1,30 @@
 import React, { useState } from 'react';
-import { Star, MapPin, Heart, CheckCircle2, SlidersHorizontal, ArrowUpDown, Layers, Phone, Eye } from 'lucide-react';
-import { Vendor, VendorCategory } from '../../../../packages/shared-types';
+import {
+  Star, MapPin, Heart, CheckCircle2, SlidersHorizontal, ArrowUpDown, Layers, Phone, Eye,
+  LayoutGrid, UtensilsCrossed, Building2, Sparkles, Brush, Camera, Video, Car, Flame,
+  Mail, Printer, Gift, PartyPopper, Music, Lightbulb, Flower2, Hand, Mic, Shield,
+  SprayCan, Package, Utensils, ClipboardList, Briefcase, MoreHorizontal,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { Vendor, VendorCategory, VENDOR_CATEGORIES } from '../../../../packages/shared-types';
+import { STATIC_CITY_GROUPS } from '../../../../packages/shared-utils';
+import { FacilityChips, filterVenuesByFacilities, FacilityImagePreview } from './FacilitiesForm';
+import { CateringMenuChips } from './CateringMenu';
+import { PortfolioChips } from './Portfolio';
+import { DecorationChips } from './DecorationThemes';
+import { MakeupChips } from './MakeupLooks';
+import { TransportChips } from './TransportOptions';
+import { PriestChips } from './PriestServices';
+import { GiftChips } from './ReturnGifts';
+import { MusicDjChips } from './MusicDjOptions';
+import { GenericCategoryChips } from './CategoryOptions';
+
+// Categories with their own bespoke chips component (rendered explicitly
+// below). Every other category falls back to GenericCategoryChips so no
+// category tab is left with a blank options panel.
+const BESPOKE_CATEGORIES = new Set<string>([
+  'Venue', 'Catering', 'Photography', 'Decoration', 'Makeup & Beauty', 'Transport', 'Pujari/Priest', 'Return Gifts', 'Music/DJ',
+]);
 
 interface VendorMarketplaceProps {
   vendors: Vendor[];
@@ -10,20 +34,43 @@ interface VendorMarketplaceProps {
   selectedCompareIds: string[];
   toggleCompare: (vendorId: string) => void;
   openCompareModal: () => void;
+  selectedCity: string;
+  onCityChange: (city: string) => void;
+  // Ordered [state, cities][] for the city filter — sourced from the backend's
+  // serviceable cities (falls back to the full India catalogue).
+  cityGroups?: [string, string[]][];
 }
 
-const CATEGORIES: (VendorCategory | 'All')[] = [
-  'All',
-  'Venue',
-  'Catering',
-  'Photography',
-  'Decoration',
-  'Makeup & Beauty',
-  'Transport',
-  'Pujari/Priest',
-  'Return Gifts',
-  'Music/DJ',
-];
+const CATEGORIES: (VendorCategory | 'All')[] = ['All', ...VENDOR_CATEGORIES];
+
+// A small icon for each category chip so the filter row reads at a glance.
+const CATEGORY_ICONS: Record<string, LucideIcon> = {
+  All: LayoutGrid,
+  Catering: UtensilsCrossed,
+  Venue: Building2,
+  Decoration: Sparkles,
+  'Makeup & Beauty': Brush,
+  Photography: Camera,
+  Videography: Video,
+  Transport: Car,
+  'Pujari/Priest': Flame,
+  Invitation: Mail,
+  Printing: Printer,
+  'Return Gifts': Gift,
+  Entertainment: PartyPopper,
+  'Music/DJ': Music,
+  Lighting: Lightbulb,
+  Flowers: Flower2,
+  Mehendi: Hand,
+  'Event Host/Anchor': Mic,
+  Security: Shield,
+  Cleaning: SprayCan,
+  'Rental Equipment': Package,
+  'Utensils for Rent': Utensils,
+  'Wedding Planner': ClipboardList,
+  'Corporate Event Services': Briefcase,
+  Other: MoreHorizontal,
+};
 
 export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
   vendors,
@@ -33,37 +80,54 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
   selectedCompareIds,
   toggleCompare,
   openCompareModal,
+  selectedCity,
+  onCityChange,
+  cityGroups,
 }) => {
+  const groups = cityGroups && cityGroups.length > 0 ? cityGroups : STATIC_CITY_GROUPS;
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCity, setSelectedCity] = useState('All');
   const [sortBy, setSortBy] = useState<'rating' | 'price_low' | 'price_high'>('rating');
+  const [activeFacilities, setActiveFacilities] = useState<string[]>([]);
 
-  const filteredVendors = vendors
-    .filter((v) => {
+  const toggleFacility = (key: string) => {
+    setActiveFacilities((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
+    );
+  };
+
+  const handleCategoryChange = (cat: string) => {
+    setSelectedCategory(cat);
+    if (cat !== 'Venue') setActiveFacilities([]);
+  };
+
+  const filteredVendors = filterVenuesByFacilities(
+    vendors.filter((v) => {
       const matchCat = selectedCategory === 'All' || v.category === selectedCategory;
       const matchSearch =
         v.businessName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         v.description.toLowerCase().includes(searchQuery.toLowerCase());
       const matchCity = selectedCity === 'All' || v.location.city.toLowerCase() === selectedCity.toLowerCase();
       return matchCat && matchSearch && matchCity;
-    })
-    .sort((a, b) => {
-      if (sortBy === 'rating') return b.ratingAverage - a.ratingAverage;
-      if (sortBy === 'price_low') return a.startingPrice - b.startingPrice;
-      if (sortBy === 'price_high') return b.startingPrice - a.startingPrice;
-      return 0;
-    });
+    }),
+    activeFacilities
+  ).sort((a, b) => {
+    if (sortBy === 'rating') return b.ratingAverage - a.ratingAverage;
+    if (sortBy === 'price_low') return a.startingPrice - b.startingPrice;
+    if (sortBy === 'price_high') return b.startingPrice - a.startingPrice;
+    return 0;
+  });
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div id="vendor-marketplace-section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
           <h2 className="font-display font-bold text-2xl sm:text-3xl text-white tracking-tight">
             Explore Verified Vendors
           </h2>
           <p className="text-slate-400 text-sm mt-1">
-            Showing {filteredVendors.length} premium event partners in Tamil Nadu
+            Showing {filteredVendors.length} premium event partners
+            {selectedCity !== 'All' ? ` in ${selectedCity}` : ' across India'}
           </p>
         </div>
 
@@ -72,12 +136,19 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
             <MapPin className="w-3.5 h-3.5 text-indigo-400" />
             <select
               value={selectedCity}
-              onChange={(e) => setSelectedCity(e.target.value)}
+              onChange={(e) => onCityChange(e.target.value)}
               className="bg-transparent text-slate-200 font-semibold focus:outline-none cursor-pointer"
             >
               <option value="All" className="bg-slate-900">All Cities</option>
-              <option value="Chennai" className="bg-slate-900">Chennai</option>
-              <option value="Coimbatore" className="bg-slate-900">Coimbatore</option>
+              {groups.map(([state, cities]) => (
+                <optgroup key={state} label={state} className="bg-slate-900">
+                  {cities.map((c) => (
+                    <option key={`${state}-${c}`} value={c} className="bg-slate-900">
+                      {c}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
             </select>
           </div>
 
@@ -97,20 +168,58 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
       </div>
 
       <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-8 no-scrollbar">
-        {CATEGORIES.map((cat) => (
-          <button
-            key={cat}
-            onClick={() => setSelectedCategory(cat)}
-            className={`px-5 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition-all ${
-              selectedCategory === cat
-                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 scale-105'
-                : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800'
-            }`}
-          >
-            {cat}
-          </button>
-        ))}
+        {CATEGORIES.map((cat) => {
+          const Icon = CATEGORY_ICONS[cat] ?? Layers;
+          const isActive = selectedCategory === cat;
+          return (
+            <button
+              key={cat}
+              onClick={() => handleCategoryChange(cat)}
+              className={`flex items-center gap-2 pl-3 pr-4 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition-all ${
+                isActive
+                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 scale-105'
+                  : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              <span
+                className={`flex items-center justify-center w-6 h-6 rounded-lg transition-colors ${
+                  isActive ? 'bg-white/20' : 'bg-slate-800 text-amber-400'
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+              </span>
+              {cat}
+            </button>
+          );
+        })}
       </div>
+
+      {selectedCategory === 'Venue' && (
+        <>
+          <FacilityChips active={activeFacilities} onToggle={toggleFacility} />
+          <FacilityImagePreview active={activeFacilities} />
+        </>
+      )}
+
+      {selectedCategory === 'Catering' && <CateringMenuChips />}
+
+      {selectedCategory === 'Photography' && <PortfolioChips />}
+
+      {selectedCategory === 'Decoration' && <DecorationChips />}
+
+      {selectedCategory === 'Makeup & Beauty' && <MakeupChips />}
+
+      {selectedCategory === 'Transport' && <TransportChips />}
+
+      {selectedCategory === 'Pujari/Priest' && <PriestChips />}
+
+      {selectedCategory === 'Return Gifts' && <GiftChips />}
+
+      {selectedCategory === 'Music/DJ' && <MusicDjChips />}
+
+      {selectedCategory !== 'All' && !BESPOKE_CATEGORIES.has(selectedCategory) && (
+        <GenericCategoryChips category={selectedCategory as VendorCategory} />
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredVendors.map((vendor) => {

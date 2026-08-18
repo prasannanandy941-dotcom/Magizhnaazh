@@ -17,7 +17,7 @@ function getJwtSecret(): string {
 }
 
 export function signToken(payload: AuthTokenPayload): string {
-  return jwt.sign(payload, getJwtSecret(), { expiresIn: process.env.JWT_EXPIRES_IN || '2h' });
+  return jwt.sign(payload, getJwtSecret(), { expiresIn: (process.env.JWT_EXPIRES_IN || '2h') as any });
 }
 
 export function verifyToken(token: string): AuthTokenPayload {

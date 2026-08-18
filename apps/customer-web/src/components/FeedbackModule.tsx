@@ -1,33 +1,54 @@
 import React, { useState } from 'react';
-import { Star, MessageSquare, Sparkles, QrCode, CheckCircle2 } from 'lucide-react';
+import { Star, MessageSquare, Sparkles, QrCode, CheckCircle2, Loader2 } from 'lucide-react';
 import { EventFeedback } from '../../../../packages/shared-types';
+import { submitEventFeedback } from '../api';
 
 interface FeedbackModuleProps {
   feedbackList: EventFeedback[];
   onAddFeedback: (fb: EventFeedback) => void;
+  eventId?: string;
 }
 
-export const FeedbackModule: React.FC<FeedbackModuleProps> = ({ feedbackList, onAddFeedback }) => {
+export const FeedbackModule: React.FC<FeedbackModuleProps> = ({ feedbackList, onAddFeedback, eventId }) => {
   const [showPublicForm, setShowPublicForm] = useState(false);
   const [guestName, setGuestName] = useState('');
-  const [overallRating, setOverallRating] = useState(5);
+  const [overallRating, setOverallRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
   const [comments, setComments] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newFb: EventFeedback = {
-      id: `fb-${Date.now()}`,
-      eventId: 'evt-101',
-      feedbackToken: 'fb-wed-felix-2026',
-      guestName: guestName || 'Anonymous Guest',
-      overallRating,
-      comments,
-      createdAt: new Date().toISOString(),
-    };
-
-    onAddFeedback(newFb);
-    setSubmitted(true);
+    if (overallRating === 0) {
+      setError('Please select a star rating before submitting.');
+      return;
+    }
+    setSubmitting(true);
+    setError('');
+    try {
+      // Persist to the backend so it shows up in the admin Guest Feedback list.
+      const res = await submitEventFeedback({
+        eventId: eventId || 'evt-101',
+        guestName: guestName || 'Anonymous Guest',
+        overallRating,
+        comments,
+      });
+      if (res.success && res.data) {
+        onAddFeedback(res.data.feedback);
+        setSubmitted(true);
+        setGuestName('');
+        setComments('');
+        setOverallRating(0);
+      } else {
+        setError(res.message || 'Could not submit feedback.');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Could not submit feedback. Is the server running?');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const avgOverall = feedbackList.length
@@ -105,6 +126,27 @@ export const FeedbackModule: React.FC<FeedbackModuleProps> = ({ feedbackList, on
                 </div>
 
                 <div>
+                  <label className="block text-xs text-slate-400 mb-1.5">Overall Rating</label>
+                  <div className="flex items-center gap-1" onMouseLeave={() => setHoverRating(0)}>
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <button
+                        key={n}
+                        type="button"
+                        onClick={() => setOverallRating(n)}
+                        onMouseEnter={() => setHoverRating(n)}
+                        aria-label={`${n} star${n > 1 ? 's' : ''}`}
+                        className="cursor-pointer hover:scale-110 transition-transform"
+                      >
+                        <Star className={`w-7 h-7 ${n <= (hoverRating || overallRating) ? 'text-amber-400 fill-amber-400' : 'text-slate-600'}`} />
+                      </button>
+                    ))}
+                    <span className="ml-2 text-sm font-bold text-amber-400">
+                      {overallRating > 0 ? `${overallRating}.0 / 5.0` : <span className="text-slate-500 font-semibold">Tap a star to rate</span>}
+                    </span>
+                  </div>
+                </div>
+
+                <div>
                   <label className="block text-xs text-slate-400 mb-1">Comments & Suggestions</label>
                   <textarea
                     rows={3}
@@ -114,6 +156,10 @@ export const FeedbackModule: React.FC<FeedbackModuleProps> = ({ feedbackList, on
                     className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs"
                   />
                 </div>
+
+                {error && (
+                  <p className="text-xs text-rose-400 font-semibold">{error}</p>
+                )}
 
                 <div className="flex items-center gap-3 pt-2">
                   <button
@@ -126,8 +172,10 @@ export const FeedbackModule: React.FC<FeedbackModuleProps> = ({ feedbackList, on
 
                   <button
                     type="submit"
-                    className="flex-1 py-2.5 rounded-xl bg-emerald-500 text-slate-950 text-xs font-bold shadow-md"
+                    disabled={submitting}
+                    className="flex-1 py-2.5 rounded-xl bg-emerald-500 text-slate-950 text-xs font-bold shadow-md disabled:opacity-60 flex items-center justify-center gap-2"
                   >
+                    {submitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                     Submit Feedback
                   </button>
                 </div>

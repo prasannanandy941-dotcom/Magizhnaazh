@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, Type, Palette, QrCode, Download, Share2, Eye, Plus, Trash2, Layout, RotateCw, Check } from 'lucide-react';
+import { Sparkles, Type, Palette, QrCode, Download, Share2, Eye, Plus, Trash2, Layout, RotateCw, Check, Pencil } from 'lucide-react';
 import { CanvasElement, Invitation } from '../../../../packages/shared-types';
 import { INVITATION_TEMPLATES } from '../../../../packages/canvas-engine';
 
@@ -48,6 +48,15 @@ export const CanvaInvitationDesigner: React.FC<CanvaInvitationDesignerProps> = (
   };
 
   const handleAddQR = () => {
+    // One RSVP QR code per invitation is all that ever makes sense — re-clicking
+    // "Add RSVP QR" should just jump to editing the existing one, not stack up
+    // duplicates on the canvas.
+    const existingQR = elements.find((el) => el.type === 'qr');
+    if (existingQR) {
+      setSelectedElId(existingQR.id);
+      return;
+    }
+
     const newEl: CanvasElement = {
       id: `el-qr-${Date.now()}`,
       type: 'qr',
@@ -56,7 +65,7 @@ export const CanvaInvitationDesigner: React.FC<CanvaInvitationDesignerProps> = (
       width: 120,
       height: 120,
       rotation: 0,
-      content: `https://magizhnaazh.com/invite/${invitation.inviteToken}`,
+      content: `${window.location.origin}/invite/${invitation.inviteToken}`,
       zIndex: elements.length + 1,
     };
     setElements([...elements, newEl]);
@@ -104,7 +113,7 @@ export const CanvaInvitationDesigner: React.FC<CanvaInvitationDesignerProps> = (
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-pink-500/10 text-pink-400 text-xs font-bold border border-pink-500/20 mb-2">
             <Sparkles className="w-3.5 h-3.5" /> Canva-Style HTML5 Invitation Editor
           </div>
-          <h2 className="font-display font-bold text-3xl text-white">Digital Invitation Designer</h2>
+          <h2 className="font-display font-bold text-3xl text-gradient-gold">Digital Invitation Designer</h2>
           <p className="text-slate-400 text-sm mt-1">
             Customize typography, background colors, drag elements, and add dynamic RSVP QR codes.
           </p>
@@ -127,7 +136,7 @@ export const CanvaInvitationDesigner: React.FC<CanvaInvitationDesignerProps> = (
 
           <button
             onClick={handleSave}
-            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-pink-600 to-violet-600 hover:from-pink-500 hover:to-violet-500 text-white font-bold text-xs shadow-lg shadow-pink-600/20 flex items-center gap-2 transition-all hover:scale-105"
+            className="shine-sweep px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#e85d8a] to-[#b8336a] hover:from-[#f2a6c4] hover:to-[#e85d8a] text-white font-bold text-xs shadow-lg shadow-[#e85d8a]/20 flex items-center gap-2 transition-all hover:scale-105"
           >
             <Check className="w-4 h-4" /> Save Design
           </button>
@@ -209,6 +218,10 @@ export const CanvaInvitationDesigner: React.FC<CanvaInvitationDesignerProps> = (
 
               {selectedElement.type === 'text' && (
                 <>
+                  <div className="px-2.5 py-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/30 text-[11px] font-semibold text-indigo-300 truncate">
+                    Editing: {selectedElement.content || '(empty text)'}
+                  </div>
+
                   <div>
                     <label className="block text-[11px] text-slate-400 mb-1">Text Content</label>
                     <input
@@ -256,6 +269,13 @@ export const CanvaInvitationDesigner: React.FC<CanvaInvitationDesignerProps> = (
                       />
                     </div>
                   </div>
+
+                  <button
+                    onClick={() => setSelectedElId('')}
+                    className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all"
+                  >
+                    <Check className="w-4 h-4" /> OK
+                  </button>
                 </>
               )}
             </div>
@@ -286,16 +306,23 @@ export const CanvaInvitationDesigner: React.FC<CanvaInvitationDesignerProps> = (
                       fontSize: `${el.fontSize || 16}px`,
                       color: el.color || '#ffffff',
                     }}
-                    className={`cursor-pointer transition-all leading-tight font-semibold ${
-                      isSelected ? 'ring-2 ring-indigo-400 ring-offset-2 ring-offset-slate-950 p-1 rounded-lg' : ''
+                    title="Click to edit this text"
+                    className={`group/el relative cursor-pointer transition-all leading-tight font-semibold w-fit ${
+                      isSelected
+                        ? 'ring-2 ring-indigo-400 ring-offset-2 ring-offset-slate-950 p-1 rounded-lg'
+                        : 'p-1 rounded-lg border border-dashed border-transparent hover:border-slate-500'
                     }`}
                   >
                     {el.content}
+                    {!isSelected && (
+                      <Pencil className="w-3 h-3 absolute -top-2 -right-2 text-slate-950 bg-slate-200 rounded-full p-0.5 opacity-0 group-hover/el:opacity-100 transition-opacity" />
+                    )}
                   </div>
                 );
               }
 
               if (el.type === 'qr') {
+                const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=0&data=${encodeURIComponent(el.content || '')}`;
                 return (
                   <div
                     key={el.id}
@@ -304,7 +331,11 @@ export const CanvaInvitationDesigner: React.FC<CanvaInvitationDesignerProps> = (
                       isSelected ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-950' : ''
                     }`}
                   >
-                    <QrCode className="w-20 h-20 text-slate-950" />
+                    <img
+                      src={qrImageUrl}
+                      alt="RSVP QR code"
+                      className="w-20 h-20 object-contain"
+                    />
                     <span className="text-[9px] font-bold text-slate-950 uppercase mt-1">Scan for RSVP</span>
                   </div>
                 );

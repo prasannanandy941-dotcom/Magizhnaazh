@@ -2,10 +2,122 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ---------------------------------------------------------------------------
+   Light theme. The admin UI is built on the Tailwind slate scale + .glass-card,
+   so a site-wide light mode is achieved by remapping those tokens under
+   html[data-theme="light"]. The choice is driven by the admin monitor toggle
+   and persisted in platform settings (shared with the customer app).
+--------------------------------------------------------------------------- */
+html[data-theme='light'] {
+  background: #f4f2f7;
+}
+html[data-theme='light'] body {
+  background: #f4f2f7;
+  color: #1e293b;
+}
+/* Dim the dark celebration backdrop so it doesn't fight the light surfaces. */
+html[data-theme='light'] #app-bg {
+  opacity: 0.05;
+}
+html[data-theme='light'] .glass-card {
+  background: rgba(255, 255, 255, 0.82) !important;
+  border-color: rgba(15, 23, 42, 0.1) !important;
+}
+/* Text scale */
+html[data-theme='light'] .text-white { color: #0f172a !important; }
+html[data-theme='light'] .text-slate-100 { color: #1e293b !important; }
+html[data-theme='light'] .text-slate-200 { color: #27324a !important; }
+html[data-theme='light'] .text-slate-300 { color: #334155 !important; }
+html[data-theme='light'] .text-slate-400 { color: #475569 !important; }
+html[data-theme='light'] .text-slate-500 { color: #64748b !important; }
+/* Surfaces */
+html[data-theme='light'] .bg-slate-950,
+html[data-theme='light'] .bg-slate-900,
+html[data-theme='light'] .bg-slate-900\/80,
+html[data-theme='light'] .bg-slate-900\/70,
+html[data-theme='light'] .bg-slate-900\/60,
+html[data-theme='light'] .bg-slate-950\/70,
+html[data-theme='light'] .bg-slate-950\/60 { background-color: #ffffff !important; }
+html[data-theme='light'] .bg-slate-800 { background-color: #e2e8f0 !important; }
+/* Borders */
+html[data-theme='light'] .border-slate-800,
+html[data-theme='light'] .border-slate-700 { border-color: #d8dee9 !important; }
+
 @layer utilities {
   .glass-card {
     background: rgba(15, 23, 42, 0.75);
     backdrop-filter: blur(16px);
     border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  /* Crisp twinkling star sparkles for the celebration background layer */
+  .animate-twinkle {
+    animation-name: twinkle;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+  }
+
+  @keyframes twinkle {
+    0%, 100% {
+      transform: scale(0.6) rotate(0deg);
+      opacity: 0.15;
+    }
+    50% {
+      transform: scale(1.15) rotate(20deg);
+      opacity: 0.9;
+    }
+  }
+
+  /* Diagonal shine sweep for primary celebration CTAs — apply alongside a
+     `relative overflow-hidden` container; the sweep is the ::after pseudo-element. */
+  .shine-sweep {
+    position: relative;
+    overflow: hidden;
+  }
+  .shine-sweep::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -60%;
+    width: 40%;
+    height: 100%;
+    background: linear-gradient(115deg, transparent 0%, rgba(255, 255, 255, 0.45) 50%, transparent 100%);
+    transform: skewX(-20deg);
+    transition: left 0.7s ease;
+  }
+  .shine-sweep:hover::after {
+    left: 130%;
+  }
+
+  /* Gentle drifting hearts for the romantic background layer */
+  .animate-float-slow {
+    animation-name: float-slow;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+  }
+
+  @keyframes float-slow {
+    0%, 100% {
+      transform: translateY(0) rotate(0deg);
+    }
+    50% {
+      transform: translateY(-18px) rotate(6deg);
+    }
+  }
+
+  /* Slow falling confetti flecks for the celebration background layer */
+  .animate-confetti-fall {
+    animation-name: confetti-fall;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+  }
+
+  @keyframes confetti-fall {
+    0% {
+      transform: translateY(-10px) rotate(0deg);
+    }
+    100% {
+      transform: translateY(110vh) rotate(360deg);
+    }
   }
 }

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ShieldCheck, LogIn, Loader2 } from 'lucide-react';
 import { User } from '../../../../packages/shared-types';
 import { login } from '../api';
+import { FloralGoldBackground } from './FloralGoldBackground';
 
 interface AuthGateProps {
   onAuthSuccess: (user: User, token: string) => void;
@@ -34,10 +35,13 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4 font-sans">
+    <div className="relative min-h-screen text-slate-100 flex items-center justify-center p-4 font-sans">
+      <div className="fixed inset-0 -z-10">
+        <FloralGoldBackground />
+      </div>
       <div className="glass-card max-w-md w-full rounded-3xl border border-slate-800 shadow-2xl overflow-hidden">
         <div className="px-6 py-6 border-b border-slate-800 bg-slate-900/60 flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-rose-600 via-purple-600 to-indigo-600 flex items-center justify-center font-bold text-white shadow-lg">
+          <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-[#e85d8a] via-[#d4af37] to-[#b8336a] flex items-center justify-center font-bold text-white shadow-lg">
             <ShieldCheck className="w-6 h-6" />
           </div>
           <div>
@@ -80,7 +84,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-xl bg-gradient-to-r from-rose-600 via-purple-600 to-indigo-600 text-white font-bold text-sm shadow-md hover:scale-[1.01] transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+            className="shine-sweep w-full py-3 rounded-xl bg-gradient-to-r from-[#e85d8a] via-[#d4af37] to-[#b8336a] text-white font-bold text-sm shadow-md hover:scale-[1.01] transition-all disabled:opacity-60 flex items-center justify-center gap-2"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogIn className="w-4 h-4" />}
             Sign In

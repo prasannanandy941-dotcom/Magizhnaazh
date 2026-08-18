@@ -21,12 +21,13 @@ const bookingSchema = new Schema<Booking>({
   remainingAmount: { type: Number, default: 0 },
   status: {
     type: String,
-    enum: ['enquiry', 'quote_requested', 'quote_received', 'negotiation', 'pending_payment', 'confirmed', 'in_progress', 'completed', 'cancelled', 'refunded'],
+    enum: ['enquiry', 'quote_requested', 'quote_received', 'quote_sent', 'negotiation', 'pending_payment', 'confirmed', 'in_progress', 'completed', 'cancelled', 'refunded'],
     default: 'quote_requested',
   },
   eventDate: { type: String, required: true },
   specialInstructions: String,
   quotesHistory: { type: [quoteHistorySchema], default: [] },
+  selectedOptions: { type: [String], default: [] },
   createdAt: { type: String, default: () => new Date().toISOString() },
 });
 

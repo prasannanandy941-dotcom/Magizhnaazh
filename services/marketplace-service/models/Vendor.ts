@@ -40,13 +40,40 @@ const vendorSchema = new Schema<Vendor>({
   galleryVideos: { type: [String], default: [] },
   contactEmail: String,
   contactPhone: String,
+  upiId: String,
+  qrCodeImage: String,
   packages: { type: [vendorPackageSchema], default: [] },
   availableDates: { type: [String], default: [] },
   policies: {
     cancellation: { type: String, default: '' },
     refund: { type: String, default: '' },
     advancePercentage: { type: Number, default: 20 },
+    advanceAmount: { type: Number },
   },
+  // Amenities / options a vendor offers — set in the vendor portal, shown on the
+  // customer marketplace chips.
+  facilities: {
+    acRoom: Boolean,
+    fansOnly: Boolean,
+    vipRoom: Boolean,
+    vipFrontChairs: Boolean,
+    garlands: Boolean,
+    brideGroomRoom: Boolean,
+    guestRoomAttachedWashroom: Boolean,
+    dormitoryHall: Boolean,
+    separateGuestWashroom: Boolean,
+    cookingUtensils: Boolean,
+    waterFilter: Boolean,
+    catering: String,
+    decoration: String,
+    djService: String,
+    transport: String,
+  },
+  // Category-specific services this vendor offers (e.g. a caterer's menu sections,
+  // a photographer's shoot styles) — shown on the customer vendor detail page.
+  offeredOptions: { type: [String], default: [] },
+  // Price the vendor set for each entry in offeredOptions, keyed by label.
+  offeredOptionPrices: { type: Schema.Types.Mixed, default: {} },
   createdAt: { type: String, default: () => new Date().toISOString() },
 });
 

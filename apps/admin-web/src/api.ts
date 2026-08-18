@@ -120,6 +120,78 @@ export async function pingAllServices(): Promise<ServiceHealth[]> {
   );
 }
 
+// --- Ecosystem monitor (monitor-service, via the gateway) ---
+
+export interface MonitorSample {
+  t: number;
+  up: boolean;
+  responseMs: number | null;
+}
+
+export interface MonitorService {
+  key: string;
+  name: string;
+  port: number;
+  dependsOn: string[];
+  up: boolean;
+  responseMs: number | null;
+  lastChangeAt: number;
+  lastCheckedAt: number;
+  restartCommand: string;
+  history: MonitorSample[];
+}
+
+export interface MonitorDependencies {
+  nodes: { key: string; name: string; port: number; up: boolean; responseMs: number | null }[];
+  edges: { from: string; to: string }[];
+}
+
+export interface MonitorAlert {
+  id: string;
+  at: number;
+  service: string;
+  kind: 'down' | 'recovered';
+  message: string;
+  channels: string[];
+}
+
+export interface MonitorStatus {
+  services: MonitorService[];
+  summary: { up: number; total: number; allUp: boolean };
+  dependencies: MonitorDependencies;
+  alerts: { recent: MonitorAlert[]; channels: { slack: boolean; email: boolean; inApp: boolean } };
+  restart: { enabled: boolean };
+  polledEveryMs: number;
+}
+
+// Robust GET that never throws on a non-JSON body (e.g. a rate-limiter's
+// plain-text 429) — returns { success:false } instead so the caller can treat
+// it as a transient miss rather than crashing the poll loop.
+async function safeGetJson<T>(path: string): Promise<{ success: boolean; data?: T }> {
+  try {
+    const res = await fetch(`${GATEWAY_URL}${path}`);
+    if (!res.ok) return { success: false };
+    const text = await res.text();
+    try {
+      return JSON.parse(text);
+    } catch {
+      return { success: false };
+    }
+  } catch {
+    return { success: false };
+  }
+}
+
+// One call returns everything the dashboard renders: live status, per-service
+// history (sparklines), dependency graph, alerts, and restart availability.
+export function fetchMonitorStatus(): Promise<{ success: boolean; data?: MonitorStatus }> {
+  return safeGetJson<MonitorStatus>('/api/v1/monitor/status');
+}
+
+export function restartService(token: string, key: string) {
+  return authedFetch(`/api/v1/monitor/restart/${key}`, token, { method: 'POST' });
+}
+
 // --- Users ---
 
 export interface AdminUser extends User {}
@@ -154,6 +226,13 @@ export function fetchLocations(): Promise<{ success: boolean; data?: { locations
 
 export function addLocation(token: string, name: string, state: string) {
   return authedFetch('/api/v1/locations', token, { method: 'POST', body: JSON.stringify({ name, state }) });
+}
+
+export function addLocationsBulk(token: string, locations: { name: string; state: string }[]) {
+  return authedFetch('/api/v1/locations', token, {
+    method: 'POST',
+    body: JSON.stringify({ locations }),
+  });
 }
 
 export function deleteLocation(token: string, id: string) {
@@ -194,7 +273,7 @@ export function fetchSettings(token: string): Promise<{ success: boolean; data?:
   return authedFetch('/api/v1/settings', token);
 }
 
-export function updateSettings(token: string, input: { commissionRate?: number; advanceDepositRate?: number }) {
+export function updateSettings(token: string, input: { commissionRate?: number; advanceDepositRate?: number; theme?: 'light' | 'dark' }) {
   return authedFetch('/api/v1/settings', token, { method: 'PUT', body: JSON.stringify(input) });
 }
 

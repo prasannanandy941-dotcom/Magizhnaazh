@@ -3,8 +3,10 @@ import { Loader2, Save } from 'lucide-react';
 import { fetchSettings, updateSettings } from '../api';
 
 export const SettingsTab: React.FC<{ token: string }> = ({ token }) => {
-  const [commissionPercent, setCommissionPercent] = useState(10);
-  const [advancePercent, setAdvancePercent] = useState(30);
+  // Stored as strings while editing so the field can be empty mid-type
+  // instead of forcing a number (which is what caused the leading-zero bug).
+  const [commissionPercent, setCommissionPercent] = useState('10');
+  const [advancePercent, setAdvancePercent] = useState('30');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState('');
@@ -13,8 +15,8 @@ export const SettingsTab: React.FC<{ token: string }> = ({ token }) => {
     (async () => {
       const res = await fetchSettings(token);
       if (res.data?.settings) {
-        setCommissionPercent(Math.round(res.data.settings.commissionRate * 100));
-        setAdvancePercent(Math.round(res.data.settings.advanceDepositRate * 100));
+        setCommissionPercent(String(Math.round(res.data.settings.commissionRate * 100)));
+        setAdvancePercent(String(Math.round(res.data.settings.advanceDepositRate * 100)));
       }
       setLoading(false);
     })();
@@ -25,8 +27,8 @@ export const SettingsTab: React.FC<{ token: string }> = ({ token }) => {
     setNotice('');
     try {
       await updateSettings(token, {
-        commissionRate: commissionPercent / 100,
-        advanceDepositRate: advancePercent / 100,
+        commissionRate: (Number(commissionPercent) || 0) / 100,
+        advanceDepositRate: (Number(advancePercent) || 0) / 100,
       });
       setNotice('Platform settings saved — new bookings will use these rates immediately.');
     } catch (err: any) {
@@ -35,6 +37,32 @@ export const SettingsTab: React.FC<{ token: string }> = ({ token }) => {
       setSaving(false);
       setTimeout(() => setNotice(''), 5000);
     }
+  };
+
+  // Only allow digits, strip leading zeros as the user types (e.g. "0" + "5"
+  // => "5", not "05"), and cap at 100 — these are percentages, and an
+  // unbounded value here previously let a mistyped rate (e.g. "4555") get
+  // saved as a 4555% advance deposit and silently wreck every booking's
+  // advance calculation.
+  const sanitizeDigits = (raw: string): string => {
+    const digitsOnly = raw.replace(/[^0-9]/g, '');
+    const noLeadingZeros = digitsOnly.replace(/^0+(?=\d)/, '');
+    if (noLeadingZeros === '') return noLeadingZeros;
+    return String(Math.min(100, Number(noLeadingZeros)));
+  };
+
+  // Clears the field on focus so typing always starts fresh
+  // instead of inserting into the existing value.
+  const handleFocusClear = (e: React.FocusEvent<HTMLInputElement>) => {
+    e.target.value = '';
+  };
+
+  // If left empty on blur, fall back to 0 instead of staying blank.
+  const handleBlurFallback = (
+    value: string,
+    setter: React.Dispatch<React.SetStateAction<string>>
+  ) => {
+    if (value === '') setter('0');
   };
 
   if (loading) {
@@ -56,11 +84,13 @@ export const SettingsTab: React.FC<{ token: string }> = ({ token }) => {
         <div>
           <label className="block text-xs font-bold text-slate-400 mb-1.5">Platform Commission Rate (%)</label>
           <input
-            type="number"
-            min={0}
-            max={100}
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
             value={commissionPercent}
-            onChange={(e) => setCommissionPercent(Number(e.target.value))}
+            onFocus={handleFocusClear}
+            onChange={(e) => setCommissionPercent(sanitizeDigits(e.target.value))}
+            onBlur={() => handleBlurFallback(commissionPercent, setCommissionPercent)}
             className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white font-bold text-lg"
           />
           <p className="text-[11px] text-slate-500 mt-1">Applied to quotes and the admin revenue dashboard.</p>
@@ -69,11 +99,13 @@ export const SettingsTab: React.FC<{ token: string }> = ({ token }) => {
         <div>
           <label className="block text-xs font-bold text-slate-400 mb-1.5">Advance Deposit Rate (%)</label>
           <input
-            type="number"
-            min={0}
-            max={100}
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
             value={advancePercent}
-            onChange={(e) => setAdvancePercent(Number(e.target.value))}
+            onFocus={handleFocusClear}
+            onChange={(e) => setAdvancePercent(sanitizeDigits(e.target.value))}
+            onBlur={() => handleBlurFallback(advancePercent, setAdvancePercent)}
             className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white font-bold text-lg"
           />
           <p className="text-[11px] text-slate-500 mt-1">Percentage collected as advance when a booking is confirmed.</p>

@@ -1,4 +1,4 @@
-import { User, Vendor, Booking } from '../../../packages/shared-types';
+import { User, Vendor, Booking, Review } from '../../../packages/shared-types';
 
 export const GATEWAY_URL = 'http://localhost:8000';
 
@@ -92,3 +92,30 @@ export function fetchVendorBookings(token: string, vendorId: string): Promise<Bo
 export function confirmBooking(token: string, bookingId: string) {
   return authedFetch(`/api/v1/bookings/${bookingId}/confirm`, token, { method: 'PUT' });
 }
+
+export function sendCounterQuote(token: string, bookingId: string, amount: number, notes?: string) {
+  return authedFetch(`/api/v1/bookings/${bookingId}/quote`, token, {
+    method: 'PUT',
+    body: JSON.stringify({ amount, notes, sender: 'vendor' }),
+  });
+}
+
+export function updateBookingStatus(token: string, bookingId: string, status: string) {
+  return authedFetch(`/api/v1/bookings/${bookingId}/status`, token, {
+    method: 'PUT',
+    body: JSON.stringify({ status }),
+  });
+}
+
+export interface VendorReviewsResponse {
+  success: boolean;
+  data?: { reviews: Review[]; averageRating: number; count: number };
+}
+
+// Public reviews for this vendor — customer reviews the vendor can read on their
+// dashboard. No auth needed (public endpoint), but we pass the token when we
+// have it for consistency.
+export function fetchVendorReviews(vendorId: string): Promise<VendorReviewsResponse> {
+  return fetch(`${GATEWAY_URL}/api/v1/reviews/vendor/${encodeURIComponent(vendorId)}`).then((r) => r.json());
+}
+

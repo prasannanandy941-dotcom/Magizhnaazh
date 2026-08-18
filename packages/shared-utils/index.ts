@@ -119,3 +119,6 @@ export function calculateVendorScore(
 
   return Math.min(100, Math.round(score));
 }
+
+export * from './indiaLocations';
+

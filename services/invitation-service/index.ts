@@ -167,3 +167,8 @@ async function start() {
 }
 
 start();
+// 2b. Host's own invitation for an event — авторized, returns the latest one (or null).
+app.get('/api/v1/invitations/event/:eventId', authMiddleware(), async (req: Request, res: Response) => {
+  const invitation = await InvitationModel.findOne({ eventId: req.params.eventId }).sort({ createdAt: -1 });
+  res.json({ success: true, data: { invitation: invitation || null } });
+});

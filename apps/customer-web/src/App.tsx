@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Role, User, Vendor, Event, Booking, Invitation, Guest, EventFeedback } from '../../../packages/shared-types';
 import { Header } from './components/Header';
 import { AuthModal } from './components/AuthModal';
@@ -6,13 +6,32 @@ import { HeroSection } from './components/HeroSection';
 import { VendorMarketplace } from './components/VendorMarketplace';
 import { VendorDetailModal } from './components/VendorDetailModal';
 import { VendorCompareModal } from './components/VendorCompareModal';
+import { WishlistModal } from './components/WishlistModal';
 import { EventWizardModal } from './components/EventWizardModal';
 import { SmartBudgetPlanner } from './components/SmartBudgetPlanner';
 import { CanvaInvitationDesigner } from './components/CanvaInvitationDesigner';
-import { PublicInvitationView } from './components/PublicInvitationView';
+import { ShareLinkModal } from './components/ShareLinkModal';
 import { GuestManagement } from './components/GuestManagement';
+import { MyOrders } from './components/MyOrders';
 import { FeedbackModule } from './components/FeedbackModule';
+import { FloralGoldBackground } from './components/FloralGoldBackground';
 import { INVITATION_TEMPLATES } from '../../../packages/canvas-engine';
+import {
+  fetchEvents,
+  fetchVendors,
+  updateEventBudget,
+  createBookingQuote,
+  fetchInvitationForEvent,
+  createInvitation,
+  updateInvitationCanvas,
+  fetchGuestsForEvent,
+  addGuest,
+  fetchMyBookings,
+  fetchLocations,
+  fetchPublicSettings,
+  ApiError,
+} from './api';
+import { groupCitiesByState, STATIC_CITY_GROUPS } from '../../../packages/shared-utils';
 import { MessageSquare, CheckCircle2 } from 'lucide-react';
 
 const INITIAL_VENDORS: Vendor[] = [
@@ -36,12 +55,14 @@ const INITIAL_VENDORS: Vendor[] = [
     ratingAverage: 4.9,
     reviewCount: 142,
     isVerified: true,
+    isSuspended: false,
     featured: true,
     galleryImages: [
-      'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=800',
-      'https://images.unsplash.com/photo-1545232979-fbf34fe37722?w=800',
-      'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=800',
+      'https://images.unsplash.com/photo-1712314947761-a8d718bd8c32?w=800',
+      'https://images.unsplash.com/photo-1655516433028-9e0e1599cf8b?w=800',
+      'https://images.unsplash.com/photo-1780542900375-0cf459e38fbb?w=800',
     ],
+    galleryVideos: ['https://videos.pexels.com/video-files/34926867/14794509_640_360_24fps.mp4'],
     contactEmail: 'events@leelachennai.com',
     contactPhone: '+91 44 33661234',
     packages: [
@@ -50,6 +71,131 @@ const INITIAL_VENDORS: Vendor[] = [
     ],
     availableDates: ['2026-10-15', '2026-11-20', '2026-12-15'],
     policies: { cancellation: '50% refund up to 30 days prior', refund: 'Processed in 7 days', advancePercentage: 30 },
+    facilities: {
+      acRoom: true,
+      fansOnly: false,
+      brideGroomRoom: true,
+      guestRoomAttachedWashroom: true,
+      dormitoryHall: false,
+      separateGuestWashroom: true,
+      cookingUtensils: false,
+      waterFilter: true,
+      vipRoom: true,
+      vipFrontChairs: true,
+      garlands: true,
+      catering: 'extra_cost',
+      decoration: 'included',
+      djService: 'not_offered',
+      transport: 'not_offered',
+    },
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'vnd-5',
+    userId: 'usr-vendor-5',
+    businessName: 'Green Meadows Community Hall',
+    category: 'Venue',
+    description: 'Budget-friendly community hall with dormitory-style seating, ideal for large family functions and modest weddings.',
+    location: {
+      type: 'Point',
+      coordinates: [76.9558, 11.0168],
+      address: 'Sathy Road, Ganapathy',
+      city: 'Coimbatore',
+      district: 'Coimbatore',
+      state: 'Tamil Nadu',
+      pincode: '641006',
+    },
+    startingPrice: 25000,
+    yearsOfExperience: 6,
+    ratingAverage: 4.3,
+    reviewCount: 58,
+    isVerified: true,
+    isSuspended: false,
+    featured: false,
+    galleryImages: [
+      'https://images.unsplash.com/photo-1786062841848-18177898b3a7?w=800',
+      'https://images.unsplash.com/photo-1519741497674-611481863552?w=800',
+      'https://images.unsplash.com/photo-1478146059778-26028b07395a?w=800',
+    ],
+    galleryVideos: ['https://videos.pexels.com/video-files/11918060/11918060-sd_640_360_25fps.mp4'],
+    contactEmail: 'bookings@greenmeadowshall.in',
+    contactPhone: '+91 9843112200',
+    packages: [
+      { id: 'pkg-5-1', packageName: 'Community Hall Basic', price: 25000, description: 'Fan-cooled hall for 300 guests with dormitory seating and shared washrooms.', includedServices: ['Hall Rent', 'Basic Lighting', 'Sound System'] }
+    ],
+    availableDates: ['2026-10-20', '2026-11-10'],
+    policies: { cancellation: 'No refund within 15 days', refund: 'Standard', advancePercentage: 20 },
+    facilities: {
+      acRoom: false,
+      fansOnly: true,
+      brideGroomRoom: false,
+      guestRoomAttachedWashroom: false,
+      dormitoryHall: true,
+      separateGuestWashroom: true,
+      cookingUtensils: true,
+      waterFilter: true,
+      vipRoom: true,
+      vipFrontChairs: false,
+      garlands: true,
+      catering: 'not_offered',
+      decoration: 'not_offered',
+      djService: 'extra_cost',
+      transport: 'not_offered',
+    },
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'vnd-6',
+    userId: 'usr-vendor-6',
+    businessName: 'Royal Orchid Convention Centre',
+    category: 'Venue',
+    description: 'Full-service AC convention centre with dedicated bride and groom suites, guest rooms, in-house catering, and DJ setup.',
+    location: {
+      type: 'Point',
+      coordinates: [80.2101, 13.0382],
+      address: 'Anna Nagar West',
+      city: 'Chennai',
+      district: 'Chennai',
+      state: 'Tamil Nadu',
+      pincode: '600040',
+    },
+    startingPrice: 95000,
+    yearsOfExperience: 8,
+    ratingAverage: 4.6,
+    reviewCount: 112,
+    isVerified: true,
+    isSuspended: false,
+    featured: true,
+    galleryImages: [
+      'https://images.unsplash.com/photo-1780542900375-0cf459e38fbb?w=800',
+      'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=800',
+      'https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=800',
+    ],
+    galleryVideos: ['https://videos.pexels.com/video-files/31501465/13430836_640_360_60fps.mp4'],
+    contactEmail: 'info@royalorchidconvention.com',
+    contactPhone: '+91 9840556677',
+    packages: [
+      { id: 'pkg-6-1', packageName: 'All-Inclusive Wedding Package', price: 95000, description: 'AC hall for 800 guests, bride and groom suites, in-house catering and DJ.', includedServices: ['AC Hall', 'Bride/Groom Suite', 'Guest Rooms', 'In-house Catering', 'DJ Setup'] }
+    ],
+    availableDates: ['2026-11-01', '2026-12-05'],
+    policies: { cancellation: '40% refund up to 20 days prior', refund: 'Processed in 10 days', advancePercentage: 30 },
+    facilities: {
+      acRoom: true,
+      fansOnly: false,
+      brideGroomRoom: true,
+      guestRoomAttachedWashroom: true,
+      dormitoryHall: false,
+      separateGuestWashroom: true,
+      cookingUtensils: false,
+      waterFilter: true,
+      vipRoom: false,
+      vipFrontChairs: false,
+      garlands: false,
+      catering: 'included',
+      decoration: 'extra_cost',
+      djService: 'included',
+      transport: 'extra_cost',
+    },
     createdAt: new Date().toISOString(),
   },
   {
@@ -72,11 +218,14 @@ const INITIAL_VENDORS: Vendor[] = [
     ratingAverage: 4.8,
     reviewCount: 215,
     isVerified: true,
+    isSuspended: false,
     featured: true,
     galleryImages: [
-      'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800',
-      'https://images.unsplash.com/photo-1610057099443-f63a15701c45?w=800',
+      'https://images.unsplash.com/photo-1555244162-803834f70033?w=800',
+      'https://images.unsplash.com/photo-1646578515903-67873a5398f9?w=800',
+      'https://images.unsplash.com/photo-1581546085212-f25477a9d4fb?w=800',
     ],
+    galleryVideos: ['https://videos.pexels.com/video-files/9797433/9797433-sd_640_360_25fps.mp4'],
     contactEmail: 'contact@chettinadcatering.in',
     contactPhone: '+91 9444012345',
     packages: [
@@ -107,15 +256,23 @@ const INITIAL_VENDORS: Vendor[] = [
     ratingAverage: 4.95,
     reviewCount: 98,
     isVerified: true,
+    isSuspended: false,
     featured: true,
     galleryImages: [
-      'https://images.unsplash.com/photo-1537633552985-df8429e8048b?w=800',
-      'https://images.unsplash.com/photo-1606800052052-a08af7148866?w=800',
+      'https://images.unsplash.com/photo-1574397188309-e83dfe918ecb?w=800',
+      'https://images.unsplash.com/photo-1670296047577-36c2c1281a85?w=800',
+      'https://images.unsplash.com/photo-1640290699030-b477f95f13b2?w=800',
     ],
+    galleryVideos: ['https://videos.pexels.com/video-files/5591916/5591916-sd_640_360_25fps.mp4'],
     contactEmail: 'hello@candidtales.com',
     contactPhone: '+91 9840998877',
     packages: [
-      { id: 'pkg-3-1', packageName: 'Candid & Traditional Combo', price: 65000, description: '2 Candid Photographers, 1 Traditional Photographer, Photobook Album.', includedServices: ['Unlimited High-Res Photos', '1 Premium Canvera Album (50 pages)', 'Pre-wedding Shoot'] }
+      { id: 'pkg-3-1', packageName: 'Candid & Traditional Combo', price: 65000, description: '2 Candid Photographers, 1 Traditional Photographer, Photobook Album.', includedServices: ['Unlimited High-Res Photos', '1 Premium Canvera Album (50 pages)', 'Pre-wedding Shoot'], durationHours: 10 },
+      { id: 'pkg-3-2', packageName: 'Pre-Wedding Story Shoot', price: 25000, description: 'Half-day outdoor pre-wedding concept shoot with styling and edits.', includedServices: ['1 Candid Photographer', '80 Retouched Photos', '1 Location + Props', 'Reel-ready Edits'], durationHours: 5 },
+      { id: 'pkg-3-3', packageName: 'Cinematic Film + Drone', price: 95000, description: 'Full-day cinematic wedding film with 4K drone aerial coverage.', includedServices: ['2 Cinematographers', '4K Drone Coverage', '3-4 min Teaser Film', 'Full-length Wedding Film'], durationHours: 12 },
+      { id: 'pkg-3-4', packageName: 'Reception Coverage', price: 40000, description: 'Evening reception candid + traditional coverage with same-day highlights.', includedServices: ['2 Photographers', 'Stage & Guest Coverage', 'Same-Day Highlight Reel', '300+ Edited Photos'], durationHours: 6 },
+      { id: 'pkg-3-5', packageName: 'Live Streaming (Multi-Cam)', price: 22000, description: 'Broadcast the wedding live so relatives can watch from anywhere on mobile.', includedServices: ['3-Camera Live Mixing', 'YouTube / Zoom / Meet Link', 'Full-HD Stream', 'Recorded Copy'], durationHours: 6 },
+      { id: 'pkg-3-6', packageName: 'LED Wall Screens', price: 40000, description: 'Large LED screens at the venue so every guest sees the ceremony up close.', includedServices: ['2 × P3 LED Walls', 'Live Camera Feed to Screen', 'On-site Technician', 'Setup & Dismantle'], durationHours: 8 },
     ],
     availableDates: ['2026-11-05', '2026-12-15'],
     policies: { cancellation: 'Standard', refund: 'Standard', advancePercentage: 40 },
@@ -141,11 +298,14 @@ const INITIAL_VENDORS: Vendor[] = [
     ratingAverage: 4.7,
     reviewCount: 76,
     isVerified: true,
+    isSuspended: false,
     featured: false,
     galleryImages: [
-      'https://images.unsplash.com/photo-1519741497674-611481863552?w=800',
-      'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=800',
+      'https://images.unsplash.com/photo-1605553426886-c0a99033fda0?w=800',
+      'https://images.unsplash.com/photo-1640355105827-2aa98e908a7b?w=800',
+      'https://images.unsplash.com/photo-1762709118823-7fe9c9afa8ff?w=800',
     ],
+    galleryVideos: ['https://videos.pexels.com/video-files/13038199/13038199-sd_640_360_25fps.mp4'],
     contactEmail: 'contact@floradreams.in',
     contactPhone: '+91 9443011223',
     packages: [
@@ -157,7 +317,18 @@ const INITIAL_VENDORS: Vendor[] = [
   },
 ];
 
-const INITIAL_EVENT: Event = {
+// Friendly phrasing for the booking-status-change toast — fires whenever a
+// vendor moves one of the customer's bookings forward (accepts a quote,
+// marks it in progress, completes it, etc).
+const STATUS_NOTICE: Record<string, string> = {
+  confirmed: 'accepted',
+  in_progress: 'now in progress',
+  completed: 'completed',
+  cancelled: 'cancelled',
+  refunded: 'refunded',
+};
+
+const FALLBACK_EVENT: Event = {
   id: 'evt-101',
   userId: 'usr-customer-1',
   title: 'Felix & Priya Wedding Celebration',
@@ -232,8 +403,10 @@ const INITIAL_FEEDBACK: EventFeedback[] = [
 export function App() {
   const [activeTab, setActiveTab] = useState<string>('marketplace');
   const [vendors, setVendors] = useState<Vendor[]>(INITIAL_VENDORS);
-  const [events, setEvents] = useState<Event[]>([INITIAL_EVENT]);
-  const [activeEvent, setActiveEvent] = useState<Event>(INITIAL_EVENT);
+  const [vendorsLoading, setVendorsLoading] = useState(false);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [eventsLoading, setEventsLoading] = useState(false);
+  const [activeEvent, setActiveEvent] = useState<Event>(FALLBACK_EVENT);
   const [invitation, setInvitation] = useState<Invitation>(INITIAL_INVITATION);
   const [guests, setGuests] = useState<Guest[]>(INITIAL_GUESTS);
   const [feedbackList, setFeedbackList] = useState<EventFeedback[]>(INITIAL_FEEDBACK);
@@ -242,33 +415,266 @@ export function App() {
   const [wishlist, setWishlist] = useState<string[]>(['vnd-1', 'vnd-3']);
   const [selectedCompareIds, setSelectedCompareIds] = useState<string[]>([]);
   const [showCompareModal, setShowCompareModal] = useState(false);
+  const [showWishlistModal, setShowWishlistModal] = useState(false);
   const [showEventWizard, setShowEventWizard] = useState(false);
-  const [showPublicInviteModal, setShowPublicInviteModal] = useState(false);
+  const [showShareLinkModal, setShowShareLinkModal] = useState(false);
   const [notification, setNotification] = useState('');
+  const [marketplaceCity, setMarketplaceCity] = useState('All');
+  // Location dropdowns are driven by the backend's serviceable-cities list
+  // (admin console → GET /api/v1/locations). Falls back to the full static
+  // India catalogue until the backend responds (or if it's unreachable).
+  const [cityGroups, setCityGroups] = useState<[string, string[]][]>(STATIC_CITY_GROUPS);
 
   const [user, setUser] = useState<User | null>(() => {
-    const stored = localStorage.getItem('magizhnaazh_user');
+    const stored = localStorage.getItem('user');
     return stored ? JSON.parse(stored) : null;
   });
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [bookingInProgress, setBookingInProgress] = useState(false);
+
+  // Load the live vendor marketplace from the backend (vendor-service, via the gateway).
+  // Public endpoint — runs once on mount regardless of login state. Falls back to the
+  // local demo list (INITIAL_VENDORS) if the call fails or returns nothing, so the
+  // marketplace is never empty.
+  useEffect(() => {
+    let cancelled = false;
+    setVendorsLoading(true);
+
+    fetchVendors()
+      .then((res) => {
+        if (cancelled) return;
+        const serverVendors = res.data?.vendors || [];
+        if (serverVendors.length > 0) {
+          setVendors(serverVendors);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load vendors from server, using local fallback', err);
+      })
+      .finally(() => {
+        if (!cancelled) setVendorsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Load the serviceable-cities list from the backend so the location dropdowns
+  // reflect what the admin console manages. Only active cities are shown; if the
+  // call fails or returns nothing, the static India catalogue (the initial
+  // state) stays in place so the dropdowns are never empty.
+  useEffect(() => {
+    let cancelled = false;
+
+    fetchLocations()
+      .then((res) => {
+        if (cancelled) return;
+        const active = (res.data?.locations || []).filter((c) => c.isActive);
+        if (active.length > 0) {
+          setCityGroups(groupCitiesByState(active));
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load serviceable cities, using static catalogue', err);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Apply the site-wide theme the admin chose (shared via platform settings).
+  // Uses the last-seen value from localStorage immediately to avoid a flash,
+  // then reconciles with the server.
+  useEffect(() => {
+    const local = (localStorage.getItem('magizhnaazh_theme') as 'light' | 'dark' | null) || 'dark';
+    document.documentElement.setAttribute('data-theme', local);
+
+    let cancelled = false;
+    fetchPublicSettings()
+      .then((res) => {
+        if (cancelled) return;
+        const theme = res.data?.settings.theme;
+        if (theme) {
+          localStorage.setItem('magizhnaazh_theme', theme);
+          document.documentElement.setAttribute('data-theme', theme);
+        }
+      })
+      .catch(() => {/* keep local theme */});
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Load this user's real events from the backend (event-budget-service, via the gateway)
+  // whenever they're logged in. Falls back to the local demo event if the call fails
+  // or the user isn't authenticated yet, so the UI never looks empty.
+  useEffect(() => {
+    if (!user) {
+      setEvents([FALLBACK_EVENT]);
+      setActiveEvent(FALLBACK_EVENT);
+      return;
+    }
+
+    let cancelled = false;
+    setEventsLoading(true);
+
+    fetchEvents()
+      .then((res) => {
+        if (cancelled) return;
+        const serverEvents = res.data?.events || [];
+        if (serverEvents.length > 0) {
+          setEvents(serverEvents);
+          setActiveEvent(serverEvents[0]);
+        } else {
+          setEvents([]);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load events from server', err);
+        if (!cancelled) {
+          setEvents([FALLBACK_EVENT]);
+          setActiveEvent(FALLBACK_EVENT);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setEventsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  // Poll for booking status changes while signed in, and pop a toast the
+  // moment a vendor moves something forward (accepts a quote, marks it in
+  // progress, completes it) — this is how the customer finds out without
+  // having to manually reopen My Orders and refresh.
+  useEffect(() => {
+    if (!user) return;
+
+    const statusKey = `magizh_seen_booking_statuses_${user.id}`;
+    let seen: Record<string, string> = {};
+    try {
+      seen = JSON.parse(localStorage.getItem(statusKey) || '{}');
+    } catch {
+      seen = {};
+    }
+
+    const checkForStatusChanges = () => {
+      fetchMyBookings()
+        .then((res) => {
+          const bookings = res.data?.bookings || [];
+          let changed = false;
+          for (const b of bookings) {
+            const prev = seen[b.id];
+            if (prev && prev !== b.status) {
+              triggerNotification(`${b.vendorName}: your booking (${b.bookingNumber}) was ${STATUS_NOTICE[b.status] || b.status}.`);
+            }
+            if (prev !== b.status) {
+              seen[b.id] = b.status;
+              changed = true;
+            }
+          }
+          if (changed) {
+            try {
+              localStorage.setItem(statusKey, JSON.stringify(seen));
+            } catch {
+              /* ignore storage errors */
+            }
+          }
+        })
+        .catch(() => {
+          /* silent — this is a background check, not user-initiated */
+        });
+    };
+
+    checkForStatusChanges();
+    const interval = setInterval(checkForStatusChanges, 20000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  // Load (or lazily create) the real, backend-persisted invitation for the active
+  // event — this is what gives "Share Web RSVP Link" a real, working link instead
+  // of the hardcoded local placeholder. Skipped while logged out.
+  useEffect(() => {
+    if (!user || !activeEvent.id) return;
+    let cancelled = false;
+
+    fetchInvitationForEvent(activeEvent.id)
+      .then(async (res) => {
+        if (cancelled) return;
+        if (res.data?.invitation) {
+          setInvitation(res.data.invitation);
+          return;
+        }
+        const created = await createInvitation({
+          eventId: activeEvent.id,
+          eventTitle: activeEvent.title,
+          hostName: user.name,
+          date: activeEvent.date,
+          time: INITIAL_INVITATION.time,
+          venueName: activeEvent.location.venueName || 'Venue TBD',
+          venueAddress: activeEvent.location.address || activeEvent.location.city,
+          message: INITIAL_INVITATION.message,
+          canvasData: INITIAL_INVITATION.canvasData,
+        });
+        if (!cancelled && created.data?.invitation) setInvitation(created.data.invitation);
+      })
+      .catch((err) => console.error('Failed to load/create invitation', err));
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user, activeEvent.id]);
+
+  // Load this event's real guest roster from the backend — includes any web RSVPs
+  // guests submitted through the public /invite/:token link.
+  useEffect(() => {
+    if (!user || !activeEvent.id) return;
+    let cancelled = false;
+
+    fetchGuestsForEvent(activeEvent.id)
+      .then((res) => {
+        if (!cancelled) setGuests(res.data?.guests || []);
+      })
+      .catch((err) => console.error('Failed to load guests', err));
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user, activeEvent.id]);
 
   const handleAuthSuccess = (loggedInUser: User, token: string) => {
-    localStorage.setItem('magizhnaazh_user', JSON.stringify(loggedInUser));
-    localStorage.setItem('magizhnaazh_token', token);
+    localStorage.setItem('user', JSON.stringify(loggedInUser));
+    localStorage.setItem('accessToken', token);
     setUser(loggedInUser);
     setShowAuthModal(false);
     triggerNotification(`Welcome, ${loggedInUser.name}!`);
+
+    // Replay whatever action (e.g. "Book & Pay Advance") triggered the sign-in
+    // prompt — otherwise it's silently dropped and the customer has to repeat
+    // the click that got them here in the first place.
+    const pending = pendingActionRef.current;
+    pendingActionRef.current = null;
+    if (pending) pending();
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('magizhnaazh_user');
-    localStorage.removeItem('magizhnaazh_token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('accessToken');
     setUser(null);
     triggerNotification('Signed out.');
   };
 
+  const pendingActionRef = useRef<(() => void) | null>(null);
+
   const requireAuth = (action: () => void) => {
     if (!user) {
+      pendingActionRef.current = action;
       setShowAuthModal(true);
       return;
     }
@@ -291,11 +697,17 @@ export function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
+    <div className="relative min-h-screen text-[#fdf1f5] flex flex-col font-sans">
+      {/* App-wide gold + olive floral backdrop, fixed behind all scrolling content */}
+      <div id="app-bg" className="fixed inset-0 -z-10">
+        <FloralGoldBackground />
+      </div>
+
       <Header
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         wishlistCount={wishlist.length}
+        onOpenWishlist={() => setShowWishlistModal(true)}
         openEventWizard={() => requireAuth(() => setShowEventWizard(true))}
         user={user}
         onSignIn={() => setShowAuthModal(true)}
@@ -303,17 +715,24 @@ export function App() {
       />
 
       {notification && (
-        <div className="bg-emerald-500 text-slate-950 py-3 px-4 text-center font-bold text-xs sticky top-20 z-40 shadow-xl flex items-center justify-center gap-2">
+        <div className="bg-[#e85d8a] text-[#1a0a14] py-3 px-4 text-center font-bold text-xs sticky top-20 z-40 shadow-xl flex items-center justify-center gap-2">
           <CheckCircle2 className="w-4 h-4" /> {notification}
         </div>
       )}
 
-      <main className="flex-1">
+      <main className="flex-1 relative z-10">
         {activeTab === 'marketplace' && (
           <>
             <HeroSection
-              onSearch={() => setActiveTab('marketplace')}
+              onSearch={(params) => {
+                setMarketplaceCity(params.city);
+                triggerNotification(
+                  `Showing vendors for ${params.eventType} in ${params.city} — ${params.guests} guests, ₹${(params.budget / 100000).toFixed(1)}L budget`
+                );
+                document.getElementById('vendor-marketplace-section')?.scrollIntoView({ behavior: 'smooth' });
+              }}
               openEventWizard={() => requireAuth(() => setShowEventWizard(true))}
+              cityGroups={cityGroups}
             />
 
             <VendorMarketplace
@@ -324,6 +743,9 @@ export function App() {
               selectedCompareIds={selectedCompareIds}
               toggleCompare={toggleCompare}
               openCompareModal={() => setShowCompareModal(true)}
+              selectedCity={marketplaceCity}
+              onCityChange={setMarketplaceCity}
+              cityGroups={cityGroups}
             />
           </>
         )}
@@ -332,54 +754,64 @@ export function App() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="font-display font-bold text-3xl text-white">My Planned Events</h2>
-                <p className="text-slate-400 text-sm mt-1">Manage active plans, checklists, and vendor bookings</p>
+                <h2 className="font-display font-bold text-3xl text-[#fdf1f5]">My Planned Events</h2>
+                <p className="text-[#cf9bb3] text-sm mt-1">Manage active plans, checklists, and vendor bookings</p>
               </div>
 
               <button
                 onClick={() => requireAuth(() => setShowEventWizard(true))}
-                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-bold text-xs shadow-md"
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#c9a648] to-[#b8860b] text-[#1a0a14] font-bold text-xs shadow-md"
               >
                 + Create New Event
               </button>
             </div>
 
+            {eventsLoading && (
+              <div className="text-center py-10 text-[#cf9bb3] text-sm">Loading your events...</div>
+            )}
+
+            {!eventsLoading && events.length === 0 && (
+              <div className="text-center py-16 text-[#cf9bb3] text-sm">
+                You haven't created any events yet. Click "Create New Event" to get started.
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {events.map((evt) => (
-                <div key={evt.id} className="glass-card glass-card-hover p-6 rounded-3xl border border-slate-800 space-y-4">
+                <div key={evt.id} className="glass-card-gold glass-card-gold-hover p-6 rounded-3xl space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 font-bold text-xs">
+                    <span className="px-3 py-1 rounded-full bg-[#d4af37]/15 text-[#e8c874] font-bold text-xs">
                       {evt.eventType}
                     </span>
-                    <span className="text-xs text-slate-400 font-semibold">{evt.date}</span>
+                    <span className="text-xs text-[#cf9bb3] font-semibold">{evt.date}</span>
                   </div>
 
-                  <h3 className="font-display font-bold text-2xl text-white">{evt.title}</h3>
+                  <h3 className="font-display font-bold text-2xl text-[#fdf1f5]">{evt.title}</h3>
 
                   <div className="grid grid-cols-3 gap-3 pt-2 text-xs">
-                    <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-                      <span className="text-slate-400 block">Total Target</span>
-                      <span className="font-bold text-white">₹{evt.totalBudget.toLocaleString('en-IN')}</span>
+                    <div className="p-3 rounded-xl bg-[#26101c]/70 border border-[#6b2140]/60">
+                      <span className="text-[#cf9bb3] block">Total Target</span>
+                      <span className="font-bold text-[#fdf1f5]">₹{evt.totalBudget.toLocaleString('en-IN')}</span>
                     </div>
 
-                    <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-                      <span className="text-slate-400 block">Spent</span>
-                      <span className="font-bold text-amber-400">₹{evt.spentBudget.toLocaleString('en-IN')}</span>
+                    <div className="p-3 rounded-xl bg-[#26101c]/70 border border-[#6b2140]/60">
+                      <span className="text-[#cf9bb3] block">Spent</span>
+                      <span className="font-bold text-[#f0c869]">₹{evt.spentBudget.toLocaleString('en-IN')}</span>
                     </div>
 
-                    <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-                      <span className="text-slate-400 block">Guests</span>
-                      <span className="font-bold text-emerald-400">{evt.guestCount} Attendees</span>
+                    <div className="p-3 rounded-xl bg-[#26101c]/70 border border-[#6b2140]/60">
+                      <span className="text-[#cf9bb3] block">Guests</span>
+                      <span className="font-bold text-[#e85d8a]">{evt.guestCount} Attendees</span>
                     </div>
                   </div>
 
-                  <div className="pt-4 border-t border-slate-800 flex flex-wrap items-center gap-3">
+                  <div className="pt-4 border-t border-[#6b2140]/60 flex flex-wrap items-center gap-3">
                     <button
                       onClick={() => {
                         setActiveEvent(evt);
                         setActiveTab('budget');
                       }}
-                      className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md"
+                      className="flex-1 py-2.5 rounded-xl bg-[#c9a648] hover:bg-[#d4af37] text-[#1a0a14] font-bold text-xs shadow-md"
                     >
                       Open Smart Budget Planner
                     </button>
@@ -389,7 +821,7 @@ export function App() {
                         setActiveEvent(evt);
                         setActiveTab('guests');
                       }}
-                      className="py-2.5 px-4 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 font-bold text-xs"
+                      className="py-2.5 px-4 rounded-xl bg-[#26101c] border border-[#6b2140]/60 hover:border-[#d4af37]/50 text-[#f5c9dc] font-bold text-xs"
                     >
                       Manage Guests ({guests.length})
                     </button>
@@ -409,6 +841,11 @@ export function App() {
               const updated = { ...activeEvent, budgetBreakdown: updatedBreakdown };
               setActiveEvent(updated);
               setEvents((prev) => prev.map((e) => (e.id === updated.id ? updated : e)));
+              // Persist the new allocation to the backend so it isn't lost on refresh
+              // and so admin/vendor views stay in sync.
+              updateEventBudget(updated.id, updatedBreakdown).catch((err) =>
+                console.error('Failed to persist budget update', err)
+              );
             }}
           />
         )}
@@ -418,9 +855,12 @@ export function App() {
             invitation={invitation}
             onSaveInvitation={(updated) => {
               setInvitation(updated);
+              updateInvitationCanvas(updated.id, updated.canvasData).catch((err) =>
+                console.error('Failed to persist invitation design', err)
+              );
               triggerNotification('Canva Invitation design saved successfully!');
             }}
-            onOpenPublicView={() => setShowPublicInviteModal(true)}
+            onOpenPublicView={() => setShowShareLinkModal(true)}
           />
         )}
 
@@ -442,15 +882,30 @@ export function App() {
                 invitedAt: new Date().toISOString(),
               };
               setGuests([added, ...guests]);
+              addGuest({
+                eventId: activeEvent.id,
+                name: added.name,
+                email: added.email,
+                phone: added.phone,
+                group: added.group,
+                adultsCount: added.adultsCount,
+                childrenCount: added.childrenCount,
+                dietaryPreference: added.dietaryPreference,
+              }).catch((err) => console.error('Failed to persist new guest', err));
               triggerNotification(`Guest "${added.name}" added to event roster!`);
             }}
-            onShareInviteLink={() => setShowPublicInviteModal(true)}
+            onShareInviteLink={() => setShowShareLinkModal(true)}
           />
+        )}
+
+        {activeTab === 'orders' && (
+          <MyOrders isAuthenticated={!!user} onSignIn={() => setShowAuthModal(true)} />
         )}
 
         {activeTab === 'feedback' && (
           <FeedbackModule
             feedbackList={feedbackList}
+            eventId={activeEvent?.id}
             onAddFeedback={(fb) => {
               setFeedbackList([fb, ...feedbackList]);
               triggerNotification('Feedback submitted successfully!');
@@ -463,7 +918,7 @@ export function App() {
       <div className="fixed bottom-4 right-4 z-40">
         <button
           onClick={() => setActiveTab('feedback')}
-          className="px-4 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 text-slate-950 font-bold text-xs shadow-2xl flex items-center gap-2 hover:scale-105 transition-all"
+          className="px-4 py-3 rounded-2xl bg-gradient-to-r from-[#b8336a] to-[#6b2140] text-[#fdf1f5] font-bold text-xs shadow-2xl flex items-center gap-2 hover:scale-105 transition-all border border-[#d4af37]/30"
         >
           <MessageSquare className="w-4 h-4" /> Guest Feedback Portal
         </button>
@@ -473,18 +928,93 @@ export function App() {
         <VendorDetailModal
           vendor={selectedVendorForModal}
           onClose={() => setSelectedVendorForModal(null)}
-          onBookVendor={(v, pkgId, price) =>
-            requireAuth(() => {
+          onBookVendor={(v, pkgId, price, notes, eventDate, selectedOptions) => {
+            // Named so it can be re-run automatically after a re-login: the
+            // customer's `user` staying set doesn't mean their token is
+            // still valid (it expires after a few hours), so requireAuth's
+            // "already logged in" check alone can't catch a stale session —
+            // only the 401 the booking call comes back with can.
+            const doBook = () => requireAuth(async () => {
               const p = price || v.startingPrice;
-              const updatedSpent = activeEvent.spentBudget + p;
-              const updated = { ...activeEvent, spentBudget: updatedSpent };
-              setActiveEvent(updated);
-              setEvents((prev) => prev.map((e) => (e.id === updated.id ? updated : e)));
-              setSelectedVendorForModal(null);
-              triggerNotification(`Booking confirmed for ${v.businessName}! ₹${p.toLocaleString('en-IN')} allocated.`);
-              setActiveTab('budget');
-            })
-          }
+              setBookingInProgress(true);
+
+              try {
+                const pkg = v.packages.find((pk) => pk.id === pkgId);
+                const quote = await createBookingQuote({
+                  vendorId: v.id,
+                  vendorName: v.businessName,
+                  vendorCategory: v.category,
+                  eventId: activeEvent.id,
+                  packageId: pkgId,
+                  packageName: pkg?.packageName,
+                  price: p,
+                  eventDate: eventDate || activeEvent.date,
+                  notes,
+                  selectedOptions,
+                  // They've just seen the vendor's UPI ID/QR and clicked Confirm
+                  // Order — that's a payment claim, not a verified payment, so
+                  // this lands as 'pending_payment' rather than auto-confirming.
+                  // The vendor has to verify and confirm it on their end (My Orders
+                  // reflects that as "Awaiting Vendor Confirmation").
+                  advancePaymentClaimed: true,
+                });
+                const spent = quote.data?.booking.agreedPrice ?? p;
+
+                // Credit the spend against the matching budget line (falling back to
+                // "Other" if this category isn't broken out) so "Actual Spent to Date"
+                // on the Smart Budget dashboard reflects real bookings, not just the
+                // top-level spentBudget total.
+                const targetCategory = activeEvent.budgetBreakdown.some((b) => b.category === v.category)
+                  ? v.category
+                  : 'Other';
+                const updatedBreakdown = activeEvent.budgetBreakdown.map((b) =>
+                  b.category === targetCategory ? { ...b, actualSpent: b.actualSpent + spent } : b
+                );
+
+                const updated = {
+                  ...activeEvent,
+                  spentBudget: activeEvent.spentBudget + spent,
+                  budgetBreakdown: updatedBreakdown,
+                };
+                setActiveEvent(updated);
+                setEvents((prev) => prev.map((e) => (e.id === updated.id ? updated : e)));
+                setSelectedVendorForModal(null);
+
+                // Best-effort persist — local state above already reflects the spend
+                // immediately, so a failure here (e.g. this is the shared demo fallback
+                // event and isn't owned by this account) shouldn't block the booking flow.
+                updateEventBudget(updated.id, updatedBreakdown).catch((err) =>
+                  console.error('Failed to persist updated budget breakdown', err)
+                );
+
+                triggerNotification(
+                  `Advance payment submitted for ${v.businessName} — ₹${p.toLocaleString('en-IN')} allocated. ` +
+                    `Waiting for the vendor to confirm they've received it.` +
+                    (notes ? ` Your request was shared with the vendor.` : '')
+                );
+                setActiveTab('budget');
+              } catch (err: any) {
+                console.error('Booking failed', err);
+                if (err instanceof ApiError && err.status === 401) {
+                  // Session expired while they were browsing — sign them out
+                  // locally, prompt sign-in again, and automatically finish
+                  // this exact booking once they're back in instead of
+                  // silently dropping it.
+                  handleLogout();
+                  pendingActionRef.current = doBook;
+                  setShowAuthModal(true);
+                  triggerNotification("Your session expired — sign in again and we'll finish this booking for you.");
+                  return;
+                }
+                // Surface the server's actual reason (e.g. "vendor hasn't opened up
+                // this date") instead of a generic retry message when we have one.
+                triggerNotification(err?.message || `Booking failed for ${v.businessName} — please try again.`);
+              } finally {
+                setBookingInProgress(false);
+              }
+            });
+            doBook();
+          }}
         />
       )}
 
@@ -493,6 +1023,18 @@ export function App() {
           vendors={vendors.filter((v) => selectedCompareIds.includes(v.id))}
           onClose={() => setShowCompareModal(false)}
           onSelectVendor={(v) => setSelectedVendorForModal(v)}
+        />
+      )}
+
+      {showWishlistModal && (
+        <WishlistModal
+          vendors={vendors.filter((v) => wishlist.includes(v.id))}
+          onClose={() => setShowWishlistModal(false)}
+          onRemove={toggleWishlist}
+          onSelectVendor={(v) => {
+            setShowWishlistModal(false);
+            setSelectedVendorForModal(v);
+          }}
         />
       )}
 
@@ -508,25 +1050,11 @@ export function App() {
         />
       )}
 
-      {showPublicInviteModal && (
-        <PublicInvitationView
-          invitation={invitation}
-          onClose={() => setShowPublicInviteModal(false)}
-          onSubmitRSVP={(data) => {
-            const added: Guest = {
-              id: `g-rsvp-${Date.now()}`,
-              eventId: activeEvent.id,
-              name: data.name,
-              status: data.status,
-              adultsCount: data.adults,
-              childrenCount: 0,
-              dietaryPreference: data.dietary as any,
-              invitedAt: new Date().toISOString(),
-            };
-            setGuests([added, ...guests]);
-            setShowPublicInviteModal(false);
-            triggerNotification(`RSVP Response from ${data.name} recorded!`);
-          }}
+      {showShareLinkModal && (
+        <ShareLinkModal
+          url={`${window.location.origin}/invite/${invitation.inviteToken}`}
+          title={invitation.eventTitle}
+          onClose={() => setShowShareLinkModal(false)}
         />
       )}
 
@@ -534,7 +1062,7 @@ export function App() {
         <AuthModal onClose={() => setShowAuthModal(false)} onAuthSuccess={handleAuthSuccess} />
       )}
 
-      <footer className="border-t border-slate-800 py-6 text-center text-xs text-slate-500">
+      <footer className="relative z-10 border-t border-[#6b2140]/50 py-6 text-center text-xs text-[#cf9bb3]">
         © 2026 Magizhnaazh Customer Event Planner Portal — Port 3000
       </footer>
     </div>

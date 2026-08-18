@@ -1,5 +1,6 @@
 import path from 'path';
 import dotenv from 'dotenv';
+// Loads MONGODB_URI and INTERNAL_API_SECRET (guards the internal rating-sync route).
 dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 import express, { Request, Response } from 'express';
@@ -11,6 +12,7 @@ import { requestLogger } from '../../packages/shared-utils/logging';
 import { registerHealthRoute } from '../../packages/shared-utils/health';
 import { LocalStorageProvider } from '../../packages/local-storage-provider';
 import { VENDOR_CATEGORIES } from '../../packages/shared-types';
+import { INDIA_STATES_AND_CITIES } from '../../packages/shared-utils/indiaLocations';
 import { VendorModel } from './models/Vendor';
 import { CategoryModel } from './models/Category';
 import { CityModel } from './models/City';
@@ -29,72 +31,230 @@ app.use(requestLogger('marketplace-service'));
 registerHealthRoute(app, 'marketplace-service');
 app.use('/uploads', express.static(UPLOADS_DIR));
 
-async function seedIfEmpty() {
-  const count = await VendorModel.countDocuments();
-  if (count > 0) return;
+// Cities across India used to place demo vendors.
+const CITIES: Record<string, { coords: [number, number]; state: string; pincode: string }> = {
+  Chennai: { coords: [80.2707, 13.0827], state: 'Tamil Nadu', pincode: '600001' },
+  Coimbatore: { coords: [76.9558, 11.0168], state: 'Tamil Nadu', pincode: '641001' },
+  Madurai: { coords: [78.1198, 9.9252], state: 'Tamil Nadu', pincode: '625001' },
+  Mumbai: { coords: [72.8777, 19.076], state: 'Maharashtra', pincode: '400001' },
+  Pune: { coords: [73.8567, 18.5204], state: 'Maharashtra', pincode: '411001' },
+  'New Delhi': { coords: [77.209, 28.6139], state: 'Delhi', pincode: '110001' },
+  Bangalore: { coords: [77.5946, 12.9716], state: 'Karnataka', pincode: '560001' },
+  Hyderabad: { coords: [78.4867, 17.385], state: 'Telangana', pincode: '500001' },
+  Kolkata: { coords: [88.3639, 22.5726], state: 'West Bengal', pincode: '700001' },
+  Jaipur: { coords: [75.7873, 26.9124], state: 'Rajasthan', pincode: '302001' },
+  Ahmedabad: { coords: [72.5714, 23.0225], state: 'Gujarat', pincode: '380001' },
+  Kochi: { coords: [76.2673, 9.9312], state: 'Kerala', pincode: '682001' },
+  Lucknow: { coords: [80.9462, 26.8467], state: 'Uttar Pradesh', pincode: '226001' },
+  Varanasi: { coords: [82.9739, 25.3176], state: 'Uttar Pradesh', pincode: '221001' },
+  Goa: { coords: [73.8278, 15.4909], state: 'Goa', pincode: '403001' },
+  Chandigarh: { coords: [76.7794, 30.7333], state: 'Chandigarh', pincode: '160001' },
+};
 
-  await VendorModel.create({
-    id: 'vnd-1',
-    userId: 'usr-vendor-1',
-    businessName: 'The Leela Palace Grand Ballroom',
-    category: 'Venue',
-    description:
-      'Luxury sea-facing banquets and grand ballroom in Chennai for royal weddings, grand receptions, and corporate galas.',
+interface VendorSpec {
+  name: string;
+  category: string;
+  city: string;
+  price: number;
+  rating: number;
+  reviews: number;
+  img: string;
+  years: number;
+}
+
+// Demo vendors — one+ realistic business per category, spread across India.
+const VENDOR_SPECS: VendorSpec[] = [
+  // Venue
+  { name: 'The Leela Palace Grand Ballroom', category: 'Venue', city: 'Chennai', price: 150000, rating: 4.9, reviews: 142, img: 'photo-1712314947761-a8d718bd8c32', years: 12 },
+  { name: 'Taj Falaknuma Palace Banquets', category: 'Venue', city: 'Hyderabad', price: 220000, rating: 4.8, reviews: 98, img: 'photo-1655516433028-9e0e1599cf8b', years: 20 },
+  { name: 'Umaid Heritage Wedding Lawns', category: 'Venue', city: 'Jaipur', price: 180000, rating: 4.7, reviews: 76, img: 'photo-1780542900375-0cf459e38fbb', years: 15 },
+  // Catering
+  { name: 'Grand Chettinad Feast Caterers', category: 'Catering', city: 'Chennai', price: 450, rating: 4.8, reviews: 215, img: 'photo-1555244162-803834f70033', years: 18 },
+  { name: 'Maharaja Thali Catering Co.', category: 'Catering', city: 'New Delhi', price: 600, rating: 4.6, reviews: 180, img: 'photo-1581546085212-f25477a9d4fb', years: 14 },
+  { name: 'Spice Route Wedding Caterers', category: 'Catering', city: 'Mumbai', price: 750, rating: 4.9, reviews: 320, img: 'photo-1646578515903-67873a5398f9', years: 10 },
+  // Photography
+  { name: 'Candid Tales Photography & Cinema', category: 'Photography', city: 'Chennai', price: 65000, rating: 4.95, reviews: 98, img: 'photo-1574397188309-e83dfe918ecb', years: 9 },
+  { name: 'Frame Stories Wedding Films', category: 'Photography', city: 'New Delhi', price: 120000, rating: 4.9, reviews: 210, img: 'photo-1519741497674-611481863552', years: 11 },
+  { name: 'Sunset Reels Photography', category: 'Photography', city: 'Goa', price: 90000, rating: 4.8, reviews: 134, img: 'photo-1615966650071-855b15f29ad1', years: 7 },
+  // Decoration
+  { name: 'Flora Dreams Floral & Theme Decor', category: 'Decoration', city: 'Coimbatore', price: 40000, rating: 4.7, reviews: 76, img: 'photo-1605553426886-c0a99033fda0', years: 8 },
+  { name: 'Marigold Mandap Designers', category: 'Decoration', city: 'Jaipur', price: 80000, rating: 4.6, reviews: 90, img: 'photo-1756190564669-215843660e93', years: 12 },
+  { name: 'Petals & Pillars Event Decor', category: 'Decoration', city: 'Mumbai', price: 65000, rating: 4.8, reviews: 156, img: 'photo-1640355105827-2aa98e908a7b', years: 9 },
+  // Makeup & Beauty
+  { name: 'Blush Bridal Makeup Studio', category: 'Makeup & Beauty', city: 'Bangalore', price: 15000, rating: 4.9, reviews: 240, img: 'photo-1600685890506-593fdf55949b', years: 6 },
+  { name: 'Glam Diaries by Aditi', category: 'Makeup & Beauty', city: 'Mumbai', price: 25000, rating: 4.8, reviews: 310, img: 'photo-1619002117199-47c7f0427d21', years: 8 },
+  { name: 'Roopam Bridal Artistry', category: 'Makeup & Beauty', city: 'Hyderabad', price: 18000, rating: 4.7, reviews: 128, img: 'photo-1641382161166-4f3c320f0c6d', years: 10 },
+  // Transport
+  { name: 'Royal Ride Wedding Cars', category: 'Transport', city: 'Chennai', price: 6000, rating: 4.6, reviews: 88, img: 'photo-1592514313074-794923c98162', years: 7 },
+  { name: 'Baraat Express Fleet', category: 'Transport', city: 'New Delhi', price: 4000, rating: 4.5, reviews: 64, img: 'photo-1570118054363-ff4d296962f5', years: 9 },
+  { name: 'Vintage Wheels Luxury Cars', category: 'Transport', city: 'Pune', price: 15000, rating: 4.8, reviews: 52, img: 'photo-1571113908007-5d6aae13d73e', years: 11 },
+  // Pujari/Priest
+  { name: 'Vedic Purohit Services', category: 'Pujari/Priest', city: 'Chennai', price: 8000, rating: 4.9, reviews: 120, img: 'photo-1774024051976-7b5a15542a05', years: 22 },
+  { name: 'Shubh Muhurat Pandit Ji', category: 'Pujari/Priest', city: 'Varanasi', price: 6000, rating: 4.8, reviews: 95, img: 'photo-1630764883473-e8c2056f0589', years: 25 },
+  { name: 'Iyer Vadhyar Associates', category: 'Pujari/Priest', city: 'Madurai', price: 7000, rating: 4.7, reviews: 71, img: 'photo-1636559527737-ea8576ae6571', years: 18 },
+  // Return Gifts
+  { name: 'Giftology Return Favors', category: 'Return Gifts', city: 'Bangalore', price: 60, rating: 4.6, reviews: 140, img: 'photo-1622595701760-039942e936de', years: 5 },
+  { name: 'Silver Shagun Gifts', category: 'Return Gifts', city: 'Jaipur', price: 120, rating: 4.7, reviews: 88, img: 'photo-1644061925268-053b6a592c2e', years: 8 },
+  { name: 'EcoGift Wedding Favors', category: 'Return Gifts', city: 'Pune', price: 40, rating: 4.5, reviews: 60, img: 'photo-1615737183238-2a9f1788608e', years: 4 },
+  // Music/DJ
+  { name: 'Beat Box DJ & Sound', category: 'Music/DJ', city: 'Mumbai', price: 8000, rating: 4.7, reviews: 175, img: 'photo-1470225620780-dba8ba36b745', years: 9 },
+  { name: 'Nadhaswaram Isai Kuzhu', category: 'Music/DJ', city: 'Madurai', price: 6000, rating: 4.9, reviews: 64, img: 'photo-1579018372296-afd56f194ebc', years: 20 },
+  { name: 'Sufi Nights Live Band', category: 'Music/DJ', city: 'New Delhi', price: 20000, rating: 4.8, reviews: 112, img: 'photo-1565035010268-a3816f98589a', years: 12 },
+  // Videography
+  { name: 'Frame & Motion Films', category: 'Videography', city: 'Chennai', price: 70000, rating: 4.8, reviews: 84, img: 'photo-1580707221190-bd94d9087b7f', years: 8 },
+  { name: 'Cinereel Wedding Films', category: 'Videography', city: 'Bangalore', price: 95000, rating: 4.7, reviews: 61, img: 'photo-1629756048377-09540f52caa1', years: 6 },
+  // Invitation
+  { name: 'Pixel Invites Studio', category: 'Invitation', city: 'Chennai', price: 2500, rating: 4.7, reviews: 132, img: 'photo-1632610992723-82d7c212f6d7', years: 5 },
+  { name: 'Royal Card Creations', category: 'Invitation', city: 'Jaipur', price: 4000, rating: 4.6, reviews: 77, img: 'photo-1721176487015-5408ae0e9bc2', years: 9 },
+  // Printing
+  { name: 'Classic Press Wedding Cards', category: 'Printing', city: 'Coimbatore', price: 3000, rating: 4.6, reviews: 58, img: 'photo-1503694978374-8a2fa686963a', years: 14 },
+  { name: 'FlexPrint Banners & Albums', category: 'Printing', city: 'Madurai', price: 5000, rating: 4.5, reviews: 40, img: 'photo-1581508512961-0e3b9524db40', years: 10 },
+  // Entertainment
+  { name: 'Encore Live Entertainment', category: 'Entertainment', city: 'Mumbai', price: 25000, rating: 4.7, reviews: 96, img: 'photo-1563841930606-67e2bce48b78', years: 7 },
+  { name: 'Firework Nights Events', category: 'Entertainment', city: 'New Delhi', price: 40000, rating: 4.6, reviews: 55, img: 'photo-1470229722913-7c0e2dbbafd3', years: 6 },
+  // Lighting
+  { name: 'Luminous Stage Lighting', category: 'Lighting', city: 'Bangalore', price: 15000, rating: 4.7, reviews: 70, img: 'photo-1576514129883-2f1d47a65da6', years: 8 },
+  { name: 'Chandelier & Laser Co.', category: 'Lighting', city: 'Hyderabad', price: 22000, rating: 4.6, reviews: 48, img: 'photo-1558620013-a08999547a36', years: 5 },
+  // Flowers
+  { name: 'Petal Craft Florists', category: 'Flowers', city: 'Chennai', price: 8000, rating: 4.8, reviews: 110, img: 'photo-1469371670807-013ccf25f16a', years: 9 },
+  { name: 'Bloom & Garland Studio', category: 'Flowers', city: 'Coimbatore', price: 6000, rating: 4.6, reviews: 65, img: 'photo-1727081203667-4792c134061a', years: 6 },
+  // Mehendi
+  { name: 'Henna Traditions Studio', category: 'Mehendi', city: 'Jaipur', price: 5000, rating: 4.9, reviews: 145, img: 'photo-1732118400647-a81e3b37be87', years: 11 },
+  { name: 'Mehendi Moments by Ritu', category: 'Mehendi', city: 'Mumbai', price: 7000, rating: 4.7, reviews: 92, img: 'photo-1753597500229-d2534c9a01f8', years: 7 },
+  // Event Host/Anchor
+  { name: 'MicDrop Event Anchors', category: 'Event Host/Anchor', city: 'Bangalore', price: 12000, rating: 4.7, reviews: 63, img: 'photo-1702562546665-4632bdb96e04', years: 6 },
+  { name: 'Stagecraft Emcee Services', category: 'Event Host/Anchor', city: 'Chennai', price: 15000, rating: 4.6, reviews: 44, img: 'photo-1538449327350-43b4fcfd35ac', years: 8 },
+  // Security
+  { name: 'Shield Guard Event Security', category: 'Security', city: 'Mumbai', price: 10000, rating: 4.5, reviews: 39, img: 'photo-1566245024852-04fbf7842ce9', years: 12 },
+  { name: 'SafeZone Crowd Management', category: 'Security', city: 'New Delhi', price: 12000, rating: 4.6, reviews: 51, img: 'photo-1652739758426-56a564265f9e', years: 9 },
+  // Cleaning
+  { name: 'SpotFree Event Cleaning', category: 'Cleaning', city: 'Pune', price: 4000, rating: 4.5, reviews: 33, img: 'photo-1580842402762-6f5868c17412', years: 5 },
+  { name: 'FreshStart Sanitation Co.', category: 'Cleaning', city: 'Ahmedabad', price: 5000, rating: 4.4, reviews: 27, img: 'photo-1615506355925-dd0a54d099dd', years: 4 },
+  // Rental Equipment
+  { name: 'EventGear Rentals', category: 'Rental Equipment', city: 'Chennai', price: 9000, rating: 4.6, reviews: 87, img: 'photo-1695393386569-cf141ff2c552', years: 10 },
+  { name: 'Canopy & Chairs Co.', category: 'Rental Equipment', city: 'Kochi', price: 7000, rating: 4.5, reviews: 52, img: 'photo-1675376616537-c8aa9ddc9977', years: 8 },
+  // Wedding Planner
+  { name: 'Dream Day Wedding Planners', category: 'Wedding Planner', city: 'Mumbai', price: 100000, rating: 4.9, reviews: 118, img: 'photo-1568847811512-803314424fdc', years: 12 },
+  { name: 'Vivaha Event Consultants', category: 'Wedding Planner', city: 'Chennai', price: 75000, rating: 4.8, reviews: 90, img: 'photo-1691480174869-436af8fd6eba', years: 9 },
+  // Corporate Event Services
+  { name: 'ProSummit Corporate Events', category: 'Corporate Event Services', city: 'Bangalore', price: 60000, rating: 4.7, reviews: 54, img: 'photo-1540575467063-178a50c2df87', years: 8 },
+  { name: 'Momentum MICE Solutions', category: 'Corporate Event Services', city: 'New Delhi', price: 80000, rating: 4.6, reviews: 46, img: 'photo-1587825140708-dfaf72ae4b04', years: 7 },
+  // Utensils for Rent — vessels/serving-ware rental (common for South-Indian weddings).
+  { name: 'Annapurna Vessels & Utensils Rentals', category: 'Utensils for Rent', city: 'Chennai', price: 3000, rating: 4.7, reviews: 58, img: 'photo-1652960018678-1f19799996c5', years: 11 },
+  { name: 'Sri Lakshmi Catering Vessels', category: 'Utensils for Rent', city: 'Coimbatore', price: 2500, rating: 4.6, reviews: 41, img: 'photo-1548688977-3e38ddc590f6', years: 8 },
+];
+
+function buildVendor(spec: VendorSpec, idx: number) {
+  const c = CITIES[spec.city];
+  const perPlate = spec.category === 'Catering';
+  const slug = spec.name.toLowerCase().replace(/[^a-z0-9]+/g, '');
+  return {
+    id: `vnd-${idx + 1}`,
+    userId: `usr-vendor-${idx + 1}`,
+    businessName: spec.name,
+    category: spec.category,
+    description: `${spec.name} — a trusted ${spec.category} partner in ${spec.city}, ${c.state}, serving weddings and events across India.`,
     location: {
-      type: 'Point',
-      coordinates: [80.2707, 13.0827],
-      address: 'Adyar Seaface, MRC Nagar',
-      city: 'Chennai',
-      district: 'Chennai',
-      state: 'Tamil Nadu',
-      pincode: '600028',
+      type: 'Point' as const,
+      coordinates: c.coords,
+      address: `${spec.city} City Centre`,
+      city: spec.city,
+      district: spec.city,
+      state: c.state,
+      pincode: c.pincode,
     },
-    startingPrice: 150000,
-    yearsOfExperience: 12,
-    ratingAverage: 4.9,
-    reviewCount: 142,
+    startingPrice: spec.price,
+    yearsOfExperience: spec.years,
+    ratingAverage: spec.rating,
+    reviewCount: spec.reviews,
     isVerified: true,
-    featured: true,
-    galleryImages: [
-      'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=800',
-      'https://images.unsplash.com/photo-1545232979-fbf34fe37722?w=800',
-    ],
+    featured: idx < 4,
+    galleryImages: [`https://images.unsplash.com/${spec.img}?w=800`],
     packages: [
-      { id: 'pkg-1-1', packageName: 'Royal Ballroom Package', price: 150000, description: 'AC Ballroom hall for 600 guests, stage setup, basic lighting.', includedServices: ['Hall Rent', 'Stage Decor', 'Centralized AC', 'VIP Suite'] },
-      { id: 'pkg-1-2', packageName: 'Luxury Ocean View Deck', price: 250000, description: 'Outdoor seaside lawn + grand indoor hall for 1200 guests.', includedServices: ['Ocean Lawn', 'Valet Parking', 'Power Backup', '2 Executive Rooms'] },
+      {
+        id: `pkg-${idx + 1}-1`,
+        packageName: `${spec.category} Signature Package`,
+        price: spec.price,
+        description: `Signature ${spec.category} package${perPlate ? ' (price per plate)' : ''} by ${spec.name}.`,
+        includedServices: ['Experienced professional team', 'On-time service', 'Event coordination'],
+      },
     ],
-    contactEmail: 'events@leelachennai.com',
-    contactPhone: '+91 44 33661234',
+    contactEmail: `contact@${slug}.in`,
+    contactPhone: `+91 90${String(100000 + idx).slice(-6)}`,
     policies: { cancellation: 'Full refund up to 30 days before event.', refund: '50% refund within 30 days.', advancePercentage: 30 },
-  });
-  console.log('[marketplace-service] Seeded demo vendor.');
+  };
+}
+
+async function seedIfEmpty() {
+  // Insert only the demo specs whose id isn't already in the collection.
+  // Real vendors registered through the app also get a `vnd-` prefixed id
+  // (see the POST /api/v1/vendors handler below), so this must never delete
+  // by id prefix — a blanket delete+reinsert wiped out real vendor listings
+  // (and the demo set) on every restart. Being purely additive also means
+  // new entries appended to VENDOR_SPECS get seeded in on the next restart
+  // without disturbing anything already in the database.
+  const docs = VENDOR_SPECS.map(buildVendor);
+  const existingIds = new Set((await VendorModel.find({}, { id: 1 }).lean()).map((v) => v.id));
+  const missing = docs.filter((d) => !existingIds.has(d.id));
+  if (missing.length === 0) return;
+  await VendorModel.insertMany(missing, { ordered: false });
+  console.log(`[marketplace-service] Seeded ${missing.length} new demo vendors.`);
 }
 
 async function seedCategoriesAndCities() {
+  // Additive category seed: back-fill any category from VENDOR_CATEGORIES that
+  // isn't already in the collection (matched by name), so new categories added
+  // to shared-types show up in the admin console on the next restart without
+  // disturbing existing ones.
   try {
-    if ((await CategoryModel.countDocuments()) === 0) {
-      await CategoryModel.insertMany(
-        VENDOR_CATEGORIES.map((name, idx) => ({ id: `cat-${idx + 1}`, name, isActive: true })),
-        { ordered: false }
-      );
-      console.log('[marketplace-service] Seeded vendor categories.');
+    const existingCats = await CategoryModel.find({}, { name: 1 }).lean();
+    const existingNames = new Set(existingCats.map((c) => c.name.toLowerCase()));
+    const missingCats = VENDOR_CATEGORIES.filter((name) => !existingNames.has(name.toLowerCase())).map((name) => ({
+      id: `cat-${Date.now()}-${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+      name,
+      isActive: true,
+    }));
+    if (missingCats.length > 0) {
+      await CategoryModel.insertMany(missingCats, { ordered: false });
+      console.log(`[marketplace-service] Seeded ${missingCats.length} vendor categories.`);
     }
   } catch (err: any) {
     if (err?.code !== 11000) throw err; // benign: another instance seeded concurrently
   }
 
+  // Seed the full India-wide serviceable-cities catalogue. Additive: only the
+  // cities not already present (matched by name+state) are inserted, so an
+  // existing DB that was seeded with the old 4-city set gets back-filled to the
+  // full catalogue on the next restart, and any city an admin added or removed
+  // by hand is left untouched.
   try {
-    if ((await CityModel.countDocuments()) === 0) {
-      await CityModel.insertMany(
-        [
-          { id: 'city-1', name: 'Chennai', state: 'Tamil Nadu', isActive: true },
-          { id: 'city-2', name: 'Coimbatore', state: 'Tamil Nadu', isActive: true },
-          { id: 'city-3', name: 'Madurai', state: 'Tamil Nadu', isActive: true },
-          { id: 'city-4', name: 'Bangalore', state: 'Karnataka', isActive: true },
-        ],
-        { ordered: false }
-      );
-      console.log('[marketplace-service] Seeded serviceable cities.');
+    const existing = await CityModel.find({}, { name: 1, state: 1 }).lean();
+    const existingSet = new Set(
+      existing.map((c) => `${c.name.toLowerCase()}|${(c.state || '').toLowerCase()}`)
+    );
+
+    const catalogue = Object.entries(INDIA_STATES_AND_CITIES).flatMap(([state, cities]) =>
+      cities.map((name) => ({ name, state }))
+    );
+    // De-duplicate the catalogue itself (a couple of cities appear under NCR/UP both).
+    const seen = new Set<string>();
+    const toInsert = catalogue
+      .filter(({ name, state }) => {
+        const key = `${name.toLowerCase()}|${state.toLowerCase()}`;
+        if (existingSet.has(key) || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .map(({ name, state }, idx) => ({
+        id: `city-seed-${idx + 1}`,
+        name,
+        state,
+        isActive: true,
+      }));
+
+    if (toInsert.length > 0) {
+      await CityModel.insertMany(toInsert, { ordered: false });
+      console.log(`[marketplace-service] Seeded ${toInsert.length} serviceable cities.`);
     }
   } catch (err: any) {
     if (err?.code !== 11000) throw err;
@@ -175,7 +335,7 @@ app.put('/api/v1/vendors/:id', authMiddleware(), async (req: Request, res: Respo
     return res.status(403).json({ success: false, message: 'You do not own this vendor listing.' });
   }
 
-  const { businessName, category, description, city, startingPrice, contactEmail, contactPhone, packages } = req.body;
+  const { businessName, category, description, city, startingPrice, contactEmail, contactPhone, upiId, packages, facilities, galleryImages, availableDates, offeredOptions, offeredOptionPrices, policies } = req.body;
   if (businessName !== undefined) vendor.businessName = businessName;
   if (category !== undefined) vendor.category = category;
   if (description !== undefined) vendor.description = description;
@@ -183,8 +343,22 @@ app.put('/api/v1/vendors/:id', authMiddleware(), async (req: Request, res: Respo
   if (startingPrice !== undefined) vendor.startingPrice = Number(startingPrice);
   if (contactEmail !== undefined) vendor.contactEmail = contactEmail;
   if (contactPhone !== undefined) vendor.contactPhone = contactPhone;
+  if (upiId !== undefined) (vendor as any).upiId = upiId;
   if (Array.isArray(packages)) vendor.packages = packages;
+  if (facilities !== undefined) vendor.facilities = { ...(vendor.facilities as any), ...facilities };
+  if (Array.isArray(galleryImages)) vendor.galleryImages = galleryImages;
+  if (Array.isArray(availableDates)) vendor.availableDates = availableDates;
+  if (Array.isArray(offeredOptions)) (vendor as any).offeredOptions = offeredOptions;
+  if (offeredOptionPrices !== undefined) {
+    (vendor as any).offeredOptionPrices = offeredOptionPrices;
+    vendor.markModified('offeredOptionPrices');
+  }
+  if (policies !== undefined) {
+    vendor.policies = { ...(vendor.policies as any), ...policies };
+    vendor.markModified('policies');
+  }
 
+  vendor.markModified('facilities');
   await vendor.save();
   res.json({ success: true, message: 'Vendor profile updated.', data: { vendor } });
 });
@@ -210,6 +384,53 @@ app.post('/api/v1/vendors/:id/upload', authMiddleware(), upload.single('file'), 
     message: 'Portfolio asset uploaded to Local Disk Storage (/uploads).',
     data: { fileUrl, filename: file.originalname, sizeBytes: file.size },
   });
+});
+
+// 6b. UPI payment QR code upload — single image, replaces any previous one.
+app.post('/api/v1/vendors/:id/upload-qr', authMiddleware(), upload.single('file'), async (req: Request, res: Response) => {
+  const file = req.file;
+  if (!file) return res.status(400).json({ success: false, message: 'No file uploaded.' });
+
+  const vendorId = req.params.id;
+  const vendorForUpload = await VendorModel.findOne({ id: vendorId });
+  if (!vendorForUpload) return res.status(404).json({ success: false, message: 'Vendor not found.' });
+  if (vendorForUpload.userId !== req.user!.sub && req.user!.role !== 'admin') {
+    return res.status(403).json({ success: false, message: 'You do not own this vendor listing.' });
+  }
+
+  const fileUrl = await storageProvider.saveFile(file.buffer, file.originalname, `vendor-${vendorId}-qr`);
+
+  await VendorModel.updateOne({ id: vendorId }, { qrCodeImage: fileUrl });
+
+  res.json({
+    success: true,
+    message: 'UPI QR code uploaded to Local Disk Storage (/uploads).',
+    data: { fileUrl, filename: file.originalname, sizeBytes: file.size },
+  });
+});
+
+// 6c. Internal rating sync — the guest-feedback service pushes a vendor's
+// recomputed aggregate rating here after a verified review is published, so the
+// vendor's card and dashboard reflect real reviews. Inputs are clamped; in a
+// hardened deployment this should sit behind an internal-only network or a
+// shared service secret rather than the public gateway.
+app.put('/api/v1/vendors/:id/rating', async (req: Request, res: Response) => {
+  // Only the guest-feedback service should call this. When INTERNAL_API_SECRET
+  // is set, require a matching header so the public gateway can't be used to
+  // spoof vendor ratings. (Left open only if the secret is unset, for local dev.)
+  const internalSecret = process.env.INTERNAL_API_SECRET;
+  if (internalSecret && req.headers['x-internal-secret'] !== internalSecret) {
+    return res.status(403).json({ success: false, message: 'Forbidden: internal endpoint.' });
+  }
+
+  const { ratingAverage, reviewCount } = req.body;
+  const vendor = await VendorModel.findOne({ id: req.params.id });
+  if (!vendor) return res.status(404).json({ success: false, message: 'Vendor not found.' });
+
+  if (ratingAverage !== undefined) vendor.ratingAverage = Math.max(0, Math.min(5, Number(ratingAverage) || 0));
+  if (reviewCount !== undefined) vendor.reviewCount = Math.max(0, Math.round(Number(reviewCount) || 0));
+  await vendor.save();
+  res.json({ success: true, data: { vendor } });
 });
 
 // 7. Admin/vendor verification toggle
@@ -258,12 +479,51 @@ app.get('/api/v1/locations', async (req: Request, res: Response) => {
 });
 
 app.post('/api/v1/locations', authMiddleware(), requireRole('admin'), async (req: Request, res: Response) => {
-  const { name, state } = req.body;
+  const { name, state, locations } = req.body;
+
+  if (Array.isArray(locations)) {
+    try {
+      const existing = await CityModel.find({}, { name: 1, state: 1 });
+      const existingSet = new Set(existing.map(e => `${e.name.toLowerCase()}|${e.state.toLowerCase()}`));
+
+      const toInsert = locations
+        .filter((loc: any) => loc.name && loc.state && !existingSet.has(`${loc.name.trim().toLowerCase()}|${loc.state.trim().toLowerCase()}`))
+        .map((loc: any, idx: number) => ({
+          id: `city-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 6)}`,
+          name: loc.name.trim(),
+          state: loc.state.trim(),
+          isActive: true
+        }));
+
+      if (toInsert.length === 0) {
+        return res.status(200).json({ success: true, message: 'All selected locations already exist.' });
+      }
+
+      const result = await CityModel.insertMany(toInsert, { ordered: false });
+      return res.status(201).json({ success: true, message: `${result.length} locations added.`, data: { locations: result } });
+    } catch (err: any) {
+      return res.status(500).json({ success: false, message: err.message || 'Bulk write error.' });
+    }
+  }
+
   if (!name) return res.status(400).json({ success: false, message: 'name is required.' });
 
-  const location = await CityModel.create({ id: `city-${Date.now()}`, name, state });
-  res.status(201).json({ success: true, message: 'Location added.', data: { location } });
+  try {
+    const existing = await CityModel.findOne({
+      name: new RegExp(`^${name.trim()}$`, 'i'),
+      state: new RegExp(`^${state.trim()}$`, 'i')
+    });
+    if (existing) {
+      return res.status(400).json({ success: false, message: 'Location already exists.' });
+    }
+
+    const location = await CityModel.create({ id: `city-${Date.now()}`, name: name.trim(), state: state.trim() });
+    res.status(201).json({ success: true, message: 'Location added.', data: { location } });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || 'Failed to create location.' });
+  }
 });
+
 
 app.delete('/api/v1/locations/:id', authMiddleware(), requireRole('admin'), async (req: Request, res: Response) => {
   await CityModel.deleteOne({ id: req.params.id });

@@ -8,4 +8,75 @@
     backdrop-filter: blur(16px);
     border: 1px solid rgba(255, 255, 255, 0.1);
   }
+
+  /* Crisp twinkling star sparkles for the celebration background layer */
+  .animate-twinkle {
+    animation-name: twinkle;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+  }
+
+  @keyframes twinkle {
+    0%, 100% {
+      transform: scale(0.6) rotate(0deg);
+      opacity: 0.15;
+    }
+    50% {
+      transform: scale(1.15) rotate(20deg);
+      opacity: 0.9;
+    }
+  }
+
+  /* Diagonal shine sweep for primary celebration CTAs — apply alongside a
+     `relative overflow-hidden` container; the sweep is the ::after pseudo-element. */
+  .shine-sweep {
+    position: relative;
+    overflow: hidden;
+  }
+  .shine-sweep::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -60%;
+    width: 40%;
+    height: 100%;
+    background: linear-gradient(115deg, transparent 0%, rgba(255, 255, 255, 0.45) 50%, transparent 100%);
+    transform: skewX(-20deg);
+    transition: left 0.7s ease;
+  }
+  .shine-sweep:hover::after {
+    left: 130%;
+  }
+
+  /* Gentle drifting hearts for the romantic background layer */
+  .animate-float-slow {
+    animation-name: float-slow;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+  }
+
+  @keyframes float-slow {
+    0%, 100% {
+      transform: translateY(0) rotate(0deg);
+    }
+    50% {
+      transform: translateY(-18px) rotate(6deg);
+    }
+  }
+
+  /* Slow falling confetti flecks for the celebration background layer */
+  .animate-confetti-fall {
+    animation-name: confetti-fall;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+  }
+
+  @keyframes confetti-fall {
+    0% {
+      transform: translateY(-10px) rotate(0deg);
+    }
+    100% {
+      transform: translateY(110vh) rotate(360deg);
+    }
+  }
 }

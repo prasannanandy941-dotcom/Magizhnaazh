@@ -1,5 +1,6 @@
 import path from 'path';
 import dotenv from 'dotenv';
+// Loads MONGODB_URI and INTERNAL_API_SECRET (sent when syncing vendor ratings).
 dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 import { randomBytes } from 'crypto';
@@ -17,6 +18,28 @@ import { ComplaintModel } from './models/Complaint';
 const app = express();
 const PORT = process.env.PORT || 8006;
 const BOOKING_SERVICE_URL = process.env.BOOKING_PAYMENT_SERVICE_URL || 'http://localhost:8004';
+const MARKETPLACE_SERVICE_URL = process.env.MARKETPLACE_SERVICE_URL || 'http://localhost:8002';
+
+// Recompute a vendor's aggregate rating from all its reviews and push it to the
+// marketplace so the vendor's card + dashboard reflect verified reviews.
+// Best-effort: a failure here never blocks the review from being saved.
+async function syncVendorRating(vendorId: string) {
+  try {
+    const all = await ReviewModel.find({ vendorId });
+    const count = all.length;
+    const avg = count ? all.reduce((s, r) => s + r.overallRating, 0) / count : 0;
+    await fetch(`${MARKETPLACE_SERVICE_URL}/api/v1/vendors/${vendorId}/rating`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-internal-secret': process.env.INTERNAL_API_SECRET || '',
+      },
+      body: JSON.stringify({ ratingAverage: Math.round(avg * 10) / 10, reviewCount: count }),
+    });
+  } catch (err) {
+    console.error('[guest-feedback-service] Failed to sync vendor rating:', (err as Error).message);
+  }
+}
 
 app.use(cors());
 app.use(express.json());
@@ -206,6 +229,7 @@ app.post('/api/v1/reviews', authMiddleware(), async (req: Request, res: Response
       eventType: booking.vendorCategory || '',
       eventDate: booking.eventDate || '',
     });
+    await syncVendorRating(vendorId);
     res.status(201).json({ success: true, message: 'Verified vendor review published.', data: { review } });
   } catch (err: any) {
     if (err?.code === 11000) {
@@ -213,6 +237,22 @@ app.post('/api/v1/reviews', authMiddleware(), async (req: Request, res: Response
     }
     throw err;
   }
+});
+
+// 5b. The signed-in customer's own reviews — lets My Orders show which bookings
+// have already been reviewed (and render the submitted rating back).
+app.get('/api/v1/reviews/mine', authMiddleware(), async (req: Request, res: Response) => {
+  const reviews = await ReviewModel.find({ customerId: req.user!.sub }).sort({ createdAt: -1 });
+  res.json({ success: true, data: { reviews } });
+});
+
+// 5c. Public reviews for a single vendor + aggregate — used by the vendor
+// dashboard to show its customer reviews, and available to the storefront.
+app.get('/api/v1/reviews/vendor/:vendorId', async (req: Request, res: Response) => {
+  const reviews = await ReviewModel.find({ vendorId: req.params.vendorId }).sort({ createdAt: -1 }).limit(200);
+  const count = reviews.length;
+  const averageRating = count ? Math.round((reviews.reduce((s, r) => s + r.overallRating, 0) / count) * 10) / 10 : 0;
+  res.json({ success: true, data: { reviews, averageRating, count } });
 });
 
 // --- Admin moderation: reviews ---
