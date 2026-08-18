@@ -4,7 +4,7 @@ import { User, Vendor, Booking, Review, VendorFacilities, VENDOR_CATEGORIES, CAT
 import { STATIC_CITY_GROUPS } from '../../../packages/shared-utils';
 import { AuthGate } from './components/AuthGate';
 import { FloralGoldBackground } from './components/FloralGoldBackground';
-import { fetchMyVendor, updateVendor, fetchVendorBookings, confirmBooking, sendCounterQuote, updateBookingStatus, fetchVendorReviews } from './api';
+import { fetchMyVendor, updateVendor, fetchVendorBookings, confirmBooking, sendCounterQuote, updateBookingStatus, fetchVendorReviews, GATEWAY_URL } from './api';
 
 // Work-progress stages a confirmed booking moves through, tracked on the
 // existing BookingStatus field — applies to every vendor category, not just
@@ -301,7 +301,7 @@ export function App() {
       const formData = new FormData();
       formData.append('file', file);
 
-      const res = await fetch(`http://localhost:8000/api/v1/vendors/${myVendor.id}/upload`, {
+      const res = await fetch(`${GATEWAY_URL}/api/v1/vendors/${myVendor.id}/upload`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
@@ -331,7 +331,7 @@ export function App() {
       const formData = new FormData();
       formData.append('file', file);
 
-      const res = await fetch(`http://localhost:8000/api/v1/vendors/${myVendor.id}/upload-qr`, {
+      const res = await fetch(`${GATEWAY_URL}/api/v1/vendors/${myVendor.id}/upload-qr`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
