@@ -9,7 +9,6 @@ import { createProxyMiddleware } from 'http-proxy-middleware';
 import { requestLogger } from '../../packages/shared-utils/logging';
 
 const app = express();
-const PORT = process.env.PORT || 8000;
 
 const SERVICES = {
   auth: process.env.AUTH_SERVICE_URL || 'http://localhost:8001',
@@ -72,6 +71,8 @@ app.use('/api/v1/feedback', publicSubmissionLimiter, createProxyMiddleware({ tar
 app.use('/api/v1/reviews', createProxyMiddleware({ target: SERVICES.guestFeedback, changeOrigin: true }));
 app.use('/api/v1/complaints', createProxyMiddleware({ target: SERVICES.guestFeedback, changeOrigin: true }));
 app.use('/api/v1/monitor', createProxyMiddleware({ target: SERVICES.monitor, changeOrigin: true }));
+
+const PORT = Number(process.env.PORT) || 3000;
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Gateway running on port ${PORT}`);
