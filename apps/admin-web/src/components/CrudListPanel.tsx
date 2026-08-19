@@ -25,6 +25,9 @@ interface CrudListPanelProps<T> {
   onAdd?: (values: Record<string, string>) => Promise<void>;
   addLabel?: string;
   emptyText?: string;
+  // Optional controls (e.g. filter tabs) rendered between the header and the
+  // table.
+  toolbar?: React.ReactNode;
 }
 
 export function CrudListPanel<T>({
@@ -39,6 +42,7 @@ export function CrudListPanel<T>({
   onAdd,
   addLabel = 'Add',
   emptyText = 'Nothing here yet.',
+  toolbar,
 }: CrudListPanelProps<T>) {
   const [formValues, setFormValues] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
@@ -65,6 +69,8 @@ export function CrudListPanel<T>({
         <h2 className="font-display font-bold text-2xl text-white">{title}</h2>
         {subtitle && <p className="text-slate-400 text-sm mt-1">{subtitle}</p>}
       </div>
+
+      {toolbar}
 
       {addFields && onAdd && (
         <form onSubmit={handleAdd} className="glass-card p-5 rounded-2xl border border-slate-800 flex flex-wrap items-end gap-3">

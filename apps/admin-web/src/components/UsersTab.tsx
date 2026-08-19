@@ -11,10 +11,20 @@ const ROLE_STYLES: Record<string, string> = {
   guest: 'bg-slate-500/20 text-slate-300',
 };
 
+// Role filters shown as tabs above the user table, so an admin can view
+// customers and vendors separately instead of one mixed list.
+const ROLE_FILTERS: { key: string; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'customer', label: 'Customers' },
+  { key: 'vendor', label: 'Vendors' },
+  { key: 'admin', label: 'Admins' },
+];
+
 export const UsersTab: React.FC<{ token: string; currentUserId: string }> = ({ token, currentUserId }) => {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [roleFilter, setRoleFilter] = useState('all');
 
   const load = async () => {
     setLoading(true);
@@ -32,11 +42,37 @@ export const UsersTab: React.FC<{ token: string; currentUserId: string }> = ({ t
     setBusyId(null);
   };
 
+  const countFor = (key: string) => (key === 'all' ? users.length : users.filter((u) => u.role === key).length);
+  const visibleUsers = roleFilter === 'all' ? users : users.filter((u) => u.role === roleFilter);
+
+  const filterTabs = (
+    <div className="flex flex-wrap gap-2">
+      {ROLE_FILTERS.map((f) => {
+        const active = roleFilter === f.key;
+        return (
+          <button
+            key={f.key}
+            type="button"
+            onClick={() => setRoleFilter(f.key)}
+            className={`px-4 py-2 rounded-xl font-bold text-xs transition-colors border ${
+              active
+                ? 'bg-gradient-to-r from-[#e85d8a] via-[#d4af37] to-[#b8336a] text-white border-transparent shadow-md'
+                : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+            }`}
+          >
+            {f.label} <span className={active ? 'text-white/80' : 'text-slate-500'}>({countFor(f.key)})</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+
   return (
     <CrudListPanel
       title="Platform Users"
       subtitle="Every registered account — customers, vendors, and admins."
-      items={users}
+      toolbar={filterTabs}
+      items={visibleUsers}
       loading={loading}
       rowKey={(u) => u.id}
       columns={[
@@ -75,7 +111,7 @@ export const UsersTab: React.FC<{ token: string; currentUserId: string }> = ({ t
           </button>
         )
       }
-      emptyText="No users yet."
+      emptyText={roleFilter === 'all' ? 'No users yet.' : `No ${roleFilter}s yet.`}
     />
   );
 };
