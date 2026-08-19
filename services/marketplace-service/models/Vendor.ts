@@ -77,6 +77,9 @@ const vendorSchema = new Schema<Vendor>({
   // Named priced line-items the vendor lists under each offered option, keyed
   // by label — e.g. { "Veg": [{ name, price, note }, ...] }.
   offeredOptionItems: { type: Schema.Types.Mixed, default: {} },
+  // Option-level quality tier keyed by label, for options with no item list —
+  // e.g. { "Live Streaming": "4K Ultra HD" }.
+  offeredOptionQuality: { type: Schema.Types.Mixed, default: {} },
   createdAt: { type: String, default: () => new Date().toISOString() },
 });
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Store, Star, Upload, Check, LogOut, Loader2, Plus, SlidersHorizontal, ChevronDown, Receipt, X } from 'lucide-react';
-import { User, Vendor, Booking, Review, VendorFacilities, OfferedOptionItem, VENDOR_CATEGORIES, CATEGORY_OPTIONS, CATERING_OPTION_STYLE } from '../../../packages/shared-types';
+import { User, Vendor, Booking, Review, VendorFacilities, OfferedOptionItem, VENDOR_CATEGORIES, CATEGORY_OPTIONS, CATERING_OPTION_STYLE, MEDIA_QUALITY_OPTIONS, MEDIA_EQUIPMENT_OPTIONS, mediaExtraField } from '../../../packages/shared-types';
 import { STATIC_CITY_GROUPS } from '../../../packages/shared-utils';
 import { AuthGate } from './components/AuthGate';
 import { FloralGoldBackground } from './components/FloralGoldBackground';
@@ -53,10 +53,14 @@ const SERVICE_TIERS: { key: keyof VendorFacilities; label: string }[] = [
   { key: 'transport', label: 'Transport' },
 ];
 
-// Offered like any other priced option (not category-specific), so every
-// vendor — including Venue, which has no CATEGORY_OPTIONS preset list — can
-// one-click add it instead of typing it into "Add your own option".
-const UNIVERSAL_OPTIONS = ['Advance'];
+// Extra options every category gets in addition to its CATEGORY_OPTIONS.
+// (Advance was removed — a vendor's advance is set in Business Profile, not as
+// a bookable option.)
+const UNIVERSAL_OPTIONS: string[] = [];
+
+// Options that are a simple yes/we-offer-this with no per-item breakdown, so
+// their card hides the "Add items" editor entirely.
+const NO_ITEM_OPTIONS = new Set<string>(['Live Streaming', 'Same-Day Edit', 'Highlight Reel', 'LED Screens']);
 
 // Example item name shown as the placeholder in the per-option item editor,
 // tailored to each vendor category so a caterer sees a dish and a cleaner sees
@@ -67,8 +71,7 @@ const ITEM_NAME_EXAMPLE: Record<string, string> = {
   Venue: 'AC Banquet Hall',
   Decoration: 'Rose & Marigold Backdrop',
   'Makeup & Beauty': 'HD Bridal Makeup',
-  Photography: 'Candid Album (200 photos)',
-  Videography: 'Cinematic Highlight Reel',
+  Media: 'Candid Album / Cinematic Reel',
   Transport: 'Innova Crysta (per trip)',
   'Pujari/Priest': 'Wedding Homam Ritual',
   Invitation: 'Digital E-Invite Design',
@@ -122,6 +125,8 @@ export function App() {
   const [offeredOptions, setOfferedOptions] = useState<string[]>([]);
   const [offeredOptionPrices, setOfferedOptionPrices] = useState<Record<string, number>>({});
   const [offeredOptionItems, setOfferedOptionItems] = useState<Record<string, OfferedOptionItem[]>>({});
+  // Option-level quality tier for options that have no item list (e.g. Live Streaming).
+  const [offeredOptionQuality, setOfferedOptionQuality] = useState<Record<string, string>>({});
   // Which offered option's item-editor is currently expanded (only one open at a time).
   const [expandedOption, setExpandedOption] = useState<string | null>(null);
   const [customOption, setCustomOption] = useState('');
@@ -178,6 +183,7 @@ export function App() {
         setOfferedOptions(v.offeredOptions || []);
         setOfferedOptionPrices(v.offeredOptionPrices || {});
         setOfferedOptionItems(v.offeredOptionItems || {});
+        setOfferedOptionQuality(v.offeredOptionQuality || {});
         setAvailableDates(v.availableDates || []);
 
         setBookingsLoading(true);
@@ -262,8 +268,26 @@ export function App() {
         return next;
       });
       setExpandedOption((cur) => (cur === opt ? null : cur));
+      setOfferedOptionQuality((prev) => {
+        if (!(opt in prev)) return prev;
+        const next = { ...prev };
+        delete next[opt];
+        return next;
+      });
     }
   };
+
+  // Option-level quality (for NO_ITEM_OPTIONS like Live Streaming).
+  const setOptionQuality = (opt: string, val: string) =>
+    setOfferedOptionQuality((prev) => {
+      if (val === '') {
+        if (!(opt in prev)) return prev;
+        const next = { ...prev };
+        delete next[opt];
+        return next;
+      }
+      return { ...prev, [opt]: val };
+    });
 
   // --- Per-option line-item editing (name + rate + optional note) ---
   const addOptionItem = (opt: string) =>
@@ -278,8 +302,14 @@ export function App() {
       const item = { ...list[index] };
       if (field === 'price') {
         item.price = raw === '' ? 0 : Number(raw);
+      } else if (field === 'areaCharge') {
+        item.areaCharge = raw === '' ? 0 : Number(raw);
       } else if (field === 'name') {
         item.name = raw;
+      } else if (field === 'equipments') {
+        item.equipments = raw;
+      } else if (field === 'quality') {
+        item.quality = raw;
       } else {
         item.note = raw;
       }
@@ -330,24 +360,38 @@ export function App() {
             {CATERING_OPTION_STYLE[opt] && <span className={`w-2 h-2 rounded-full ${CATERING_OPTION_STYLE[opt].dot}`} />}
             {opt}
           </span>
-          <button
-            type="button"
-            onClick={() => setExpandedOption((cur) => (cur === opt ? null : opt))}
-            className="ml-auto flex items-center gap-1 text-[11px] text-white font-bold px-2 py-1 rounded-lg bg-black/20 hover:bg-black/30"
-          >
-            <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-            {items.length > 0 ? `${items.length} item${items.length === 1 ? '' : 's'}` : 'Add items'}
-          </button>
+          {!NO_ITEM_OPTIONS.has(opt) && (
+            <button
+              type="button"
+              onClick={() => setExpandedOption((cur) => (cur === opt ? null : opt))}
+              className="ml-auto flex items-center gap-1 text-[11px] text-white font-bold px-2 py-1 rounded-lg bg-black/20 hover:bg-black/30"
+            >
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+              {items.length > 0 ? `${items.length} item${items.length === 1 ? '' : 's'}` : 'Add items'}
+            </button>
+          )}
+          {NO_ITEM_OPTIONS.has(opt) && myVendor?.category === 'Media' && (
+            <select
+              value={offeredOptionQuality[opt] ?? ''}
+              onChange={(e) => setOptionQuality(opt, e.target.value)}
+              className="ml-auto w-36 p-1.5 rounded-lg bg-black/20 text-white text-[11px] font-bold focus:outline-none"
+            >
+              <option value="">Quality (optional)</option>
+              {MEDIA_QUALITY_OPTIONS.map((q) => (
+                <option key={q} value={q} className="bg-slate-900">{q}</option>
+              ))}
+            </select>
+          )}
           <button
             type="button"
             onClick={() => toggleOffered(opt)}
             aria-label={`Remove ${opt}`}
-            className="w-5 h-5 rounded-full flex items-center justify-center text-white hover:bg-white/20 shrink-0"
+            className={`w-5 h-5 rounded-full flex items-center justify-center text-white hover:bg-white/20 shrink-0 ${NO_ITEM_OPTIONS.has(opt) && myVendor?.category !== 'Media' ? 'ml-auto' : ''}`}
           >
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
-        {isOpen && (
+        {isOpen && !NO_ITEM_OPTIONS.has(opt) && (
           <div className="p-3 space-y-2">
             {items.length === 0 && (
               <p className="text-[11px] text-slate-500">
@@ -373,6 +417,42 @@ export function App() {
                     className="w-20 p-2 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs"
                   />
                 </div>
+                {myVendor?.category === 'Media' && (
+                  <>
+                    {mediaExtraField(opt) === 'equipments' && (
+                      <select
+                        value={item.equipments ?? ''}
+                        onChange={(e) => updateOptionItem(opt, i, 'equipments', e.target.value)}
+                        className="w-36 p-2 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs"
+                      >
+                        <option value="">Equipments (optional)</option>
+                        {MEDIA_EQUIPMENT_OPTIONS.map((eq) => (
+                          <option key={eq} value={eq}>{eq}</option>
+                        ))}
+                      </select>
+                    )}
+                    <select
+                      value={item.quality ?? ''}
+                      onChange={(e) => updateOptionItem(opt, i, 'quality', e.target.value)}
+                      className="w-32 p-2 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs"
+                    >
+                      <option value="">Quality (optional)</option>
+                      {MEDIA_QUALITY_OPTIONS.map((q) => (
+                        <option key={q} value={q}>{q}</option>
+                      ))}
+                    </select>
+                    <div className="flex items-center gap-1" title="Extra charge for outstation / other areas">
+                      <span className="text-slate-400 text-xs">+₹</span>
+                      <input
+                        type="number"
+                        value={item.areaCharge ? item.areaCharge : ''}
+                        onChange={(e) => updateOptionItem(opt, i, 'areaCharge', e.target.value)}
+                        placeholder="area charge"
+                        className="w-24 p-2 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs"
+                      />
+                    </div>
+                  </>
+                )}
                 <input
                   type="text"
                   value={item.note ?? ''}
@@ -416,13 +496,14 @@ export function App() {
     setSavingFacilities(true);
     setFacilitiesNotice('');
     try {
-      const res = await updateVendor(token, myVendor.id, { facilities, offeredOptions, offeredOptionPrices, offeredOptionItems } as any);
+      const res = await updateVendor(token, myVendor.id, { facilities, offeredOptions, offeredOptionPrices, offeredOptionItems, offeredOptionQuality } as any);
       if (res.data?.vendor) {
         setMyVendor(res.data.vendor);
         setFacilities(res.data.vendor.facilities || {});
         setOfferedOptions(res.data.vendor.offeredOptions || []);
         setOfferedOptionPrices(res.data.vendor.offeredOptionPrices || {});
         setOfferedOptionItems(res.data.vendor.offeredOptionItems || {});
+        setOfferedOptionQuality(res.data.vendor.offeredOptionQuality || {});
       }
       setFacilitiesNotice('Options saved — these now show on your marketplace listing.');
     } catch (err: any) {

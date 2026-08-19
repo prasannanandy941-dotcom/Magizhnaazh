@@ -6,12 +6,45 @@ import { VendorCategory, Vendor } from '../shared-types';
 // directly by services — never re-exported from here, or bundlers will try
 // to pull mongoose/jsonwebtoken/express into the browser build.
 
+// --- Password strength rules ---------------------------------------------
+// Shared by the web signup forms (live checklist) and the auth service
+// (server-side guard) so the two never disagree on what counts as strong.
+export interface PasswordRule {
+  key: string;
+  label: string;
+  test: (pw: string) => boolean;
+}
+
+export const PASSWORD_RULES: PasswordRule[] = [
+  { key: 'length', label: 'At least 8 characters', test: (pw) => pw.length >= 8 },
+  { key: 'upper', label: 'One uppercase letter (A–Z)', test: (pw) => /[A-Z]/.test(pw) },
+  { key: 'lower', label: 'One lowercase letter (a–z)', test: (pw) => /[a-z]/.test(pw) },
+  { key: 'number', label: 'One number (0–9)', test: (pw) => /[0-9]/.test(pw) },
+  { key: 'special', label: 'One special character (@ # ! $ …)', test: (pw) => /[^A-Za-z0-9]/.test(pw) },
+];
+
+// Per-rule pass/fail, for rendering a live requirements checklist.
+export function checkPassword(pw: string): { key: string; label: string; met: boolean }[] {
+  return PASSWORD_RULES.map((r) => ({ key: r.key, label: r.label, met: r.test(pw) }));
+}
+
+export function isPasswordStrong(pw: string): boolean {
+  return PASSWORD_RULES.every((r) => r.test(pw));
+}
+
+// Human-readable message naming the first unmet rule (for a server error or a
+// single-line client message). Returns null when the password is strong.
+export function firstPasswordError(pw: string): string | null {
+  const failing = PASSWORD_RULES.find((r) => !r.test(pw));
+  return failing ? `Password needs: ${failing.label.toLowerCase()}.` : null;
+}
+
 export const DEFAULT_BUDGET_PERCENTAGES: Record<string, Record<string, number>> = {
   Wedding: {
     'Venue': 25,
     'Catering': 25,
     'Decoration': 12,
-    'Photography': 10,
+    'Media': 10,
     'Makeup & Beauty': 5,
     'Transport': 5,
     'Invitation': 3,
@@ -25,7 +58,7 @@ export const DEFAULT_BUDGET_PERCENTAGES: Record<string, Record<string, number>> 
     'Catering': 30,
     'Decoration': 15,
     'Entertainment': 10,
-    'Photography': 8,
+    'Media': 8,
     'Invitation': 4,
     'Other': 3,
   },
@@ -33,7 +66,7 @@ export const DEFAULT_BUDGET_PERCENTAGES: Record<string, Record<string, number>> 
     'Venue': 35,
     'Catering': 30,
     'Corporate Event Services': 15,
-    'Videography': 10,
+    'Media': 10,
     'Printing': 5,
     'Other': 5,
   },
@@ -41,7 +74,7 @@ export const DEFAULT_BUDGET_PERCENTAGES: Record<string, Record<string, number>> 
     'Venue': 30,
     'Catering': 30,
     'Decoration': 15,
-    'Photography': 10,
+    'Media': 10,
     'Invitation': 5,
     'Other': 10,
   },

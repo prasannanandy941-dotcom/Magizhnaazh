@@ -23,7 +23,7 @@ import { GenericCategoryChips } from './CategoryOptions';
 // below). Every other category falls back to GenericCategoryChips so no
 // category tab is left with a blank options panel.
 const BESPOKE_CATEGORIES = new Set<string>([
-  'Venue', 'Catering', 'Photography', 'Decoration', 'Makeup & Beauty', 'Transport', 'Pujari/Priest', 'Return Gifts', 'Music/DJ',
+  'Venue', 'Catering', 'Decoration', 'Makeup & Beauty', 'Transport', 'Pujari/Priest', 'Return Gifts', 'Music/DJ',
 ]);
 
 interface VendorMarketplaceProps {
@@ -50,8 +50,7 @@ const CATEGORY_ICONS: Record<string, LucideIcon> = {
   Venue: Building2,
   Decoration: Sparkles,
   'Makeup & Beauty': Brush,
-  Photography: Camera,
-  Videography: Video,
+  Media: Camera,
   Transport: Car,
   'Pujari/Priest': Flame,
   Invitation: Mail,
@@ -202,8 +201,6 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
       )}
 
       {selectedCategory === 'Catering' && <CateringMenuChips />}
-
-      {selectedCategory === 'Photography' && <PortfolioChips />}
 
       {selectedCategory === 'Decoration' && <DecorationChips />}
 

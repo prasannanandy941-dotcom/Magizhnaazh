@@ -38,7 +38,7 @@ async function seedIfEmpty() {
       { id: 'b-1', category: 'Venue', allocatedPercentage: 25, allocatedAmount: 200000, actualSpent: 150000 },
       { id: 'b-2', category: 'Catering', allocatedPercentage: 25, allocatedAmount: 200000, actualSpent: 0 },
       { id: 'b-3', category: 'Decoration', allocatedPercentage: 12, allocatedAmount: 96000, actualSpent: 80000 },
-      { id: 'b-4', category: 'Photography', allocatedPercentage: 10, allocatedAmount: 80000, actualSpent: 65000 },
+      { id: 'b-4', category: 'Media', allocatedPercentage: 10, allocatedAmount: 80000, actualSpent: 65000 },
     ],
   });
   console.log('[event-budget-service] Seeded demo event.');

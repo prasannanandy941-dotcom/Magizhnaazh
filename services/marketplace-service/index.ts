@@ -72,10 +72,10 @@ const VENDOR_SPECS: VendorSpec[] = [
   { name: 'Grand Chettinad Feast Caterers', category: 'Catering', city: 'Chennai', price: 450, rating: 4.8, reviews: 215, img: 'photo-1555244162-803834f70033', years: 18 },
   { name: 'Maharaja Thali Catering Co.', category: 'Catering', city: 'New Delhi', price: 600, rating: 4.6, reviews: 180, img: 'photo-1581546085212-f25477a9d4fb', years: 14 },
   { name: 'Spice Route Wedding Caterers', category: 'Catering', city: 'Mumbai', price: 750, rating: 4.9, reviews: 320, img: 'photo-1646578515903-67873a5398f9', years: 10 },
-  // Photography
-  { name: 'Candid Tales Photography & Cinema', category: 'Photography', city: 'Chennai', price: 65000, rating: 4.95, reviews: 98, img: 'photo-1574397188309-e83dfe918ecb', years: 9 },
-  { name: 'Frame Stories Wedding Films', category: 'Photography', city: 'New Delhi', price: 120000, rating: 4.9, reviews: 210, img: 'photo-1519741497674-611481863552', years: 11 },
-  { name: 'Sunset Reels Photography', category: 'Photography', city: 'Goa', price: 90000, rating: 4.8, reviews: 134, img: 'photo-1615966650071-855b15f29ad1', years: 7 },
+  // Media (Photography)
+  { name: 'Candid Tales Photography & Cinema', category: 'Media', city: 'Chennai', price: 65000, rating: 4.95, reviews: 98, img: 'photo-1574397188309-e83dfe918ecb', years: 9 },
+  { name: 'Frame Stories Wedding Films', category: 'Media', city: 'New Delhi', price: 120000, rating: 4.9, reviews: 210, img: 'photo-1519741497674-611481863552', years: 11 },
+  { name: 'Sunset Reels Photography', category: 'Media', city: 'Goa', price: 90000, rating: 4.8, reviews: 134, img: 'photo-1615966650071-855b15f29ad1', years: 7 },
   // Decoration
   { name: 'Flora Dreams Floral & Theme Decor', category: 'Decoration', city: 'Coimbatore', price: 40000, rating: 4.7, reviews: 76, img: 'photo-1605553426886-c0a99033fda0', years: 8 },
   { name: 'Marigold Mandap Designers', category: 'Decoration', city: 'Jaipur', price: 80000, rating: 4.6, reviews: 90, img: 'photo-1756190564669-215843660e93', years: 12 },
@@ -100,9 +100,9 @@ const VENDOR_SPECS: VendorSpec[] = [
   { name: 'Beat Box DJ & Sound', category: 'Music/DJ', city: 'Mumbai', price: 8000, rating: 4.7, reviews: 175, img: 'photo-1470225620780-dba8ba36b745', years: 9 },
   { name: 'Nadhaswaram Isai Kuzhu', category: 'Music/DJ', city: 'Madurai', price: 6000, rating: 4.9, reviews: 64, img: 'photo-1579018372296-afd56f194ebc', years: 20 },
   { name: 'Sufi Nights Live Band', category: 'Music/DJ', city: 'New Delhi', price: 20000, rating: 4.8, reviews: 112, img: 'photo-1565035010268-a3816f98589a', years: 12 },
-  // Videography
-  { name: 'Frame & Motion Films', category: 'Videography', city: 'Chennai', price: 70000, rating: 4.8, reviews: 84, img: 'photo-1580707221190-bd94d9087b7f', years: 8 },
-  { name: 'Cinereel Wedding Films', category: 'Videography', city: 'Bangalore', price: 95000, rating: 4.7, reviews: 61, img: 'photo-1629756048377-09540f52caa1', years: 6 },
+  // Media (Videography)
+  { name: 'Frame & Motion Films', category: 'Media', city: 'Chennai', price: 70000, rating: 4.8, reviews: 84, img: 'photo-1580707221190-bd94d9087b7f', years: 8 },
+  { name: 'Cinereel Wedding Films', category: 'Media', city: 'Bangalore', price: 95000, rating: 4.7, reviews: 61, img: 'photo-1629756048377-09540f52caa1', years: 6 },
   // Invitation
   { name: 'Pixel Invites Studio', category: 'Invitation', city: 'Chennai', price: 2500, rating: 4.7, reviews: 132, img: 'photo-1632610992723-82d7c212f6d7', years: 5 },
   { name: 'Royal Card Creations', category: 'Invitation', city: 'Jaipur', price: 4000, rating: 4.6, reviews: 77, img: 'photo-1721176487015-5408ae0e9bc2', years: 9 },
@@ -199,6 +199,53 @@ async function seedIfEmpty() {
   if (missing.length === 0) return;
   await VendorModel.insertMany(missing, { ordered: false });
   console.log(`[marketplace-service] Seeded ${missing.length} new demo vendors.`);
+}
+
+// One-time (idempotent) data migration for existing databases:
+//   1. Photography + Videography were merged into a single "Media" category —
+//      flip any legacy vendor/category records over to "Media".
+//   2. "Advance" is no longer a bookable option (it lives in Business Profile),
+//      so strip it out of every vendor's offeredOptions / prices / items.
+// Runs on every startup but only touches records that still need it, so it's
+// safe to leave in place.
+async function migrateMediaAndAdvance() {
+  try {
+    // 1a. Vendors: Photography/Videography -> Media
+    const vendorRes = await VendorModel.updateMany(
+      { category: { $in: ['Photography', 'Videography'] } },
+      { $set: { category: 'Media' } }
+    );
+    if (vendorRes.modifiedCount) {
+      console.log(`[marketplace-service] Migrated ${vendorRes.modifiedCount} vendor(s) to the Media category.`);
+    }
+
+    // 1b. Category docs: drop the old Photography/Videography entries (the
+    //     additive category seed re-adds "Media" right after this).
+    const catRes = await CategoryModel.deleteMany({ name: { $in: ['Photography', 'Videography'] } });
+    if (catRes.deletedCount) {
+      console.log(`[marketplace-service] Removed ${catRes.deletedCount} legacy Photography/Videography category record(s).`);
+    }
+
+    // 2. Strip the retired "Advance" option from every vendor that still has it.
+    const advanceVendors = await VendorModel.find({ offeredOptions: 'Advance' });
+    for (const v of advanceVendors) {
+      (v as any).offeredOptions = ((v as any).offeredOptions || []).filter((o: string) => o !== 'Advance');
+      const prices = { ...((v as any).offeredOptionPrices || {}) };
+      const items = { ...((v as any).offeredOptionItems || {}) };
+      delete prices['Advance'];
+      delete items['Advance'];
+      (v as any).offeredOptionPrices = prices;
+      (v as any).offeredOptionItems = items;
+      v.markModified('offeredOptionPrices');
+      v.markModified('offeredOptionItems');
+      await v.save();
+    }
+    if (advanceVendors.length) {
+      console.log(`[marketplace-service] Removed the "Advance" option from ${advanceVendors.length} vendor(s).`);
+    }
+  } catch (err) {
+    console.error('[marketplace-service] Media/Advance migration failed:', err);
+  }
 }
 
 async function seedCategoriesAndCities() {
@@ -335,7 +382,7 @@ app.put('/api/v1/vendors/:id', authMiddleware(), async (req: Request, res: Respo
     return res.status(403).json({ success: false, message: 'You do not own this vendor listing.' });
   }
 
-  const { businessName, category, description, city, startingPrice, contactEmail, contactPhone, upiId, packages, facilities, galleryImages, availableDates, offeredOptions, offeredOptionPrices, offeredOptionItems, policies } = req.body;
+  const { businessName, category, description, city, startingPrice, contactEmail, contactPhone, upiId, packages, facilities, galleryImages, availableDates, offeredOptions, offeredOptionPrices, offeredOptionItems, offeredOptionQuality, policies } = req.body;
   if (businessName !== undefined) vendor.businessName = businessName;
   if (category !== undefined) vendor.category = category;
   if (description !== undefined) vendor.description = description;
@@ -356,6 +403,10 @@ app.put('/api/v1/vendors/:id', authMiddleware(), async (req: Request, res: Respo
   if (offeredOptionItems !== undefined) {
     (vendor as any).offeredOptionItems = offeredOptionItems;
     vendor.markModified('offeredOptionItems');
+  }
+  if (offeredOptionQuality !== undefined) {
+    (vendor as any).offeredOptionQuality = offeredOptionQuality;
+    vendor.markModified('offeredOptionQuality');
   }
   if (policies !== undefined) {
     vendor.policies = { ...(vendor.policies as any), ...policies };
@@ -555,6 +606,7 @@ app.delete('/api/v1/banners/:id', authMiddleware(), requireRole('admin'), async 
 
 async function start() {
   await connectDB(process.env.MONGODB_URI, 'marketplace-service');
+  await migrateMediaAndAdvance();
   await seedIfEmpty();
   await seedCategoriesAndCities();
   app.listen(PORT, () => {

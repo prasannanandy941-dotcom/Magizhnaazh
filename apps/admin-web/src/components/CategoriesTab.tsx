@@ -12,9 +12,10 @@ const CATEGORY_OPTIONS: Record<string, string[]> = {
     'Catering included', 'Decoration', 'DJ available', 'Transport',
   ],
   Catering: ['Vegetarian', 'Non-Vegetarian', 'Starters', 'Desserts', 'Mocktails & Ice Cream'],
-  Photography: [
-    'Candid', 'Traditional', 'Pre-Wedding', 'Post-Wedding', 'Reception', 'Cinematic',
-    'Drone', 'Live Streaming', 'LED Screens',
+  Media: [
+    'Candid Photography', 'Traditional Photography', 'Pre-Wedding Shoot', 'Post-Wedding Shoot',
+    'Cinematic Films', 'Candid Videography', 'Traditional Videography', 'Drone Coverage',
+    'Live Streaming', 'Same-Day Edit', 'Highlight Reel', 'Full-Length Edit', 'LED Screens',
   ],
   Decoration: [
     'South Indian Traditional', 'Royal Mandap', 'Reception Stage', 'Haldi & Mehndi',
@@ -37,7 +38,6 @@ const CATEGORY_OPTIONS: Record<string, string[]> = {
     'DJ Package', 'Live Band', 'Anchor / MC', 'Sound & Lighting Setup',
     'Nadaswaram & Thavil', 'Dhol & Band Baaja', 'Carnatic / Classical', 'Bhajan / Devotional',
   ],
-  Videography: ['Traditional Video', 'Cinematic Film', 'Drone Coverage', 'Same-Day Edit', 'Live Streaming', 'Highlight Reel'],
   Cleaning: ['Pre-event Cleaning', 'Post-event Cleaning', 'Washroom Attendants', 'Waste Management', 'Deep Cleaning', 'Housekeeping Staff'],
   'Corporate Event Services': ['Conference Setup', 'Registration Desk', 'AV & Projection', 'Stage & Podium', 'Corporate Catering', 'Branding & Standees'],
   Entertainment: ['Dance Troupe', 'Magician', 'Stand-up Comedy', 'Celebrity Performer', 'Fireworks', 'Fun Zone / Games'],

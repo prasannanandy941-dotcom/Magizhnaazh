@@ -129,6 +129,11 @@ export interface Vendor {
   // Applies to every category — whatever the option, the vendor can break it
   // down into named priced items customers see before booking.
   offeredOptionItems?: Record<string, OfferedOptionItem[]>;
+  // Option-level quality tier (keyed by option label), for options that have
+  // no per-item breakdown — e.g. a Media vendor's "Live Streaming" or "LED
+  // Screens" is offered at a single quality (4K, Full HD, …) rather than as a
+  // list of priced items.
+  offeredOptionQuality?: Record<string, string>;
   createdAt: string;
 }
 
@@ -139,6 +144,39 @@ export interface OfferedOptionItem {
   name: string;
   price: number;
   note?: string;
+  // Media-only (Photography/Videography) extras. Depending on the option, a
+  // Media item carries either an equipments note (photo shoots) or a delivery
+  // quality tier (video/other), plus an optional extra charge for outstation /
+  // other-area coverage. All left undefined for every other category.
+  equipments?: string;
+  quality?: string;
+  areaCharge?: number;
+}
+
+// Quality tiers a Media vendor can tag an item with (dropdown in the vendor
+// portal, badge on the customer listing).
+export const MEDIA_QUALITY_OPTIONS = ['4K Ultra HD', '2K', 'Full HD (1080p)', 'HD (720p)'];
+
+// Equipment presets a Media vendor can tag a shoot item with (dropdown in the
+// vendor portal, badge on the customer listing).
+export const MEDIA_EQUIPMENT_OPTIONS = [
+  'DSLR Camera',
+  'Mirrorless Camera',
+  'Cinema Camera',
+  'Drone',
+  'Gimbal / Stabilizer',
+  'Tripod',
+  'Lighting Kit',
+  'External Mic',
+  'Slider / Crane',
+];
+
+// Which extra field a given Media option collects: capture work (shoots,
+// photography, videography, cinematic) lists the equipment used; delivery work
+// (drone, live streaming, edits, highlight reel, LED screens) picks a quality
+// tier instead.
+export function mediaExtraField(optionLabel: string): 'equipments' | 'quality' {
+  return /shoot|photography|videography|cinematic/i.test(optionLabel) ? 'equipments' : 'quality';
 }
 
 export type VendorCategory =
@@ -146,8 +184,7 @@ export type VendorCategory =
   | 'Venue'
   | 'Decoration'
   | 'Makeup & Beauty'
-  | 'Photography'
-  | 'Videography'
+  | 'Media'
   | 'Transport'
   | 'Pujari/Priest'
   | 'Invitation'
@@ -177,8 +214,8 @@ export const CATEGORY_OPTIONS: Record<string, string[]> = {
   Catering: ['Veg', 'Non-Veg', 'Starters (Veg)', 'Starters (Non-Veg)', 'Cool Drinks', 'Desserts', 'Mocktails', 'Snacks'],
   Decoration: ['South Indian Traditional', 'Royal Mandap', 'Reception Stage', 'Haldi & Mehndi', 'Christian Wedding', 'Birthday & Baby Shower', 'Garlands & Floral Strings'],
   'Makeup & Beauty': ['Bridal Makeup', 'Reception & Engagement', 'Party & Guest', 'Haldi & Mehndi', 'Hair & Saree Draping', 'Ornaments & Jewellery', 'Pre-Bridal Skin & Hair'],
-  Photography: ['Candid', 'Traditional', 'Pre-Wedding', 'Post-Wedding', 'Reception', 'Cinematic', 'Drone', 'Live Streaming', 'LED Screens'],
-  Videography: ['Candid Videography', 'Traditional Videography', 'Cinematic Films', 'Drone Coverage', 'Live Streaming', 'Same-Day Edit', 'Highlight Reel', 'Full-Length Edit'],
+  // Photography + Videography merged into one "Media" category.
+  Media: ['Candid Photography', 'Traditional Photography', 'Pre-Wedding Shoot', 'Post-Wedding Shoot', 'Cinematic Films', 'Candid Videography', 'Traditional Videography', 'Drone Coverage', 'Live Streaming', 'Same-Day Edit', 'Highlight Reel', 'Full-Length Edit', 'LED Screens'],
   Transport: ['Airport Pickup', 'Railway Station Pickup', 'Bride & Groom Vehicle', 'Guest Vehicle', 'Bus Stop Pickup'],
   'Pujari/Priest': ['Wedding (Vivaham)', 'Engagement (Nichayam)', 'Griha Pravesh', 'Naming & Cradle', 'Seemantham (Baby Shower)', 'Satyanarayan & Homam', 'Upanayanam'],
   Invitation: ['Digital E-Invites', 'Printed Cards', 'Video Invitations', 'WhatsApp Invites', 'Custom Illustrations', 'Multi-language Invites'],
@@ -220,8 +257,7 @@ export const VENDOR_CATEGORIES: VendorCategory[] = [
   'Venue',
   'Decoration',
   'Makeup & Beauty',
-  'Photography',
-  'Videography',
+  'Media',
   'Transport',
   'Pujari/Priest',
   'Invitation',

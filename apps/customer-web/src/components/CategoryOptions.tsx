@@ -23,7 +23,7 @@ const THUMB = (id: string) => `https://images.unsplash.com/${id}?w=600&h=400&fit
 
 const CATEGORY_ICON: Partial<Record<VendorCategory, LucideIcon>> = {
   Catering: UtensilsCrossed,
-  Videography: Video,
+  Media: Video,
   Invitation: Mail,
   Printing: Printer,
   Entertainment: PartyPopper,
@@ -46,7 +46,7 @@ const CATEGORY_ICON: Partial<Record<VendorCategory, LucideIcon>> = {
 // curated for all 13 of these categories.
 const CATEGORY_IMAGES: Partial<Record<VendorCategory, string[]>> = {
   Catering: ['photo-1680993032090-1ef7ea9b51e5', 'photo-1589302168068-964664d93dc0', 'photo-1666001120694-3ebe8fd207be', 'photo-1635952346904-95f2ccfcd029', 'photo-1551024709-8f23befc6f87'],
-  Videography: ['photo-1580707221190-bd94d9087b7f', 'photo-1629756048377-09540f52caa1', 'photo-1611550287705-7ff8b459c8eb'],
+  Media: ['photo-1519741497674-611481863552', 'photo-1580707221190-bd94d9087b7f', 'photo-1629756048377-09540f52caa1', 'photo-1611550287705-7ff8b459c8eb', 'photo-1606216794074-735e91aa2c92'],
   Invitation: ['photo-1632610992723-82d7c212f6d7', 'photo-1721176487015-5408ae0e9bc2', 'photo-1656104717095-9d062b0d4e8d'],
   Printing: ['photo-1503694978374-8a2fa686963a', 'photo-1581508512961-0e3b9524db40', 'photo-1562155695-fb6e1f95fcfd'],
   Entertainment: ['photo-1563841930606-67e2bce48b78', 'photo-1470229722913-7c0e2dbbafd3', 'photo-1524368535928-5b5e00ddc76b'],
@@ -145,9 +145,20 @@ const CategoryGalleryViewer: React.FC<{ option: CategoryOption; items?: OfferedO
                 <li key={i} className="flex items-center justify-between gap-3 py-2">
                   <span className="text-sm text-slate-200">
                     {item.name || 'Item'}
+                    {item.equipments && (
+                      <span className="ml-1.5 px-1.5 py-0.5 rounded bg-indigo-500/15 text-indigo-300 text-[10px] font-semibold align-middle">{item.equipments}</span>
+                    )}
+                    {item.quality && (
+                      <span className="ml-1.5 px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 text-[10px] font-semibold align-middle">{item.quality}</span>
+                    )}
                     {item.note && <span className="text-slate-500 text-xs"> · {item.note}</span>}
                   </span>
-                  <span className="text-sm font-bold text-emerald-400 shrink-0">{inr(item.price)}</span>
+                  <span className="text-right shrink-0">
+                    <span className="text-sm font-bold text-emerald-400">{inr(item.price)}</span>
+                    {!!item.areaCharge && (
+                      <span className="block text-[10px] text-amber-400">+{inr(item.areaCharge)} outstation</span>
+                    )}
+                  </span>
                 </li>
               ))}
             </ul>

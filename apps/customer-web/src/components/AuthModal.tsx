@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { X, Sparkles, LogIn, UserPlus, Loader2, Eye, EyeOff } from 'lucide-react';
+import { X, Sparkles, LogIn, UserPlus, Loader2, Eye, EyeOff, Check } from 'lucide-react';
 import { User } from '../../../../packages/shared-types';
+import { checkPassword, isPasswordStrong } from '../../../../packages/shared-utils';
 import { login, register } from '../api';
 
 interface AuthModalProps {
@@ -121,7 +122,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) 
               <input
                 type={showPassword ? 'text' : 'password'}
                 required
-                minLength={mode === 'signup' ? 6 : undefined}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
@@ -136,6 +136,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) 
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
+            {mode === 'signup' && (
+              <ul className="mt-2 grid grid-cols-1 gap-1">
+                {checkPassword(password).map((r) => (
+                  <li key={r.key} className={`flex items-center gap-1.5 text-[11px] ${r.met ? 'text-emerald-400' : 'text-slate-500'}`}>
+                    <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0 ${r.met ? 'bg-emerald-500/20' : 'bg-slate-800'}`}>
+                      {r.met && <Check className="w-2.5 h-2.5" />}
+                    </span>
+                    {r.label}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           {error && (
@@ -146,7 +158,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) 
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || (mode === 'signup' && !isPasswordStrong(password))}
             className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-bold text-sm shadow-md hover:scale-[1.01] transition-all disabled:opacity-60 flex items-center justify-center gap-2"
           >
             {loading && <Loader2 className="w-4 h-4 animate-spin" />}

@@ -43,7 +43,6 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
   }, [initialVendor.id]);
 
   const [activeTab, setActiveTab] = useState<'overview' | 'portfolio' | 'themes' | 'looks' | 'fleet' | 'ceremonies' | 'gifts' | 'options' | 'packages' | 'gallery' | 'upload'>('overview');
-  const isPhotography = vendor.category === 'Photography';
   const isDecoration = vendor.category === 'Decoration';
   const isMakeup = vendor.category === 'Makeup & Beauty';
   const isTransport = vendor.category === 'Transport';
@@ -53,7 +52,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
   // or an existing bespoke tab above are excluded; everything else gets the
   // generic CATEGORY_OPTIONS-driven tab.
   const isGenericOptions = vendor.category !== 'Venue'
-    && !isPhotography && !isDecoration && !isMakeup && !isTransport && !isPriest && !isReturnGifts;
+    && !isDecoration && !isMakeup && !isTransport && !isPriest && !isReturnGifts;
   // Service-type options the customer picks off whichever category grid is
   // showing (Portfolio styles, Decoration themes, Photography types, etc.) —
   // works the same way for every category since it's just a list of labels.
@@ -174,17 +173,6 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
           >
             Overview
           </button>
-
-          {isPhotography && (
-            <button
-              onClick={() => setActiveTab('portfolio')}
-              className={`py-3 font-semibold text-xs border-b-2 transition-colors flex items-center gap-1 ${
-                activeTab === 'portfolio' ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-slate-400 hover:text-white'
-              }`}
-            >
-              <Camera className="w-3.5 h-3.5" /> Portfolio
-            </button>
-          )}
 
           {isDecoration && (
             <button
@@ -328,12 +316,16 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                       {vendor.offeredOptions.map((o) => {
                         const price = vendor.offeredOptionPrices?.[o];
                         const items = vendor.offeredOptionItems?.[o] || [];
+                        const optionQuality = vendor.offeredOptionQuality?.[o];
                         return (
                           <div key={o} className="rounded-xl bg-slate-900/50 border border-slate-800 p-2.5">
                             <div className="flex items-center gap-2">
                               <span className="text-xs px-3 py-1 rounded-full bg-indigo-600/15 border border-indigo-500/30 text-indigo-200 font-semibold">
                                 {o}
                               </span>
+                              {optionQuality && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 font-semibold">{optionQuality}</span>
+                              )}
                               {!!price && (
                                 <span className="text-xs text-amber-400 font-semibold">from ₹{price.toLocaleString('en-IN')}</span>
                               )}
@@ -344,9 +336,20 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                                   <li key={i} className="flex items-center justify-between gap-3 text-xs">
                                     <span className="text-slate-300">
                                       {item.name}
+                                      {item.equipments && (
+                                        <span className="ml-1.5 px-1.5 py-0.5 rounded bg-indigo-500/15 text-indigo-300 text-[10px] font-semibold">{item.equipments}</span>
+                                      )}
+                                      {item.quality && (
+                                        <span className="ml-1.5 px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 text-[10px] font-semibold">{item.quality}</span>
+                                      )}
                                       {item.note && <span className="text-slate-500"> · {item.note}</span>}
                                     </span>
-                                    <span className="text-emerald-400 font-semibold shrink-0">₹{(item.price ?? 0).toLocaleString('en-IN')}</span>
+                                    <span className="text-right shrink-0">
+                                      <span className="text-emerald-400 font-semibold">₹{(item.price ?? 0).toLocaleString('en-IN')}</span>
+                                      {!!item.areaCharge && (
+                                        <span className="block text-[10px] text-amber-400">+₹{item.areaCharge.toLocaleString('en-IN')} outstation</span>
+                                      )}
+                                    </span>
                                   </li>
                                 ))}
                               </ul>
@@ -363,7 +366,6 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
 
           {activeTab === 'options' && <GenericCategoryGrid category={vendor.category} selected={selectedOptions} onToggle={toggleOption} optionItems={vendor.offeredOptionItems} />}
 
-          {activeTab === 'portfolio' && <PortfolioGrid selected={selectedOptions} onToggle={toggleOption} />}
 
           {activeTab === 'themes' && <DecorationGrid selected={selectedOptions} onToggle={toggleOption} />}
 

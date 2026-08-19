@@ -10,6 +10,7 @@ import { connectDB } from '../../packages/shared-utils/db';
 import { signToken, authMiddleware, requireRole } from '../../packages/shared-utils/auth';
 import { requestLogger } from '../../packages/shared-utils/logging';
 import { registerHealthRoute } from '../../packages/shared-utils/health';
+import { isPasswordStrong, firstPasswordError } from '../../packages/shared-utils';
 import { Role } from '../../packages/shared-types';
 import { UserModel } from './models/User';
 
@@ -39,6 +40,11 @@ app.post('/api/v1/auth/register', async (req: Request, res: Response) => {
   const { name, email, phone, password, role, businessName } = req.body;
   if (!email || !name || !password) {
     return res.status(400).json({ success: false, message: 'Name, email and password are required.' });
+  }
+  // New accounts must use a strong password (login is exempt, so existing
+  // accounts are unaffected).
+  if (!isPasswordStrong(password)) {
+    return res.status(400).json({ success: false, message: firstPasswordError(password) || 'Password is too weak.' });
   }
 
   const existing = await UserModel.findOne({ email: String(email).toLowerCase() });

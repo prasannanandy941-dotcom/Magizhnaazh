@@ -240,7 +240,7 @@ const INITIAL_VENDORS: Vendor[] = [
     id: 'vnd-3',
     userId: 'usr-vendor-3',
     businessName: 'Candid Tales Photography & Cinema',
-    category: 'Photography',
+    category: 'Media',
     description: 'Award-winning candid wedding photographers, traditional photojournalism, cinematic wedding films, and drone coverage.',
     location: {
       type: 'Point',
@@ -347,7 +347,7 @@ const FALLBACK_EVENT: Event = {
     { id: 'b-1', category: 'Venue', allocatedPercentage: 25, allocatedAmount: 200000, actualSpent: 150000 },
     { id: 'b-2', category: 'Catering', allocatedPercentage: 25, allocatedAmount: 200000, actualSpent: 0 },
     { id: 'b-3', category: 'Decoration', allocatedPercentage: 12, allocatedAmount: 96000, actualSpent: 80000 },
-    { id: 'b-4', category: 'Photography', allocatedPercentage: 10, allocatedAmount: 80000, actualSpent: 65000 },
+    { id: 'b-4', category: 'Media', allocatedPercentage: 10, allocatedAmount: 80000, actualSpent: 65000 },
     { id: 'b-5', category: 'Makeup & Beauty', allocatedPercentage: 5, allocatedAmount: 40000, actualSpent: 0 },
     { id: 'b-6', category: 'Transport', allocatedPercentage: 5, allocatedAmount: 40000, actualSpent: 0 },
     { id: 'b-7', category: 'Invitation', allocatedPercentage: 3, allocatedAmount: 24000, actualSpent: 0 },
@@ -357,7 +357,7 @@ const FALLBACK_EVENT: Event = {
   tasks: [
     { id: 't-1', title: 'Book Wedding Venue', category: 'Venue', completed: true, dueDate: '2026-09-01', priority: 'high' },
     { id: 't-2', title: 'Finalize Feast Caterer Menu', category: 'Catering', completed: false, dueDate: '2026-09-15', priority: 'high' },
-    { id: 't-3', title: 'Book Photographer & Cinematic Videographer', category: 'Photography', completed: true, dueDate: '2026-09-20', priority: 'high' },
+    { id: 't-3', title: 'Book Photographer & Cinematic Videographer', category: 'Media', completed: true, dueDate: '2026-09-20', priority: 'high' },
   ],
   schedule: [
     { id: 's-1', time: '07:00 AM', activity: 'Groom & Bride Prep / Makeup', location: 'Green Room' },

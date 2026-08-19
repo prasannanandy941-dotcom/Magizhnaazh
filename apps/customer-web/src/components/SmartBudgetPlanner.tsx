@@ -263,7 +263,7 @@ export const SmartBudgetPlanner: React.FC<SmartBudgetPlannerProps> = ({
           </div>
 
           <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0">
-            {['All', 'Venue', 'Catering', 'Photography', 'Decoration'].map((cat) => (
+            {['All', 'Venue', 'Catering', 'Media', 'Decoration'].map((cat) => (
               <button
                 key={cat}
                 onClick={() => setActiveCategoryFilter(cat)}
