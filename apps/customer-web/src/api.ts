@@ -70,13 +70,65 @@ export interface GuestResponse {
   data?: { guest: Guest };
 }
 
+// Free-tier services on Render sleep after ~15 min idle. The first request
+// while a service wakes returns a 502/503/504 or an HTML "service is starting"
+// page instead of JSON — which would otherwise surface as
+// "Unexpected token '<'". We transparently retry a few times with a short
+// delay so a cold start is invisible to the user. Only cold-start signals are
+// retried (gateway 5xx, HTML body, or a network error); real application
+// errors return JSON and are passed straight through.
+const COLD_START_RETRIES = 5;
+const COLD_START_DELAY_MS = 3000;
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function fetchJson(
+  path: string,
+  options: RequestInit = {}
+): Promise<{ res: Response; json: any }> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= COLD_START_RETRIES; attempt++) {
+    let res: Response;
+    try {
+      res = await fetch(`${GATEWAY_URL}${path}`, options);
+    } catch (err) {
+      // Service unreachable mid-wake — retry.
+      lastError = err;
+      if (attempt < COLD_START_RETRIES) {
+        await sleep(COLD_START_DELAY_MS);
+        continue;
+      }
+      throw err;
+    }
+
+    // A waking service (or the gateway proxying to one) returns 502/503/504.
+    if ([502, 503, 504].includes(res.status) && attempt < COLD_START_RETRIES) {
+      await sleep(COLD_START_DELAY_MS);
+      continue;
+    }
+
+    const text = await res.text();
+    // A waking service can return Render's HTML holding page — retry.
+    if (text.trimStart().startsWith('<') && attempt < COLD_START_RETRIES) {
+      await sleep(COLD_START_DELAY_MS);
+      continue;
+    }
+
+    try {
+      return { res, json: text ? JSON.parse(text) : {} };
+    } catch {
+      throw new Error('Server is starting up. Please try again in a moment.');
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error('Request failed.');
+}
+
 async function postJson(path: string, body: unknown): Promise<AuthResponse> {
-  const res = await fetch(`${GATEWAY_URL}${path}`, {
+  const { res, json } = await fetchJson(path, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  const json = await res.json();
   if (!res.ok) {
     throw new Error(json.message || 'Request failed.');
   }
@@ -106,7 +158,7 @@ export class ApiError extends Error {
 // Authenticated request helper — attaches the Bearer token stored at login.
 async function authedFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = getToken();
-  const res = await fetch(`${GATEWAY_URL}${path}`, {
+  const { res, json } = await fetchJson(path, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -114,7 +166,6 @@ async function authedFetch<T>(path: string, options: RequestInit = {}): Promise<
       ...(options.headers || {}),
     },
   });
-  const json = await res.json();
   if (!res.ok) {
     throw new ApiError(json.message || 'Request failed.', res.status, json.code);
   }
@@ -124,14 +175,13 @@ async function authedFetch<T>(path: string, options: RequestInit = {}): Promise<
 // Public, unauthenticated request helper — for endpoints anyone can view or submit
 // (vendor marketplace, invite pages, RSVP submissions), whether or not logged in.
 async function publicFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const res = await fetch(`${GATEWAY_URL}${path}`, {
+  const { res, json } = await fetchJson(path, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
       ...(options.headers || {}),
     },
   });
-  const json = await res.json();
   if (!res.ok) {
     throw new Error(json.message || 'Request failed.');
   }

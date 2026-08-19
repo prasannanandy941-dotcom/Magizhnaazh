@@ -29,13 +29,62 @@ export interface AuthResponse {
   data?: { user: User; token: string };
 }
 
+// Free-tier services on Render sleep after ~15 min idle. The first request
+// while a service wakes returns a 502/503/504 or an HTML "service is starting"
+// page instead of JSON — which would otherwise surface as
+// "Unexpected token '<'". We transparently retry a few times with a short
+// delay so a cold start is invisible to the user. Only cold-start signals are
+// retried (gateway 5xx, HTML body, or a network error); real application
+// errors return JSON and are passed straight through.
+const COLD_START_RETRIES = 5;
+const COLD_START_DELAY_MS = 3000;
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function fetchJson(
+  path: string,
+  options: RequestInit = {}
+): Promise<{ res: Response; json: any }> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= COLD_START_RETRIES; attempt++) {
+    let res: Response;
+    try {
+      res = await fetch(`${GATEWAY_URL}${path}`, options);
+    } catch (err) {
+      lastError = err;
+      if (attempt < COLD_START_RETRIES) {
+        await sleep(COLD_START_DELAY_MS);
+        continue;
+      }
+      throw err;
+    }
+
+    if ([502, 503, 504].includes(res.status) && attempt < COLD_START_RETRIES) {
+      await sleep(COLD_START_DELAY_MS);
+      continue;
+    }
+
+    const text = await res.text();
+    if (text.trimStart().startsWith('<') && attempt < COLD_START_RETRIES) {
+      await sleep(COLD_START_DELAY_MS);
+      continue;
+    }
+
+    try {
+      return { res, json: text ? JSON.parse(text) : {} };
+    } catch {
+      throw new Error('Server is starting up. Please try again in a moment.');
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error('Request failed.');
+}
+
 export async function login(email: string, password: string): Promise<AuthResponse> {
-  const res = await fetch(`${GATEWAY_URL}/api/v1/auth/login`, {
+  const { res, json } = await fetchJson('/api/v1/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
   });
-  const json = await res.json();
   if (!res.ok) {
     throw new Error(json.message || 'Request failed.');
   }
@@ -43,7 +92,7 @@ export async function login(email: string, password: string): Promise<AuthRespon
 }
 
 async function authedFetch(path: string, token: string, options: RequestInit = {}) {
-  const res = await fetch(`${GATEWAY_URL}${path}`, {
+  const { res, json } = await fetchJson(path, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -51,7 +100,6 @@ async function authedFetch(path: string, token: string, options: RequestInit = {
       ...(options.headers || {}),
     },
   });
-  const json = await res.json();
   if (res.status === 401) {
     localStorage.removeItem('magizhnaazh_admin_user');
     localStorage.removeItem('magizhnaazh_admin_token');
@@ -67,8 +115,8 @@ async function authedFetch(path: string, token: string, options: RequestInit = {
 // --- Dashboard ---
 
 export async function fetchVendors(): Promise<{ success: boolean; data?: { vendors: Vendor[] } }> {
-  const res = await fetch(`${GATEWAY_URL}/api/v1/vendors`);
-  return res.json();
+  const { json } = await fetchJson('/api/v1/vendors');
+  return json;
 }
 
 export function toggleVendorVerification(token: string, vendorId: string) {
@@ -213,8 +261,9 @@ export function toggleUserSuspension(token: string, userId: string) {
 
 // --- Categories ---
 
-export function fetchCategories(): Promise<{ success: boolean; data?: { categories: Category[] } }> {
-  return fetch(`${GATEWAY_URL}/api/v1/categories`).then((r) => r.json());
+export async function fetchCategories(): Promise<{ success: boolean; data?: { categories: Category[] } }> {
+  const { json } = await fetchJson('/api/v1/categories');
+  return json;
 }
 
 export function addCategory(token: string, name: string) {
@@ -227,8 +276,9 @@ export function deleteCategory(token: string, id: string) {
 
 // --- Locations ---
 
-export function fetchLocations(): Promise<{ success: boolean; data?: { locations: City[] } }> {
-  return fetch(`${GATEWAY_URL}/api/v1/locations`).then((r) => r.json());
+export async function fetchLocations(): Promise<{ success: boolean; data?: { locations: City[] } }> {
+  const { json } = await fetchJson('/api/v1/locations');
+  return json;
 }
 
 export function addLocation(token: string, name: string, state: string) {
@@ -248,8 +298,9 @@ export function deleteLocation(token: string, id: string) {
 
 // --- Banners ---
 
-export function fetchBanners(): Promise<{ success: boolean; data?: { banners: Banner[] } }> {
-  return fetch(`${GATEWAY_URL}/api/v1/banners`).then((r) => r.json());
+export async function fetchBanners(): Promise<{ success: boolean; data?: { banners: Banner[] } }> {
+  const { json } = await fetchJson('/api/v1/banners');
+  return json;
 }
 
 export function addBanner(token: string, input: { title: string; imageUrl: string; linkUrl?: string }) {
@@ -316,8 +367,9 @@ export function updateComplaintStatus(token: string, id: string, status: string)
 
 // --- Invitation templates ---
 
-export function fetchInvitationTemplates(): Promise<{ success: boolean; data?: { templates: InvitationTemplateDoc[] } }> {
-  return fetch(`${GATEWAY_URL}/api/v1/invitation-templates`).then((r) => r.json());
+export async function fetchInvitationTemplates(): Promise<{ success: boolean; data?: { templates: InvitationTemplateDoc[] } }> {
+  const { json } = await fetchJson('/api/v1/invitation-templates');
+  return json;
 }
 
 export function addInvitationTemplate(token: string, input: { name: string; category: string; backgroundColor: string }) {
