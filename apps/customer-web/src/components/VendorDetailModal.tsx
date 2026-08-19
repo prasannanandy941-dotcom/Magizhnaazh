@@ -324,14 +324,34 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                 {vendor.offeredOptions && vendor.offeredOptions.length > 0 && (
                   <div className="mt-4 pt-4 border-t border-slate-800/80">
                     <span className="text-xs font-bold text-slate-400 uppercase block mb-2">Services Offered</span>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="space-y-2.5">
                       {vendor.offeredOptions.map((o) => {
                         const price = vendor.offeredOptionPrices?.[o];
+                        const items = vendor.offeredOptionItems?.[o] || [];
                         return (
-                          <span key={o} className="text-xs px-3 py-1 rounded-full bg-indigo-600/15 border border-indigo-500/30 text-indigo-200 font-semibold">
-                            {o}
-                            {!!price && <span className="text-amber-400"> — ₹{price.toLocaleString('en-IN')}</span>}
-                          </span>
+                          <div key={o} className="rounded-xl bg-slate-900/50 border border-slate-800 p-2.5">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs px-3 py-1 rounded-full bg-indigo-600/15 border border-indigo-500/30 text-indigo-200 font-semibold">
+                                {o}
+                              </span>
+                              {!!price && (
+                                <span className="text-xs text-amber-400 font-semibold">from ₹{price.toLocaleString('en-IN')}</span>
+                              )}
+                            </div>
+                            {items.length > 0 && (
+                              <ul className="mt-2 space-y-1">
+                                {items.map((item, i) => (
+                                  <li key={i} className="flex items-center justify-between gap-3 text-xs">
+                                    <span className="text-slate-300">
+                                      {item.name}
+                                      {item.note && <span className="text-slate-500"> · {item.note}</span>}
+                                    </span>
+                                    <span className="text-emerald-400 font-semibold shrink-0">₹{(item.price ?? 0).toLocaleString('en-IN')}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
                         );
                       })}
                     </div>
@@ -341,7 +361,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
             </div>
           )}
 
-          {activeTab === 'options' && <GenericCategoryGrid category={vendor.category} selected={selectedOptions} onToggle={toggleOption} />}
+          {activeTab === 'options' && <GenericCategoryGrid category={vendor.category} selected={selectedOptions} onToggle={toggleOption} optionItems={vendor.offeredOptionItems} />}
 
           {activeTab === 'portfolio' && <PortfolioGrid selected={selectedOptions} onToggle={toggleOption} />}
 

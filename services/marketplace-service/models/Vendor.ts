@@ -74,6 +74,9 @@ const vendorSchema = new Schema<Vendor>({
   offeredOptions: { type: [String], default: [] },
   // Price the vendor set for each entry in offeredOptions, keyed by label.
   offeredOptionPrices: { type: Schema.Types.Mixed, default: {} },
+  // Named priced line-items the vendor lists under each offered option, keyed
+  // by label — e.g. { "Veg": [{ name, price, note }, ...] }.
+  offeredOptionItems: { type: Schema.Types.Mixed, default: {} },
   createdAt: { type: String, default: () => new Date().toISOString() },
 });
 

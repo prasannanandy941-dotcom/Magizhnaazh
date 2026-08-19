@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Sparkles, LogIn, UserPlus, Loader2 } from 'lucide-react';
+import { X, Sparkles, LogIn, UserPlus, Loader2, Eye, EyeOff } from 'lucide-react';
 import { User } from '../../../../packages/shared-types';
 import { login, register } from '../api';
 
@@ -14,6 +14,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) 
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -116,15 +117,25 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) 
 
           <div>
             <label className="block text-xs font-bold text-slate-400 mb-1.5">Password</label>
-            <input
-              type="password"
-              required
-              minLength={mode === 'signup' ? 6 : undefined}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm focus:outline-none focus:border-indigo-500"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                required
+                minLength={mode === 'signup' ? 6 : undefined}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full p-3 pr-11 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm focus:outline-none focus:border-indigo-500"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                className="absolute inset-y-0 right-0 px-3 flex items-center text-slate-400 hover:text-indigo-400 transition-colors"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
 
           {error && (

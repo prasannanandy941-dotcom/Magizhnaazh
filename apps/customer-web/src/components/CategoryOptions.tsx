@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import {
-  X, ChevronLeft, ChevronRight, Check, Plus,
+  X, ChevronLeft, ChevronRight, Check, Plus, ListChecks,
   Video, Mail, Printer, PartyPopper, Lightbulb, Flower2, Palette, Mic2, Shield, SprayCan, Package, ClipboardList, Briefcase, Tag, UtensilsCrossed,
   type LucideIcon,
 } from 'lucide-react';
-import { VendorCategory, CATEGORY_OPTIONS, CATERING_OPTION_STYLE } from '../../../../packages/shared-types';
+import { VendorCategory, CATEGORY_OPTIONS, CATERING_OPTION_STYLE, OfferedOptionItem } from '../../../../packages/shared-types';
+
+const inr = (n: number) => `₹${(n ?? 0).toLocaleString('en-IN')}`;
 
 const IMG = (id: string) => `https://images.unsplash.com/${id}?w=1200&auto=format&q=75`;
 const THUMB = (id: string) => `https://images.unsplash.com/${id}?w=600&h=400&fit=crop&auto=format&q=70`;
@@ -98,9 +100,10 @@ export function optionsForCategory(category: VendorCategory): CategoryOption[] {
   }));
 }
 
-const CategoryGalleryViewer: React.FC<{ option: CategoryOption; onClose: () => void }> = ({ option, onClose }) => {
+const CategoryGalleryViewer: React.FC<{ option: CategoryOption; items?: OfferedOptionItem[]; onClose: () => void }> = ({ option, items, onClose }) => {
   const [index, setIndex] = useState(0);
   const images = option.images.map(IMG);
+  const menuItems = items ?? [];
 
   const go = (dir: number) => setIndex((i) => Math.min(images.length - 1, Math.max(0, i + dir)));
 
@@ -123,8 +126,33 @@ const CategoryGalleryViewer: React.FC<{ option: CategoryOption; onClose: () => v
         </button>
 
         <div className="rounded-2xl border border-slate-800 shadow-2xl bg-slate-900 overflow-hidden flex items-center justify-center">
-          <img src={images[index]} alt={`${option.title} ${index + 1}`} className="w-full max-h-[80vh] object-contain select-none" draggable={false} />
+          <img
+            src={images[index]}
+            alt={`${option.title} ${index + 1}`}
+            className={`w-full object-contain select-none ${menuItems.length > 0 ? 'max-h-[55vh]' : 'max-h-[80vh]'}`}
+            draggable={false}
+          />
         </div>
+
+        {/* Vendor's own priced items for this option (chicken manchurya — ₹110 · half, etc.) */}
+        {menuItems.length > 0 && (
+          <div className="mt-3 rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl p-4 max-h-[28vh] overflow-y-auto">
+            <p className="text-xs font-bold text-amber-400 uppercase tracking-wide mb-2.5">
+              {option.title} — {menuItems.length} item{menuItems.length === 1 ? '' : 's'}
+            </p>
+            <ul className="divide-y divide-slate-800">
+              {menuItems.map((item, i) => (
+                <li key={i} className="flex items-center justify-between gap-3 py-2">
+                  <span className="text-sm text-slate-200">
+                    {item.name || 'Item'}
+                    {item.note && <span className="text-slate-500 text-xs"> · {item.note}</span>}
+                  </span>
+                  <span className="text-sm font-bold text-emerald-400 shrink-0">{inr(item.price)}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {images.length > 1 && (
           <>
@@ -209,7 +237,10 @@ export const GenericCategoryGrid: React.FC<{
   category: VendorCategory;
   selected?: string[];
   onToggle?: (title: string) => void;
-}> = ({ category, selected, onToggle }) => {
+  // Vendor's own priced items keyed by option label — shown when a card is
+  // tapped so customers see this vendor's actual dishes/services with rates.
+  optionItems?: Record<string, OfferedOptionItem[]>;
+}> = ({ category, selected, onToggle, optionItems }) => {
   const options = optionsForCategory(category);
   const [openId, setOpenId] = useState<string | null>(null);
   const openOption = options.find((o) => o.id === openId) || null;
@@ -228,6 +259,7 @@ export const GenericCategoryGrid: React.FC<{
         {options.map((o) => {
           const isSelected = !!selected?.includes(o.title);
           const cateringStyle = CATERING_OPTION_STYLE[o.title];
+          const itemCount = optionItems?.[o.title]?.length ?? 0;
           return (
             <div
               key={o.id}
@@ -251,6 +283,11 @@ export const GenericCategoryGrid: React.FC<{
                 </span>
                 <div className="absolute bottom-3 left-3 right-3">
                   <h4 className="text-white font-display font-bold text-base leading-tight">{o.title}</h4>
+                  {itemCount > 0 && (
+                    <span className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/90 text-slate-950 text-[10px] font-bold">
+                      <ListChecks className="w-3 h-3" /> {itemCount} item{itemCount === 1 ? '' : 's'} · tap to view
+                    </span>
+                  )}
                 </div>
               </button>
               {onToggle && (
@@ -274,7 +311,13 @@ export const GenericCategoryGrid: React.FC<{
         })}
       </div>
 
-      {openOption && <CategoryGalleryViewer option={openOption} onClose={() => setOpenId(null)} />}
+      {openOption && (
+        <CategoryGalleryViewer
+          option={openOption}
+          items={optionItems?.[openOption.title]}
+          onClose={() => setOpenId(null)}
+        />
+      )}
     </div>
   );
 };

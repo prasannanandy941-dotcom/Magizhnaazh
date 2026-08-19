@@ -123,7 +123,22 @@ export interface Vendor {
   // exact option label) — lets customers see what a specific service costs
   // at this vendor, not just that they offer it.
   offeredOptionPrices?: Record<string, number>;
+  // Line-items the vendor lists under each offered option (keyed by the exact
+  // option label). E.g. under "Veg" a caterer lists individual dishes with a
+  // rate each; under "Candid" a photographer lists specific shoot add-ons.
+  // Applies to every category — whatever the option, the vendor can break it
+  // down into named priced items customers see before booking.
+  offeredOptionItems?: Record<string, OfferedOptionItem[]>;
   createdAt: string;
+}
+
+// A single priced item a vendor lists under one of their offered options —
+// a dish, a package add-on, a specific service line. `note` is optional free
+// text (portion size, description, terms) the vendor can write for each item.
+export interface OfferedOptionItem {
+  name: string;
+  price: number;
+  note?: string;
 }
 
 export type VendorCategory =

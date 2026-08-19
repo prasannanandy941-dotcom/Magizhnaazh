@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Store, LogIn, UserPlus, Loader2 } from 'lucide-react';
+import { Store, LogIn, UserPlus, Loader2, Eye, EyeOff } from 'lucide-react';
 import { User, VENDOR_CATEGORIES, VendorCategory } from '../../../../packages/shared-types';
 import { STATIC_CITY_GROUPS } from '../../../../packages/shared-utils';
 import { login, register, createVendor } from '../api';
@@ -15,11 +15,11 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
   const [businessName, setBusinessName] = useState('');
   const [category, setCategory] = useState<VendorCategory>('Catering');
   const [city, setCity] = useState('Chennai');
-  const [startingPrice, setStartingPrice] = useState('');
   const [description, setDescription] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -48,12 +48,13 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
         throw new Error(res.message || 'Something went wrong.');
       }
 
+      // Starting price is no longer collected here — the vendor sets it later
+      // in Business Profile settings. It defaults to 0 until then.
       await createVendor(res.data.token, {
         businessName,
         category,
         city,
         description,
-        startingPrice: Number(startingPrice) || 0,
       } as any);
 
       onAuthSuccess(res.data.user, res.data.token);
@@ -130,30 +131,18 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
                   className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm focus:outline-none focus:border-amber-500"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 mb-1.5">Category</label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value as VendorCategory)}
-                    className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm focus:outline-none focus:border-amber-500"
-                  >
-                    {VENDOR_CATEGORIES.map((c) => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 mb-1.5">Starting Price (₹)</label>
-                  <input
-                    type="number"
-                    required
-                    value={startingPrice}
-                    onChange={(e) => setStartingPrice(e.target.value)}
-                    placeholder="e.g. 50000"
-                    className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm focus:outline-none focus:border-amber-500"
-                  />
-                </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1.5">Category</label>
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value as VendorCategory)}
+                  className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm focus:outline-none focus:border-amber-500"
+                >
+                  {VENDOR_CATEGORIES.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+                <p className="text-[10px] text-slate-500 mt-1">You'll set your starting price later in Business Profile.</p>
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-400 mb-1.5">City / Locality</label>
@@ -216,17 +205,27 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
 
           <div>
             <label className="block text-xs font-bold text-slate-400 mb-1.5">Password</label>
-            <input
-              type="password"
-              name="password"
-              autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-              required
-              minLength={mode === 'signup' ? 6 : undefined}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm focus:outline-none focus:border-amber-500"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                name="password"
+                autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                required
+                minLength={mode === 'signup' ? 6 : undefined}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full p-3 pr-11 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm focus:outline-none focus:border-amber-500"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                className="absolute inset-y-0 right-0 px-3 flex items-center text-slate-400 hover:text-amber-400 transition-colors"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
 
           {error && (

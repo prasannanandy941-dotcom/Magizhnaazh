@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Store, Star, Upload, Check, LogOut, Loader2, Plus, SlidersHorizontal, ChevronDown, Receipt, X } from 'lucide-react';
-import { User, Vendor, Booking, Review, VendorFacilities, VENDOR_CATEGORIES, CATEGORY_OPTIONS, CATERING_OPTION_STYLE } from '../../../packages/shared-types';
+import { User, Vendor, Booking, Review, VendorFacilities, OfferedOptionItem, VENDOR_CATEGORIES, CATEGORY_OPTIONS, CATERING_OPTION_STYLE } from '../../../packages/shared-types';
 import { STATIC_CITY_GROUPS } from '../../../packages/shared-utils';
 import { AuthGate } from './components/AuthGate';
 import { FloralGoldBackground } from './components/FloralGoldBackground';
@@ -58,6 +58,37 @@ const SERVICE_TIERS: { key: keyof VendorFacilities; label: string }[] = [
 // one-click add it instead of typing it into "Add your own option".
 const UNIVERSAL_OPTIONS = ['Advance'];
 
+// Example item name shown as the placeholder in the per-option item editor,
+// tailored to each vendor category so a caterer sees a dish and a cleaner sees
+// a cleaning service (not "Paneer Butter Masala"). Falls back to a generic
+// example for anything not listed.
+const ITEM_NAME_EXAMPLE: Record<string, string> = {
+  Catering: 'Paneer Butter Masala',
+  Venue: 'AC Banquet Hall',
+  Decoration: 'Rose & Marigold Backdrop',
+  'Makeup & Beauty': 'HD Bridal Makeup',
+  Photography: 'Candid Album (200 photos)',
+  Videography: 'Cinematic Highlight Reel',
+  Transport: 'Innova Crysta (per trip)',
+  'Pujari/Priest': 'Wedding Homam Ritual',
+  Invitation: 'Digital E-Invite Design',
+  Printing: 'Wedding Cards (per 100)',
+  'Return Gifts': 'Silver Coin Gift Box',
+  Entertainment: 'Live Band (2 hours)',
+  'Music/DJ': 'DJ Setup (4 hours)',
+  Lighting: 'Fairy Light Setup',
+  Flowers: 'Jasmine Garland (per metre)',
+  Mehendi: 'Bridal Mehendi (full hands)',
+  'Event Host/Anchor': 'Wedding Anchor (per event)',
+  Security: 'Bouncer (per guard)',
+  Cleaning: 'Deep Cleaning (per hall)',
+  'Rental Equipment': 'Chairs (per 100)',
+  'Utensils for Rent': 'Cooking Vessel (per set)',
+  'Wedding Planner': 'Full Planning Package',
+  'Corporate Event Services': 'Conference Setup',
+  Other: 'Service item',
+};
+
 const inr = (n: number) => `₹${(n ?? 0).toLocaleString('en-IN')}`;
 
 export function App() {
@@ -90,6 +121,9 @@ export function App() {
   const [facilitiesNotice, setFacilitiesNotice] = useState('');
   const [offeredOptions, setOfferedOptions] = useState<string[]>([]);
   const [offeredOptionPrices, setOfferedOptionPrices] = useState<Record<string, number>>({});
+  const [offeredOptionItems, setOfferedOptionItems] = useState<Record<string, OfferedOptionItem[]>>({});
+  // Which offered option's item-editor is currently expanded (only one open at a time).
+  const [expandedOption, setExpandedOption] = useState<string | null>(null);
   const [customOption, setCustomOption] = useState('');
   const [availableDates, setAvailableDates] = useState<string[]>([]);
   const [newDate, setNewDate] = useState('');
@@ -143,6 +177,7 @@ export function App() {
         setFacilities(v.facilities || {});
         setOfferedOptions(v.offeredOptions || []);
         setOfferedOptionPrices(v.offeredOptionPrices || {});
+        setOfferedOptionItems(v.offeredOptionItems || {});
         setAvailableDates(v.availableDates || []);
 
         setBookingsLoading(true);
@@ -208,6 +243,7 @@ export function App() {
     setFacilities((prev) => ({ ...prev, [key]: val }));
 
   const toggleOffered = (opt: string) => {
+    const removing = offeredOptions.includes(opt);
     setOfferedOptions((prev) => (prev.includes(opt) ? prev.filter((o) => o !== opt) : [...prev, opt]));
     // Clear the price too when deselecting, so a later re-add starts blank
     // instead of silently resurrecting a stale price the vendor never set.
@@ -217,7 +253,48 @@ export function App() {
       delete next[opt];
       return next;
     });
+    // Same for the option's line-items, and collapse its editor if open.
+    if (removing) {
+      setOfferedOptionItems((prev) => {
+        if (!(opt in prev)) return prev;
+        const next = { ...prev };
+        delete next[opt];
+        return next;
+      });
+      setExpandedOption((cur) => (cur === opt ? null : cur));
+    }
   };
+
+  // --- Per-option line-item editing (name + rate + optional note) ---
+  const addOptionItem = (opt: string) =>
+    setOfferedOptionItems((prev) => ({
+      ...prev,
+      [opt]: [...(prev[opt] || []), { name: '', price: 0, note: '' }],
+    }));
+
+  const updateOptionItem = (opt: string, index: number, field: keyof OfferedOptionItem, raw: string) =>
+    setOfferedOptionItems((prev) => {
+      const list = [...(prev[opt] || [])];
+      const item = { ...list[index] };
+      if (field === 'price') {
+        item.price = raw === '' ? 0 : Number(raw);
+      } else if (field === 'name') {
+        item.name = raw;
+      } else {
+        item.note = raw;
+      }
+      list[index] = item;
+      return { ...prev, [opt]: list };
+    });
+
+  const removeOptionItem = (opt: string, index: number) =>
+    setOfferedOptionItems((prev) => {
+      const list = (prev[opt] || []).filter((_, i) => i !== index);
+      const next = { ...prev };
+      if (list.length) next[opt] = list;
+      else delete next[opt];
+      return next;
+    });
 
   // Takes the raw input string (not a pre-parsed number) so an emptied field
   // can go back to truly empty instead of snapping to 0 — a 0 fallback here
@@ -236,6 +313,96 @@ export function App() {
     });
   };
 
+  // Renders one offered option as an expandable card: the option chip + a
+  // "from" price on top, and — when expanded — an editable list of named,
+  // priced line-items (with an optional note) the vendor offers under it.
+  // Used for both preset category options and custom ones, so every vendor,
+  // whatever their category, can break an option down into priced items.
+  const renderOfferedOptionCard = (opt: string, accent: 'emerald' | 'indigo') => {
+    const items = offeredOptionItems[opt] || [];
+    const isOpen = expandedOption === opt;
+    const headerBg = accent === 'emerald' ? 'bg-emerald-600' : 'bg-indigo-600';
+    return (
+      <div key={opt} className="rounded-2xl border border-slate-800 bg-slate-900/40 overflow-hidden">
+        <div className={`flex items-center gap-2 flex-wrap px-3.5 py-2 ${headerBg}`}>
+          <span className="flex items-center gap-1.5 text-xs text-white font-bold">
+            <Check className="w-3 h-3" />
+            {CATERING_OPTION_STYLE[opt] && <span className={`w-2 h-2 rounded-full ${CATERING_OPTION_STYLE[opt].dot}`} />}
+            {opt}
+          </span>
+          <button
+            type="button"
+            onClick={() => setExpandedOption((cur) => (cur === opt ? null : opt))}
+            className="ml-auto flex items-center gap-1 text-[11px] text-white font-bold px-2 py-1 rounded-lg bg-black/20 hover:bg-black/30"
+          >
+            <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+            {items.length > 0 ? `${items.length} item${items.length === 1 ? '' : 's'}` : 'Add items'}
+          </button>
+          <button
+            type="button"
+            onClick={() => toggleOffered(opt)}
+            aria-label={`Remove ${opt}`}
+            className="w-5 h-5 rounded-full flex items-center justify-center text-white hover:bg-white/20 shrink-0"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+        {isOpen && (
+          <div className="p-3 space-y-2">
+            {items.length === 0 && (
+              <p className="text-[11px] text-slate-500">
+                No items yet — add {opt.toLowerCase()} items with a rate. Customers see each one on your listing.
+              </p>
+            )}
+            {items.map((item, i) => (
+              <div key={i} className="flex items-center gap-2 flex-wrap">
+                <input
+                  type="text"
+                  value={item.name}
+                  onChange={(e) => updateOptionItem(opt, i, 'name', e.target.value)}
+                  placeholder={`Item name (e.g. ${ITEM_NAME_EXAMPLE[myVendor?.category ?? ''] ?? 'Service item'})`}
+                  className="flex-1 min-w-[150px] p-2 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs"
+                />
+                <div className="flex items-center gap-1">
+                  <span className="text-slate-400 text-xs">₹</span>
+                  <input
+                    type="number"
+                    value={item.price === 0 ? '' : item.price}
+                    onChange={(e) => updateOptionItem(opt, i, 'price', e.target.value)}
+                    placeholder="rate"
+                    className="w-20 p-2 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs"
+                  />
+                </div>
+                <input
+                  type="text"
+                  value={item.note ?? ''}
+                  onChange={(e) => updateOptionItem(opt, i, 'note', e.target.value)}
+                  placeholder="note (optional)"
+                  className="flex-1 min-w-[120px] p-2 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeOptionItem(opt, i)}
+                  aria-label="Remove item"
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-rose-400 hover:bg-slate-800 shrink-0"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => addOptionItem(opt)}
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white font-bold hover:bg-slate-700"
+            >
+              <Plus className="w-3.5 h-3.5" /> Add item
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const addCustomOption = () => {
     const val = customOption.trim();
     if (val && !offeredOptions.includes(val)) {
@@ -249,12 +416,13 @@ export function App() {
     setSavingFacilities(true);
     setFacilitiesNotice('');
     try {
-      const res = await updateVendor(token, myVendor.id, { facilities, offeredOptions, offeredOptionPrices } as any);
+      const res = await updateVendor(token, myVendor.id, { facilities, offeredOptions, offeredOptionPrices, offeredOptionItems } as any);
       if (res.data?.vendor) {
         setMyVendor(res.data.vendor);
         setFacilities(res.data.vendor.facilities || {});
         setOfferedOptions(res.data.vendor.offeredOptions || []);
         setOfferedOptionPrices(res.data.vendor.offeredOptionPrices || {});
+        setOfferedOptionItems(res.data.vendor.offeredOptionItems || {});
       }
       setFacilitiesNotice('Options saved — these now show on your marketplace listing.');
     } catch (err: any) {
@@ -856,40 +1024,13 @@ export function App() {
                         Available at {myVendor.category} — you offer this
                       </p>
                       <p className="text-[11px] text-slate-500 mb-3">
-                        Set a price for each — customers see both on your listing. Click the ✕ to remove.
+                        Expand each to add named items with their own rates (and a note) — e.g. under Veg, list each dish. Customers see them on your listing. Click the ✕ to remove.
                       </p>
                       {suggestedOptions.filter((opt) => offeredOptions.includes(opt)).length > 0 ? (
-                        <div className="flex flex-wrap gap-2">
+                        <div className="space-y-2">
                           {suggestedOptions
                             .filter((opt) => offeredOptions.includes(opt))
-                            .map((opt) => (
-                              <div
-                                key={opt}
-                                className="flex items-center gap-2 pl-3.5 pr-2 py-1.5 rounded-full border bg-emerald-600 border-emerald-600"
-                              >
-                                <span className="flex items-center gap-1.5 text-xs text-white font-bold">
-                                  <Check className="w-3 h-3" />
-                                  {CATERING_OPTION_STYLE[opt] && <span className={`w-2 h-2 rounded-full ${CATERING_OPTION_STYLE[opt].dot}`} />}
-                                  {opt}
-                                </span>
-                                <span className="text-white/70 text-xs">₹</span>
-                                <input
-                                  type="number"
-                                  value={offeredOptionPrices[opt] ?? ''}
-                                  onChange={(e) => setOfferedOptionPrice(opt, e.target.value)}
-                                  placeholder="price"
-                                  className="w-16 bg-emerald-700/60 text-white text-xs rounded-lg px-1.5 py-1 focus:outline-none placeholder:text-emerald-200/60"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => toggleOffered(opt)}
-                                  aria-label={`Remove ${opt}`}
-                                  className="w-5 h-5 rounded-full flex items-center justify-center text-white hover:bg-emerald-500 shrink-0"
-                                >
-                                  <X className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            ))}
+                            .map((opt) => renderOfferedOptionCard(opt, 'emerald'))}
                         </div>
                       ) : (
                         <p className="text-xs text-slate-500">
@@ -957,33 +1098,10 @@ export function App() {
                 </button>
               </div>
               {offeredOptions.filter((o) => !(CATEGORY_OPTIONS[myVendor.category] || []).includes(o) && !UNIVERSAL_OPTIONS.includes(o)).length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-3">
+                <div className="space-y-2 mt-3">
                   {offeredOptions
                     .filter((o) => !(CATEGORY_OPTIONS[myVendor.category] || []).includes(o) && !UNIVERSAL_OPTIONS.includes(o))
-                    .map((opt) => (
-                      <div
-                        key={opt}
-                        className="flex items-center gap-2 pl-3.5 pr-2.5 py-1.5 rounded-full bg-indigo-600 border border-indigo-600 text-white text-xs font-bold"
-                      >
-                        <span>{opt}</span>
-                        <span className="text-white/70 font-normal">₹</span>
-                        <input
-                          type="number"
-                          value={offeredOptionPrices[opt] ?? ''}
-                          onChange={(e) => setOfferedOptionPrice(opt, e.target.value)}
-                          placeholder="price"
-                          className="w-16 bg-indigo-700/60 text-white text-xs font-normal rounded-lg px-1.5 py-1 focus:outline-none placeholder:text-indigo-200/60"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => toggleOffered(opt)}
-                          aria-label={`Remove ${opt}`}
-                          className="w-4 h-4 rounded-full flex items-center justify-center hover:bg-indigo-500 shrink-0"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))}
+                    .map((opt) => renderOfferedOptionCard(opt, 'indigo'))}
                 </div>
               )}
             </div>

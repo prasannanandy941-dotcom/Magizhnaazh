@@ -335,7 +335,7 @@ app.put('/api/v1/vendors/:id', authMiddleware(), async (req: Request, res: Respo
     return res.status(403).json({ success: false, message: 'You do not own this vendor listing.' });
   }
 
-  const { businessName, category, description, city, startingPrice, contactEmail, contactPhone, upiId, packages, facilities, galleryImages, availableDates, offeredOptions, offeredOptionPrices, policies } = req.body;
+  const { businessName, category, description, city, startingPrice, contactEmail, contactPhone, upiId, packages, facilities, galleryImages, availableDates, offeredOptions, offeredOptionPrices, offeredOptionItems, policies } = req.body;
   if (businessName !== undefined) vendor.businessName = businessName;
   if (category !== undefined) vendor.category = category;
   if (description !== undefined) vendor.description = description;
@@ -352,6 +352,10 @@ app.put('/api/v1/vendors/:id', authMiddleware(), async (req: Request, res: Respo
   if (offeredOptionPrices !== undefined) {
     (vendor as any).offeredOptionPrices = offeredOptionPrices;
     vendor.markModified('offeredOptionPrices');
+  }
+  if (offeredOptionItems !== undefined) {
+    (vendor as any).offeredOptionItems = offeredOptionItems;
+    vendor.markModified('offeredOptionItems');
   }
   if (policies !== undefined) {
     vendor.policies = { ...(vendor.policies as any), ...policies };
