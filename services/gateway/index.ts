@@ -57,22 +57,57 @@ app.get('/health', (req: Request, res: Response) => {
   });
 });
 
-app.use('/api/v1/auth', createProxyMiddleware({ target: SERVICES.auth, changeOrigin: true }));
-app.use('/api/v1/vendors', createProxyMiddleware({ target: SERVICES.marketplace, changeOrigin: true }));
-app.use('/api/v1/categories', createProxyMiddleware({ target: SERVICES.marketplace, changeOrigin: true }));
-app.use('/api/v1/locations', createProxyMiddleware({ target: SERVICES.marketplace, changeOrigin: true }));
-app.use('/api/v1/banners', createProxyMiddleware({ target: SERVICES.marketplace, changeOrigin: true }));
-app.use('/api/v1/events', createProxyMiddleware({ target: SERVICES.eventBudget, changeOrigin: true }));
-app.use('/api/v1/bookings', createProxyMiddleware({ target: SERVICES.bookingPayment, changeOrigin: true }));
-app.use('/api/v1/settings', createProxyMiddleware({ target: SERVICES.bookingPayment, changeOrigin: true }));
-app.use('/api/v1/coupons', createProxyMiddleware({ target: SERVICES.bookingPayment, changeOrigin: true }));
-app.use('/api/v1/invitation-templates', createProxyMiddleware({ target: SERVICES.invitation, changeOrigin: true }));
-app.use('/api/v1/invitations', createProxyMiddleware({ target: SERVICES.invitation, changeOrigin: true }));
-app.use('/api/v1/guests', publicSubmissionLimiter, createProxyMiddleware({ target: SERVICES.guestFeedback, changeOrigin: true }));
-app.use('/api/v1/feedback', publicSubmissionLimiter, createProxyMiddleware({ target: SERVICES.guestFeedback, changeOrigin: true }));
-app.use('/api/v1/reviews', createProxyMiddleware({ target: SERVICES.guestFeedback, changeOrigin: true }));
-app.use('/api/v1/complaints', createProxyMiddleware({ target: SERVICES.guestFeedback, changeOrigin: true }));
-app.use('/api/v1/monitor', createProxyMiddleware({ target: SERVICES.monitor, changeOrigin: true }));
+// Shared proxy options. On Render's free tier an idle upstream sleeps and
+// takes ~50s to wake; the default proxy gives up early and the browser sees a
+// raw 502/HTML page. We wait long enough for the upstream to wake, and on any
+// proxy error reply with a clean, retryable JSON 503 that the frontend's
+// cold-start retry recognises — so a waking service is never surfaced to the
+// user as a hard failure.
+const UPSTREAM_WAKE_MS = 100000; // > observed free-tier cold start (~50s), with headroom
+const proxyDefaults = {
+  changeOrigin: true,
+  proxyTimeout: UPSTREAM_WAKE_MS, // how long to wait for the target to respond
+  timeout: UPSTREAM_WAKE_MS,      // how long to keep the incoming socket open
+  onError: (_err: Error, _req: Request, res: Response) => {
+    if (res.headersSent) {
+      try { res.end(); } catch { /* nothing more we can do */ }
+      return;
+    }
+    res.writeHead(503, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ success: false, message: 'Server is starting up. Please try again in a moment.' }));
+  },
+};
+
+app.use('/api/v1/auth', createProxyMiddleware({ target: SERVICES.auth, ...proxyDefaults }));
+app.use('/api/v1/vendors', createProxyMiddleware({ target: SERVICES.marketplace, ...proxyDefaults }));
+app.use('/api/v1/categories', createProxyMiddleware({ target: SERVICES.marketplace, ...proxyDefaults }));
+app.use('/api/v1/locations', createProxyMiddleware({ target: SERVICES.marketplace, ...proxyDefaults }));
+app.use('/api/v1/banners', createProxyMiddleware({ target: SERVICES.marketplace, ...proxyDefaults }));
+app.use('/api/v1/events', createProxyMiddleware({ target: SERVICES.eventBudget, ...proxyDefaults }));
+app.use('/api/v1/bookings', createProxyMiddleware({ target: SERVICES.bookingPayment, ...proxyDefaults }));
+app.use('/api/v1/settings', createProxyMiddleware({ target: SERVICES.bookingPayment, ...proxyDefaults }));
+app.use('/api/v1/coupons', createProxyMiddleware({ target: SERVICES.bookingPayment, ...proxyDefaults }));
+app.use('/api/v1/invitation-templates', createProxyMiddleware({ target: SERVICES.invitation, ...proxyDefaults }));
+app.use('/api/v1/invitations', createProxyMiddleware({ target: SERVICES.invitation, ...proxyDefaults }));
+app.use('/api/v1/guests', publicSubmissionLimiter, createProxyMiddleware({ target: SERVICES.guestFeedback, ...proxyDefaults }));
+app.use('/api/v1/feedback', publicSubmissionLimiter, createProxyMiddleware({ target: SERVICES.guestFeedback, ...proxyDefaults }));
+app.use('/api/v1/reviews', createProxyMiddleware({ target: SERVICES.guestFeedback, ...proxyDefaults }));
+app.use('/api/v1/complaints', createProxyMiddleware({ target: SERVICES.guestFeedback, ...proxyDefaults }));
+app.use('/api/v1/monitor', createProxyMiddleware({ target: SERVICES.monitor, ...proxyDefaults }));
+
+// Keep-alive: while the gateway is awake, ping every backend service's public
+// /health on an interval shorter than Render's ~15 min idle window so they
+// don't sleep out from under an active session. This does NOT keep the gateway
+// itself awake — point one external uptime pinger at the gateway's /health for
+// that, and it will keep the whole mesh warm through these pings.
+const KEEPALIVE_MS = 10 * 60 * 1000;
+setInterval(() => {
+  for (const url of Object.values(SERVICES)) {
+    fetch(`${url}/health`, { signal: AbortSignal.timeout(8000) }).catch(() => {
+      /* best-effort warm-up; a failed ping just means we retry next tick */
+    });
+  }
+}, KEEPALIVE_MS);
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Gateway running on port ${PORT}`);
