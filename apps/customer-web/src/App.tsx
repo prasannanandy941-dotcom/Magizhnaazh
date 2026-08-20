@@ -11,6 +11,7 @@ import { EventWizardModal } from './components/EventWizardModal';
 import { SmartBudgetPlanner } from './components/SmartBudgetPlanner';
 import { CanvaInvitationDesigner } from './components/CanvaInvitationDesigner';
 import { ShareLinkModal } from './components/ShareLinkModal';
+import { inviteUrl } from './publicUrl';
 import { GuestManagement } from './components/GuestManagement';
 import { MyOrders } from './components/MyOrders';
 import { FeedbackModule } from './components/FeedbackModule';
@@ -328,6 +329,28 @@ const STATUS_NOTICE: Record<string, string> = {
   refunded: 'refunded',
 };
 
+// A real logged-in customer who hasn't created any event yet gets this empty
+// placeholder instead of the Felix demo — its empty id makes the invitation
+// effect skip link generation, so a share link only ever gets minted from an
+// event the customer actually created.
+const EMPTY_EVENT: Event = {
+  id: '',
+  userId: '',
+  title: '',
+  eventType: '',
+  date: '',
+  location: { city: '' },
+  guestCount: 0,
+  totalBudget: 0,
+  spentBudget: 0,
+  status: 'planning',
+  budgetBreakdown: [],
+  tasks: [],
+  schedule: [],
+  bookedVendorIds: [],
+  createdAt: new Date().toISOString(),
+};
+
 const FALLBACK_EVENT: Event = {
   id: 'evt-101',
   userId: 'usr-customer-1',
@@ -390,6 +413,67 @@ const INITIAL_INVITATION: Invitation = {
   createdAt: new Date().toISOString(),
 };
 
+// Shown when there's no active event yet — an invitation with no token, so the
+// "Share Web RSVP Link" button knows there's no real link to share.
+const EMPTY_INVITATION: Invitation = {
+  ...INITIAL_INVITATION,
+  id: '',
+  eventId: '',
+  inviteToken: '',
+  eventTitle: '',
+};
+
+// Builds canvas elements personalised to a specific event, so a new
+// invitation's designer reflects THAT event (its title, date, venue) instead of
+// the static "Felix & Priya wedding" template being copied onto every event —
+// which made a baby shower's designer still read as a wedding. `token`, when
+// known, points the QR element at the event's real invite link.
+function buildEventCanvasData(event: Event, token?: string): Invitation['canvasData'] {
+  const base = INVITATION_TEMPLATES[0];
+  let dateLabel = event.date;
+  try {
+    dateLabel = new Date(`${event.date}T00:00:00`)
+      .toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+      .toUpperCase();
+  } catch {
+    /* keep the raw date string if it can't be parsed */
+  }
+  const time = INITIAL_INVITATION.time;
+  const venue =
+    [event.location.venueName, event.location.address || event.location.city].filter(Boolean).join(', ') || 'Venue TBD';
+  const occasion = event.eventType
+    ? `TO CELEBRATE THE ${event.eventType.toUpperCase()}`
+    : 'TO CELEBRATE THIS SPECIAL OCCASION';
+
+  const elements = base.elements.map((el) => {
+    switch (el.id) {
+      case 'el-header':
+        return { ...el, content: "YOU'RE CORDIALLY INVITED" };
+      case 'el-title':
+        return { ...el, content: (event.title || 'Our Celebration').toUpperCase() };
+      case 'el-sub':
+        return { ...el, content: occasion };
+      case 'el-date':
+        return { ...el, content: `${dateLabel} • ${time}` };
+      case 'el-venue':
+        return { ...el, content: venue };
+      case 'el-qr':
+        return token ? { ...el, content: inviteUrl(token) } : { ...el };
+      default:
+        return { ...el };
+    }
+  });
+
+  return { width: 400, height: 600, backgroundColor: base.backgroundColor, elements };
+}
+
+// A short, event-appropriate invitation message (shown as the quote on the
+// public invite page) — replaces the hardcoded Felix & Priya wedding line.
+function buildEventMessage(event: Event): string {
+  const occasion = event.eventType ? ` — our ${event.eventType.toLowerCase()}` : '';
+  return `We request the pleasure of your company at ${event.title}${occasion}.`;
+}
+
 const INITIAL_GUESTS: Guest[] = [
   { id: 'g-1', eventId: 'evt-101', name: 'Dr. R. Venkatraman', email: 'venkat@gmail.com', phone: '+91 9840112233', group: 'Groom Family', status: 'accepted', adultsCount: 2, childrenCount: 1, dietaryPreference: 'Veg', needsTransport: true, needsAccommodation: true, invitedAt: new Date().toISOString() },
   { id: 'g-2', eventId: 'evt-101', name: 'Suresh & Anitha Kumar', email: 'suresh@yahoo.com', phone: '+91 9840223344', group: 'Bride Family', status: 'accepted', adultsCount: 2, childrenCount: 0, dietaryPreference: 'Veg', needsTransport: false, needsAccommodation: false, invitedAt: new Date().toISOString() },
@@ -406,7 +490,7 @@ export function App() {
   const [vendorsLoading, setVendorsLoading] = useState(false);
   const [events, setEvents] = useState<Event[]>([]);
   const [eventsLoading, setEventsLoading] = useState(false);
-  const [activeEvent, setActiveEvent] = useState<Event>(FALLBACK_EVENT);
+  const [activeEvent, setActiveEvent] = useState<Event>(EMPTY_EVENT);
   const [invitation, setInvitation] = useState<Invitation>(INITIAL_INVITATION);
   const [guests, setGuests] = useState<Guest[]>(INITIAL_GUESTS);
   const [feedbackList, setFeedbackList] = useState<EventFeedback[]>(INITIAL_FEEDBACK);
@@ -529,7 +613,10 @@ export function App() {
           setEvents(serverEvents);
           setActiveEvent(serverEvents[0]);
         } else {
+          // Logged in but no events yet — don't fall back to the Felix demo, so
+          // no share link is generated until they create their own event.
           setEvents([]);
+          setActiveEvent(EMPTY_EVENT);
         }
       })
       .catch((err) => {
@@ -601,14 +688,34 @@ export function App() {
   // event — this is what gives "Share Web RSVP Link" a real, working link instead
   // of the hardcoded local placeholder. Skipped while logged out.
   useEffect(() => {
-    if (!user || !activeEvent.id) return;
+    // No logged-in user or no real event yet → no link to generate. Clear any
+    // stale (e.g. demo) invitation so the Share button doesn't offer a bogus link.
+    if (!user || !activeEvent.id) {
+      setInvitation(EMPTY_INVITATION);
+      return;
+    }
     let cancelled = false;
 
     fetchInvitationForEvent(activeEvent.id)
       .then(async (res) => {
         if (cancelled) return;
         if (res.data?.invitation) {
-          setInvitation(res.data.invitation);
+          const inv = res.data.invitation;
+          // Heal older invitations whose canvas is still the untouched default
+          // wedding template while the event isn't Felix's wedding — regenerate
+          // it from the real event so the designer matches the shared link.
+          const titleEl = inv.canvasData?.elements?.find((e) => e.id === 'el-title');
+          const stillDefaultTemplate = titleEl?.content === 'FELIX & PRIYA';
+          const notFelixWedding = !/felix/i.test(inv.eventTitle || '');
+          if (stillDefaultTemplate && notFelixWedding) {
+            const canvasData = buildEventCanvasData(activeEvent, inv.inviteToken);
+            setInvitation({ ...inv, canvasData });
+            updateInvitationCanvas(inv.id, canvasData).catch((err) =>
+              console.error('Failed to personalise invitation canvas', err)
+            );
+          } else {
+            setInvitation(inv);
+          }
           return;
         }
         const created = await createInvitation({
@@ -619,10 +726,19 @@ export function App() {
           time: INITIAL_INVITATION.time,
           venueName: activeEvent.location.venueName || 'Venue TBD',
           venueAddress: activeEvent.location.address || activeEvent.location.city,
-          message: INITIAL_INVITATION.message,
-          canvasData: INITIAL_INVITATION.canvasData,
+          message: buildEventMessage(activeEvent),
+          canvasData: buildEventCanvasData(activeEvent),
         });
-        if (!cancelled && created.data?.invitation) setInvitation(created.data.invitation);
+        if (!cancelled && created.data?.invitation) {
+          const inv = created.data.invitation;
+          // Now that the backend has minted the invite token, point the QR at
+          // the real link and persist that one correction.
+          const canvasData = buildEventCanvasData(activeEvent, inv.inviteToken);
+          setInvitation({ ...inv, canvasData });
+          updateInvitationCanvas(inv.id, canvasData).catch((err) =>
+            console.error('Failed to finalise invitation QR', err)
+          );
+        }
       })
       .catch((err) => console.error('Failed to load/create invitation', err));
 
@@ -694,6 +810,16 @@ export function App() {
   const triggerNotification = (msg: string) => {
     setNotification(msg);
     setTimeout(() => setNotification(''), 4000);
+  };
+
+  // Opens the share modal only when there's a real, event-backed link. Without
+  // an active event there's no token yet, so we nudge them to create one first.
+  const openShareLink = () => {
+    if (!invitation.inviteToken) {
+      triggerNotification('Create an event first — the RSVP link is generated from your event.');
+      return;
+    }
+    setShowShareLinkModal(true);
   };
 
   return (
@@ -860,7 +986,7 @@ export function App() {
               );
               triggerNotification('Canva Invitation design saved successfully!');
             }}
-            onOpenPublicView={() => setShowShareLinkModal(true)}
+            onOpenPublicView={openShareLink}
           />
         )}
 
@@ -894,7 +1020,7 @@ export function App() {
               }).catch((err) => console.error('Failed to persist new guest', err));
               triggerNotification(`Guest "${added.name}" added to event roster!`);
             }}
-            onShareInviteLink={() => setShowShareLinkModal(true)}
+            onShareInviteLink={openShareLink}
           />
         )}
 
@@ -1052,7 +1178,7 @@ export function App() {
 
       {showShareLinkModal && (
         <ShareLinkModal
-          url={`${window.location.origin}/invite/${invitation.inviteToken}`}
+          url={inviteUrl(invitation.inviteToken)}
           title={invitation.eventTitle}
           onClose={() => setShowShareLinkModal(false)}
         />

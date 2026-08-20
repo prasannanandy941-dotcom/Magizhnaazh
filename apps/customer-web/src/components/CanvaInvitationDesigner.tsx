@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sparkles, Type, Palette, QrCode, Download, Share2, Eye, Plus, Trash2, Layout, RotateCw, Check, Pencil } from 'lucide-react';
 import { CanvasElement, Invitation } from '../../../../packages/shared-types';
 import { INVITATION_TEMPLATES } from '../../../../packages/canvas-engine';
+import { inviteUrl } from '../publicUrl';
 
 interface CanvaInvitationDesignerProps {
   invitation: Invitation;
@@ -18,6 +19,19 @@ export const CanvaInvitationDesigner: React.FC<CanvaInvitationDesignerProps> = (
   const [backgroundColor, setBackgroundColor] = useState<string>(invitation.canvasData.backgroundColor || '#1E1B4B');
   const [selectedElId, setSelectedElId] = useState<string>(elements[0]?.id || '');
   const [exportNotice, setExportNotice] = useState('');
+
+  // Re-sync the canvas whenever the invitation being edited changes (the active
+  // event switched, or its invitation finished loading). Without this, useState
+  // keeps the canvas frozen on the FIRST invitation it mounted with — which made
+  // the designer show one event (e.g. the wedding) while the share link pointed
+  // at another (the baby shower). Keyed on invitation.id so in-progress edits to
+  // the same invitation aren't wiped on every save.
+  useEffect(() => {
+    setElements(invitation.canvasData.elements);
+    setBackgroundColor(invitation.canvasData.backgroundColor || '#1E1B4B');
+    setSelectedElId(invitation.canvasData.elements[0]?.id || '');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [invitation.id]);
 
   const selectedElement = elements.find((el) => el.id === selectedElId) || elements[0];
 
@@ -65,7 +79,7 @@ export const CanvaInvitationDesigner: React.FC<CanvaInvitationDesignerProps> = (
       width: 120,
       height: 120,
       rotation: 0,
-      content: `${window.location.origin}/invite/${invitation.inviteToken}`,
+      content: inviteUrl(invitation.inviteToken),
       zIndex: elements.length + 1,
     };
     setElements([...elements, newEl]);

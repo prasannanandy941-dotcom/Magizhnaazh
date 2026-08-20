@@ -3,6 +3,7 @@ import { Loader2, XCircle } from 'lucide-react';
 import { Invitation } from '../../../../packages/shared-types';
 import { fetchPublicInvitation, submitRSVP } from '../api';
 import { PublicInvitationView } from './PublicInvitationView';
+import { FloralGoldBackground } from './FloralGoldBackground';
 
 // Rendered instead of the main authenticated app when the URL is /invite/:token
 // (see main.tsx). No login required — this is the page a guest lands on after
@@ -36,7 +37,8 @@ export const PublicInviteRoute: React.FC<{ token: string }> = ({ token }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-400 gap-2">
+      <div className="relative min-h-screen flex items-center justify-center text-slate-300 gap-2">
+        <div className="fixed inset-0 -z-10"><FloralGoldBackground /></div>
         <Loader2 className="w-5 h-5 animate-spin" /> Loading invitation...
       </div>
     );
@@ -44,7 +46,8 @@ export const PublicInviteRoute: React.FC<{ token: string }> = ({ token }) => {
 
   if (notFound || !invitation) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-950 text-center px-4 gap-3">
+      <div className="relative min-h-screen flex flex-col items-center justify-center text-center px-4 gap-3">
+        <div className="fixed inset-0 -z-10"><FloralGoldBackground /></div>
         <XCircle className="w-10 h-10 text-rose-400" />
         <h1 className="font-display font-bold text-xl text-white">Invitation link invalid or expired</h1>
         <p className="text-slate-400 text-sm max-w-sm">

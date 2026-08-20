@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Calendar as CalendarIcon, Clock, MapPin, CheckCircle } from 'lucide-react';
 import { Invitation } from '../../../../packages/shared-types';
+import { FloralGoldBackground } from './FloralGoldBackground';
 
 interface PublicInvitationViewProps {
   invitation: Invitation;
@@ -175,7 +176,11 @@ export const PublicInvitationView: React.FC<PublicInvitationViewProps> = ({
 
   if (standalone) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-slate-950">
+      <div className="relative min-h-screen flex items-center justify-center p-4">
+        {/* Same romantic gold + floral backdrop as the main app */}
+        <div className="fixed inset-0 -z-10">
+          <FloralGoldBackground />
+        </div>
         {card}
       </div>
     );

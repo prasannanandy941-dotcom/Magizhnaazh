@@ -34,7 +34,7 @@ export const GuestManagement: React.FC<GuestManagementProps> = ({
       email,
       phone,
       group,
-      adultsCount,
+      adultsCount: adultsCount || 1,
       childrenCount: 0,
       dietaryPreference: dietary,
       status: 'invited',
@@ -186,8 +186,12 @@ export const GuestManagement: React.FC<GuestManagementProps> = ({
                   <input
                     type="number"
                     min={1}
-                    value={adultsCount}
-                    onChange={(e) => setAdultsCount(Number(e.target.value))}
+                    value={adultsCount === 0 ? '' : adultsCount}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/^0+(?=\d)/, '');
+                      e.target.value = raw;
+                      setAdultsCount(raw === '' ? 0 : Number(raw));
+                    }}
                     className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs font-semibold"
                   />
                 </div>
