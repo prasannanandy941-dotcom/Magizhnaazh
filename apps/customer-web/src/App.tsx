@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Role, User, Vendor, Event, Booking, Invitation, Guest, EventFeedback } from '../../../packages/shared-types';
+import { playNotificationSound } from './notificationSound';
 import { Header } from './components/Header';
 import { AuthModal } from './components/AuthModal';
 import { HeroSection } from './components/HeroSection';
@@ -809,6 +810,7 @@ export function App() {
 
   const triggerNotification = (msg: string) => {
     setNotification(msg);
+    playNotificationSound();
     setTimeout(() => setNotification(''), 4000);
   };
 

@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { Store, Star, Upload, Check, LogOut, Loader2, Plus, SlidersHorizontal, ChevronDown, Receipt, X } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Store, Star, Upload, Check, LogOut, Loader2, Plus, SlidersHorizontal, ChevronDown, Receipt, X, Bell } from 'lucide-react';
 import { User, Vendor, Booking, Review, VendorFacilities, OfferedOptionItem, VENDOR_CATEGORIES, CATEGORY_OPTIONS, CATERING_OPTION_STYLE, MEDIA_QUALITY_OPTIONS, MEDIA_EQUIPMENT_OPTIONS, mediaExtraField } from '../../../packages/shared-types';
 import { STATIC_CITY_GROUPS } from '../../../packages/shared-utils';
 import { AuthGate } from './components/AuthGate';
 import { FloralGoldBackground } from './components/FloralGoldBackground';
 import { fetchMyVendor, updateVendor, fetchVendorBookings, confirmBooking, sendCounterQuote, updateBookingStatus, fetchVendorReviews, GATEWAY_URL } from './api';
+import { playNotificationSound } from './notificationSound';
 
 // Work-progress stages a confirmed booking moves through, tracked on the
 // existing BookingStatus field — applies to every vendor category, not just
@@ -160,6 +161,34 @@ export function App() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [bookingsLoading, setBookingsLoading] = useState(false);
 
+  // Live payment alerts: when a customer confirms they've paid an advance on
+  // the customer app, that booking arrives here as `pending_payment`. We track
+  // which pending IDs we've already seen so a newly-arrived one pops a banner
+  // the vendor can act on, rather than sitting silently in the list until the
+  // next manual reload.
+  const [paymentAlerts, setPaymentAlerts] = useState<Booking[]>([]);
+  const knownPendingRef = useRef<Set<string>>(new Set());
+
+  // Reconcile a freshly-fetched bookings list into state. When `notify` is on,
+  // any pending_payment booking whose ID we haven't seen before raises an
+  // alert; the initial load and vendor-triggered refreshes pass notify=false
+  // so pre-existing claims don't spam the banner.
+  const applyBookings = (list: Booking[], notify: boolean) => {
+    const pending = list.filter((b) => b.status === 'pending_payment');
+    if (notify) {
+      const fresh = pending.filter((b) => !knownPendingRef.current.has(b.id));
+      if (fresh.length > 0) {
+        setPaymentAlerts((prev) => [...fresh, ...prev]);
+        playNotificationSound();
+      }
+    }
+    knownPendingRef.current = new Set(pending.map((b) => b.id));
+    setBookings(list);
+  };
+
+  const dismissAlert = (id: string) =>
+    setPaymentAlerts((prev) => prev.filter((b) => b.id !== id));
+
   const loadVendorAndBookings = async () => {
     if (!token) return;
     setVendorLoading(true);
@@ -188,7 +217,7 @@ export function App() {
 
         setBookingsLoading(true);
         const bkRes = await fetchVendorBookings(token, v.id);
-        setBookings(bkRes.data?.bookings || []);
+        applyBookings(bkRes.data?.bookings || [], false);
         setBookingsLoading(false);
 
         // Load customer reviews for this vendor (public endpoint).
@@ -602,12 +631,23 @@ export function App() {
 
   const [counterAmount, setCounterAmount] = useState<Record<string, string>>({});
 
-  const refreshBookings = async () => {
+  const refreshBookings = async (notify = false) => {
     if (token && myVendor) {
       const bkRes = await fetchVendorBookings(token, myVendor.id);
-      setBookings(bkRes.data?.bookings || []);
+      applyBookings(bkRes.data?.bookings || [], notify);
     }
   };
+
+  // Poll every 15s while the vendor is signed in so a new advance-payment
+  // claim shows up (and rings the banner) without a manual reload.
+  useEffect(() => {
+    if (!token || !myVendor) return;
+    const id = setInterval(() => {
+      refreshBookings(true).catch(() => {});
+    }, 15000);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, myVendor]);
 
   const handleAcceptQuote = async (id: string) => {
     if (!token) return;
@@ -671,6 +711,55 @@ export function App() {
           </div>
         </div>
       </header>
+
+      {/* Live advance-payment alerts — a customer just confirmed payment on
+          the customer app. Stacked toasts the vendor can confirm or dismiss. */}
+      {paymentAlerts.length > 0 && (
+        <div className="fixed top-24 right-4 z-[90] w-full max-w-xs space-y-2">
+          {paymentAlerts.map((b) => (
+            <div
+              key={b.id}
+              className="glass-card rounded-2xl border border-amber-500/40 bg-slate-950/90 shadow-2xl p-4 animate-in"
+            >
+              <div className="flex items-start gap-2">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center shrink-0">
+                  <Bell className="w-4 h-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold text-white">New advance payment claimed</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    <strong className="text-slate-200">{b.bookingNumber}</strong> • {b.packageName}
+                  </p>
+                  <p className="text-[11px] text-amber-300 mt-0.5">
+                    Advance ₹{(b.advanceAmountPaid || b.agreedPrice).toLocaleString('en-IN')} — verify it landed, then confirm.
+                  </p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <button
+                      onClick={async () => { await handleAcceptQuote(b.id); dismissAlert(b.id); }}
+                      className="px-3 py-1.5 rounded-lg bg-amber-500 text-slate-950 font-bold text-[11px] shadow"
+                    >
+                      Confirm Received
+                    </button>
+                    <button
+                      onClick={() => dismissAlert(b.id)}
+                      className="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 font-semibold text-[11px] hover:text-white"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </div>
+                <button
+                  onClick={() => dismissAlert(b.id)}
+                  className="text-slate-500 hover:text-white shrink-0"
+                  aria-label="Dismiss"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {vendorLoading && (
         <div className="flex-1 flex items-center justify-center py-32 text-slate-400 gap-2">
