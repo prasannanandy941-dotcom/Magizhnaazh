@@ -55,6 +55,10 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
         category,
         city,
         description,
+        // Carry the phone captured at signup onto the marketplace listing so
+        // it shows in Business Profile (and to customers) instead of the
+        // service's default placeholder number.
+        contactPhone: phone || undefined,
       } as any);
 
       onAuthSuccess(res.data.user, res.data.token);

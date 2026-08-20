@@ -204,7 +204,18 @@ export function App() {
         setStartingPrice(v.startingPrice);
         setAdvancePercentage(v.policies?.advancePercentage ?? 20);
         setAdvanceAmount(v.policies?.advanceAmount ?? 0);
-        setContactPhone(v.contactPhone || '');
+        // Older listings (and any created before signup carried the phone
+        // through) store the marketplace service's default placeholder. When
+        // that's the case, self-heal from the phone the owner gave at signup so
+        // both this profile and the public listing show a real number.
+        const PLACEHOLDER_PHONE = '+91 9000000000';
+        const ownerPhone = user?.phone?.trim();
+        if ((!v.contactPhone || v.contactPhone === PLACEHOLDER_PHONE) && ownerPhone) {
+          setContactPhone(ownerPhone);
+          updateVendor(token, v.id, { contactPhone: ownerPhone } as any).catch(() => {});
+        } else {
+          setContactPhone(v.contactPhone || '');
+        }
         setUpiId(v.upiId || '');
         setQrCodeImage(v.qrCodeImage || '');
         setDescription(v.description);
