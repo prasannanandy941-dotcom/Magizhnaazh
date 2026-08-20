@@ -77,8 +77,12 @@ export interface GuestResponse {
 // delay so a cold start is invisible to the user. Only cold-start signals are
 // retried (gateway 5xx, HTML body, or a network error); real application
 // errors return JSON and are passed straight through.
-const COLD_START_RETRIES = 12;
-const COLD_START_DELAY_MS = 4000;
+// Budget must comfortably exceed a worst-case free-tier wake: the gateway can
+// cold-start (~20s) and then wait for a sleeping upstream (~50s) within a
+// single request, so ~18 attempts × 5s (~90s) leaves headroom before we give
+// up and show the "starting up" message.
+const COLD_START_RETRIES = 18;
+const COLD_START_DELAY_MS = 5000;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -200,12 +204,25 @@ export async function login(email: string, password: string): Promise<AuthRespon
   return result;
 }
 
+export function sendOtp(email: string): Promise<any> {
+  return postJson('/api/v1/auth/send-otp', { email });
+}
+
+export function forgotPassword(email: string): Promise<any> {
+  return postJson('/api/v1/auth/forgot-password', { email });
+}
+
+export function resetPassword(email: string, otp: string, newPassword: string): Promise<any> {
+  return postJson('/api/v1/auth/reset-password', { email, otp, newPassword });
+}
+
 export async function register(input: {
   name: string;
   email: string;
   phone?: string;
   password: string;
   role: 'customer' | 'vendor';
+  otp: string;
 }): Promise<AuthResponse> {
   const result = await postJson('/api/v1/auth/register', input);
   if (result.success && result.data?.token) {
