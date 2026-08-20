@@ -246,6 +246,21 @@ export function App() {
   };
 
   useEffect(() => {
+    // Proactively wake up backend microservices on mount to avoid cold-start 502/504 errors on Render
+    const endpoints = [
+      '/api/v1/auth/me',
+      '/api/v1/vendors',
+      '/api/v1/bookings',
+      '/api/v1/events',
+      '/api/v1/invitations',
+      '/api/v1/guests'
+    ];
+    endpoints.forEach(path => {
+      fetch(`${GATEWAY_URL}${path}`).catch(() => {});
+    });
+  }, []);
+
+  useEffect(() => {
     if (user && token) {
       loadVendorAndBookings();
     }

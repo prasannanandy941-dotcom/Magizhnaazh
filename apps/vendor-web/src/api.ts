@@ -22,8 +22,8 @@ export interface AuthResponse {
 // delay so a cold start is invisible to the user. Only cold-start signals are
 // retried (gateway 5xx, HTML body, or a network error); real application
 // errors return JSON and are passed straight through.
-const COLD_START_RETRIES = 5;
-const COLD_START_DELAY_MS = 3000;
+const COLD_START_RETRIES = 12;
+const COLD_START_DELAY_MS = 4000;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -59,6 +59,9 @@ async function fetchJson(
     try {
       return { res, json: text ? JSON.parse(text) : {} };
     } catch {
+      if (!res.ok) {
+        throw new Error(`Server returned error ${res.status}: ${res.statusText || 'Unavailable'}. Please check if the services are running.`);
+      }
       throw new Error('Server is starting up. Please try again in a moment.');
     }
   }
