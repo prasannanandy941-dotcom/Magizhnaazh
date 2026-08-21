@@ -78,7 +78,7 @@ app.post('/api/v1/auth/send-otp', async (req: Request, res: Response) => {
     if (process.env.SMTP_USER) {
       try {
         await transporter.sendMail({
-          from: `"Magizhnaazh Platform" <${process.env.SMTP_USER}>`,
+          from: `"Magizhnaazh Platform" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
           to: emailStr,
           subject: "Email Verification Code",
           text: `Your verification code is: ${code}. It is valid for 10 minutes.`,
@@ -209,7 +209,7 @@ app.post('/api/v1/auth/forgot-password', async (req: Request, res: Response) => 
     if (process.env.SMTP_USER) {
       try {
         await transporter.sendMail({
-          from: `"Magizhnaazh Platform" <${process.env.SMTP_USER}>`,
+          from: `"Magizhnaazh Platform" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
           to: emailStr,
           subject: "Password Reset Code",
           text: `Your password reset code is: ${code}. It is valid for 10 minutes.`,
