@@ -22,12 +22,14 @@ export interface AuthResponse {
 // delay so a cold start is invisible to the user. Only cold-start signals are
 // retried (gateway 5xx, HTML body, or a network error); real application
 // errors return JSON and are passed straight through.
-// Budget must comfortably exceed a worst-case free-tier wake: the gateway can
-// cold-start (~20s) and then wait for a sleeping upstream (~50s) within a
-// single request, so ~18 attempts × 5s (~90s) leaves headroom before we give
-// up and show the "starting up" message.
-const COLD_START_RETRIES = 18;
-const COLD_START_DELAY_MS = 5000;
+// Retrying only makes sense against Render's free tier, where a sleeping
+// service wakes in ~50s. Locally there is no cold start — a service is either
+// up or down — so a long retry just leaves the user staring at a spinner for
+// 90s when a service is off. Detect a local gateway and fail fast there
+// (~6s), while keeping the long budget for the deployed cloud.
+const IS_LOCAL_GATEWAY = /\/\/(localhost|127\.0\.0\.1|192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\.)/.test(GATEWAY_URL);
+const COLD_START_RETRIES = IS_LOCAL_GATEWAY ? 3 : 18;
+const COLD_START_DELAY_MS = IS_LOCAL_GATEWAY ? 2000 : 5000;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -161,6 +163,18 @@ export interface BookingsResponse {
 
 export function fetchVendorBookings(token: string, vendorId: string): Promise<BookingsResponse> {
   return authedFetch(`/api/v1/bookings?vendorId=${encodeURIComponent(vendorId)}`, token);
+}
+
+// Silent variant for the background poll: a transient 401 (e.g. during a
+// service blip) must NOT trigger authedFetch's window.location.reload(), which
+// would reset the vendor's current tab and log them out. The poll just skips a
+// tick; a real session expiry is still caught on the vendor's next action.
+export async function fetchVendorBookingsSilent(token: string, vendorId: string): Promise<BookingsResponse> {
+  const { res, json } = await fetchJson(`/api/v1/bookings?vendorId=${encodeURIComponent(vendorId)}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error(json?.message || 'Failed to load bookings.');
+  return json;
 }
 
 export function confirmBooking(token: string, bookingId: string) {
