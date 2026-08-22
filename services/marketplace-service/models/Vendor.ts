@@ -10,6 +10,8 @@ const vendorPackageSchema = new Schema(
     includedServices: [String],
     durationHours: Number,
     capacityPersons: Number,
+    images: [String],
+    tiers: [{ name: String, price: Number, _id: false }],
   },
   { _id: false }
 );
@@ -44,6 +46,7 @@ const vendorSchema = new Schema<Vendor>({
   qrCodeImage: String,
   packages: { type: [vendorPackageSchema], default: [] },
   availableDates: { type: [String], default: [] },
+  bookedDates: { type: [String], default: [] },
   policies: {
     cancellation: { type: String, default: '' },
     refund: { type: String, default: '' },

@@ -30,6 +30,19 @@ export interface VendorPackage {
   includedServices: string[];
   durationHours?: number;
   capacityPersons?: number;
+  // Photos of this package / hall (URLs on the storage service), shown to
+  // customers on the package card.
+  images?: string[];
+  // Optional vendor-defined price tiers (named however the vendor likes —
+  // Normal / HD / Premium, Silver / Gold, …). When present the customer picks
+  // one and its price is used; when empty the flat `price` applies.
+  tiers?: PackageTier[];
+}
+
+// A named price tier within a package.
+export interface PackageTier {
+  name: string;
+  price: number;
 }
 
 export type FacilityTier = 'included' | 'extra_cost' | 'not_offered';
@@ -108,7 +121,11 @@ export interface Vendor {
   upiId?: string;
   qrCodeImage?: string;
   packages: VendorPackage[];
-  availableDates: string[]; // ISO date strings
+  availableDates: string[]; // ISO date strings the vendor opened for booking
+  // Dates that have been booked — moved here from availableDates when a
+  // customer confirms a booking, so the customer listing can show them as
+  // "Booked" (visible but not selectable) rather than silently disappearing.
+  bookedDates?: string[];
   policies: {
     cancellation: string;
     refund: string;
@@ -373,6 +390,9 @@ export interface Booking {
   // booking (e.g. a photographer's "Candid" + "Drone", a decorator's "Royal
   // Mandap") — plain labels, works the same way for every vendor category.
   selectedOptions?: string[];
+  // Reference images the customer uploaded for this booking (e.g. a decoration
+  // style they want) — shown to the vendor so they know exactly what's expected.
+  referenceImages?: string[];
   createdAt: string;
 }
 

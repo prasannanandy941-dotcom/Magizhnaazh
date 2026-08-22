@@ -1,7 +1,7 @@
 import path from 'path';
 import dotenv from 'dotenv';
 // Loads MONGODB_URI and INTERNAL_API_SECRET (sent when syncing vendor ratings).
-dotenv.config({ path: path.resolve(__dirname, '.env') });
+dotenv.config({ path: path.resolve(__dirname, '.env'), override: true });
 
 import { randomBytes } from 'crypto';
 import express, { Request, Response } from 'express';
@@ -322,3 +322,4 @@ async function start() {
 }
 
 start();
+// reload 2

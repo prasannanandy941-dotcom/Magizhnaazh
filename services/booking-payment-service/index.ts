@@ -1,6 +1,6 @@
 import path from 'path';
 import dotenv from 'dotenv';
-dotenv.config({ path: path.resolve(__dirname, '.env') });
+dotenv.config({ path: path.resolve(__dirname, '.env'), override: true });
 
 import express, { Request, Response } from 'express';
 import cors from 'cors';
@@ -158,7 +158,7 @@ async function seedDemoBookings() {
 app.post('/api/v1/bookings/quote', authMiddleware(), async (req: Request, res: Response) => {
   // The customer-web client sends this as `notes` (its own custom-request text
   // field); accept `specialInstructions` too for any other caller.
-  const { eventId, vendorId, vendorName, vendorCategory, packageId, packageName, price, eventDate, notes, specialInstructions, selectedOptions, advancePaymentClaimed } = req.body;
+  const { eventId, vendorId, vendorName, vendorCategory, packageId, packageName, price, eventDate, notes, specialInstructions, selectedOptions, referenceImages, advancePaymentClaimed } = req.body;
 
   const agreedPrice = Number(price) || 50000;
   const resolvedEventDate = eventDate || '2026-12-15';
@@ -208,7 +208,23 @@ app.post('/api/v1/bookings/quote', authMiddleware(), async (req: Request, res: R
     eventDate: resolvedEventDate,
     specialInstructions: notes || specialInstructions || '',
     selectedOptions: Array.isArray(selectedOptions) ? selectedOptions : [],
+    referenceImages: Array.isArray(referenceImages) ? referenceImages : [],
   });
+
+  // A confirmed booking (advance claimed) takes that date off the vendor's
+  // availability so nobody else can book the same day. Best-effort: the booking
+  // already succeeded, so a failure here must not fail the request. Only closes
+  // when the vendor actually uses date-based availability (an enquiry-only
+  // quote_requested doesn't lock the date).
+  if (advancePaymentClaimed && vendorId && resolvedEventDate) {
+    fetch(`${MARKETPLACE_SERVICE_URL}/api/v1/vendors/${vendorId}/book-date`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: req.headers.authorization || '' },
+      body: JSON.stringify({ date: resolvedEventDate }),
+    }).catch(() => {
+      /* vendor availability will still show the date until they refresh — not fatal */
+    });
+  }
 
   const { commissionRate } = await getSettings();
   res.status(201).json({
@@ -482,3 +498,4 @@ async function start() {
 }
 
 start();
+// reload 2

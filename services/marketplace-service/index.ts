@@ -1,7 +1,7 @@
 import path from 'path';
 import dotenv from 'dotenv';
 // Loads MONGODB_URI and INTERNAL_API_SECRET (guards the internal rating-sync route).
-dotenv.config({ path: path.resolve(__dirname, '.env') });
+dotenv.config({ path: path.resolve(__dirname, '.env'), override: true });
 
 import express, { Request, Response } from 'express';
 import cors from 'cors';
@@ -331,7 +331,11 @@ app.get('/api/v1/vendors', async (req: Request, res: Response) => {
     };
   }
 
-  const vendors = await VendorModel.find(filter).limit(100);
+  // The customer web fetches all vendors and filters client-side, so the cap
+  // must comfortably exceed the total listing count — a too-low limit silently
+  // hid the newest vendors (a brand-new listing never appeared in search).
+  // Newest first so recent signups are never the ones dropped if the cap is hit.
+  const vendors = await VendorModel.find(filter).sort({ createdAt: -1 }).limit(1000);
   res.json({ success: true, count: vendors.length, data: { vendors } });
 });
 
@@ -364,17 +368,40 @@ app.post('/api/v1/vendors', authMiddleware(), requireRole('vendor', 'admin'), as
     yearsOfExperience: 0,
     ratingAverage: 0,
     reviewCount: 0,
-    isVerified: false,
+    // Auto-approve new vendors so every vendor that signs up is live on the
+    // marketplace immediately (no manual admin gate). An admin can still
+    // suspend a bad listing via isSuspended.
+    isVerified: true,
     galleryImages: ['https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=800'],
     packages: [],
     contactEmail: contactEmail || req.user!.email,
     contactPhone: contactPhone || '+91 9000000000',
   });
 
-  res.status(201).json({ success: true, message: 'Vendor profile created. Awaiting admin approval.', data: { vendor } });
+  res.status(201).json({ success: true, message: 'Vendor profile created and live on the marketplace.', data: { vendor } });
 });
 
 // 5. Update own vendor profile (business info, packages, pricing).
+// Close a single date on a vendor's availability once a customer books it, so
+// the same date can't be double-booked. Called server-to-server by the booking
+// service (forwarding the booking customer's token) right after a booking is
+// placed; any authenticated user may close the date they're booking.
+app.post('/api/v1/vendors/:id/book-date', authMiddleware(), async (req: Request, res: Response) => {
+  const { date } = req.body;
+  if (!date) return res.status(400).json({ success: false, message: 'date is required.' });
+  const vendor = await VendorModel.findOne({ id: req.params.id });
+  if (!vendor) return res.status(404).json({ success: false, message: 'Vendor not found.' });
+  // Move the date out of "available" and into "booked" so the customer listing
+  // can show it as Booked rather than having it vanish.
+  if (Array.isArray(vendor.availableDates) && vendor.availableDates.includes(date)) {
+    vendor.availableDates = vendor.availableDates.filter((d) => d !== date);
+    const booked = Array.isArray(vendor.bookedDates) ? vendor.bookedDates : [];
+    if (!booked.includes(date)) vendor.bookedDates = [...booked, date];
+    await vendor.save();
+  }
+  res.json({ success: true, data: { availableDates: vendor.availableDates, bookedDates: vendor.bookedDates } });
+});
+
 app.put('/api/v1/vendors/:id', authMiddleware(), async (req: Request, res: Response) => {
   const vendor = await VendorModel.findOne({ id: req.params.id });
   if (!vendor) return res.status(404).json({ success: false, message: 'Vendor not found.' });
@@ -460,6 +487,42 @@ app.post('/api/v1/vendors/:id/upload-qr', authMiddleware(), upload.single('file'
   res.json({
     success: true,
     message: 'UPI QR code uploaded to Local Disk Storage (/uploads).',
+    data: { fileUrl, filename: file.originalname, sizeBytes: file.size },
+  });
+});
+
+// 6c. Package image upload — stored via the shared LocalStorageProvider abstraction.
+app.post('/api/v1/vendors/:id/upload-package-image', authMiddleware(), upload.single('file'), async (req: Request, res: Response) => {
+  const file = req.file;
+  if (!file) return res.status(400).json({ success: false, message: 'No file uploaded.' });
+
+  const vendorId = req.params.id;
+  const vendorForUpload = await VendorModel.findOne({ id: vendorId });
+  if (!vendorForUpload) return res.status(404).json({ success: false, message: 'Vendor not found.' });
+  if (vendorForUpload.userId !== req.user!.sub && req.user!.role !== 'admin') {
+    return res.status(403).json({ success: false, message: 'You do not own this vendor listing.' });
+  }
+
+  const fileUrl = await storageProvider.saveFile(file.buffer, file.originalname, `vendor-${vendorId}-package-${Date.now()}`);
+
+  res.json({
+    success: true,
+    message: 'Package image uploaded successfully.',
+    data: { fileUrl, filename: file.originalname, sizeBytes: file.size },
+  });
+});
+
+// 6b-ii. Customer reference-image upload — any authenticated user can upload
+// an image (saved under their own folder) and get back a URL to attach to a
+// booking, so the vendor can see what the customer wants. Not tied to any
+// vendor's gallery, so no ownership check.
+app.post('/api/v1/uploads', authMiddleware(), upload.single('file'), async (req: Request, res: Response) => {
+  const file = req.file;
+  if (!file) return res.status(400).json({ success: false, message: 'No file uploaded.' });
+  const fileUrl = await storageProvider.saveFile(file.buffer, file.originalname, `customer-${req.user!.sub}`);
+  res.json({
+    success: true,
+    message: 'Image uploaded to Local Disk Storage (/uploads).',
     data: { fileUrl, filename: file.originalname, sizeBytes: file.size },
   });
 });
@@ -615,3 +678,4 @@ async function start() {
 }
 
 start();
+// reload 2

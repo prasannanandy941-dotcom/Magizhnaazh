@@ -28,6 +28,7 @@ const bookingSchema = new Schema<Booking>({
   specialInstructions: String,
   quotesHistory: { type: [quoteHistorySchema], default: [] },
   selectedOptions: { type: [String], default: [] },
+  referenceImages: { type: [String], default: [] },
   createdAt: { type: String, default: () => new Date().toISOString() },
 });
 

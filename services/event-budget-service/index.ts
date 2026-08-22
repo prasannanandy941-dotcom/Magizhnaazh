@@ -1,6 +1,6 @@
 import path from 'path';
 import dotenv from 'dotenv';
-dotenv.config({ path: path.resolve(__dirname, '.env') });
+dotenv.config({ path: path.resolve(__dirname, '.env'), override: true });
 
 import express, { Request, Response } from 'express';
 import cors from 'cors';
@@ -101,3 +101,4 @@ async function start() {
 }
 
 start();
+// reload 2
