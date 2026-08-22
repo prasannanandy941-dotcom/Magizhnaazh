@@ -1072,7 +1072,9 @@ export function App() {
         <VendorDetailModal
           vendor={selectedVendorForModal}
           onClose={() => setSelectedVendorForModal(null)}
-          onBookVendor={(v, pkgId, price, notes, eventDate, selectedOptions) => {
+          isAuthenticated={!!user}
+          onRequireAuth={() => setShowAuthModal(true)}
+          onBookVendor={(v, pkgId, price, notes, eventDate, selectedOptions, referenceImages) => {
             // Named so it can be re-run automatically after a re-login: the
             // customer's `user` staying set doesn't mean their token is
             // still valid (it expires after a few hours), so requireAuth's
@@ -1095,6 +1097,7 @@ export function App() {
                   eventDate: eventDate || activeEvent.date,
                   notes,
                   selectedOptions,
+                  referenceImages,
                   // They've just seen the vendor's UPI ID/QR and clicked Confirm
                   // Order — that's a payment claim, not a verified payment, so
                   // this lands as 'pending_payment' rather than auto-confirming.

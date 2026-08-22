@@ -77,12 +77,14 @@ export interface GuestResponse {
 // delay so a cold start is invisible to the user. Only cold-start signals are
 // retried (gateway 5xx, HTML body, or a network error); real application
 // errors return JSON and are passed straight through.
-// Budget must comfortably exceed a worst-case free-tier wake: the gateway can
-// cold-start (~20s) and then wait for a sleeping upstream (~50s) within a
-// single request, so ~18 attempts × 5s (~90s) leaves headroom before we give
-// up and show the "starting up" message.
-const COLD_START_RETRIES = 18;
-const COLD_START_DELAY_MS = 5000;
+// Retrying only makes sense against Render's free tier, where a sleeping
+// service wakes in ~50s. Locally there is no cold start — a service is either
+// up or down — so a long retry just leaves the user staring at a spinner for
+// 90s when a service is off. Detect a local gateway and fail fast there
+// (~6s), while keeping the long budget for the deployed cloud.
+const IS_LOCAL_GATEWAY = /\/\/(localhost|127\.0\.0\.1|192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\.)/.test(GATEWAY_URL);
+const COLD_START_RETRIES = IS_LOCAL_GATEWAY ? 3 : 18;
+const COLD_START_DELAY_MS = IS_LOCAL_GATEWAY ? 2000 : 5000;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -333,6 +335,7 @@ export function createBookingQuote(input: {
   eventDate?: string;
   notes?: string;
   selectedOptions?: string[];
+  referenceImages?: string[];
   // True once the customer has seen the vendor's UPI ID/QR and clicked
   // Confirm Order — lands the booking in 'pending_payment' so the vendor
   // has to verify and confirm it themselves, instead of it auto-confirming.
@@ -342,6 +345,22 @@ export function createBookingQuote(input: {
     method: 'POST',
     body: JSON.stringify(input),
   });
+}
+
+// Upload a customer reference image (multipart) and return its stored URL. Used
+// for images the customer attaches to a booking so the vendor can see them.
+export async function uploadReferenceImage(file: File): Promise<string> {
+  const token = localStorage.getItem('accessToken');
+  const fd = new FormData();
+  fd.append('file', file);
+  const res = await fetch(`${GATEWAY_URL}/api/v1/uploads`, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: fd,
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || !json?.data?.fileUrl) throw new Error(json?.message || 'Upload failed.');
+  return json.data.fileUrl as string;
 }
 
 // This customer's own bookings — the backend scopes GET /bookings (no vendorId)

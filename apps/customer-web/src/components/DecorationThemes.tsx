@@ -112,7 +112,7 @@ const priceRange = (t: DecorationTheme) => {
 };
 
 // Full-screen viewer: swipeable photos of a theme + its budget tiers.
-export const DecorationThemeViewer: React.FC<{ theme: DecorationTheme; onClose: () => void }> = ({ theme, onClose }) => {
+export const DecorationThemeViewer: React.FC<{ theme: DecorationTheme; onClose: () => void; onPickTier?: (label: string) => void }> = ({ theme, onClose, onPickTier }) => {
   const trackRef = useRef<HTMLDivElement>(null);
   const [index, setIndex] = useState(0);
   const [selectedTier, setSelectedTier] = useState<number | null>(null);
@@ -234,7 +234,12 @@ export const DecorationThemeViewer: React.FC<{ theme: DecorationTheme; onClose: 
                 <button
                   key={tier.name}
                   type="button"
-                  onClick={() => setSelectedTier(i)}
+                  onClick={() => {
+                    setSelectedTier(i);
+                    // Record the exact tier the customer picked so it travels
+                    // with the booking (e.g. "Royal Mandap — Premium (₹1,75,000)").
+                    onPickTier?.(`${theme.title} — ${tier.name} (₹${tier.price.toLocaleString('en-IN')})`);
+                  }}
                   aria-pressed={isSelected}
                   className={`text-left rounded-xl border p-4 flex flex-col transition-colors ${
                     isSelected ? 'border-amber-400 bg-amber-500/10 ring-2 ring-amber-400/60' : `${s.ring} bg-slate-950/40 hover:border-slate-600`
@@ -266,7 +271,7 @@ export const DecorationThemeViewer: React.FC<{ theme: DecorationTheme; onClose: 
 
           {selectedTier !== null && (
             <p className="mt-4 text-xs text-emerald-400 font-semibold">
-              You picked the {theme.tiers[selectedTier].name} package — ₹{theme.tiers[selectedTier].price.toLocaleString('en-IN')}. Mention this when you book a vendor for {theme.title}.
+              Added to your booking: {theme.title} — {theme.tiers[selectedTier].name} package (₹{theme.tiers[selectedTier].price.toLocaleString('en-IN')}).
             </p>
           )}
         </div>
@@ -319,9 +324,13 @@ export const DecorationGrid: React.FC<{
   themes?: DecorationTheme[];
   selected?: string[];
   onToggle?: (title: string) => void;
-}> = ({ themes = STANDARD_DECORATION, selected, onToggle }) => {
+  onPickTier?: (label: string) => void;
+}> = ({ themes = STANDARD_DECORATION, selected, onToggle, onPickTier }) => {
   const [openId, setOpenId] = useState<string | null>(null);
   const open = themes.find((t) => t.id === openId) || null;
+  // A theme counts as selected whether the customer picked the plain theme or a
+  // specific budget tier ("Royal Mandap — Premium (…)").
+  const themeSelected = (title: string) => !!selected?.some((o) => o === title || o.startsWith(`${title} — `));
 
   return (
     <div>
@@ -330,7 +339,7 @@ export const DecorationGrid: React.FC<{
       </p>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         {themes.map((t) => {
-          const isSelected = !!selected?.includes(t.title);
+          const isSelected = themeSelected(t.title);
           return (
             <div
               key={t.id}
@@ -370,7 +379,7 @@ export const DecorationGrid: React.FC<{
         })}
       </div>
 
-      {open && <DecorationThemeViewer theme={open} onClose={() => setOpenId(null)} />}
+      {open && <DecorationThemeViewer theme={open} onClose={() => setOpenId(null)} onPickTier={onPickTier} />}
     </div>
   );
 };
