@@ -83,6 +83,10 @@ const vendorSchema = new Schema<Vendor>({
   // Option-level quality tier keyed by label, for options with no item list —
   // e.g. { "Live Streaming": "4K Ultra HD" }.
   offeredOptionQuality: { type: Schema.Types.Mixed, default: {} },
+  // Photos per offered option, keyed by label — { "Fresh Flower Decor": [url] }.
+  offeredOptionImages: { type: Schema.Types.Mixed, default: {} },
+  giftCount: Number,
+  giftDiscount: String,
   createdAt: { type: String, default: () => new Date().toISOString() },
 });
 

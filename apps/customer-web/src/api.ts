@@ -206,6 +206,26 @@ export async function login(email: string, password: string): Promise<AuthRespon
   return result;
 }
 
+export interface GoogleAuthResponse {
+  success: boolean;
+  message: string;
+  data?: { user: User; token: string; isNewUser?: boolean };
+}
+
+// One-click Google Sign-In. `credential` is the ID token from Google's button;
+// `role` is only used if this is the account's very first sign-in.
+export async function googleLogin(
+  credential: string,
+  role: 'customer' | 'vendor' = 'customer'
+): Promise<GoogleAuthResponse> {
+  const result = (await postJson('/api/v1/auth/google', { credential, role })) as GoogleAuthResponse;
+  if (result.success && result.data?.token) {
+    localStorage.setItem(TOKEN_KEY, result.data.token);
+    localStorage.setItem('user', JSON.stringify(result.data.user));
+  }
+  return result;
+}
+
 export function sendOtp(email: string): Promise<any> {
   return postJson('/api/v1/auth/send-otp', { email });
 }

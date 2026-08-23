@@ -116,21 +116,22 @@ export const PortfolioGalleryViewer: React.FC<{
 
   return (
     <div
-      className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/90 backdrop-blur-sm p-4 sm:p-8"
+      className="fixed inset-0 z-[70] overflow-y-auto bg-slate-950/90 backdrop-blur-sm p-4 sm:p-8 flex justify-center items-start md:items-center"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-label={`${style.title} portfolio`}
     >
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="Close gallery"
+        className="fixed top-4 right-4 z-[80] w-10 h-10 rounded-full bg-slate-900/90 border border-slate-700 flex items-center justify-center text-slate-200 hover:text-white hover:bg-slate-800 transition-colors shadow-lg"
+      >
+        <X className="w-5 h-5" />
+      </button>
+
       <div className="relative w-full max-w-4xl" onClick={(e) => e.stopPropagation()}>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close gallery"
-          className="absolute -top-3 -right-3 z-20 w-9 h-9 rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center text-slate-200 hover:text-white hover:bg-slate-800 transition-colors shadow-lg"
-        >
-          <X className="w-4 h-4" />
-        </button>
 
         <div
           ref={trackRef}

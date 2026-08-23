@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, Star, CheckCircle, Sparkles, Check, ArrowRight } from 'lucide-react';
 import { Vendor } from '../../../../packages/shared-types';
+import { getVendorCoverImage } from './vendorUtils';
 
 interface VendorCompareModalProps {
   vendors: Vendor[];
@@ -46,7 +47,7 @@ export const VendorCompareModal: React.FC<VendorCompareModalProps> = ({ vendors,
                     )}
 
                     <div className="w-20 h-20 mx-auto rounded-2xl overflow-hidden mb-3 border border-slate-700">
-                      <img src={v.galleryImages[0]} alt={v.businessName} className="w-full h-full object-cover" />
+                      <img src={getVendorCoverImage(v)} alt={v.businessName} className="w-full h-full object-cover" />
                     </div>
 
                     <h4 className="font-bold text-sm text-white">{v.businessName}</h4>

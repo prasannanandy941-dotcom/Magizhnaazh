@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 // Loads JWT_SECRET / JWT_EXPIRES_IN (session lifetime) and MONGODB_URI.
 dotenv.config({ path: path.resolve(__dirname, '.env'), override: true });
 
+import crypto from 'crypto';
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import bcrypt from 'bcryptjs';
@@ -33,6 +34,48 @@ const transporter = nodemailer.createTransport({
     pass: process.env.SMTP_PASS,
   },
 });
+
+// Verify a Google Identity Services ID token (the `credential` the browser gets
+// from the "Sign in with Google" button). We call Google's tokeninfo endpoint,
+// which validates the token's signature and expiry for us, then we confirm the
+// audience matches OUR client id and that the email is verified. Returns the
+// decoded profile on success, or null if the token is missing/invalid or Google
+// sign-in isn't configured. (Zero extra npm deps — uses global fetch on Node 18+.)
+interface GoogleProfile { email: string; name?: string; picture?: string; sub: string }
+async function verifyGoogleIdToken(credential: string): Promise<GoogleProfile | null> {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  if (!clientId) {
+    console.warn('[auth-service] GOOGLE_CLIENT_ID not set — Google sign-in is disabled.');
+    return null;
+  }
+  try {
+    const resp = await fetch(
+      `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`
+    );
+    if (!resp.ok) {
+      console.warn(`[google] tokeninfo returned HTTP ${resp.status} — token likely invalid/expired.`);
+      return null;
+    }
+    const data: any = await resp.json();
+    // Token must have been minted for OUR app, and the email must be verified.
+    if (data.aud !== clientId) {
+      console.warn(`[google] audience mismatch.\n  token aud:  ${data.aud}\n  expected:   ${clientId}`);
+      return null;
+    }
+    if (data.email_verified !== true && data.email_verified !== 'true') {
+      console.warn(`[google] email not verified: ${data.email} (email_verified=${data.email_verified})`);
+      return null;
+    }
+    if (!data.email) {
+      console.warn('[google] token had no email.');
+      return null;
+    }
+    return { email: data.email, name: data.name, picture: data.picture, sub: data.sub };
+  } catch (err) {
+    console.error('[auth-service] Google token verification failed:', err);
+    return null;
+  }
+}
 
 async function seedIfEmpty() {
   const count = await UserModel.countDocuments();
@@ -322,6 +365,71 @@ app.post('/api/v1/auth/login', async (req: Request, res: Response) => {
     });
   } catch (err: any) {
     console.error('Login error:', err);
+    res.status(500).json({ success: false, message: err.message || 'Internal Server Error' });
+  }
+});
+
+// 2b. Google Sign-In — one-click login/signup with a Google account.
+// The browser sends the Google-issued `credential` (an ID token) plus the
+// `role` to use if this is the account's first sign-in. Returning users log in
+// with their existing role; new users get an account created on the spot.
+app.post('/api/v1/auth/google', async (req: Request, res: Response) => {
+  try {
+    const { credential, role } = req.body;
+    if (!credential) {
+      return res.status(400).json({ success: false, message: 'Missing Google credential.' });
+    }
+
+    const profile = await verifyGoogleIdToken(String(credential));
+    if (!profile) {
+      return res.status(401).json({ success: false, message: 'Could not verify Google sign-in. Please try again.' });
+    }
+
+    const emailStr = profile.email.toLowerCase().trim();
+    let user = await UserModel.findOne({ email: emailStr });
+    let isNewUser = false;
+
+    if (user) {
+      if (user.isSuspended) {
+        return res.status(403).json({ success: false, message: 'This account has been suspended. Contact platform support.' });
+      }
+      // Backfill an avatar the first time an existing account signs in via Google.
+      if (!user.avatarUrl && profile.picture) {
+        user.avatarUrl = profile.picture;
+        await user.save();
+      }
+    } else {
+      isNewUser = true;
+      const allowedRoles: Role[] = ['customer', 'vendor'];
+      const safeRole: Role = allowedRoles.includes(role) ? role : 'customer';
+      // Google-managed accounts have no password the user knows. We store a
+      // random, unguessable hash so the schema's required field is satisfied and
+      // nobody can password-login as them; they can set a real password later
+      // via Forgot Password if they ever want one.
+      const randomPasswordHash = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10);
+      user = await UserModel.create({
+        id: `usr-${Date.now()}`,
+        name: profile.name || emailStr.split('@')[0],
+        email: emailStr,
+        phone: '',
+        role: safeRole,
+        avatarUrl: profile.picture,
+        authProvider: 'google',
+        isVerified: true,
+        passwordHash: randomPasswordHash,
+      });
+    }
+
+    const token = signToken({ sub: user.id, email: user.email, role: user.role });
+    const { passwordHash: _omit, ...userSafe } = user.toObject();
+
+    return res.json({
+      success: true,
+      message: 'Authentication successful.',
+      data: { user: userSafe, token, isNewUser },
+    });
+  } catch (err: any) {
+    console.error('Google sign-in error:', err);
     res.status(500).json({ success: false, message: err.message || 'Internal Server Error' });
   }
 });

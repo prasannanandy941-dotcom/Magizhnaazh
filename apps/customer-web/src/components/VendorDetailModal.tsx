@@ -10,6 +10,19 @@ import { PriestGrid } from './PriestServices';
 import { GiftGrid } from './ReturnGifts';
 import { GenericCategoryGrid } from './CategoryOptions';
 import { CustomRequestBox } from './CateringMenu';
+import { getVendorCoverImage } from './vendorUtils';
+
+const isVideoUrl = (url: string | null) => {
+  if (!url) return false;
+  const cleanUrl = url.toLowerCase().split('?')[0].split('#')[0];
+  return (
+    cleanUrl.endsWith('.mp4') ||
+    cleanUrl.endsWith('.webm') ||
+    cleanUrl.endsWith('.ogg') ||
+    cleanUrl.endsWith('.mov') ||
+    cleanUrl.endsWith('.m4v')
+  );
+};
 
 interface VendorDetailModalProps {
   vendor: Vendor;
@@ -174,7 +187,10 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
 
   const countdownLabel = `${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, '0')}`;
 
-  const [selectedImage, setSelectedImage] = useState(vendor.galleryImages[0]);
+  const [selectedImage, setSelectedImage] = useState(getVendorCoverImage(vendor));
+  useEffect(() => {
+    setSelectedImage(getVendorCoverImage(vendor));
+  }, [vendor]);
   // Full-screen preview of a gallery image when the customer taps it.
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -201,7 +217,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
     try {
       const fileUrl = await uploadReferenceImage(file);
       setCustomerUploads((prev) => [...prev, fileUrl]);
-      setUploadSuccess('Image uploaded — it will be shared with the vendor when you book.');
+      setUploadSuccess('File uploaded — it will be shared with the vendor when you book.');
     } catch (err: any) {
       setUploadSuccess(err?.message || 'Upload failed — please try again.');
     } finally {
@@ -357,7 +373,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
               activeTab === 'packages' ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-slate-400 hover:text-white'
             }`}
           >
-            Packages ({vendor.packages.length})
+            {vendor.category === 'Venue' ? 'Halls' : 'Packages'} ({vendor.packages.length})
           </button>
 
           <button
@@ -420,11 +436,34 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                   <span>{vendor.location.address}, {vendor.location.city}, {vendor.location.state} - {vendor.location.pincode}</span>
                 </div>
 
+                {/* Return Gifts vendors: pieces per order + any bulk discount. */}
+                {isReturnGifts && (vendor.giftCount || vendor.giftDiscount) && (
+                  <div className="mt-4 pt-4 border-t border-slate-800/80 flex flex-wrap gap-2">
+                    {!!vendor.giftCount && (
+                      <span className="text-xs px-3 py-1.5 rounded-full bg-indigo-600/15 border border-indigo-500/30 text-indigo-200 font-semibold">
+                        🎁 {vendor.giftCount} gifts per order
+                      </span>
+                    )}
+                    {vendor.giftDiscount && (
+                      <span className="text-xs px-3 py-1.5 rounded-full bg-emerald-600/15 border border-emerald-500/30 text-emerald-200 font-semibold">
+                        Discount: {vendor.giftDiscount}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}
 
-          {activeTab === 'options' && <GenericCategoryGrid category={vendor.category} selected={selectedOptions} onToggle={toggleOption} optionItems={vendor.offeredOptionItems} />}
+          {activeTab === 'options' && (
+            <GenericCategoryGrid
+              category={vendor.category}
+              selected={selectedOptions}
+              onToggle={toggleOption}
+              optionItems={vendor.offeredOptionItems}
+              offeredOptionImages={vendor.offeredOptionImages}
+            />
+          )}
 
           {activeTab === 'services' && (
             <div className="space-y-4">
@@ -435,6 +474,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                 const price = vendor.offeredOptionPrices?.[o];
                 const items = vendor.offeredOptionItems?.[o] || [];
                 const optionQuality = vendor.offeredOptionQuality?.[o];
+                const optionImages = vendor.offeredOptionImages?.[o] || [];
                 return (
                   <div key={o} className="rounded-2xl bg-slate-900/40 border border-slate-800 p-4">
                     <div className="flex items-center gap-2 mb-2.5 flex-wrap">
@@ -444,6 +484,19 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                       )}
                       {!!price && <span className="text-xs text-amber-400 font-semibold">from ₹{price.toLocaleString('en-IN')}</span>}
                     </div>
+                    {optionImages.length > 0 && (
+                      <div className="flex gap-2 overflow-x-auto pb-1 mb-3">
+                        {optionImages.map((url) => (
+                          <img
+                            key={url}
+                            src={url}
+                            alt={o}
+                            onClick={() => setLightboxImage(url)}
+                            className="h-24 w-32 object-cover rounded-lg border border-slate-800 cursor-pointer hover:border-indigo-400 shrink-0"
+                          />
+                        ))}
+                      </div>
+                    )}
                     {items.length > 0 ? (
                       <div className="space-y-2">
                         {items.map((item, i) => {
@@ -464,6 +517,17 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                                 }`}>
                                   {picked && <Check className="w-3 h-3 text-slate-950" />}
                                 </span>
+                                {item.photo && (
+                                  <img
+                                    src={item.photo}
+                                    alt={item.name}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setLightboxImage(item.photo!);
+                                    }}
+                                    className="h-10 w-10 object-cover rounded-lg border border-slate-800 shrink-0 cursor-zoom-in"
+                                  />
+                                )}
                                 <span>
                                   {item.name}
                                   {item.note && <span className="text-slate-500 text-xs"> · {item.note}</span>}
@@ -536,19 +600,6 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                   </div>
                 </div>
               ))}
-
-              {/* Special request lives here so the customer can pick amenity
-                  options and type their request in the same place. */}
-              <div className="rounded-2xl bg-slate-900/60 border border-slate-800 p-4">
-                <h4 className="text-xs font-bold text-slate-400 uppercase mb-3">Special Request (optional)</h4>
-                <CustomRequestBox
-                  storageKey={requestKey}
-                  onSaved={setCustomRequest}
-                  triggerLabel={`Write a request for ${vendor.businessName}`}
-                  label={`Tell ${vendor.businessName} exactly what you want`}
-                />
-                <p className="text-[11px] text-slate-500 mt-1">This is shared with {vendor.businessName} along with your booking.</p>
-              </div>
             </div>
           )}
 
@@ -557,11 +608,31 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
 
           {activeTab === 'looks' && <MakeupGrid selected={selectedOptions} onToggle={toggleTheme} onPickTier={pickThemeTier} />}
 
-          {activeTab === 'fleet' && <TransportGrid selected={selectedOptions} onToggle={toggleOption} />}
+          {activeTab === 'fleet' && <TransportGrid selected={selectedOptions} onToggle={toggleTheme} onPickTier={pickThemeTier} />}
 
-          {activeTab === 'ceremonies' && <PriestGrid selected={selectedOptions} onToggle={toggleOption} />}
+          {activeTab === 'ceremonies' && <PriestGrid selected={selectedOptions} onToggle={toggleTheme} onPickTier={pickThemeTier} />}
 
-          {activeTab === 'gifts' && <GiftGrid selected={selectedOptions} onToggle={toggleOption} />}
+          {activeTab === 'gifts' && (
+            <div className="space-y-4">
+              {(vendor.giftCount != null || vendor.giftDiscount) && (
+                <div className="flex flex-wrap gap-3">
+                  {vendor.giftCount != null && (
+                    <div className="flex-1 min-w-[140px] p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+                      <span className="text-[10px] text-slate-400 uppercase font-bold block">Count of gifts</span>
+                      <span className="text-lg font-bold text-white">{vendor.giftCount} pieces</span>
+                    </div>
+                  )}
+                  {vendor.giftDiscount && (
+                    <div className="flex-1 min-w-[140px] p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
+                      <span className="text-[10px] text-emerald-300 uppercase font-bold block">Discount</span>
+                      <span className="text-sm font-semibold text-emerald-200">{vendor.giftDiscount}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+              <GiftGrid selected={selectedOptions} onToggle={toggleTheme} onPickTier={pickThemeTier} />
+            </div>
+          )}
 
           {activeTab === 'packages' && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -575,88 +646,192 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                       : 'bg-slate-900/50 border-slate-800 hover:border-slate-700'
                   }`}
                 >
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-bold text-white text-base flex items-center gap-2">
-                      <span className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
-                        selectedPkgId === pkg.id ? 'bg-indigo-500 border-indigo-500' : 'border-slate-600'
-                      }`}>
-                        {selectedPkgId === pkg.id && <Check className="w-3 h-3 text-white" />}
-                      </span>
-                      {pkg.packageName}
-                    </h4>
-                    <span className="font-display font-extrabold text-amber-400 text-lg">
-                      ₹{pkg.price.toLocaleString('en-IN')}
-                    </span>
-                  </div>
-                  {selectedPkgId === pkg.id && (
-                    <span className="inline-block mt-2 text-[10px] font-bold uppercase text-indigo-300 bg-indigo-500/15 px-2 py-0.5 rounded-full">Selected</span>
-                  )}
-
-                  <p className="text-xs text-slate-400 mt-2">{pkg.description}</p>
-
-                  {/* Hall / Package Photos */}
-                  {pkg.images && pkg.images.length > 0 && (
-                    <div className="space-y-1.5 mt-3 mb-3">
-                      <div className="h-36 w-full rounded-xl overflow-hidden bg-slate-950 relative">
-                        <img src={pkg.images[0]} alt={pkg.packageName} className="w-full h-full object-cover" />
+                  {vendor.category === 'Security' ? (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-bold text-white text-base flex items-center gap-2">
+                          <span className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
+                            selectedPkgId === pkg.id ? 'bg-indigo-500 border-indigo-500' : 'border-slate-600'
+                          }`}>
+                            {selectedPkgId === pkg.id && <Check className="w-3 h-3 text-white" />}
+                          </span>
+                          {pkg.packageName}
+                        </h4>
                       </div>
-                      {pkg.images.length > 1 && (
-                        <div className="flex gap-1.5 overflow-x-auto pb-1">
-                          {pkg.images.map((img, idx) => (
-                            <img
-                              key={idx}
-                              src={img}
-                              alt={`pkg-${idx}`}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setLightboxImage(img);
-                              }}
-                              className="h-10 w-14 object-cover rounded border border-slate-800 hover:border-indigo-400 cursor-pointer shrink-0"
-                            />
-                          ))}
+                      {selectedPkgId === pkg.id && (
+                        <span className="inline-block mt-2 text-[10px] font-bold uppercase text-indigo-300 bg-indigo-500/15 px-2 py-0.5 rounded-full">Selected</span>
+                      )}
+
+                      <div className="mt-4 space-y-1.5 text-xs border-t border-slate-800/80 pt-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-400">Cost per person:</span>
+                          <span className="font-bold text-amber-400">₹{pkg.price.toLocaleString('en-IN')}</span>
+                        </div>
+                        {pkg.capacityPersons !== undefined && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-slate-400">Availability of persons:</span>
+                            <span className="font-bold text-white">{pkg.capacityPersons} guards</span>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  ) : vendor.category === 'Catering' ? (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-bold text-white text-base flex items-center gap-2">
+                          <span className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
+                            selectedPkgId === pkg.id ? 'bg-indigo-500 border-indigo-500' : 'border-slate-600'
+                          }`}>
+                            {selectedPkgId === pkg.id && <Check className="w-3 h-3 text-white" />}
+                          </span>
+                          {pkg.packageName}
+                        </h4>
+                        <span className="font-display font-extrabold text-amber-400 text-base shrink-0">
+                          ₹{pkg.price.toLocaleString('en-IN')} / plate
+                        </span>
+                      </div>
+                      {selectedPkgId === pkg.id && (
+                        <span className="inline-block mt-2 text-[10px] font-bold uppercase text-indigo-300 bg-indigo-500/15 px-2 py-0.5 rounded-full">Selected</span>
+                      )}
+                      {pkg.description && (
+                        <p className="text-xs text-slate-400 mt-3 border-t border-slate-800/80 pt-3">{pkg.description}</p>
+                      )}
+                      {pkg.images && pkg.images.length > 0 && (
+                        <div className="mt-3 pt-3 border-t border-slate-800/80" onClick={(e) => e.stopPropagation()}>
+                          <span className="text-[10px] font-bold text-slate-400 uppercase block mb-2">Menu Card / Photos</span>
+                          <div className="flex gap-2 overflow-x-auto pb-1">
+                            {pkg.images.map((img, idx) => (
+                              <div
+                                key={idx}
+                                onClick={() => setLightboxImage(img)}
+                                className="relative group w-20 h-24 rounded-lg overflow-hidden border border-slate-800 hover:border-indigo-400 cursor-pointer shrink-0 bg-slate-950"
+                              >
+                                <img src={img} alt={`Menu Page ${idx + 1}`} className="w-full h-full object-cover" />
+                                <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                  <span className="text-[10px] font-bold text-white uppercase bg-slate-900/90 px-1.5 py-0.5 rounded">Zoom</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       )}
-                    </div>
-                  )}
-
-                  <ul className="mt-4 space-y-2">
-                    {pkg.includedServices.map((svc, i) => (
-                      <li key={i} className="text-xs text-slate-300 flex items-center gap-2">
-                        <Check className="w-3.5 h-3.5 text-emerald-400" /> {svc}
-                      </li>
-                    ))}
-                  </ul>
-
-                  {/* Vendor-defined price tiers — pick one; its price is used. */}
-                  {pkg.tiers && pkg.tiers.length > 0 && (
-                    <div className="mt-4 pt-3 border-t border-slate-800/80" onClick={(e) => e.stopPropagation()}>
-                      <span className="text-[10px] font-bold text-slate-400 uppercase block mb-2">Choose a tier</span>
-                      <div className="grid grid-cols-1 gap-2">
-                        {pkg.tiers.map((t, ti) => {
-                          const picked = selectedPkgId === pkg.id && chosenTier?.name === t.name && chosenTier?.price === t.price;
-                          return (
-                            <button
-                              key={ti}
-                              type="button"
-                              onClick={() => pickPkgTier(pkg, t)}
-                              className={`flex items-center justify-between gap-3 p-2.5 rounded-xl border text-left transition-colors ${
-                                picked ? 'bg-emerald-500/15 border-emerald-500/50' : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
-                              }`}
-                            >
-                              <span className="flex items-center gap-2 text-sm text-slate-200">
-                                <span className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
-                                  picked ? 'bg-emerald-500 border-emerald-500' : 'border-slate-600'
-                                }`}>
-                                  {picked && <Check className="w-3 h-3 text-slate-950" />}
-                                </span>
-                                {t.name || 'Tier'}
-                              </span>
-                              <span className="text-emerald-400 font-semibold text-sm shrink-0">₹{(t.price ?? 0).toLocaleString('en-IN')}</span>
-                            </button>
-                          );
-                        })}
+                      {pkg.tiers && pkg.tiers.length > 0 && (
+                        <div className="mt-3 pt-3 border-t border-slate-800/80" onClick={(e) => e.stopPropagation()}>
+                          <span className="text-[10px] font-bold text-slate-400 uppercase block mb-2">Choose serving option</span>
+                          <div className="grid grid-cols-1 gap-2">
+                            {pkg.tiers.map((t, ti) => {
+                              const picked = selectedPkgId === pkg.id && chosenTier?.name === t.name && chosenTier?.price === t.price;
+                              return (
+                                <button
+                                  key={ti}
+                                  type="button"
+                                  onClick={() => pickPkgTier(pkg, t)}
+                                  className={`flex items-center justify-between gap-3 p-2.5 rounded-xl border text-left transition-colors ${
+                                    picked ? 'bg-emerald-500/15 border-emerald-500/50' : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
+                                  }`}
+                                >
+                                  <span className="flex items-center gap-2 text-sm text-slate-200">
+                                    <span className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
+                                      picked ? 'bg-emerald-500 border-emerald-500' : 'border-slate-600'
+                                    }`}>
+                                      {picked && <Check className="w-3 h-3 text-slate-950" />}
+                                    </span>
+                                    {t.name || 'Option'}
+                                  </span>
+                                  <span className="text-emerald-400 font-semibold text-sm shrink-0">₹{(t.price ?? 0).toLocaleString('en-IN')}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-bold text-white text-base flex items-center gap-2">
+                          <span className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
+                            selectedPkgId === pkg.id ? 'bg-indigo-500 border-indigo-500' : 'border-slate-600'
+                          }`}>
+                            {selectedPkgId === pkg.id && <Check className="w-3 h-3 text-white" />}
+                          </span>
+                          {pkg.packageName}
+                        </h4>
+                        <span className="font-display font-extrabold text-amber-400 text-lg">
+                          ₹{pkg.price.toLocaleString('en-IN')}
+                        </span>
                       </div>
-                    </div>
+                      {selectedPkgId === pkg.id && (
+                        <span className="inline-block mt-2 text-[10px] font-bold uppercase text-indigo-300 bg-indigo-500/15 px-2 py-0.5 rounded-full">Selected</span>
+                      )}
+
+                      <p className="text-xs text-slate-400 mt-2">{pkg.description}</p>
+
+                      {/* Hall / Package Photos */}
+                      {pkg.images && pkg.images.length > 0 && (
+                        <div className="space-y-1.5 mt-3 mb-3">
+                          <div className="h-36 w-full rounded-xl overflow-hidden bg-slate-950 relative">
+                            <img src={pkg.images[0]} alt={pkg.packageName} className="w-full h-full object-cover" />
+                          </div>
+                          {pkg.images.length > 1 && (
+                            <div className="flex gap-1.5 overflow-x-auto pb-1">
+                              {pkg.images.map((img, idx) => (
+                                <img
+                                  key={idx}
+                                  src={img}
+                                  alt={`pkg-${idx}`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setLightboxImage(img);
+                                  }}
+                                  className="h-10 w-14 object-cover rounded border border-slate-800 hover:border-indigo-400 cursor-pointer shrink-0"
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      <ul className="mt-4 space-y-2">
+                        {pkg.includedServices.map((svc, i) => (
+                          <li key={i} className="text-xs text-slate-300 flex items-center gap-2">
+                            <Check className="w-3.5 h-3.5 text-emerald-400" /> {svc}
+                          </li>
+                        ))}
+                      </ul>
+
+                      {/* Vendor-defined price tiers — pick one; its price is used. */}
+                      {pkg.tiers && pkg.tiers.length > 0 && (
+                        <div className="mt-4 pt-3 border-t border-slate-800/80" onClick={(e) => e.stopPropagation()}>
+                          <span className="text-[10px] font-bold text-slate-400 uppercase block mb-2">Choose a tier</span>
+                          <div className="grid grid-cols-1 gap-2">
+                            {pkg.tiers.map((t, ti) => {
+                              const picked = selectedPkgId === pkg.id && chosenTier?.name === t.name && chosenTier?.price === t.price;
+                              return (
+                                <button
+                                  key={ti}
+                                  type="button"
+                                  onClick={() => pickPkgTier(pkg, t)}
+                                  className={`flex items-center justify-between gap-3 p-2.5 rounded-xl border text-left transition-colors ${
+                                    picked ? 'bg-emerald-500/15 border-emerald-500/50' : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
+                                  }`}
+                                >
+                                  <span className="flex items-center gap-2 text-sm text-slate-200">
+                                    <span className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
+                                      picked ? 'bg-emerald-500 border-emerald-500' : 'border-slate-600'
+                                    }`}>
+                                      {picked && <Check className="w-3 h-3 text-slate-950" />}
+                                    </span>
+                                    {t.name || 'Tier'}
+                                  </span>
+                                  <span className="text-emerald-400 font-semibold text-sm shrink-0">₹{(t.price ?? 0).toLocaleString('en-IN')}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               ))}
@@ -699,14 +874,14 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
           {activeTab === 'upload' && (
             <div className="p-8 rounded-2xl bg-slate-900/60 border border-slate-800 text-center max-w-lg mx-auto">
               <Upload className="w-12 h-12 text-indigo-400 mx-auto mb-4" />
-              <h4 className="font-bold text-lg text-white">Share reference images</h4>
+              <h4 className="font-bold text-lg text-white">Share reference files</h4>
               <p className="text-xs text-slate-400 mt-2 mb-6">
-                Upload photos of what you want (a decoration style, a setup you like). They're attached to your booking, so <span className="text-amber-400 font-semibold">{vendor.businessName}</span> sees exactly what you're expecting after you confirm and pay the advance.
+                Upload photos or videos of what you want (a decoration style, a setup you like). They're attached to your booking, so <span className="text-amber-400 font-semibold">{vendor.businessName}</span> sees exactly what you're expecting after you confirm and pay the advance.
               </p>
 
               <label className="cursor-pointer inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs shadow-lg transition-all">
-                <span>{uploading ? 'Uploading…' : 'Select Image to Upload'}</span>
-                <input type="file" accept="image/*" onChange={handleLocalUpload} className="hidden" disabled={uploading} />
+                <span>{uploading ? 'Uploading…' : 'Select Image/Video to Upload'}</span>
+                <input type="file" accept="image/*,video/*" onChange={handleLocalUpload} className="hidden" disabled={uploading} />
               </label>
 
               {uploadSuccess && <p className="text-xs text-emerald-400 mt-4 font-semibold">{uploadSuccess}</p>}
@@ -717,12 +892,21 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                   <div className="grid grid-cols-3 gap-2">
                     {customerUploads.map((url) => (
                       <div key={url} className="relative group">
-                        <img
-                          src={url}
-                          alt="Reference"
-                          onClick={() => setLightboxImage(url)}
-                          className="h-24 w-full object-cover rounded-lg border border-slate-800 cursor-pointer"
-                        />
+                        {isVideoUrl(url) ? (
+                          <div className="relative h-24 w-full rounded-lg border border-slate-800 overflow-hidden bg-black flex items-center justify-center">
+                            <video src={url} className="w-full h-full object-cover" preload="metadata" />
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/40 cursor-pointer" onClick={() => setLightboxImage(url)}>
+                              <span className="text-white text-lg">▶</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <img
+                            src={url}
+                            alt="Reference"
+                            onClick={() => setLightboxImage(url)}
+                            className="h-24 w-full object-cover rounded-lg border border-slate-800 cursor-pointer"
+                          />
+                        )}
                         <button
                           type="button"
                           onClick={() => removeUpload(url)}
@@ -741,9 +925,9 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
 
         </div>
 
-        {/* Availability date picker is shown only on the Gallery tab so it
-            doesn't repeat under every tab. */}
-        {(hasFixedAvailability || (vendor.bookedDates?.length ?? 0) > 0) && activeTab === 'gallery' && (
+        {/* Availability date picker lives only on the Gallery tab (not repeated
+            under every tab) — same for every vendor. */}
+        {activeTab === 'gallery' && (hasFixedAvailability || (vendor.bookedDates?.length ?? 0) > 0) && (
           <div className="px-6 py-4 border-t border-slate-800 bg-slate-900/60">
             <span className="text-[11px] font-bold text-slate-400 uppercase flex items-center gap-1.5 mb-2">
               <CalendarIcon className="w-3.5 h-3.5 text-indigo-400" /> {vendor.businessName} is only open on these dates — pick one to book
@@ -781,9 +965,8 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
           </div>
         )}
 
-        {/* Venues with amenity rate options get the request box inside the
-            Amenity Options tab instead (see below), so it isn't shown here. */}
-        {!hasAmenityRates && (
+        {/* Special request lives only on the Overview tab, for every vendor. */}
+        {activeTab === 'overview' && (
           <div className="px-6 py-4 border-t border-slate-800 bg-slate-900/60">
             <h4 className="text-xs font-bold text-slate-400 uppercase mb-3">Special Request (optional)</h4>
             <CustomRequestBox
@@ -829,8 +1012,8 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
             <span className="text-[11px] font-bold text-slate-400 uppercase">Selected Package</span>
             <div className="text-white font-bold text-sm">
               {selectedPkg
-                ? <>{selectedPkg.packageName}{chosenTier ? ` — ${chosenTier.name}` : ''} — <span className="text-amber-400">₹{(effectivePkgPrice ?? 0).toLocaleString('en-IN')}</span></>
-                : <span className="text-slate-400">No package — starting price ₹{(vendor.startingPrice || 0).toLocaleString('en-IN')}</span>}
+                ? <>{selectedPkg.packageName}{chosenTier ? ` — ${chosenTier.name}` : ''} — <span className="text-amber-400">₹{(effectivePkgPrice ?? 0).toLocaleString('en-IN')}{vendor.category === 'Security' ? ' per person' : vendor.category === 'Catering' && !chosenTier ? ' per plate' : ''}</span></>
+                : <span className="text-slate-400">No package — starting price ₹{(vendor.startingPrice || 0).toLocaleString('en-IN')}{vendor.category === 'Security' ? ' per person' : vendor.category === 'Catering' && !chosenTier ? ' per plate' : ''}</span>}
             </div>
             {customRequest && (
               <div className="mt-1 flex items-center gap-1 text-[11px] text-emerald-400 font-semibold">
@@ -1003,12 +1186,22 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
           >
             <X className="w-5 h-5" />
           </button>
-          <img
-            src={lightboxImage}
-            alt={`${vendor.businessName} photo`}
-            onClick={(e) => e.stopPropagation()}
-            className="max-w-full max-h-[90vh] rounded-xl object-contain shadow-2xl"
-          />
+          {isVideoUrl(lightboxImage) ? (
+            <video
+              src={lightboxImage}
+              controls
+              autoPlay
+              onClick={(e) => e.stopPropagation()}
+              className="max-w-full max-h-[90vh] rounded-xl object-contain shadow-2xl"
+            />
+          ) : (
+            <img
+              src={lightboxImage}
+              alt={`${vendor.businessName} photo`}
+              onClick={(e) => e.stopPropagation()}
+              className="max-w-full max-h-[90vh] rounded-xl object-contain shadow-2xl"
+            />
+          )}
         </div>
       )}
     </div>

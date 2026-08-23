@@ -2,15 +2,22 @@ import React, { useState } from 'react';
 import { Store, LogIn, UserPlus, Loader2, Eye, EyeOff, Check } from 'lucide-react';
 import { User, VENDOR_CATEGORIES, VendorCategory } from '../../../../packages/shared-types';
 import { STATIC_CITY_GROUPS, checkPassword, isPasswordStrong } from '../../../../packages/shared-utils';
-import { login, register, createVendor, sendOtp, forgotPassword, resetPassword } from '../api';
+import { login, register, createVendor, sendOtp, forgotPassword, resetPassword, googleLogin } from '../api';
 import { FloralGoldBackground } from './FloralGoldBackground';
+import { GoogleSignInButton } from './GoogleSignInButton';
 
 interface AuthGateProps {
   onAuthSuccess: (user: User, token: string) => void;
 }
 
 export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
-  const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>('signin');
+  // 'google-setup' is a new-vendor step shown after their first Google sign-in:
+  // the account already exists, but a marketplace listing needs a category/city,
+  // so we collect those before letting them into the dashboard.
+  const [mode, setMode] = useState<'signin' | 'signup' | 'forgot' | 'google-setup'>('signin');
+  // Holds the freshly-created Google vendor's user + token while they finish the
+  // business-details step above.
+  const [pendingGoogleAuth, setPendingGoogleAuth] = useState<{ user: User; token: string } | null>(null);
   const [name, setName] = useState('');
   const [businessName, setBusinessName] = useState('');
   const [category, setCategory] = useState<VendorCategory>('Catering');
@@ -72,12 +79,59 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
     }
   };
 
+  const handleGoogleCredential = async (credential: string) => {
+    setError('');
+    setSuccess('');
+    setLoading(true);
+    try {
+      const res = await googleLogin(credential);
+      if (!res.success || !res.data) {
+        throw new Error(res.message || 'Google sign-in failed.');
+      }
+      if (res.data.user.role !== 'vendor' && res.data.user.role !== 'admin') {
+        throw new Error('This account is not registered as a vendor. Use the customer portal instead.');
+      }
+      if (res.data.isNewUser) {
+        // Brand-new vendor — capture their token and collect business details
+        // before creating the marketplace listing and entering the dashboard.
+        setPendingGoogleAuth({ user: res.data.user, token: res.data.token });
+        setBusinessName(res.data.user.name || '');
+        setName(res.data.user.name || '');
+        setMode('google-setup');
+      } else {
+        onAuthSuccess(res.data.user, res.data.token);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Google sign-in failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
     setLoading(true);
     try {
+      if (mode === 'google-setup') {
+        if (!pendingGoogleAuth) {
+          throw new Error('Your session expired. Please sign in with Google again.');
+        }
+        if (!businessName.trim()) {
+          throw new Error('Please enter your business name.');
+        }
+        await createVendor(pendingGoogleAuth.token, {
+          businessName,
+          category,
+          city,
+          description,
+          contactEmail: pendingGoogleAuth.user.email,
+        } as any);
+        onAuthSuccess(pendingGoogleAuth.user, pendingGoogleAuth.token);
+        return;
+      }
+
       if (mode === 'forgot') {
         if (!otp) {
           throw new Error('Please enter the OTP verification code.');
@@ -154,7 +208,12 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
           </div>
         </div>
 
-        {mode === 'forgot' ? (
+        {mode === 'google-setup' ? (
+          <div className="mx-6 mt-6 p-3 bg-slate-900/60 rounded-2xl border border-slate-800">
+            <span className="font-bold text-xs text-amber-400 block">Almost there — tell us about your business</span>
+            <span className="text-[10px] text-slate-400">Signed in with Google. Add a few details to list on the marketplace.</span>
+          </div>
+        ) : mode === 'forgot' ? (
           <div className="mx-6 mt-6 p-3 bg-slate-900/60 rounded-2xl border border-slate-800 flex items-center justify-between">
             <span className="font-bold text-xs text-amber-400">Reset Your Password</span>
             <button
@@ -204,7 +263,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
         )}
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {mode === 'signup' && (
+          {(mode === 'signup' || mode === 'google-setup') && (
             <>
               <div>
                 <label className="block text-xs font-bold text-slate-400 mb-1.5">Your Name</label>
@@ -275,6 +334,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
             </>
           )}
 
+          {mode !== 'google-setup' && (
           <div>
             <label className="block text-xs font-bold text-slate-400 mb-1.5">Email</label>
             <div className="flex gap-2">
@@ -303,6 +363,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
               <p className="text-[10px] text-emerald-400 mt-1 font-semibold">{otpNotice}</p>
             )}
           </div>
+          )}
 
           {(mode === 'signup' || mode === 'forgot') && (
             <div>
@@ -336,6 +397,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
             </div>
           )}
 
+          {mode !== 'google-setup' && (
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="block text-xs font-bold text-slate-400">
@@ -389,6 +451,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
               </ul>
             )}
           </div>
+          )}
 
           {success && (
             <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
@@ -408,12 +471,21 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
             className="shine-sweep w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-slate-950 font-bold text-sm shadow-md hover:scale-[1.01] transition-all disabled:opacity-60 flex items-center justify-center gap-2"
           >
             {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-            {mode === 'signin' ? 'Sign In' : mode === 'signup' ? 'Register Business' : 'Reset Password'}
+            {mode === 'signin' ? 'Sign In' : mode === 'signup' ? 'Register Business' : mode === 'google-setup' ? 'Finish Setup' : 'Reset Password'}
           </button>
 
-          <p className="text-center text-[11px] text-slate-500">
-            Demo login: vendor@magizhnaazh.com / Passw0rd!
-          </p>
+          {(mode === 'signin' || mode === 'signup') && (
+            <GoogleSignInButton
+              onCredential={handleGoogleCredential}
+              text={mode === 'signup' ? 'signup_with' : 'signin_with'}
+            />
+          )}
+
+          {mode !== 'google-setup' && (
+            <p className="text-center text-[11px] text-slate-500">
+              Demo login: vendor@magizhnaazh.com / Passw0rd!
+            </p>
+          )}
         </form>
       </div>
     </div>

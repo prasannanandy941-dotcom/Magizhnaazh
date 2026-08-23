@@ -83,6 +83,18 @@ const PACKAGE_TIER_NAMES: Record<string, [string, string, string]> = {
 const tierNamesForCategory = (category: string): [string, string, string] =>
   PACKAGE_TIER_NAMES[category] || ['Basic', 'Standard', 'Premium'];
 
+const isVideoUrl = (url: string) => {
+  if (!url) return false;
+  const cleanUrl = url.toLowerCase().split('?')[0].split('#')[0];
+  return (
+    cleanUrl.endsWith('.mp4') ||
+    cleanUrl.endsWith('.webm') ||
+    cleanUrl.endsWith('.ogg') ||
+    cleanUrl.endsWith('.mov') ||
+    cleanUrl.endsWith('.m4v')
+  );
+};
+
 // Options that are a simple yes/we-offer-this with no per-item breakdown, so
 // their card hides the "Add items" editor entirely.
 const NO_ITEM_OPTIONS = new Set<string>(['Live Streaming', 'Same-Day Edit', 'Highlight Reel', 'LED Screens']);
@@ -154,11 +166,15 @@ export function App() {
   const [offeredOptions, setOfferedOptions] = useState<string[]>([]);
   const [offeredOptionPrices, setOfferedOptionPrices] = useState<Record<string, number>>({});
   const [offeredOptionItems, setOfferedOptionItems] = useState<Record<string, OfferedOptionItem[]>>({});
+  const [offeredOptionImages, setOfferedOptionImages] = useState<Record<string, string[]>>({});
   // Option-level quality tier for options that have no item list (e.g. Live Streaming).
   const [offeredOptionQuality, setOfferedOptionQuality] = useState<Record<string, string>>({});
   // Which offered option's item-editor is currently expanded (only one open at a time).
   const [expandedOption, setExpandedOption] = useState<string | null>(null);
   const [customOption, setCustomOption] = useState('');
+  // Return Gifts vendors: number of gift pieces + a quantity discount note.
+  const [giftCount, setGiftCount] = useState<string>('');
+  const [giftDiscount, setGiftDiscount] = useState('');
   const [availableDates, setAvailableDates] = useState<string[]>([]);
   const [newDate, setNewDate] = useState('');
   const [savingAvailability, setSavingAvailability] = useState(false);
@@ -254,9 +270,12 @@ export function App() {
         setQrCodeImage(v.qrCodeImage || '');
         setDescription(v.description);
         setFacilities(v.facilities || {});
+        setGiftCount(v.giftCount != null ? String(v.giftCount) : '');
+        setGiftDiscount(v.giftDiscount || '');
         setOfferedOptions(v.offeredOptions || []);
         setOfferedOptionPrices(v.offeredOptionPrices || {});
         setOfferedOptionItems(v.offeredOptionItems || {});
+        setOfferedOptionImages(v.offeredOptionImages || {});
         setOfferedOptionQuality(v.offeredOptionQuality || {});
         setAvailableDates(v.availableDates || []);
         setPackages(v.packages || []);
@@ -419,6 +438,8 @@ export function App() {
         item.price = raw === '' ? 0 : Number(raw);
       } else if (field === 'areaCharge') {
         item.areaCharge = raw === '' ? 0 : Number(raw);
+      } else if (field === 'photo') {
+        item.photo = raw;
       } else if (field === 'name') {
         item.name = raw;
       } else if (field === 'equipments') {
@@ -575,6 +596,42 @@ export function App() {
                   placeholder="note (optional)"
                   className="flex-1 min-w-[120px] p-2 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs"
                 />
+                <div className="flex items-center gap-2 shrink-0">
+                  {item.photo ? (
+                    <div className="flex items-center gap-1.5">
+                      <div className="relative h-9 w-9 rounded-lg overflow-hidden border border-slate-800 bg-slate-950 shrink-0">
+                        <img src={item.photo} alt="item" className="w-full h-full object-cover" />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => updateOptionItem(opt, i, 'photo', '')}
+                        className="text-[10px] text-rose-400 font-bold hover:underline"
+                      >
+                        Remove Photo
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="cursor-pointer flex items-center gap-1 text-[10px] px-2.5 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white font-bold hover:bg-slate-700 shrink-0">
+                      {uploadingItemPhoto === `${opt}-${i}` ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Upload className="w-3 h-3" />
+                      )}
+                      Add Photo
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        disabled={uploadingItemPhoto === `${opt}-${i}`}
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) handleItemPhotoUpload(opt, i, f);
+                          e.target.value = '';
+                        }}
+                      />
+                    </label>
+                  )}
+                </div>
                 <button
                   type="button"
                   onClick={() => removeOptionItem(opt, i)}
@@ -592,6 +649,39 @@ export function App() {
             >
               <Plus className="w-3.5 h-3.5" /> Add item
             </button>
+
+            {/* Photos for this option — shown to customers under it. Restricted to Flowers vendors only. */}
+            {myVendor?.category === 'Flowers' && (
+              <div className="pt-2 mt-1 border-t border-slate-800">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[10px] text-slate-400 uppercase font-bold">Photos</span>
+                  {(offeredOptionImages[opt] || []).map((url) => (
+                    <div key={url} className="relative h-14 w-14 rounded-lg overflow-hidden border border-slate-800 bg-slate-950">
+                      <img src={url} alt="option" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => removeOptionImage(opt, url)}
+                        className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-slate-950/80 text-slate-300 hover:text-rose-400 flex items-center justify-center"
+                        title="Remove photo"
+                      >
+                        <X className="w-2.5 h-2.5" />
+                      </button>
+                    </div>
+                  ))}
+                  <label className="cursor-pointer flex items-center gap-1 text-[11px] px-2.5 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white font-bold hover:bg-slate-700">
+                    {uploadingOptionPhoto === opt ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                    Add photo
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={uploadingOptionPhoto === opt}
+                      onChange={(e) => { const f = e.target.files?.[0]; if (f) handleOptionPhotoUpload(opt, f); e.target.value = ''; }}
+                    />
+                  </label>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -611,7 +701,7 @@ export function App() {
     setSavingFacilities(true);
     setFacilitiesNotice('');
     try {
-      const res = await updateVendor(token, myVendor.id, { facilities, offeredOptions, offeredOptionPrices, offeredOptionItems, offeredOptionQuality } as any);
+      const res = await updateVendor(token, myVendor.id, { facilities, offeredOptions, offeredOptionPrices, offeredOptionItems, offeredOptionQuality, offeredOptionImages, giftCount: giftCount === '' ? null : Number(giftCount), giftDiscount } as any);
       if (res.data?.vendor) {
         setMyVendor(res.data.vendor);
         setFacilities(res.data.vendor.facilities || {});
@@ -619,6 +709,7 @@ export function App() {
         setOfferedOptionPrices(res.data.vendor.offeredOptionPrices || {});
         setOfferedOptionItems(res.data.vendor.offeredOptionItems || {});
         setOfferedOptionQuality(res.data.vendor.offeredOptionQuality || {});
+        setOfferedOptionImages(res.data.vendor.offeredOptionImages || {});
       }
       setFacilitiesNotice('Options saved — these now show on your marketplace listing.');
     } catch (err: any) {
@@ -714,6 +805,57 @@ export function App() {
   const removePackageImage = (pkgId: string, url: string) =>
     setPackages((prev) => prev.map((p) => (p.id === pkgId ? { ...p, images: (p.images || []).filter((u) => u !== url) } : p)));
 
+  // Photos per offered option (keyed by option label) — uploaded to the shared
+  // storage endpoint and shown to customers under that option on the listing.
+  const [uploadingOptionPhoto, setUploadingOptionPhoto] = useState<string | null>(null);
+  const handleOptionPhotoUpload = async (opt: string, file: File) => {
+    if (!token) return;
+    setUploadingOptionPhoto(opt);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch(`${GATEWAY_URL}/api/v1/uploads`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+      const json = await res.json().catch(() => ({}));
+      if (json?.data?.fileUrl) {
+        setOfferedOptionImages((prev) => ({ ...prev, [opt]: [...(prev[opt] || []), json.data.fileUrl] }));
+      }
+    } catch {
+      /* best-effort */
+    } finally {
+      setUploadingOptionPhoto(null);
+    }
+  };
+  const removeOptionImage = (opt: string, url: string) =>
+    setOfferedOptionImages((prev) => ({ ...prev, [opt]: (prev[opt] || []).filter((u) => u !== url) }));
+
+  const [uploadingItemPhoto, setUploadingItemPhoto] = useState<string | null>(null);
+  const handleItemPhotoUpload = async (opt: string, itemIdx: number, file: File) => {
+    if (!token) return;
+    const key = `${opt}-${itemIdx}`;
+    setUploadingItemPhoto(key);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch(`${GATEWAY_URL}/api/v1/uploads`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+      const json = await res.json().catch(() => ({}));
+      if (json?.data?.fileUrl) {
+        updateOptionItem(opt, itemIdx, 'photo', json.data.fileUrl);
+      }
+    } catch {
+      /* best-effort */
+    } finally {
+      setUploadingItemPhoto(null);
+    }
+  };
+
   const handleSavePackages = async () => {
     if (!token || !myVendor) return;
     // Drop empty rows (no name and no price) so blank cards aren't persisted.
@@ -778,8 +920,22 @@ export function App() {
       });
       const json = await res.json();
       if (json.success && json.data?.fileUrl) {
-        setMyVendor((prev) => (prev ? { ...prev, galleryImages: [...prev.galleryImages, json.data.fileUrl] } : prev));
-        setUploadNotice('Portfolio image saved to local disk storage (/uploads)!');
+        const isVideo = file.type.startsWith('video/') || /\.(mp4|webm|ogg|mov|m4v)$/i.test(file.name);
+        setMyVendor((prev) => {
+          if (!prev) return null;
+          if (isVideo) {
+            return {
+              ...prev,
+              galleryVideos: [...(prev.galleryVideos || []), json.data.fileUrl],
+            };
+          } else {
+            return {
+              ...prev,
+              galleryImages: [...(prev.galleryImages || []), json.data.fileUrl],
+            };
+          }
+        });
+        setUploadNotice('Portfolio asset saved to local disk storage (/uploads)!');
       } else {
         setUploadNotice(json.message || 'Upload failed.');
       }
@@ -1047,8 +1203,8 @@ export function App() {
             { key: 'dashboard', label: 'Bookings & Quotes' },
             { key: 'reviews', label: `Reviews${reviews.length ? ` (${reviews.length})` : ''}` },
             { key: 'facilities', label: 'Facilities & Options' },
-            { key: 'packages', label: `Packages${packages.length ? ` (${packages.length})` : ''}` },
-            { key: 'availability', label: 'Availability' },
+            { key: 'packages', label: `${myVendor?.category === 'Venue' ? 'Halls' : 'Packages'}${packages.length ? ` (${packages.length})` : ''}` },
+            ...(myVendor?.category !== 'Invitation' ? [{ key: 'availability', label: 'Availability' }] : []),
             { key: 'portfolio', label: 'Local Disk Portfolio' },
             { key: 'profile', label: 'Business Profile' },
           ].map((tab) => (
@@ -1180,7 +1336,16 @@ export function App() {
                             <div className="flex flex-wrap gap-2">
                               {b.referenceImages.map((img) => (
                                 <a key={img} href={img} target="_blank" rel="noreferrer">
-                                  <img src={img} alt="Customer reference" className="h-16 w-16 object-cover rounded-lg border border-slate-700 hover:border-amber-500 transition-colors" />
+                                  {isVideoUrl(img) ? (
+                                    <div className="relative h-16 w-16 rounded-lg border border-slate-700 overflow-hidden flex items-center justify-center bg-black hover:border-amber-500 transition-colors">
+                                      <video src={img} className="w-full h-full object-cover" preload="metadata" />
+                                      <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                                        <span className="text-white text-[10px]">▶</span>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <img src={img} alt="Customer reference" className="h-16 w-16 object-cover rounded-lg border border-slate-700 hover:border-amber-500 transition-colors" />
+                                  )}
                                 </a>
                               ))}
                             </div>
@@ -1331,12 +1496,12 @@ export function App() {
               <Upload className="w-12 h-12 text-amber-400 mx-auto mb-4 animate-pulse" />
               <h3 className="font-bold text-xl text-white">Local Storage Portfolio Upload</h3>
               <p className="text-xs text-slate-400 mt-2 mb-6">
-                Upload business images directly to local disk directory <code className="text-amber-400 font-mono">/uploads/vendor-{myVendor.id}</code> using <code className="text-indigo-400 font-mono">LocalStorageProvider</code>.
+                Upload business images and videos directly to local disk directory <code className="text-amber-400 font-mono">/uploads/vendor-{myVendor.id}</code> using <code className="text-indigo-400 font-mono">LocalStorageProvider</code>.
               </p>
 
               <label className="cursor-pointer inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-bold text-xs shadow-lg transition-all hover:scale-105">
-                <span>Choose Image to Upload</span>
-                <input type="file" accept="image/*" onChange={handleLocalUpload} className="hidden" />
+                <span>Choose Image/Video to Upload</span>
+                <input type="file" accept="image/*,video/*" onChange={handleLocalUpload} className="hidden" />
               </label>
 
               {uploading && <p className="text-xs text-indigo-400 mt-4">Saving file to local disk...</p>}
@@ -1344,8 +1509,14 @@ export function App() {
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {(myVendor.galleryVideos || []).map((url, idx) => (
+                <div key={`vid-${idx}`} className="h-44 rounded-2xl overflow-hidden bg-slate-900 border border-slate-800 relative group">
+                  <video src={url} controls className="w-full h-full object-cover" preload="metadata" />
+                  <span className="absolute top-2 left-2 px-2 py-0.5 rounded bg-slate-950/80 text-white text-[10px] font-semibold">Video</span>
+                </div>
+              ))}
               {myVendor.galleryImages.map((img, idx) => (
-                <div key={idx} className="h-44 rounded-2xl overflow-hidden bg-slate-900 border border-slate-800">
+                <div key={`img-${idx}`} className="h-44 rounded-2xl overflow-hidden bg-slate-900 border border-slate-800">
                   <img src={img} alt={`Portfolio ${idx}`} className="w-full h-full object-cover" />
                 </div>
               ))}
@@ -1539,34 +1710,44 @@ export function App() {
               );
             })()}
 
-            {/* Any vendor can add a custom option not covered by the preset list */}
-            <div>
-              <p className="text-xs font-bold text-amber-400 uppercase mb-3">Add your own option</p>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={customOption}
-                  onChange={(e) => setCustomOption(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCustomOption(); } }}
-                  placeholder="e.g. Same-day delivery"
-                  className="flex-1 p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm"
-                />
-                <button
-                  type="button"
-                  onClick={addCustomOption}
-                  className="px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 text-white font-bold text-xs flex items-center gap-1.5 hover:bg-slate-700"
-                >
-                  <Plus className="w-4 h-4" /> Add
-                </button>
-              </div>
-              {offeredOptions.filter((o) => !(CATEGORY_OPTIONS[myVendor.category] || []).includes(o) && !UNIVERSAL_OPTIONS.includes(o)).length > 0 && (
-                <div className="space-y-2 mt-3">
-                  {offeredOptions
-                    .filter((o) => !(CATEGORY_OPTIONS[myVendor.category] || []).includes(o) && !UNIVERSAL_OPTIONS.includes(o))
-                    .map((opt) => renderOfferedOptionCard(opt, 'indigo'))}
+            {/* Return Gifts vendors get two structured fields instead of the
+                free-text option box: how many gifts, and a discount note. */}
+            {myVendor.category === 'Return Gifts' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-amber-400 uppercase mb-1.5">Count of gifts</label>
+                  <input
+                    type="number"
+                    value={giftCount}
+                    onChange={(e) => setGiftCount(e.target.value)}
+                    placeholder="e.g. 100"
+                    className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm"
+                  />
+                  <p className="text-[10px] text-slate-500 mt-1">How many gift pieces you supply per order.</p>
                 </div>
-              )}
-            </div>
+                <div>
+                  <label className="block text-xs font-bold text-amber-400 uppercase mb-1.5">Discount (based on item)</label>
+                  <input
+                    type="text"
+                    value={giftDiscount}
+                    onChange={(e) => setGiftDiscount(e.target.value)}
+                    placeholder="e.g. 10% off above 100 pieces"
+                    className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm"
+                  />
+                  <p className="text-[10px] text-slate-500 mt-1">Bulk / item-based discount customers get.</p>
+                </div>
+              </div>
+            )}
+
+            {/* Custom options already added by the vendor stay visible/editable,
+                but the free-text "Add your own option" box has been removed. */}
+            {offeredOptions.filter((o) => !(CATEGORY_OPTIONS[myVendor.category] || []).includes(o) && !UNIVERSAL_OPTIONS.includes(o)).length > 0 && (
+              <div className="space-y-2">
+                {offeredOptions
+                  .filter((o) => !(CATEGORY_OPTIONS[myVendor.category] || []).includes(o) && !UNIVERSAL_OPTIONS.includes(o))
+                  .map((opt) => renderOfferedOptionCard(opt, 'indigo'))}
+              </div>
+            )}
 
             {facilitiesNotice && <p className="text-xs text-emerald-400 font-semibold">{facilitiesNotice}</p>}
 
@@ -1585,25 +1766,30 @@ export function App() {
           <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-800 max-w-3xl space-y-5">
             <div>
               <h3 className="font-bold text-xl text-white flex items-center gap-2">
-                <Receipt className="w-5 h-5 text-amber-400" /> Packages
+                <Receipt className="w-5 h-5 text-amber-400" /> {myVendor?.category === 'Venue' ? 'Function Halls' : 'Packages'}
               </h3>
               <p className="text-xs text-slate-400 mt-1">
-                Bundle your services into priced packages. Customers see these on the "Packages" tab of your listing and can book them.
+                {myVendor?.category === 'Venue'
+                  ? 'Add each of your function halls with its capacity, price and photos. Customers see them on the "Halls" tab of your listing and can book any one they like.'
+                  : 'Bundle your services into priced packages. Customers see these on the "Packages" tab of your listing and can book them.'}
               </p>
             </div>
 
             {packages.length === 0 && (
-              <p className="text-xs text-slate-500">No packages yet — add your first one below.</p>
+              <p className="text-xs text-slate-500">{myVendor?.category === 'Venue' ? 'No halls yet — add your first function hall below.' : 'No packages yet — add your first one below.'}</p>
             )}
 
             <div className="space-y-4">
               {packages.map((p) => (
                 <div key={p.id} className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4 space-y-3">
+                  {myVendor?.category === 'Security' && (
+                    <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Group of security guards</label>
+                  )}
                   <div className="flex items-center gap-2">
                     <input
                       value={p.packageName}
                       onChange={(e) => updatePackageField(p.id, 'packageName', e.target.value)}
-                      placeholder="Package name — e.g. Silver Wedding Package"
+                      placeholder={myVendor?.category === 'Security' ? 'e.g. Bouncers (5 Guards)' : myVendor?.category === 'Venue' ? 'Hall name — e.g. AC Banquet Hall' : 'Package name — e.g. Silver Wedding Package'}
                       className="flex-1 p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm font-semibold"
                     />
                     <button
@@ -1616,139 +1802,205 @@ export function App() {
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className={`grid grid-cols-1 ${myVendor?.category === 'Catering' ? 'sm:grid-cols-1' : myVendor?.category === 'Pujari/Priest' || myVendor?.category === 'Security' ? 'sm:grid-cols-2' : 'sm:grid-cols-3'} gap-3`}>
                     <div>
-                      <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Price (₹)</label>
+                      <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
+                        {myVendor?.category === 'Catering' ? 'Price per plate (₹)' : myVendor?.category === 'Security' ? 'Cost per person (₹)' : 'Price (₹)'}
+                      </label>
                       <input
                         type="number"
                         value={p.price || ''}
                         onChange={(e) => updatePackageField(p.id, 'price', e.target.value)}
-                        placeholder="150000"
+                        placeholder={myVendor?.category === 'Catering' ? '500' : myVendor?.category === 'Security' ? '2000' : '150000'}
                         className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
                       />
                     </div>
-                    <div>
-                      <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Capacity (persons)</label>
-                      <input
-                        type="number"
-                        value={p.capacityPersons ?? ''}
-                        onChange={(e) => updatePackageField(p.id, 'capacityPersons', e.target.value)}
-                        placeholder="500"
-                        className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Duration (hours)</label>
-                      <input
-                        type="number"
-                        value={p.durationHours ?? ''}
-                        onChange={(e) => updatePackageField(p.id, 'durationHours', e.target.value)}
-                        placeholder="8"
-                        className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Description</label>
-                    <textarea
-                      rows={2}
-                      value={p.description}
-                      onChange={(e) => updatePackageField(p.id, 'description', e.target.value)}
-                      placeholder="What this package includes and who it's for."
-                      className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
-                    />
-                  </div>
-
-                  {/* Price tiers — vendor names them (Normal / HD / Premium, etc.) */}
-                  <div>
-                    <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1.5">Price tiers (optional — e.g. Normal / HD / Premium)</label>
-                    <div className="space-y-2">
-                      {(p.tiers || []).map((t, ti) => (
-                        <div key={ti} className="flex items-center gap-2">
-                          <input
-                            value={t.name}
-                            onChange={(e) => updatePackageTier(p.id, ti, 'name', e.target.value)}
-                            placeholder="Tier name — e.g. Premium"
-                            className="flex-1 p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
-                          />
-                          <div className="flex items-center gap-1 px-2 rounded-lg bg-slate-950 border border-slate-800">
-                            <span className="text-slate-500 text-xs">₹</span>
-                            <input
-                              type="number"
-                              value={t.price || ''}
-                              onChange={(e) => updatePackageTier(p.id, ti, 'price', e.target.value)}
-                              placeholder="15000"
-                              className="w-24 py-2 bg-transparent text-white text-sm focus:outline-none"
-                            />
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => removePackageTier(p.id, ti)}
-                            className="w-7 h-7 rounded-lg bg-slate-800 text-slate-400 hover:text-rose-400 flex items-center justify-center shrink-0"
-                            aria-label="Remove tier"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={() => addPackageTier(p.id)}
-                        className="flex items-center gap-1 text-[11px] font-bold text-amber-400 hover:text-amber-300"
-                      >
-                        <Plus className="w-3.5 h-3.5" /> Add tier
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Hall / Package Photos */}
-                  <div>
-                    <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1.5">Hall / Function Photos</label>
-                    
-                    {p.images && p.images.length > 0 && (
-                      <div className="grid grid-cols-4 gap-2 mb-3">
-                        {p.images.map((url) => (
-                          <div key={url} className="relative group rounded-lg overflow-hidden border border-slate-800 h-20 bg-slate-950">
-                            <img src={url} alt="Package asset" className="w-full h-full object-cover" />
-                            <button
-                              type="button"
-                              onClick={() => removePackageImage(p.id, url)}
-                              className="absolute top-1 right-1 w-5 h-5 rounded-full bg-slate-950/80 hover:bg-rose-600 hover:text-white text-slate-400 flex items-center justify-center transition-colors"
-                              title="Remove photo"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          </div>
-                        ))}
+                    {myVendor?.category !== 'Pujari/Priest' && myVendor?.category !== 'Security' && myVendor?.category !== 'Catering' && (
+                      <div>
+                        <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
+                          {myVendor?.category === 'Return Gifts' ? 'Count of items' : 'Capacity (persons)'}
+                        </label>
+                        <input
+                          type="number"
+                          value={p.capacityPersons ?? ''}
+                          onChange={(e) => updatePackageField(p.id, 'capacityPersons', e.target.value)}
+                          placeholder={myVendor?.category === 'Return Gifts' ? '100' : '500'}
+                          className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                        />
                       </div>
                     )}
-
-                    <label className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 hover:text-white hover:border-slate-700 text-xs font-bold cursor-pointer transition-colors">
-                      {uploadingPkgId === p.id ? (
-                        <>
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          <span>Uploading…</span>
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="w-3.5 h-3.5 text-indigo-400" />
-                          <span>Upload Photo</span>
-                        </>
-                      )}
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) handlePackagePhotoUpload(p.id, file);
-                          e.target.value = '';
-                        }}
-                        className="hidden"
-                        disabled={uploadingPkgId === p.id}
-                      />
-                    </label>
+                    {myVendor?.category !== 'Pujari/Priest' && myVendor?.category !== 'Security' && myVendor?.category !== 'Catering' && (
+                      <div>
+                        <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
+                          {myVendor?.category === 'Return Gifts' ? 'Packing time (days)' : 'Duration (hours)'}
+                        </label>
+                        <input
+                          type="number"
+                          value={p.durationHours ?? ''}
+                          onChange={(e) => updatePackageField(p.id, 'durationHours', e.target.value)}
+                          placeholder={myVendor?.category === 'Return Gifts' ? '2' : '8'}
+                          className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                        />
+                      </div>
+                    )}
                   </div>
+
+                  {myVendor?.category !== 'Security' && (
+                    <>
+                      <div>
+                        <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Description</label>
+                        <textarea
+                          rows={2}
+                          value={p.description}
+                          onChange={(e) => updatePackageField(p.id, 'description', e.target.value)}
+                          placeholder="What this package includes and who it's for."
+                          className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                        />
+                      </div>
+
+                      {myVendor?.category === 'Catering' && (
+                        <div>
+                          <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1.5">Menu Photo / Card</label>
+                          
+                          {p.images && p.images.length > 0 && (
+                            <div className="grid grid-cols-4 gap-2 mb-3">
+                              {p.images.map((url) => (
+                                <div key={url} className="relative group rounded-lg overflow-hidden border border-slate-800 h-20 bg-slate-950">
+                                  <img src={url} alt="Menu page" className="w-full h-full object-cover" />
+                                  <button
+                                    type="button"
+                                    onClick={() => removePackageImage(p.id, url)}
+                                    className="absolute top-1 right-1 w-5 h-5 rounded-full bg-slate-950/80 hover:bg-rose-600 hover:text-white text-slate-400 flex items-center justify-center transition-colors"
+                                    title="Remove menu page"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          <label className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 hover:text-white hover:border-slate-700 text-xs font-bold cursor-pointer transition-colors">
+                            {uploadingPkgId === p.id ? (
+                              <>
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                <span>Uploading Menu…</span>
+                              </>
+                            ) : (
+                              <>
+                                <Upload className="w-3.5 h-3.5 text-indigo-400" />
+                                <span>Upload Menu Photo</span>
+                              </>
+                            )}
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handlePackagePhotoUpload(p.id, file);
+                                e.target.value = '';
+                              }}
+                              className="hidden"
+                              disabled={uploadingPkgId === p.id}
+                            />
+                          </label>
+                        </div>
+                      )}
+
+                      {/* Price tiers — vendor names them (Normal / HD / Premium, etc.) */}
+                      <div>
+                        <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1.5">
+                          {myVendor?.category === 'Catering' ? 'Serving options (optional — e.g. For 2 Persons / Jumbo)' : 'Price tiers (optional — e.g. Normal / HD / Premium)'}
+                        </label>
+                        <div className="space-y-2">
+                          {(p.tiers || []).map((t, ti) => (
+                            <div key={ti} className="flex items-center gap-2">
+                              <input
+                                value={t.name}
+                                onChange={(e) => updatePackageTier(p.id, ti, 'name', e.target.value)}
+                                placeholder={myVendor?.category === 'Catering' ? 'Serving size — e.g. For 2 Persons' : 'Tier name — e.g. Premium'}
+                                className="flex-1 p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                              />
+                              <div className="flex items-center gap-1 px-2 rounded-lg bg-slate-950 border border-slate-800">
+                                <span className="text-slate-500 text-xs">₹</span>
+                                <input
+                                  type="number"
+                                  value={t.price || ''}
+                                  onChange={(e) => updatePackageTier(p.id, ti, 'price', e.target.value)}
+                                  placeholder={myVendor?.category === 'Catering' ? '400' : '15000'}
+                                  className="w-24 py-2 bg-transparent text-white text-sm focus:outline-none"
+                                />
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => removePackageTier(p.id, ti)}
+                                className="w-7 h-7 rounded-lg bg-slate-800 text-slate-400 hover:text-rose-400 flex items-center justify-center shrink-0"
+                                aria-label="Remove tier"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          ))}
+                          <button
+                            type="button"
+                            onClick={() => addPackageTier(p.id)}
+                            className="flex items-center gap-1 text-[11px] font-bold text-amber-400 hover:text-amber-300"
+                          >
+                            <Plus className="w-3.5 h-3.5" /> {myVendor?.category === 'Catering' ? 'Add serving option' : 'Add tier'}
+                          </button>
+                        </div>
+                      </div>
+
+                      {myVendor?.category !== 'Catering' && (
+                        <div>
+                          <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1.5">Hall / Function Photos</label>
+                          
+                          {p.images && p.images.length > 0 && (
+                            <div className="grid grid-cols-4 gap-2 mb-3">
+                              {p.images.map((url) => (
+                                <div key={url} className="relative group rounded-lg overflow-hidden border border-slate-800 h-20 bg-slate-950">
+                                  <img src={url} alt="Package asset" className="w-full h-full object-cover" />
+                                  <button
+                                    type="button"
+                                    onClick={() => removePackageImage(p.id, url)}
+                                    className="absolute top-1 right-1 w-5 h-5 rounded-full bg-slate-950/80 hover:bg-rose-600 hover:text-white text-slate-400 flex items-center justify-center transition-colors"
+                                    title="Remove photo"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          <label className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 hover:text-white hover:border-slate-700 text-xs font-bold cursor-pointer transition-colors">
+                            {uploadingPkgId === p.id ? (
+                              <>
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                <span>Uploading…</span>
+                              </>
+                            ) : (
+                              <>
+                                <Upload className="w-3.5 h-3.5 text-indigo-400" />
+                                <span>Upload Photo</span>
+                              </>
+                            )}
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handlePackagePhotoUpload(p.id, file);
+                                e.target.value = '';
+                              }}
+                              className="hidden"
+                              disabled={uploadingPkgId === p.id}
+                            />
+                          </label>
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               ))}
             </div>
@@ -1759,15 +2011,27 @@ export function App() {
                 onClick={addPackage}
                 className="flex items-center gap-1.5 text-xs font-bold text-amber-400 hover:text-amber-300"
               >
-                <Plus className="w-4 h-4" /> Add package
+                <Plus className="w-4 h-4" /> {myVendor?.category === 'Venue' ? 'Add hall' : 'Add package'}
               </button>
-              <button
-                type="button"
-                onClick={addTierPackages}
-                className="flex items-center gap-1.5 text-xs font-bold text-indigo-400 hover:text-indigo-300"
-              >
-                <Plus className="w-4 h-4" /> Quick-add tiers ({tierNamesForCategory(myVendor.category).join(' / ')})
-              </button>
+              {myVendor?.category !== 'Pujari/Priest' &&
+                myVendor?.category !== 'Printing' &&
+                myVendor?.category !== 'Flowers' &&
+                myVendor?.category !== 'Security' &&
+                myVendor?.category !== 'Cleaning' &&
+                myVendor?.category !== 'Rental Equipment' &&
+                myVendor?.category !== 'Utensils for Rent' &&
+                myVendor?.category !== 'Wedding Planner' &&
+                myVendor?.category !== 'Corporate Event Services' &&
+                myVendor?.category !== 'Venue' &&
+                myVendor?.category !== 'Catering' && (
+                <button
+                  type="button"
+                  onClick={addTierPackages}
+                  className="flex items-center gap-1.5 text-xs font-bold text-indigo-400 hover:text-indigo-300"
+                >
+                  <Plus className="w-4 h-4" /> Quick-add tiers ({tierNamesForCategory(myVendor.category).join(' / ')})
+                </button>
+              )}
             </div>
 
             <div className="flex items-center gap-3 pt-2">
@@ -1777,7 +2041,7 @@ export function App() {
                 disabled={savingPackages}
                 className="px-5 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs shadow-md hover:brightness-110 disabled:opacity-60 flex items-center gap-2"
               >
-                {savingPackages && <Loader2 className="w-3.5 h-3.5 animate-spin" />} Save Packages
+                {savingPackages && <Loader2 className="w-3.5 h-3.5 animate-spin" />} {myVendor?.category === 'Venue' ? 'Save Halls' : 'Save Packages'}
               </button>
               {packagesNotice && <p className="text-xs text-emerald-400 font-semibold">{packagesNotice}</p>}
             </div>
@@ -1785,7 +2049,7 @@ export function App() {
         )}
 
         {/* Availability Tab */}
-        {activeTab === 'availability' && (
+        {activeTab === 'availability' && myVendor?.category !== 'Invitation' && (
           <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-800 max-w-2xl space-y-5">
             <div>
               <h3 className="font-bold text-xl text-white">Availability Calendar</h3>

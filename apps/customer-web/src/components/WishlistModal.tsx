@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, Heart, Star, MapPin, Trash2 } from 'lucide-react';
 import { Vendor } from '../../../../packages/shared-types';
+import { getVendorCoverImage } from './vendorUtils';
 
 interface WishlistModalProps {
   vendors: Vendor[];
@@ -43,7 +44,7 @@ export const WishlistModal: React.FC<WishlistModalProps> = ({ vendors, onClose, 
                   className="flex items-center gap-4 p-3 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-indigo-500/50 transition-colors"
                 >
                   <img
-                    src={v.galleryImages[0]}
+                    src={getVendorCoverImage(v)}
                     alt={v.businessName}
                     className="w-16 h-16 rounded-xl object-cover flex-shrink-0"
                   />

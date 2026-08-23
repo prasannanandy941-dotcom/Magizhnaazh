@@ -3,6 +3,7 @@ import { Event, Vendor, Booking } from '../../../../packages/shared-types';
 import { IndianRupee, AlertTriangle, Sparkles, CheckCircle2, TrendingUp, Filter, Star, MapPin, ChevronDown, Receipt } from 'lucide-react';
 import { calculateVendorScore } from '../../../../packages/shared-utils';
 import { fetchMyBookings } from '../api';
+import { getVendorCoverImage } from './vendorUtils';
 
 interface SmartBudgetPlannerProps {
   event: Event;
@@ -287,7 +288,7 @@ export const SmartBudgetPlanner: React.FC<SmartBudgetPlannerProps> = ({
               className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-indigo-500/50 transition-all cursor-pointer flex items-center gap-4 group"
             >
               <div className="w-20 h-20 rounded-xl overflow-hidden bg-slate-950 shrink-0">
-                <img src={vendor.galleryImages[0]} alt={vendor.businessName} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                <img src={getVendorCoverImage(vendor)} alt={vendor.businessName} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
               </div>
 
               <div className="flex-1 min-w-0">

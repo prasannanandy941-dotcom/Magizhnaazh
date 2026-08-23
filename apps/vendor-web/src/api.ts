@@ -90,6 +90,19 @@ export function login(email: string, password: string): Promise<AuthResponse> {
   return postJson('/api/v1/auth/login', { email, password });
 }
 
+export interface GoogleAuthResponse {
+  success: boolean;
+  message: string;
+  data?: { user: User; token: string; isNewUser?: boolean };
+}
+
+// One-click Google Sign-In for vendors. `role` is fixed to 'vendor' so a
+// first-time Google account is created as a vendor. The caller stores the token
+// via the App's handleAuthSuccess (consistent with vendor `login`).
+export function googleLogin(credential: string): Promise<GoogleAuthResponse> {
+  return postJson('/api/v1/auth/google', { credential, role: 'vendor' }) as Promise<GoogleAuthResponse>;
+}
+
 export function sendOtp(email: string): Promise<any> {
   return postJson('/api/v1/auth/send-otp', { email });
 }

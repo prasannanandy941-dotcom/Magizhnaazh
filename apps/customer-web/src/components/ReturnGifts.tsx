@@ -84,7 +84,7 @@ const priceRange = (g: GiftType) => {
 };
 
 // Full-screen viewer: swipeable gift photos + per-piece tiers.
-export const GiftViewer: React.FC<{ gift: GiftType; onClose: () => void }> = ({ gift, onClose }) => {
+export const GiftViewer: React.FC<{ gift: GiftType; onClose: () => void; onPickTier?: (label: string) => void }> = ({ gift, onClose, onPickTier }) => {
   const trackRef = useRef<HTMLDivElement>(null);
   const [index, setIndex] = useState(0);
   const [selectedTier, setSelectedTier] = useState<number | null>(null);
@@ -203,7 +203,10 @@ export const GiftViewer: React.FC<{ gift: GiftType; onClose: () => void }> = ({ 
                 <button
                   key={tier.name}
                   type="button"
-                  onClick={() => setSelectedTier(i)}
+                  onClick={() => {
+                    setSelectedTier(i);
+                    onPickTier?.(`${gift.title} — ${tier.name} (₹${tier.price}/piece)`);
+                  }}
                   aria-pressed={isSelected}
                   className={`text-left rounded-xl border p-4 flex flex-col transition-colors ${
                     isSelected ? 'border-amber-400 bg-amber-500/10 ring-2 ring-amber-400/60' : `${tone.ring} bg-slate-950/40 hover:border-slate-600`
@@ -236,7 +239,7 @@ export const GiftViewer: React.FC<{ gift: GiftType; onClose: () => void }> = ({ 
 
           {selectedTier !== null && (
             <p className="mt-4 text-xs text-emerald-400 font-semibold">
-              You picked the {gift.tiers[selectedTier].name} tier — ₹{gift.tiers[selectedTier].price}/piece. Mention this when you book a vendor for {gift.title}.
+              Added to your booking: {gift.title} — {gift.tiers[selectedTier].name} (₹{gift.tiers[selectedTier].price}/piece).
             </p>
           )}
         </div>
@@ -289,9 +292,11 @@ export const GiftGrid: React.FC<{
   gifts?: GiftType[];
   selected?: string[];
   onToggle?: (title: string) => void;
-}> = ({ gifts = STANDARD_GIFTS, selected, onToggle }) => {
+  onPickTier?: (label: string) => void;
+}> = ({ gifts = STANDARD_GIFTS, selected, onToggle, onPickTier }) => {
   const [openId, setOpenId] = useState<string | null>(null);
   const open = gifts.find((g) => g.id === openId) || null;
+  const giftSelected = (title: string) => !!selected?.some((o) => o === title || o.startsWith(`${title} — `));
 
   return (
     <div>
@@ -300,7 +305,7 @@ export const GiftGrid: React.FC<{
       </p>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         {gifts.map((g) => {
-          const isSelected = !!selected?.includes(g.title);
+          const isSelected = giftSelected(g.title);
           return (
             <div
               key={g.id}
@@ -340,7 +345,7 @@ export const GiftGrid: React.FC<{
         })}
       </div>
 
-      {open && <GiftViewer gift={open} onClose={() => setOpenId(null)} />}
+      {open && <GiftViewer gift={open} onClose={() => setOpenId(null)} onPickTier={onPickTier} />}
     </div>
   );
 };

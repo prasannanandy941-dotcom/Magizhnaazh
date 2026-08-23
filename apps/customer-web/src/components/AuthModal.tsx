@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { X, Sparkles, LogIn, UserPlus, Loader2, Eye, EyeOff, Check } from 'lucide-react';
 import { User } from '../../../../packages/shared-types';
 import { checkPassword, isPasswordStrong } from '../../../../packages/shared-utils';
-import { login, register, sendOtp, forgotPassword, resetPassword } from '../api';
+import { login, register, sendOtp, forgotPassword, resetPassword, googleLogin } from '../api';
+import { GoogleSignInButton } from './GoogleSignInButton';
 
 interface AuthModalProps {
   onClose: () => void;
@@ -65,6 +66,23 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) 
       setError(err.message || 'Failed to send OTP. Please try again.');
     } finally {
       setOtpSending(false);
+    }
+  };
+
+  const handleGoogleCredential = async (credential: string) => {
+    setError('');
+    setSuccess('');
+    setLoading(true);
+    try {
+      const res = await googleLogin(credential, 'customer');
+      if (!res.success || !res.data) {
+        throw new Error(res.message || 'Google sign-in failed.');
+      }
+      onAuthSuccess(res.data.user, res.data.token);
+    } catch (err: any) {
+      setError(err.message || 'Google sign-in failed. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -315,6 +333,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) 
             {loading && <Loader2 className="w-4 h-4 animate-spin" />}
             {mode === 'signin' ? 'Sign In' : mode === 'signup' ? 'Create Account' : 'Reset Password'}
           </button>
+
+          {mode !== 'forgot' && (
+            <GoogleSignInButton
+              onCredential={handleGoogleCredential}
+              text={mode === 'signup' ? 'signup_with' : 'signin_with'}
+            />
+          )}
 
           <p className="text-center text-[11px] text-slate-500">
             {mode === 'signin' ? (

@@ -353,6 +353,27 @@ app.get('/api/v1/vendors/:id', async (req: Request, res: Response) => {
   res.json({ success: true, data: { vendor } });
 });
 
+const getDefaultImageForCategory = (category: string): string => {
+  const fallbacks: Record<string, string> = {
+    Catering: 'https://images.unsplash.com/photo-1555244162-803834f70033?w=800',
+    Media: 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=800',
+    Transport: 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=800',
+    'Pujari/Priest': 'https://images.unsplash.com/photo-1609137144813-2dbe488ae650?w=800',
+    Invitation: 'https://images.unsplash.com/photo-1632610992723-82d7c212f6d7?w=800',
+    Printing: 'https://images.unsplash.com/photo-1503694978374-8a2fa686963a?w=800',
+    Flowers: 'https://images.unsplash.com/photo-1469371670807-013ccf25f16a?w=800',
+    Mehendi: 'https://images.unsplash.com/photo-1732118400647-a81e3b37be87?w=800',
+    'Event Host/Anchor': 'https://images.unsplash.com/photo-1702562546665-4632bdb96e04?w=800',
+    Security: 'https://images.unsplash.com/photo-1566245024852-04fbf7842ce9?w=800',
+    Cleaning: 'https://images.unsplash.com/photo-1580842402762-6f5868c17412?w=800',
+    'Rental Equipment': 'https://images.unsplash.com/photo-1695393386569-cf141ff2c552?w=800',
+    'Utensils for Rent': 'https://images.unsplash.com/photo-1695393386569-cf141ff2c552?w=800',
+    'Wedding Planner': 'https://images.unsplash.com/photo-1568847811512-803314424fdc?w=800',
+    'Corporate Event Services': 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800',
+  };
+  return fallbacks[category] || 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=800';
+};
+
 // 4. Register a vendor profile — requires an authenticated vendor account.
 app.post('/api/v1/vendors', authMiddleware(), requireRole('vendor', 'admin'), async (req: Request, res: Response) => {
   const { businessName, category, city, startingPrice, description, contactEmail, contactPhone } = req.body;
@@ -372,7 +393,7 @@ app.post('/api/v1/vendors', authMiddleware(), requireRole('vendor', 'admin'), as
     // marketplace immediately (no manual admin gate). An admin can still
     // suspend a bad listing via isSuspended.
     isVerified: true,
-    galleryImages: ['https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=800'],
+    galleryImages: [getDefaultImageForCategory(category || 'Venue')],
     packages: [],
     contactEmail: contactEmail || req.user!.email,
     contactPhone: contactPhone || '+91 9000000000',
@@ -409,7 +430,13 @@ app.put('/api/v1/vendors/:id', authMiddleware(), async (req: Request, res: Respo
     return res.status(403).json({ success: false, message: 'You do not own this vendor listing.' });
   }
 
-  const { businessName, category, description, city, startingPrice, contactEmail, contactPhone, upiId, packages, facilities, galleryImages, availableDates, offeredOptions, offeredOptionPrices, offeredOptionItems, offeredOptionQuality, policies } = req.body;
+  const { businessName, category, description, city, startingPrice, contactEmail, contactPhone, upiId, packages, facilities, galleryImages, availableDates, offeredOptions, offeredOptionPrices, offeredOptionItems, offeredOptionQuality, offeredOptionImages, giftCount, giftDiscount, policies } = req.body;
+  if (offeredOptionImages !== undefined) {
+    (vendor as any).offeredOptionImages = offeredOptionImages;
+    vendor.markModified('offeredOptionImages');
+  }
+  if (giftCount !== undefined) (vendor as any).giftCount = giftCount === null || giftCount === '' ? undefined : Number(giftCount);
+  if (giftDiscount !== undefined) (vendor as any).giftDiscount = giftDiscount;
   if (businessName !== undefined) vendor.businessName = businessName;
   if (category !== undefined) vendor.category = category;
   if (description !== undefined) vendor.description = description;
@@ -418,10 +445,19 @@ app.put('/api/v1/vendors/:id', authMiddleware(), async (req: Request, res: Respo
   if (contactEmail !== undefined) vendor.contactEmail = contactEmail;
   if (contactPhone !== undefined) vendor.contactPhone = contactPhone;
   if (upiId !== undefined) (vendor as any).upiId = upiId;
-  if (Array.isArray(packages)) vendor.packages = packages;
+  if (Array.isArray(packages)) {
+    vendor.packages = packages;
+    vendor.markModified('packages');
+  }
   if (facilities !== undefined) vendor.facilities = { ...(vendor.facilities as any), ...facilities };
-  if (Array.isArray(galleryImages)) vendor.galleryImages = galleryImages;
-  if (Array.isArray(availableDates)) vendor.availableDates = availableDates;
+  if (Array.isArray(galleryImages)) {
+    vendor.galleryImages = galleryImages;
+    vendor.markModified('galleryImages');
+  }
+  if (Array.isArray(availableDates)) {
+    vendor.availableDates = availableDates;
+    vendor.markModified('availableDates');
+  }
   if (Array.isArray(offeredOptions)) (vendor as any).offeredOptions = offeredOptions;
   if (offeredOptionPrices !== undefined) {
     (vendor as any).offeredOptionPrices = offeredOptionPrices;
@@ -439,6 +475,9 @@ app.put('/api/v1/vendors/:id', authMiddleware(), async (req: Request, res: Respo
     vendor.policies = { ...(vendor.policies as any), ...policies };
     vendor.markModified('policies');
   }
+  // Return Gifts vendors: how many pieces and any quantity discount.
+  if (giftCount !== undefined) (vendor as any).giftCount = giftCount === '' || giftCount === null ? undefined : Number(giftCount);
+  if (giftDiscount !== undefined) (vendor as any).giftDiscount = giftDiscount;
 
   vendor.markModified('facilities');
   await vendor.save();
@@ -459,12 +498,18 @@ app.post('/api/v1/vendors/:id/upload', authMiddleware(), upload.single('file'), 
 
   const fileUrl = await storageProvider.saveFile(file.buffer, file.originalname, `vendor-${vendorId}`);
 
-  await VendorModel.updateOne({ id: vendorId }, { $push: { galleryImages: fileUrl } });
+  const isVideo = file.mimetype?.startsWith('video/') || /\.(mp4|webm|ogg|mov|m4v)$/i.test(file.originalname);
+
+  if (isVideo) {
+    await VendorModel.updateOne({ id: vendorId }, { $push: { galleryVideos: fileUrl } });
+  } else {
+    await VendorModel.updateOne({ id: vendorId }, { $push: { galleryImages: fileUrl } });
+  }
 
   res.json({
     success: true,
     message: 'Portfolio asset uploaded to Local Disk Storage (/uploads).',
-    data: { fileUrl, filename: file.originalname, sizeBytes: file.size },
+    data: { fileUrl, filename: file.originalname, sizeBytes: file.size, isVideo },
   });
 });
 

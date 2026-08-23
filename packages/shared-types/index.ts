@@ -7,6 +7,10 @@ export interface User {
   phone: string;
   role: Role;
   avatarUrl?: string;
+  // How the account signs in. 'password' is the default email+password account;
+  // 'google' is created/linked via "Sign in with Google" and has no usable password
+  // until the user sets one through Forgot Password.
+  authProvider?: 'password' | 'google';
   isVerified: boolean;
   isSuspended: boolean;
   createdAt: string;
@@ -151,6 +155,13 @@ export interface Vendor {
   // Screens" is offered at a single quality (4K, Full HD, …) rather than as a
   // list of priced items.
   offeredOptionQuality?: Record<string, string>;
+  // Photos the vendor uploaded for each offered option (keyed by option label),
+  // shown to customers alongside that option/service.
+  offeredOptionImages?: Record<string, string[]>;
+  // Return Gifts vendors only: how many gift pieces they supply and any
+  // quantity-based discount, shown to customers on the listing.
+  giftCount?: number;
+  giftDiscount?: string;
   createdAt: string;
 }
 
@@ -168,6 +179,7 @@ export interface OfferedOptionItem {
   equipments?: string;
   quality?: string;
   areaCharge?: number;
+  photo?: string;
 }
 
 // Quality tiers a Media vendor can tag an item with (dropdown in the vendor
@@ -236,7 +248,7 @@ export const CATEGORY_OPTIONS: Record<string, string[]> = {
   Transport: ['Airport Pickup', 'Railway Station Pickup', 'Bride & Groom Vehicle', 'Guest Vehicle', 'Bus Stop Pickup'],
   'Pujari/Priest': ['Wedding (Vivaham)', 'Engagement (Nichayam)', 'Griha Pravesh', 'Naming & Cradle', 'Seemantham (Baby Shower)', 'Satyanarayan & Homam', 'Upanayanam'],
   Invitation: ['Digital E-Invites', 'Printed Cards', 'Video Invitations', 'WhatsApp Invites', 'Custom Illustrations', 'Multi-language Invites'],
-  Printing: ['Wedding Cards', 'Banners & Flex', 'Photo Albums', 'Standees', 'Stickers & Tags', 'Menu Cards'],
+  Printing: ['Wedding Cards', 'Banners & Flex', 'Photo Albums', 'Standees', 'Stickers & Tags', 'Menu Cards', 'Discount for Bulk'],
   'Return Gifts': ['Traditional (Silver & Brass)', 'Sweets & Dry Fruits', 'Eco-Friendly Plants', 'Personalized Gifts', 'Hampers & Favors', 'Kids Gifts'],
   Entertainment: ['Live Band', 'Dance Troupe', 'Magic Show', 'Stand-up Comedy', 'Fireworks & Pyrotechnics', 'Games & Activities'],
   'Music/DJ': ['DJ Package', 'Live Band', 'Anchor / MC', 'Sound & Lighting Setup', 'Nadaswaram & Thavil', 'Dhol & Band Baaja', 'Carnatic / Classical', 'Bhajan / Devotional'],

@@ -18,6 +18,7 @@ import { PriestChips } from './PriestServices';
 import { GiftChips } from './ReturnGifts';
 import { MusicDjChips } from './MusicDjOptions';
 import { GenericCategoryChips } from './CategoryOptions';
+import { getVendorCoverImage } from './vendorUtils';
 
 // Categories with their own bespoke chips component (rendered explicitly
 // below). Every other category falls back to GenericCategoryChips so no
@@ -230,7 +231,7 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
             >
               <div className="relative h-56 w-full overflow-hidden bg-slate-900">
                 <img
-                  src={vendor.galleryImages[0]}
+                  src={getVendorCoverImage(vendor)}
                   alt={vendor.businessName}
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                 />
