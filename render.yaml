@@ -151,3 +151,25 @@ services:
       - type: rewrite
         source: /*
         destination: /index.html
+
+  # -------------------------------------------------------------------------
+  # FRONTEND — vendor-web (Vite static build). Same Google Web OAuth Client ID
+  # as customer-web (shared across both apps). Inert until the Blueprint is
+  # synced; env vars can also be set directly on the service in the dashboard.
+  # -------------------------------------------------------------------------
+  - type: web
+    name: magizh-vendor-web
+    runtime: static
+    buildCommand: npm install --include=dev && npm run build --prefix apps/vendor-web
+    staticPublishPath: apps/vendor-web/dist
+    envVars:
+      - fromGroup: magizh-secrets
+      # Google Sign-In (Web OAuth Client ID — public by design, sent to the
+      # browser). Baked in at build time; the button stays hidden without it.
+      - key: VITE_GOOGLE_CLIENT_ID
+        value: 965066144511-qf8kg4hdrpuk86qd7tgf59a9l21hmpgt.apps.googleusercontent.com
+    routes:
+      # SPA fallback so client-side routes resolve to index.html
+      - type: rewrite
+        source: /*
+        destination: /index.html
