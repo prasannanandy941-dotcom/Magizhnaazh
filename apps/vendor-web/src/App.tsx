@@ -4,7 +4,7 @@ import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, Offered
 import { STATIC_CITY_GROUPS } from '../../../packages/shared-utils';
 import { AuthGate } from './components/AuthGate';
 import { FloralGoldBackground } from './components/FloralGoldBackground';
-import { fetchMyVendor, updateVendor, fetchVendorBookings, fetchVendorBookingsSilent, confirmBooking, sendCounterQuote, updateBookingStatus, fetchVendorReviews, GATEWAY_URL } from './api';
+import { fetchMyVendor, createVendor, updateVendor, fetchVendorBookings, fetchVendorBookingsSilent, confirmBooking, sendCounterQuote, updateBookingStatus, fetchVendorReviews, GATEWAY_URL } from './api';
 import { playNotificationSound } from './notificationSound';
 
 // Work-progress stages a confirmed booking moves through, tracked on the
@@ -201,6 +201,12 @@ export function App() {
   const [description, setDescription] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileNotice, setProfileNotice] = useState('');
+  // Self-service listing creation, shown when a signed-in vendor has no
+  // marketplace listing yet (e.g. a Google sign-up whose listing was never
+  // created, or a returning account that skipped setup). Lets them create it
+  // in-place instead of dead-ending on "No Listing Found / Contact support".
+  const [creatingListing, setCreatingListing] = useState(false);
+  const [createNotice, setCreateNotice] = useState('');
 
   const [uploading, setUploading] = useState(false);
   const [uploadNotice, setUploadNotice] = useState('');
@@ -359,6 +365,37 @@ export function App() {
     } finally {
       setSavingProfile(false);
       setTimeout(() => setProfileNotice(''), 4000);
+    }
+  };
+
+  const handleCreateListing = async () => {
+    if (!token) return;
+    if (!businessName.trim()) {
+      setCreateNotice('Please enter your business name.');
+      return;
+    }
+    setCreatingListing(true);
+    setCreateNotice('');
+    try {
+      const res = await createVendor(token, {
+        businessName: businessName.trim(),
+        category,
+        city,
+        description,
+        contactPhone: user?.phone?.trim() || undefined,
+        contactEmail: user?.email,
+      } as any);
+      if (res.success && res.data?.vendor) {
+        // Listing created — reload so the dashboard renders in full.
+        setVendorNotFound(false);
+        await loadVendorAndBookings();
+      } else {
+        setCreateNotice(res.message || 'Could not create your listing. Please try again.');
+      }
+    } catch (err: any) {
+      setCreateNotice(err.message || 'Could not reach the server. Please try again.');
+    } finally {
+      setCreatingListing(false);
     }
   };
 
@@ -1140,10 +1177,82 @@ export function App() {
 
       {!vendorLoading && !loadError && vendorNotFound && (
         <main className="flex-1 max-w-xl mx-auto px-4 py-16 w-full">
-          <div className="glass-card p-8 rounded-3xl border border-slate-800 space-y-2 text-center">
-            <h2 className="font-display font-bold text-xl text-white">No Listing Found</h2>
-            <p className="text-xs text-slate-400">
-              We couldn't find a marketplace listing for this account. Contact support to get this resolved.
+          <div className="glass-card p-8 rounded-3xl border border-slate-800 space-y-4">
+            <div className="text-center space-y-1">
+              <h2 className="font-display font-bold text-xl text-white">Set Up Your Business Listing</h2>
+              <p className="text-xs text-slate-400">
+                Welcome{user?.name ? `, ${user.name}` : ''}! Your account doesn't have a
+                marketplace listing yet. Add a few details to create it and open your dashboard.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">Business Name</label>
+              <input
+                type="text"
+                value={businessName}
+                onChange={(e) => setBusinessName(e.target.value)}
+                placeholder="e.g. Rohini Caterers"
+                className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white font-bold text-sm"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Category</label>
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white font-semibold text-xs"
+                >
+                  {VENDOR_CATEGORIES.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">City / Locality</label>
+                <select
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white font-semibold text-xs"
+                >
+                  {STATIC_CITY_GROUPS.map(([state, cities]) => (
+                    <optgroup key={state} label={state} className="bg-slate-900">
+                      {cities.map((c) => (
+                        <option key={`${state}-${c}`} value={c} className="bg-slate-900">{c}</option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">Short Description <span className="text-slate-600">(optional)</span></label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={3}
+                placeholder="Tell customers what your business offers."
+                className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs"
+              />
+            </div>
+
+            {createNotice && (
+              <p className="text-xs text-rose-400 text-center">{createNotice}</p>
+            )}
+
+            <button
+              onClick={handleCreateListing}
+              disabled={creatingListing}
+              className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-amber-500 text-slate-950 font-bold text-sm shadow-md hover:brightness-110 disabled:opacity-60"
+            >
+              {creatingListing && <Loader2 className="w-4 h-4 animate-spin" />}
+              {creatingListing ? 'Creating your listing…' : 'Create Listing & Continue'}
+            </button>
+            <p className="text-[11px] text-slate-600 text-center">
+              You can edit all of this later in Business Profile.
             </p>
           </div>
         </main>
