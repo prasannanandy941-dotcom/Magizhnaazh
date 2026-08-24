@@ -61,6 +61,10 @@ services:
     healthCheckPath: /health
     envVars:
       - fromGroup: magizh-secrets
+      # Google Sign-In: auth-service verifies the ID token's audience against
+      # this. Must equal the frontends' VITE_GOOGLE_CLIENT_ID. Public value.
+      - key: GOOGLE_CLIENT_ID
+        value: 965066144511-qf8kg4hdrpuk86qd7tgf59a9l21hmpgt.apps.googleusercontent.com
 
   - type: web
     name: magizh-marketplace
