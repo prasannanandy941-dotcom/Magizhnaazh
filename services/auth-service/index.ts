@@ -8,6 +8,7 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import bcrypt from 'bcryptjs';
 import nodemailer from 'nodemailer';
+import mongoose from 'mongoose';
 import { connectDB } from '../../packages/shared-utils/db';
 import { signToken, authMiddleware, requireRole } from '../../packages/shared-utils/auth';
 import { requestLogger } from '../../packages/shared-utils/logging';
@@ -482,9 +483,31 @@ async function start() {
     console.error(`[Auth Microservice] Failed to connect to database:`, err.message);
   }
 
-  app.listen(PORT, () => {
+  const server = app.listen(PORT, () => {
     console.log(`[Auth Microservice] Running on http://localhost:${PORT}`);
   });
+
+  const shutdown = (signal: string) => {
+    console.log(`[Auth Microservice] Received ${signal}, shutting down gracefully...`);
+    server.close(async () => {
+      try {
+        await mongoose.connection.close();
+      } catch (err: any) {
+        console.error('[Auth Microservice] Error closing MongoDB connection:', err.message);
+      }
+      console.log('[Auth Microservice] Shutdown complete.');
+      process.exit(0);
+    });
+
+    // Force exit if graceful shutdown hangs
+    setTimeout(() => {
+      console.error('[Auth Microservice] Forced shutdown after timeout.');
+      process.exit(1);
+    }, 10000).unref();
+  };
+
+  process.on('SIGINT', () => shutdown('SIGINT'));
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
 }
 
 start();
