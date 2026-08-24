@@ -46,7 +46,7 @@ const CATEGORY_OPTIONS: Record<string, string[]> = {
   Invitation: ['Printed Cards', 'Digital / E-Invites', 'Video Invitations', 'Caricature Invites', 'Wedding Website', 'Save the Date'],
   Lighting: ['Fairy Lights', 'LED Par Lights', 'Gobo / Monogram', 'Chandeliers', 'Uplighting', 'Laser & Effects'],
   Mehendi: ['Bridal Mehendi', 'Arabic Design', 'Rajasthani Design', 'Guest Mehendi', 'Glitter / Colour Mehendi', 'Nail Art'],
-  Printing: ['Wedding Cards', 'Banners & Flex', 'Photo Albums', 'Standees', 'Menu Cards', 'Thank-you Cards'],
+  Printing: ['Wedding Cards', 'Banners & Flex', 'Photo Albums', 'Standees', 'Menu Cards', 'Thank-you Cards', 'Discount for Bulk'],
   'Rental Equipment': ['Chairs & Tables', 'Tents & Canopy', 'Sound System', 'Generators / Power', 'Crockery & Cutlery', 'Cooling / Fans'],
   Security: ['Bouncers', 'Gate Security', 'Valet Coordination', 'CCTV Surveillance', 'Crowd Management', 'VIP Protection'],
   'Wedding Planner': ['Full Wedding Planning', 'Day Coordination', 'Budget Management', 'Vendor Management', 'Destination Wedding', 'Theme Design'],

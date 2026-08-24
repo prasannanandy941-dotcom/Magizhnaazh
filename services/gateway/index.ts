@@ -1,6 +1,6 @@
 import path from 'path';
 import dotenv from 'dotenv';
-dotenv.config({ path: path.resolve(__dirname, '.env') });
+dotenv.config({ path: path.resolve(__dirname, '.env'), override: true });
 
 import express, { Request, Response } from 'express';
 import cors from 'cors';
@@ -83,6 +83,7 @@ app.use('/api/v1/vendors', createProxyMiddleware({ target: SERVICES.marketplace,
 app.use('/api/v1/categories', createProxyMiddleware({ target: SERVICES.marketplace, ...proxyDefaults }));
 app.use('/api/v1/locations', createProxyMiddleware({ target: SERVICES.marketplace, ...proxyDefaults }));
 app.use('/api/v1/banners', createProxyMiddleware({ target: SERVICES.marketplace, ...proxyDefaults }));
+app.use('/api/v1/uploads', createProxyMiddleware({ target: SERVICES.marketplace, ...proxyDefaults }));
 app.use('/api/v1/events', createProxyMiddleware({ target: SERVICES.eventBudget, ...proxyDefaults }));
 app.use('/api/v1/bookings', createProxyMiddleware({ target: SERVICES.bookingPayment, ...proxyDefaults }));
 app.use('/api/v1/settings', createProxyMiddleware({ target: SERVICES.bookingPayment, ...proxyDefaults }));

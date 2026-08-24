@@ -9,6 +9,7 @@ export interface UserDoc {
   role: Role;
   businessName?: string;
   avatarUrl?: string;
+  authProvider?: 'password' | 'google';
   isVerified: boolean;
   isSuspended: boolean;
   passwordHash: string;
@@ -23,6 +24,7 @@ const userSchema = new Schema<UserDoc>({
   role: { type: String, enum: ['customer', 'vendor', 'event_manager', 'admin', 'guest'], default: 'customer' },
   businessName: { type: String },
   avatarUrl: { type: String },
+  authProvider: { type: String, enum: ['password', 'google'], default: 'password' },
   isVerified: { type: Boolean, default: false },
   isSuspended: { type: Boolean, default: false },
   passwordHash: { type: String, required: true, select: false },

@@ -80,3 +80,21 @@
     }
   }
 }
+
+/* Highlight the native calendar picker icon on date inputs so it's obvious
+   the field opens a date picker (amber to match the portal accent). */
+.date-input-amber::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 1;
+  padding: 4px;
+  margin-left: 4px;
+  border-radius: 6px;
+  background-color: rgba(245, 158, 11, 0.18);
+  /* Recolor the black glyph to amber. */
+  filter: invert(72%) sepia(64%) saturate(1352%) hue-rotate(358deg) brightness(101%) contrast(96%);
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+.date-input-amber::-webkit-calendar-picker-indicator:hover {
+  background-color: rgba(245, 158, 11, 0.35);
+  transform: scale(1.08);
+}

@@ -22,8 +22,14 @@ export interface AuthResponse {
 // delay so a cold start is invisible to the user. Only cold-start signals are
 // retried (gateway 5xx, HTML body, or a network error); real application
 // errors return JSON and are passed straight through.
-const COLD_START_RETRIES = 5;
-const COLD_START_DELAY_MS = 3000;
+// Retrying only makes sense against Render's free tier, where a sleeping
+// service wakes in ~50s. Locally there is no cold start — a service is either
+// up or down — so a long retry just leaves the user staring at a spinner for
+// 90s when a service is off. Detect a local gateway and fail fast there
+// (~6s), while keeping the long budget for the deployed cloud.
+const IS_LOCAL_GATEWAY = /\/\/(localhost|127\.0\.0\.1|192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\.)/.test(GATEWAY_URL);
+const COLD_START_RETRIES = IS_LOCAL_GATEWAY ? 3 : 18;
+const COLD_START_DELAY_MS = IS_LOCAL_GATEWAY ? 2000 : 5000;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -59,6 +65,9 @@ async function fetchJson(
     try {
       return { res, json: text ? JSON.parse(text) : {} };
     } catch {
+      if (!res.ok) {
+        throw new Error(`Server returned error ${res.status}: ${res.statusText || 'Unavailable'}. Please check if the services are running.`);
+      }
       throw new Error('Server is starting up. Please try again in a moment.');
     }
   }
@@ -81,12 +90,38 @@ export function login(email: string, password: string): Promise<AuthResponse> {
   return postJson('/api/v1/auth/login', { email, password });
 }
 
+export interface GoogleAuthResponse {
+  success: boolean;
+  message: string;
+  data?: { user: User; token: string; isNewUser?: boolean };
+}
+
+// One-click Google Sign-In for vendors. `role` is fixed to 'vendor' so a
+// first-time Google account is created as a vendor. The caller stores the token
+// via the App's handleAuthSuccess (consistent with vendor `login`).
+export function googleLogin(credential: string): Promise<GoogleAuthResponse> {
+  return postJson('/api/v1/auth/google', { credential, role: 'vendor' }) as Promise<GoogleAuthResponse>;
+}
+
+export function sendOtp(email: string): Promise<any> {
+  return postJson('/api/v1/auth/send-otp', { email });
+}
+
+export function forgotPassword(email: string): Promise<any> {
+  return postJson('/api/v1/auth/forgot-password', { email });
+}
+
+export function resetPassword(email: string, otp: string, newPassword: string): Promise<any> {
+  return postJson('/api/v1/auth/reset-password', { email, otp, newPassword });
+}
+
 export function register(input: {
   name: string;
   email: string;
   phone?: string;
   password: string;
   businessName: string;
+  otp: string;
 }): Promise<AuthResponse> {
   return postJson('/api/v1/auth/register', { ...input, role: 'vendor' });
 }
@@ -141,6 +176,18 @@ export interface BookingsResponse {
 
 export function fetchVendorBookings(token: string, vendorId: string): Promise<BookingsResponse> {
   return authedFetch(`/api/v1/bookings?vendorId=${encodeURIComponent(vendorId)}`, token);
+}
+
+// Silent variant for the background poll: a transient 401 (e.g. during a
+// service blip) must NOT trigger authedFetch's window.location.reload(), which
+// would reset the vendor's current tab and log them out. The poll just skips a
+// tick; a real session expiry is still caught on the vendor's next action.
+export async function fetchVendorBookingsSilent(token: string, vendorId: string): Promise<BookingsResponse> {
+  const { res, json } = await fetchJson(`/api/v1/bookings?vendorId=${encodeURIComponent(vendorId)}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error(json?.message || 'Failed to load bookings.');
+  return json;
 }
 
 export function confirmBooking(token: string, bookingId: string) {

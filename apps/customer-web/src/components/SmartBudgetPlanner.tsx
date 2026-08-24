@@ -3,6 +3,7 @@ import { Event, Vendor, Booking } from '../../../../packages/shared-types';
 import { IndianRupee, AlertTriangle, Sparkles, CheckCircle2, TrendingUp, Filter, Star, MapPin, ChevronDown, Receipt } from 'lucide-react';
 import { calculateVendorScore } from '../../../../packages/shared-utils';
 import { fetchMyBookings } from '../api';
+import { getVendorCoverImage } from './vendorUtils';
 
 interface SmartBudgetPlannerProps {
   event: Event;
@@ -21,33 +22,50 @@ export const SmartBudgetPlanner: React.FC<SmartBudgetPlannerProps> = ({
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<string>('All');
 
   const totalAllocated = breakdown.reduce((acc, curr) => acc + curr.allocatedAmount, 0);
-  const totalSpent = breakdown.reduce((acc, curr) => acc + curr.actualSpent, 0);
-  const remainingBudget = event.totalBudget - totalSpent;
 
-  // Which real vendor bookings make up "Actual Spent to Date" — fetched
-  // lazily so the dashboard loads fast, and only shown once the customer
-  // clicks the tile to drill in.
-  const [spendExpanded, setSpendExpanded] = useState(false);
+  // "Spent" is driven by REAL vendor orders, not a stored figure. Once a vendor
+  // confirms a booking (confirmed / in_progress / completed) its full agreed
+  // order value counts against the budget, so the remaining amount drops by the
+  // actual money committed to that order. Bookings are loaded on mount so the
+  // headline Full / Spent / Remaining numbers are correct immediately.
   const [myBookings, setMyBookings] = useState<Booking[]>([]);
   const [bookingsLoaded, setBookingsLoaded] = useState(false);
   useEffect(() => {
-    if (!spendExpanded || bookingsLoaded) return;
     fetchMyBookings()
       .then((res) => setMyBookings(res.data?.bookings || []))
       .catch((err) => console.error('Failed to load bookings for spend breakdown', err))
       .finally(() => setBookingsLoaded(true));
-  }, [spendExpanded, bookingsLoaded]);
+  }, []);
 
-  const spendByCategory = myBookings
-    .filter((b) => b.advanceAmountPaid > 0)
-    .reduce<Record<string, { vendorName: string; bookingNumber: string; amount: number }[]>>((acc, b) => {
-      (acc[b.vendorCategory] ||= []).push({
-        vendorName: b.vendorName,
-        bookingNumber: b.bookingNumber,
-        amount: b.advanceAmountPaid,
-      });
-      return acc;
-    }, {});
+  // A vendor has "confirmed the order" once it reaches any of these stages.
+  const CONFIRMED_STATUSES = new Set<Booking['status']>(['confirmed', 'in_progress', 'completed']);
+  const confirmedBookings = myBookings.filter(
+    (b) => b.eventId === event.id && CONFIRMED_STATUSES.has(b.status)
+  );
+
+  const totalSpent = confirmedBookings.reduce((acc, b) => acc + (b.agreedPrice || 0), 0);
+  const remainingBudget = event.totalBudget - totalSpent;
+
+  // Confirmed-order spend per category — drives each category row's Spent /
+  // Remaining / over-budget state from the same real money.
+  const spentByCategory: Record<string, number> = {};
+  for (const b of confirmedBookings) {
+    spentByCategory[b.vendorCategory] = (spentByCategory[b.vendorCategory] || 0) + (b.agreedPrice || 0);
+  }
+
+  // Which real, confirmed vendor orders make up the spend — shown when the
+  // customer taps the "Actual Spent" tile to drill in.
+  const [spendExpanded, setSpendExpanded] = useState(false);
+  const spendByCategory = confirmedBookings.reduce<
+    Record<string, { vendorName: string; bookingNumber: string; amount: number }[]>
+  >((acc, b) => {
+    (acc[b.vendorCategory] ||= []).push({
+      vendorName: b.vendorName,
+      bookingNumber: b.bookingNumber,
+      amount: b.agreedPrice,
+    });
+    return acc;
+  }, {});
 
   const handlePercentageChange = (categoryId: string, newPercentage: number) => {
     const updated = breakdown.map((item) => {
@@ -64,7 +82,8 @@ export const SmartBudgetPlanner: React.FC<SmartBudgetPlannerProps> = ({
   const recommendedVendors = vendors
     .map((v) => {
       const catBudget = breakdown.find((b) => b.category === v.category);
-      const remainingCatBudget = catBudget ? catBudget.allocatedAmount - catBudget.actualSpent : 0;
+      const catSpent = spentByCategory[v.category] || 0;
+      const remainingCatBudget = catBudget ? catBudget.allocatedAmount - catSpent : 0;
       const score = calculateVendorScore(v, remainingCatBudget, event.location.city);
 
       return {
@@ -90,7 +109,7 @@ export const SmartBudgetPlanner: React.FC<SmartBudgetPlannerProps> = ({
 
         <div className="p-4 rounded-2xl glass-card border border-indigo-500/30 flex items-center gap-6">
           <div>
-            <span className="text-[11px] font-bold uppercase text-slate-400 block">Total Budget Target</span>
+            <span className="text-[11px] font-bold uppercase text-slate-400 block">Full Amount</span>
             <span className="font-display font-extrabold text-2xl text-white">
               ₹{event.totalBudget.toLocaleString('en-IN')}
             </span>
@@ -99,8 +118,17 @@ export const SmartBudgetPlanner: React.FC<SmartBudgetPlannerProps> = ({
           <div className="h-8 w-px bg-slate-800" />
 
           <div>
-            <span className="text-[11px] font-bold uppercase text-slate-400 block">Remaining Funds</span>
-            <span className="font-display font-extrabold text-2xl text-emerald-400">
+            <span className="text-[11px] font-bold uppercase text-slate-400 block">Spent</span>
+            <span className="font-display font-extrabold text-2xl text-amber-400">
+              ₹{totalSpent.toLocaleString('en-IN')}
+            </span>
+          </div>
+
+          <div className="h-8 w-px bg-slate-800" />
+
+          <div>
+            <span className="text-[11px] font-bold uppercase text-slate-400 block">Remaining</span>
+            <span className={`font-display font-extrabold text-2xl ${remainingBudget < 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
               ₹{remainingBudget.toLocaleString('en-IN')}
             </span>
           </div>
@@ -125,14 +153,14 @@ export const SmartBudgetPlanner: React.FC<SmartBudgetPlannerProps> = ({
           className="glass-card p-6 rounded-3xl border border-slate-800 text-left hover:border-amber-500/40 transition-colors"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Actual Spent to Date</span>
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Actual Spent</span>
             <ChevronDown className={`w-4 h-4 text-slate-500 shrink-0 transition-transform ${spendExpanded ? 'rotate-180' : ''}`} />
           </div>
           <div className="font-display font-extrabold text-3xl text-amber-400 mt-2">
             ₹{totalSpent.toLocaleString('en-IN')}
           </div>
           <p className="text-xs text-slate-400 mt-2">
-            Booked vendor deposit commitments — tap to see where it went
+            Full value of confirmed vendor orders — tap to see where it went
           </p>
         </button>
 
@@ -157,7 +185,7 @@ export const SmartBudgetPlanner: React.FC<SmartBudgetPlannerProps> = ({
           {!bookingsLoaded ? (
             <p className="text-xs text-slate-400">Loading your bookings...</p>
           ) : Object.keys(spendByCategory).length === 0 ? (
-            <p className="text-xs text-slate-500">No vendor deposits paid yet — book a vendor to see the breakdown here.</p>
+            <p className="text-xs text-slate-500">No confirmed vendor orders yet — once a vendor confirms your booking, its amount shows here.</p>
           ) : (
             <div className="space-y-4">
               {Object.entries(spendByCategory).map(([category, entries]) => {
@@ -191,7 +219,8 @@ export const SmartBudgetPlanner: React.FC<SmartBudgetPlannerProps> = ({
 
         <div className="space-y-4">
           {breakdown.map((item) => {
-            const isOverBudget = item.actualSpent > item.allocatedAmount;
+            const categorySpent = spentByCategory[item.category] || 0;
+            const isOverBudget = categorySpent > item.allocatedAmount;
 
             return (
               <div
@@ -220,13 +249,13 @@ export const SmartBudgetPlanner: React.FC<SmartBudgetPlannerProps> = ({
 
                     <div>
                       <span className="text-slate-400 block">Spent</span>
-                      <span className="text-white font-bold">₹{item.actualSpent.toLocaleString('en-IN')}</span>
+                      <span className="text-white font-bold">₹{categorySpent.toLocaleString('en-IN')}</span>
                     </div>
 
                     <div>
                       <span className="text-slate-400 block">Remaining</span>
                       <span className="text-emerald-400 font-bold">
-                        ₹{Math.max(0, item.allocatedAmount - item.actualSpent).toLocaleString('en-IN')}
+                        ₹{Math.max(0, item.allocatedAmount - categorySpent).toLocaleString('en-IN')}
                       </span>
                     </div>
                   </div>
@@ -287,7 +316,7 @@ export const SmartBudgetPlanner: React.FC<SmartBudgetPlannerProps> = ({
               className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-indigo-500/50 transition-all cursor-pointer flex items-center gap-4 group"
             >
               <div className="w-20 h-20 rounded-xl overflow-hidden bg-slate-950 shrink-0">
-                <img src={vendor.galleryImages[0]} alt={vendor.businessName} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                <img src={getVendorCoverImage(vendor)} alt={vendor.businessName} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
               </div>
 
               <div className="flex-1 min-w-0">

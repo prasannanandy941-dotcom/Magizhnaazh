@@ -7,6 +7,10 @@ export interface User {
   phone: string;
   role: Role;
   avatarUrl?: string;
+  // How the account signs in. 'password' is the default email+password account;
+  // 'google' is created/linked via "Sign in with Google" and has no usable password
+  // until the user sets one through Forgot Password.
+  authProvider?: 'password' | 'google';
   isVerified: boolean;
   isSuspended: boolean;
   createdAt: string;
@@ -30,6 +34,19 @@ export interface VendorPackage {
   includedServices: string[];
   durationHours?: number;
   capacityPersons?: number;
+  // Photos of this package / hall (URLs on the storage service), shown to
+  // customers on the package card.
+  images?: string[];
+  // Optional vendor-defined price tiers (named however the vendor likes —
+  // Normal / HD / Premium, Silver / Gold, …). When present the customer picks
+  // one and its price is used; when empty the flat `price` applies.
+  tiers?: PackageTier[];
+}
+
+// A named price tier within a package.
+export interface PackageTier {
+  name: string;
+  price: number;
 }
 
 export type FacilityTier = 'included' | 'extra_cost' | 'not_offered';
@@ -108,7 +125,11 @@ export interface Vendor {
   upiId?: string;
   qrCodeImage?: string;
   packages: VendorPackage[];
-  availableDates: string[]; // ISO date strings
+  availableDates: string[]; // ISO date strings the vendor opened for booking
+  // Dates that have been booked — moved here from availableDates when a
+  // customer confirms a booking, so the customer listing can show them as
+  // "Booked" (visible but not selectable) rather than silently disappearing.
+  bookedDates?: string[];
   policies: {
     cancellation: string;
     refund: string;
@@ -134,6 +155,13 @@ export interface Vendor {
   // Screens" is offered at a single quality (4K, Full HD, …) rather than as a
   // list of priced items.
   offeredOptionQuality?: Record<string, string>;
+  // Photos the vendor uploaded for each offered option (keyed by option label),
+  // shown to customers alongside that option/service.
+  offeredOptionImages?: Record<string, string[]>;
+  // Return Gifts vendors only: how many gift pieces they supply and any
+  // quantity-based discount, shown to customers on the listing.
+  giftCount?: number;
+  giftDiscount?: string;
   createdAt: string;
 }
 
@@ -151,6 +179,7 @@ export interface OfferedOptionItem {
   equipments?: string;
   quality?: string;
   areaCharge?: number;
+  photo?: string;
 }
 
 // Quality tiers a Media vendor can tag an item with (dropdown in the vendor
@@ -219,7 +248,7 @@ export const CATEGORY_OPTIONS: Record<string, string[]> = {
   Transport: ['Airport Pickup', 'Railway Station Pickup', 'Bride & Groom Vehicle', 'Guest Vehicle', 'Bus Stop Pickup'],
   'Pujari/Priest': ['Wedding (Vivaham)', 'Engagement (Nichayam)', 'Griha Pravesh', 'Naming & Cradle', 'Seemantham (Baby Shower)', 'Satyanarayan & Homam', 'Upanayanam'],
   Invitation: ['Digital E-Invites', 'Printed Cards', 'Video Invitations', 'WhatsApp Invites', 'Custom Illustrations', 'Multi-language Invites'],
-  Printing: ['Wedding Cards', 'Banners & Flex', 'Photo Albums', 'Standees', 'Stickers & Tags', 'Menu Cards'],
+  Printing: ['Wedding Cards', 'Banners & Flex', 'Photo Albums', 'Standees', 'Stickers & Tags', 'Menu Cards', 'Discount for Bulk'],
   'Return Gifts': ['Traditional (Silver & Brass)', 'Sweets & Dry Fruits', 'Eco-Friendly Plants', 'Personalized Gifts', 'Hampers & Favors', 'Kids Gifts'],
   Entertainment: ['Live Band', 'Dance Troupe', 'Magic Show', 'Stand-up Comedy', 'Fireworks & Pyrotechnics', 'Games & Activities'],
   'Music/DJ': ['DJ Package', 'Live Band', 'Anchor / MC', 'Sound & Lighting Setup', 'Nadaswaram & Thavil', 'Dhol & Band Baaja', 'Carnatic / Classical', 'Bhajan / Devotional'],
@@ -373,6 +402,9 @@ export interface Booking {
   // booking (e.g. a photographer's "Candid" + "Drone", a decorator's "Royal
   // Mandap") — plain labels, works the same way for every vendor category.
   selectedOptions?: string[];
+  // Reference images the customer uploaded for this booking (e.g. a decoration
+  // style they want) — shown to the vendor so they know exactly what's expected.
+  referenceImages?: string[];
   createdAt: string;
 }
 

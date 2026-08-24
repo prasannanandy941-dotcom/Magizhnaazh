@@ -90,7 +90,7 @@ const priceRange = (o: TransportOption) => {
 };
 
 // Full-screen viewer: swipeable vehicle photos + price tiers.
-export const TransportViewer: React.FC<{ option: TransportOption; onClose: () => void }> = ({ option, onClose }) => {
+export const TransportViewer: React.FC<{ option: TransportOption; onClose: () => void; onPickTier?: (label: string) => void }> = ({ option, onClose, onPickTier }) => {
   const trackRef = useRef<HTMLDivElement>(null);
   const [index, setIndex] = useState(0);
   const [selectedTier, setSelectedTier] = useState<number | null>(null);
@@ -209,7 +209,10 @@ export const TransportViewer: React.FC<{ option: TransportOption; onClose: () =>
                 <button
                   key={tier.name}
                   type="button"
-                  onClick={() => setSelectedTier(i)}
+                  onClick={() => {
+                    setSelectedTier(i);
+                    onPickTier?.(`${option.title} — ${tier.name} (₹${tier.price.toLocaleString('en-IN')})`);
+                  }}
                   aria-pressed={isSelected}
                   className={`text-left rounded-xl border p-4 flex flex-col transition-colors ${
                     isSelected ? 'border-amber-400 bg-amber-500/10 ring-2 ring-amber-400/60' : `${tone.ring} bg-slate-950/40 hover:border-slate-600`
@@ -241,7 +244,7 @@ export const TransportViewer: React.FC<{ option: TransportOption; onClose: () =>
 
           {selectedTier !== null && (
             <p className="mt-4 text-xs text-emerald-400 font-semibold">
-              You picked the {option.tiers[selectedTier].name} package — ₹{option.tiers[selectedTier].price.toLocaleString('en-IN')}. Mention this when you book a vendor for {option.title}.
+              Added to your booking: {option.title} — {option.tiers[selectedTier].name} (₹{option.tiers[selectedTier].price.toLocaleString('en-IN')}).
             </p>
           )}
         </div>
@@ -295,9 +298,11 @@ export const TransportGrid: React.FC<{
   options?: TransportOption[];
   selected?: string[];
   onToggle?: (title: string) => void;
-}> = ({ options = STANDARD_TRANSPORT, selected, onToggle }) => {
+  onPickTier?: (label: string) => void;
+}> = ({ options = STANDARD_TRANSPORT, selected, onToggle, onPickTier }) => {
   const [openId, setOpenId] = useState<string | null>(null);
   const open = options.find((o) => o.id === openId) || null;
+  const optionSelected = (title: string) => !!selected?.some((o) => o === title || o.startsWith(`${title} — `));
 
   return (
     <div>
@@ -306,7 +311,7 @@ export const TransportGrid: React.FC<{
       </p>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         {options.map((o) => {
-          const isSelected = !!selected?.includes(o.title);
+          const isSelected = optionSelected(o.title);
           return (
             <div
               key={o.id}
@@ -346,7 +351,7 @@ export const TransportGrid: React.FC<{
         })}
       </div>
 
-      {open && <TransportViewer option={open} onClose={() => setOpenId(null)} />}
+      {open && <TransportViewer option={open} onClose={() => setOpenId(null)} onPickTier={onPickTier} />}
     </div>
   );
 };

@@ -113,7 +113,7 @@ const priceRange = (l: MakeupLook) => {
 };
 
 // Full-screen viewer: swipeable look photos + price tiers.
-export const MakeupLookViewer: React.FC<{ look: MakeupLook; onClose: () => void }> = ({ look, onClose }) => {
+export const MakeupLookViewer: React.FC<{ look: MakeupLook; onClose: () => void; onPickTier?: (label: string) => void }> = ({ look, onClose, onPickTier }) => {
   const trackRef = useRef<HTMLDivElement>(null);
   const [index, setIndex] = useState(0);
   const [selectedTier, setSelectedTier] = useState<number | null>(null);
@@ -232,7 +232,10 @@ export const MakeupLookViewer: React.FC<{ look: MakeupLook; onClose: () => void 
                 <button
                   key={tier.name}
                   type="button"
-                  onClick={() => setSelectedTier(i)}
+                  onClick={() => {
+                    setSelectedTier(i);
+                    onPickTier?.(`${look.title} — ${tier.name} (₹${tier.price.toLocaleString('en-IN')})`);
+                  }}
                   aria-pressed={isSelected}
                   className={`text-left rounded-xl border p-4 flex flex-col transition-colors ${
                     isSelected ? 'border-amber-400 bg-amber-500/10 ring-2 ring-amber-400/60' : `${tone.ring} bg-slate-950/40 hover:border-slate-600`
@@ -264,7 +267,7 @@ export const MakeupLookViewer: React.FC<{ look: MakeupLook; onClose: () => void 
 
           {selectedTier !== null && (
             <p className="mt-4 text-xs text-emerald-400 font-semibold">
-              You picked the {look.tiers[selectedTier].name} package — ₹{look.tiers[selectedTier].price.toLocaleString('en-IN')}. Mention this when you book a vendor for {look.title}.
+              Added to your booking: {look.title} — {look.tiers[selectedTier].name} package (₹{look.tiers[selectedTier].price.toLocaleString('en-IN')}).
             </p>
           )}
         </div>
@@ -317,9 +320,11 @@ export const MakeupGrid: React.FC<{
   looks?: MakeupLook[];
   selected?: string[];
   onToggle?: (title: string) => void;
-}> = ({ looks = STANDARD_MAKEUP, selected, onToggle }) => {
+  onPickTier?: (label: string) => void;
+}> = ({ looks = STANDARD_MAKEUP, selected, onToggle, onPickTier }) => {
   const [openId, setOpenId] = useState<string | null>(null);
   const open = looks.find((l) => l.id === openId) || null;
+  const lookSelected = (title: string) => !!selected?.some((o) => o === title || o.startsWith(`${title} — `));
 
   return (
     <div>
@@ -328,7 +333,7 @@ export const MakeupGrid: React.FC<{
       </p>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         {looks.map((l) => {
-          const isSelected = !!selected?.includes(l.title);
+          const isSelected = lookSelected(l.title);
           return (
             <div
               key={l.id}
@@ -368,7 +373,7 @@ export const MakeupGrid: React.FC<{
         })}
       </div>
 
-      {open && <MakeupLookViewer look={open} onClose={() => setOpenId(null)} />}
+      {open && <MakeupLookViewer look={open} onClose={() => setOpenId(null)} onPickTier={onPickTier} />}
     </div>
   );
 };

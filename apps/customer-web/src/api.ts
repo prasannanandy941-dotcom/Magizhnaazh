@@ -77,8 +77,14 @@ export interface GuestResponse {
 // delay so a cold start is invisible to the user. Only cold-start signals are
 // retried (gateway 5xx, HTML body, or a network error); real application
 // errors return JSON and are passed straight through.
-const COLD_START_RETRIES = 5;
-const COLD_START_DELAY_MS = 3000;
+// Retrying only makes sense against Render's free tier, where a sleeping
+// service wakes in ~50s. Locally there is no cold start — a service is either
+// up or down — so a long retry just leaves the user staring at a spinner for
+// 90s when a service is off. Detect a local gateway and fail fast there
+// (~6s), while keeping the long budget for the deployed cloud.
+const IS_LOCAL_GATEWAY = /\/\/(localhost|127\.0\.0\.1|192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\.)/.test(GATEWAY_URL);
+const COLD_START_RETRIES = IS_LOCAL_GATEWAY ? 3 : 18;
+const COLD_START_DELAY_MS = IS_LOCAL_GATEWAY ? 2000 : 5000;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -117,6 +123,9 @@ async function fetchJson(
     try {
       return { res, json: text ? JSON.parse(text) : {} };
     } catch {
+      if (!res.ok) {
+        throw new Error(`Server returned error ${res.status}: ${res.statusText || 'Unavailable'}. Please check if the services are running.`);
+      }
       throw new Error('Server is starting up. Please try again in a moment.');
     }
   }
@@ -197,12 +206,45 @@ export async function login(email: string, password: string): Promise<AuthRespon
   return result;
 }
 
+export interface GoogleAuthResponse {
+  success: boolean;
+  message: string;
+  data?: { user: User; token: string; isNewUser?: boolean };
+}
+
+// One-click Google Sign-In. `credential` is the ID token from Google's button;
+// `role` is only used if this is the account's very first sign-in.
+export async function googleLogin(
+  credential: string,
+  role: 'customer' | 'vendor' = 'customer'
+): Promise<GoogleAuthResponse> {
+  const result = (await postJson('/api/v1/auth/google', { credential, role })) as GoogleAuthResponse;
+  if (result.success && result.data?.token) {
+    localStorage.setItem(TOKEN_KEY, result.data.token);
+    localStorage.setItem('user', JSON.stringify(result.data.user));
+  }
+  return result;
+}
+
+export function sendOtp(email: string): Promise<any> {
+  return postJson('/api/v1/auth/send-otp', { email });
+}
+
+export function forgotPassword(email: string): Promise<any> {
+  return postJson('/api/v1/auth/forgot-password', { email });
+}
+
+export function resetPassword(email: string, otp: string, newPassword: string): Promise<any> {
+  return postJson('/api/v1/auth/reset-password', { email, otp, newPassword });
+}
+
 export async function register(input: {
   name: string;
   email: string;
   phone?: string;
   password: string;
   role: 'customer' | 'vendor';
+  otp: string;
 }): Promise<AuthResponse> {
   const result = await postJson('/api/v1/auth/register', input);
   if (result.success && result.data?.token) {
@@ -313,6 +355,7 @@ export function createBookingQuote(input: {
   eventDate?: string;
   notes?: string;
   selectedOptions?: string[];
+  referenceImages?: string[];
   // True once the customer has seen the vendor's UPI ID/QR and clicked
   // Confirm Order — lands the booking in 'pending_payment' so the vendor
   // has to verify and confirm it themselves, instead of it auto-confirming.
@@ -322,6 +365,22 @@ export function createBookingQuote(input: {
     method: 'POST',
     body: JSON.stringify(input),
   });
+}
+
+// Upload a customer reference image (multipart) and return its stored URL. Used
+// for images the customer attaches to a booking so the vendor can see them.
+export async function uploadReferenceImage(file: File): Promise<string> {
+  const token = localStorage.getItem('accessToken');
+  const fd = new FormData();
+  fd.append('file', file);
+  const res = await fetch(`${GATEWAY_URL}/api/v1/uploads`, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: fd,
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || !json?.data?.fileUrl) throw new Error(json?.message || 'Upload failed.');
+  return json.data.fileUrl as string;
 }
 
 // This customer's own bookings — the backend scopes GET /bookings (no vendorId)

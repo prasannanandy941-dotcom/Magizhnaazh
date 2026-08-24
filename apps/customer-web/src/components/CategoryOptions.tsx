@@ -102,28 +102,29 @@ export function optionsForCategory(category: VendorCategory): CategoryOption[] {
 
 const CategoryGalleryViewer: React.FC<{ option: CategoryOption; items?: OfferedOptionItem[]; onClose: () => void }> = ({ option, items, onClose }) => {
   const [index, setIndex] = useState(0);
-  const images = option.images.map(IMG);
+  const images = option.images.map((img) => (img.startsWith('http') ? img : IMG(img)));
   const menuItems = items ?? [];
 
   const go = (dir: number) => setIndex((i) => Math.min(images.length - 1, Math.max(0, i + dir)));
 
   return (
     <div
-      className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/90 backdrop-blur-sm p-4 sm:p-8"
+      className="fixed inset-0 z-[70] overflow-y-auto bg-slate-950/90 backdrop-blur-sm p-4 sm:p-8 flex justify-center items-start md:items-center"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-label={`${option.title} gallery`}
     >
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="Close gallery"
+        className="fixed top-4 right-4 z-[80] w-10 h-10 rounded-full bg-slate-900/90 border border-slate-700 flex items-center justify-center text-slate-200 hover:text-white hover:bg-slate-800 transition-colors shadow-lg"
+      >
+        <X className="w-5 h-5" />
+      </button>
+
       <div className="relative w-full max-w-4xl" onClick={(e) => e.stopPropagation()}>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close gallery"
-          className="absolute -top-3 -right-3 z-20 w-9 h-9 rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center text-slate-200 hover:text-white hover:bg-slate-800 transition-colors shadow-lg"
-        >
-          <X className="w-4 h-4" />
-        </button>
 
         <div className="rounded-2xl border border-slate-800 shadow-2xl bg-slate-900 overflow-hidden flex items-center justify-center">
           <img
@@ -143,15 +144,24 @@ const CategoryGalleryViewer: React.FC<{ option: CategoryOption; items?: OfferedO
             <ul className="divide-y divide-slate-800">
               {menuItems.map((item, i) => (
                 <li key={i} className="flex items-center justify-between gap-3 py-2">
-                  <span className="text-sm text-slate-200">
-                    {item.name || 'Item'}
-                    {item.equipments && (
-                      <span className="ml-1.5 px-1.5 py-0.5 rounded bg-indigo-500/15 text-indigo-300 text-[10px] font-semibold align-middle">{item.equipments}</span>
+                  <span className="flex items-center gap-2.5 text-sm text-slate-200">
+                    {item.photo && (
+                      <img
+                        src={item.photo}
+                        alt={item.name}
+                        className="h-8 w-8 object-cover rounded border border-slate-800 shrink-0"
+                      />
                     )}
-                    {item.quality && (
-                      <span className="ml-1.5 px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 text-[10px] font-semibold align-middle">{item.quality}</span>
-                    )}
-                    {item.note && <span className="text-slate-500 text-xs"> · {item.note}</span>}
+                    <span>
+                      {item.name || 'Item'}
+                      {item.equipments && (
+                        <span className="ml-1.5 px-1.5 py-0.5 rounded bg-indigo-500/15 text-indigo-300 text-[10px] font-semibold align-middle">{item.equipments}</span>
+                      )}
+                      {item.quality && (
+                        <span className="ml-1.5 px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 text-[10px] font-semibold align-middle">{item.quality}</span>
+                      )}
+                      {item.note && <span className="text-slate-500 text-xs"> · {item.note}</span>}
+                    </span>
                   </span>
                   <span className="text-right shrink-0">
                     <span className="text-sm font-bold text-emerald-400">{inr(item.price)}</span>
@@ -251,7 +261,8 @@ export const GenericCategoryGrid: React.FC<{
   // Vendor's own priced items keyed by option label — shown when a card is
   // tapped so customers see this vendor's actual dishes/services with rates.
   optionItems?: Record<string, OfferedOptionItem[]>;
-}> = ({ category, selected, onToggle, optionItems }) => {
+  offeredOptionImages?: Record<string, string[]>;
+}> = ({ category, selected, onToggle, optionItems, offeredOptionImages }) => {
   const options = optionsForCategory(category);
   const [openId, setOpenId] = useState<string | null>(null);
   const openOption = options.find((o) => o.id === openId) || null;
@@ -271,6 +282,9 @@ export const GenericCategoryGrid: React.FC<{
           const isSelected = !!selected?.includes(o.title);
           const cateringStyle = CATERING_OPTION_STYLE[o.title];
           const itemCount = optionItems?.[o.title]?.length ?? 0;
+          const customImages = offeredOptionImages?.[o.title] || [];
+          const thumbnailSrc = customImages.length > 0 ? customImages[0] : THUMB(o.images[0]);
+          const photoCount = customImages.length > 0 ? customImages.length : o.images.length;
           return (
             <div
               key={o.id}
@@ -282,7 +296,7 @@ export const GenericCategoryGrid: React.FC<{
                 className="absolute inset-0 w-full h-full text-left focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
                 title={`View ${o.title}`}
               >
-                <img src={THUMB(o.images[0])} alt={o.title} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
+                <img src={thumbnailSrc} alt={o.title} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent" />
                 {!onToggle && cateringStyle && (
                   <span className={`absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold ${cateringStyle.badge}`}>
@@ -290,7 +304,7 @@ export const GenericCategoryGrid: React.FC<{
                   </span>
                 )}
                 <span className="absolute top-3 right-3 flex items-center gap-1 px-2 h-6 rounded-full bg-slate-950/70 backdrop-blur-sm text-white text-[10px] font-semibold">
-                  <Icon className="w-3 h-3" /> {o.images.length}
+                  <Icon className="w-3 h-3" /> {photoCount}
                 </span>
                 <div className="absolute bottom-3 left-3 right-3">
                   <h4 className="text-white font-display font-bold text-base leading-tight">{o.title}</h4>
@@ -324,7 +338,12 @@ export const GenericCategoryGrid: React.FC<{
 
       {openOption && (
         <CategoryGalleryViewer
-          option={openOption}
+          option={{
+            ...openOption,
+            images: offeredOptionImages?.[openOption.title] && offeredOptionImages[openOption.title].length > 0
+              ? offeredOptionImages[openOption.title]
+              : openOption.images
+          }}
           items={optionItems?.[openOption.title]}
           onClose={() => setOpenId(null)}
         />

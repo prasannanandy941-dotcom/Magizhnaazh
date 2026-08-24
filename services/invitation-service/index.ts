@@ -1,6 +1,6 @@
 import path from 'path';
 import dotenv from 'dotenv';
-dotenv.config({ path: path.resolve(__dirname, '.env') });
+dotenv.config({ path: path.resolve(__dirname, '.env'), override: true });
 
 import { randomBytes } from 'crypto';
 import express, { Request, Response } from 'express';
@@ -172,3 +172,4 @@ app.get('/api/v1/invitations/event/:eventId', authMiddleware(), async (req: Requ
   const invitation = await InvitationModel.findOne({ eventId: req.params.eventId }).sort({ createdAt: -1 });
   res.json({ success: true, data: { invitation: invitation || null } });
 });
+// reload 2

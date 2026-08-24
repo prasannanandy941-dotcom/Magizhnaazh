@@ -10,6 +10,8 @@ const vendorPackageSchema = new Schema(
     includedServices: [String],
     durationHours: Number,
     capacityPersons: Number,
+    images: [String],
+    tiers: [{ name: String, price: Number, _id: false }],
   },
   { _id: false }
 );
@@ -44,6 +46,7 @@ const vendorSchema = new Schema<Vendor>({
   qrCodeImage: String,
   packages: { type: [vendorPackageSchema], default: [] },
   availableDates: { type: [String], default: [] },
+  bookedDates: { type: [String], default: [] },
   policies: {
     cancellation: { type: String, default: '' },
     refund: { type: String, default: '' },
@@ -80,6 +83,10 @@ const vendorSchema = new Schema<Vendor>({
   // Option-level quality tier keyed by label, for options with no item list —
   // e.g. { "Live Streaming": "4K Ultra HD" }.
   offeredOptionQuality: { type: Schema.Types.Mixed, default: {} },
+  // Photos per offered option, keyed by label — { "Fresh Flower Decor": [url] }.
+  offeredOptionImages: { type: Schema.Types.Mixed, default: {} },
+  giftCount: Number,
+  giftDiscount: String,
   createdAt: { type: String, default: () => new Date().toISOString() },
 });
 

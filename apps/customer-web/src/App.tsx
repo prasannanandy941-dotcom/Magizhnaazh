@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Role, User, Vendor, Event, Booking, Invitation, Guest, EventFeedback } from '../../../packages/shared-types';
+import { playNotificationSound } from './notificationSound';
 import { Header } from './components/Header';
 import { AuthModal } from './components/AuthModal';
 import { HeroSection } from './components/HeroSection';
@@ -31,6 +32,7 @@ import {
   fetchLocations,
   fetchPublicSettings,
   ApiError,
+  GATEWAY_URL,
 } from './api';
 import { groupCitiesByState, STATIC_CITY_GROUPS } from '../../../packages/shared-utils';
 import { MessageSquare, CheckCircle2 } from 'lucide-react';
@@ -516,6 +518,21 @@ export function App() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [bookingInProgress, setBookingInProgress] = useState(false);
 
+  useEffect(() => {
+    // Proactively wake up backend microservices on mount to avoid cold-start 502/504 errors on Render
+    const endpoints = [
+      '/api/v1/auth/me',
+      '/api/v1/vendors',
+      '/api/v1/bookings',
+      '/api/v1/events',
+      '/api/v1/invitations',
+      '/api/v1/guests'
+    ];
+    endpoints.forEach(path => {
+      fetch(`${GATEWAY_URL}${path}`).catch(() => {});
+    });
+  }, []);
+
   // Load the live vendor marketplace from the backend (vendor-service, via the gateway).
   // Public endpoint — runs once on mount regardless of login state. Falls back to the
   // local demo list (INITIAL_VENDORS) if the call fails or returns nothing, so the
@@ -809,6 +826,7 @@ export function App() {
 
   const triggerNotification = (msg: string) => {
     setNotification(msg);
+    playNotificationSound();
     setTimeout(() => setNotification(''), 4000);
   };
 
@@ -1054,7 +1072,9 @@ export function App() {
         <VendorDetailModal
           vendor={selectedVendorForModal}
           onClose={() => setSelectedVendorForModal(null)}
-          onBookVendor={(v, pkgId, price, notes, eventDate, selectedOptions) => {
+          isAuthenticated={!!user}
+          onRequireAuth={() => setShowAuthModal(true)}
+          onBookVendor={(v, pkgId, price, notes, eventDate, selectedOptions, referenceImages) => {
             // Named so it can be re-run automatically after a re-login: the
             // customer's `user` staying set doesn't mean their token is
             // still valid (it expires after a few hours), so requireAuth's
@@ -1077,6 +1097,7 @@ export function App() {
                   eventDate: eventDate || activeEvent.date,
                   notes,
                   selectedOptions,
+                  referenceImages,
                   // They've just seen the vendor's UPI ID/QR and clicked Confirm
                   // Order — that's a payment claim, not a verified payment, so
                   // this lands as 'pending_payment' rather than auto-confirming.

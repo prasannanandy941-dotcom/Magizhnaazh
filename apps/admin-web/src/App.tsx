@@ -38,7 +38,7 @@ import { CouponsTab } from './components/CouponsTab';
 import { SettingsTab } from './components/SettingsTab';
 import { AnalyticsTab } from './components/AnalyticsTab';
 import { EcosystemMonitor } from './components/EcosystemMonitor';
-import { fetchSettings } from './api';
+import { fetchSettings, GATEWAY_URL } from './api';
 
 const THEME_KEY = 'magizhnaazh_theme';
 function applyTheme(theme: 'light' | 'dark') {
@@ -79,6 +79,21 @@ export function App() {
   // Apply the site-wide theme: use the locally-remembered choice immediately
   // (no flash), then reconcile with the server's platform setting so the
   // admin + customer apps stay in sync with whatever admin last chose.
+  useEffect(() => {
+    // Proactively wake up backend microservices on mount to avoid cold-start 502/504 errors on Render
+    const endpoints = [
+      '/api/v1/auth/me',
+      '/api/v1/vendors',
+      '/api/v1/bookings',
+      '/api/v1/events',
+      '/api/v1/invitations',
+      '/api/v1/guests'
+    ];
+    endpoints.forEach(path => {
+      fetch(`${GATEWAY_URL}${path}`).catch(() => {});
+    });
+  }, []);
+
   useEffect(() => {
     const local = (localStorage.getItem(THEME_KEY) as 'light' | 'dark' | null) || 'dark';
     applyTheme(local);

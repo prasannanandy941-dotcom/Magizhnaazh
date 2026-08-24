@@ -93,7 +93,7 @@ const priceRange = (c: PriestCeremony) => {
 };
 
 // Full-screen viewer: swipeable ceremony photos + price tiers.
-export const PriestViewer: React.FC<{ ceremony: PriestCeremony; onClose: () => void }> = ({ ceremony, onClose }) => {
+export const PriestViewer: React.FC<{ ceremony: PriestCeremony; onClose: () => void; onPickTier?: (label: string) => void }> = ({ ceremony, onClose, onPickTier }) => {
   const trackRef = useRef<HTMLDivElement>(null);
   const [index, setIndex] = useState(0);
   const [selectedTier, setSelectedTier] = useState<number | null>(null);
@@ -213,7 +213,10 @@ export const PriestViewer: React.FC<{ ceremony: PriestCeremony; onClose: () => v
                 <button
                   key={tier.name}
                   type="button"
-                  onClick={() => setSelectedTier(i)}
+                  onClick={() => {
+                    setSelectedTier(i);
+                    onPickTier?.(`${ceremony.title} — ${tier.name} (₹${tier.price.toLocaleString('en-IN')})`);
+                  }}
                   aria-pressed={isSelected}
                   className={`text-left rounded-xl border p-4 flex flex-col transition-colors ${
                     isSelected ? 'border-amber-400 bg-amber-500/10 ring-2 ring-amber-400/60' : `${tone.ring} bg-slate-950/40 hover:border-slate-600`
@@ -245,7 +248,7 @@ export const PriestViewer: React.FC<{ ceremony: PriestCeremony; onClose: () => v
 
           {selectedTier !== null && (
             <p className="mt-4 text-xs text-emerald-400 font-semibold">
-              You picked the {ceremony.tiers[selectedTier].name} package — ₹{ceremony.tiers[selectedTier].price.toLocaleString('en-IN')}. Mention this when you book a vendor for {ceremony.title}.
+              Added to your booking: {ceremony.title} — {ceremony.tiers[selectedTier].name} (₹{ceremony.tiers[selectedTier].price.toLocaleString('en-IN')}).
             </p>
           )}
         </div>
@@ -299,9 +302,11 @@ export const PriestGrid: React.FC<{
   ceremonies?: PriestCeremony[];
   selected?: string[];
   onToggle?: (title: string) => void;
-}> = ({ ceremonies = STANDARD_PRIEST, selected, onToggle }) => {
+  onPickTier?: (label: string) => void;
+}> = ({ ceremonies = STANDARD_PRIEST, selected, onToggle, onPickTier }) => {
   const [openId, setOpenId] = useState<string | null>(null);
   const open = ceremonies.find((c) => c.id === openId) || null;
+  const ceremonySelected = (title: string) => !!selected?.some((o) => o === title || o.startsWith(`${title} — `));
 
   return (
     <div>
@@ -311,7 +316,7 @@ export const PriestGrid: React.FC<{
       <p className="text-[11px] text-slate-500 mb-4">Traditions: {PRIEST_TRADITIONS}</p>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         {ceremonies.map((c) => {
-          const isSelected = !!selected?.includes(c.title);
+          const isSelected = ceremonySelected(c.title);
           return (
             <div
               key={c.id}
@@ -351,7 +356,7 @@ export const PriestGrid: React.FC<{
         })}
       </div>
 
-      {open && <PriestViewer ceremony={open} onClose={() => setOpenId(null)} />}
+      {open && <PriestViewer ceremony={open} onClose={() => setOpenId(null)} onPickTier={onPickTier} />}
     </div>
   );
 };
