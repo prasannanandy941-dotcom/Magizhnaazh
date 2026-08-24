@@ -142,6 +142,10 @@ services:
     staticPublishPath: apps/customer-web/dist
     envVars:
       - fromGroup: magizh-secrets
+      # Google Sign-In (Web OAuth Client ID — public by design, sent to the
+      # browser). Baked in at build time; the button stays hidden without it.
+      - key: VITE_GOOGLE_CLIENT_ID
+        value: 965066144511-qf8kg4hdrpuk86qd7tgf59a9l21hmpgt.apps.googleusercontent.com
     routes:
       # SPA fallback so client-side routes resolve to index.html
       - type: rewrite
