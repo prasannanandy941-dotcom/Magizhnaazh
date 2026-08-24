@@ -94,6 +94,22 @@ export async function login(email: string, password: string): Promise<AuthRespon
   return json;
 }
 
+// Google Sign-In for admins. `loginOnly` tells the backend to authenticate an
+// EXISTING account only and never create one — a Google account with no admin
+// user gets rejected rather than silently provisioned. The caller still checks
+// role === 'admin' before granting access.
+export async function googleLogin(credential: string): Promise<AuthResponse> {
+  const { res, json } = await fetchJson('/api/v1/auth/google', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ credential, loginOnly: true }),
+  });
+  if (!res.ok) {
+    throw new Error(json.message || 'Google sign-in failed.');
+  }
+  return json;
+}
+
 async function authedFetch(path: string, token: string, options: RequestInit = {}) {
   const { res, json } = await fetchJson(path, {
     ...options,

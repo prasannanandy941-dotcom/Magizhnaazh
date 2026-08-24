@@ -376,7 +376,7 @@ app.post('/api/v1/auth/login', async (req: Request, res: Response) => {
 // with their existing role; new users get an account created on the spot.
 app.post('/api/v1/auth/google', async (req: Request, res: Response) => {
   try {
-    const { credential, role } = req.body;
+    const { credential, role, loginOnly } = req.body;
     if (!credential) {
       return res.status(400).json({ success: false, message: 'Missing Google credential.' });
     }
@@ -389,6 +389,13 @@ app.post('/api/v1/auth/google', async (req: Request, res: Response) => {
     const emailStr = profile.email.toLowerCase().trim();
     let user = await UserModel.findOne({ email: emailStr });
     let isNewUser = false;
+
+    // `loginOnly` = authenticate an EXISTING account only, never create one.
+    // Used by the admin portal so a stray Google account can't self-provision
+    // (admin accounts are created by the platform team, not via sign-in).
+    if (!user && loginOnly) {
+      return res.status(401).json({ success: false, message: 'No account found for this Google email.' });
+    }
 
     if (user) {
       if (user.isSuspended) {

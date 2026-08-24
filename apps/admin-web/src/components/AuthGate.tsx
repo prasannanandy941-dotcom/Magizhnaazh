@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { ShieldCheck, LogIn, Loader2, Eye, EyeOff } from 'lucide-react';
 import { User } from '../../../../packages/shared-types';
-import { login } from '../api';
+import { login, googleLogin } from '../api';
 import { FloralGoldBackground } from './FloralGoldBackground';
+import { GoogleSignInButton } from './GoogleSignInButton';
 
 interface AuthGateProps {
   onAuthSuccess: (user: User, token: string) => void;
@@ -30,6 +31,27 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
       onAuthSuccess(res.data.user, res.data.token);
     } catch (err: any) {
       setError(err.message || 'Unable to reach the server. Is the gateway running?');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleCredential = async (credential: string) => {
+    setError('');
+    setLoading(true);
+    try {
+      const res = await googleLogin(credential);
+      if (!res.success || !res.data) {
+        throw new Error(res.message || 'Google sign-in failed.');
+      }
+      // Only existing admin accounts may enter — a non-admin Google account is
+      // rejected (and the backend never created one, thanks to loginOnly).
+      if (res.data.user.role !== 'admin') {
+        throw new Error('This Google account does not have admin access.');
+      }
+      onAuthSuccess(res.data.user, res.data.token);
+    } catch (err: any) {
+      setError(err.message || 'Google sign-in failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -100,6 +122,8 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogIn className="w-4 h-4" />}
             Sign In
           </button>
+
+          <GoogleSignInButton onCredential={handleGoogleCredential} text="signin_with" />
 
           <p className="text-center text-[11px] text-slate-500">
             Demo login: admin@magizhnaazh.com / Passw0rd!
