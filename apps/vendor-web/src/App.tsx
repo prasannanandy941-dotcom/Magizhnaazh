@@ -6,6 +6,7 @@ import { AuthGate } from './components/AuthGate';
 import { FloralGoldBackground } from './components/FloralGoldBackground';
 import { fetchMyVendor, createVendor, updateVendor, fetchVendorBookings, fetchVendorBookingsSilent, confirmBooking, sendCounterQuote, updateBookingStatus, updateSpendBreakdown, fetchVendorReviews, GATEWAY_URL } from './api';
 import { playNotificationSound } from './notificationSound';
+import { getItemSuggestions, suggestionListId } from './itemSuggestions';
 
 // Work-progress stages a confirmed booking moves through, tracked on the
 // existing BookingStatus field — applies to every vendor category, not just
@@ -525,6 +526,15 @@ export function App() {
     const items = offeredOptionItems[opt] || [];
     const isOpen = expandedOption === opt;
     const headerBg = accent === 'emerald' ? 'bg-emerald-600' : 'bg-indigo-600';
+    // Autocomplete hints for the "Item name" field, matched to this vendor's
+    // category + this option (e.g. Catering "Veg" → paneer dishes). Rendered
+    // once per card as a <datalist> and shared by every row's input below.
+    const nameSuggestions = getItemSuggestions(myVendor?.category, opt);
+    const nameListId = suggestionListId(myVendor?.category, opt);
+    // Placeholder example matched to THIS option — the first suggestion (e.g.
+    // Veg → "Paneer Butter Masala", Non-Veg → "Chicken Biryani", Snacks →
+    // "Samosa"). Falls back to the per-category example, then a generic label.
+    const nameExample = nameSuggestions[0] ?? ITEM_NAME_EXAMPLE[myVendor?.category ?? ''] ?? 'Service item';
     return (
       <div key={opt} className="rounded-2xl border border-slate-800 bg-slate-900/40 overflow-hidden">
         <div className={`flex items-center gap-2 flex-wrap px-3.5 py-2 ${headerBg}`}>
@@ -566,6 +576,13 @@ export function App() {
         </div>
         {isOpen && !NO_ITEM_OPTIONS.has(opt) && (
           <div className="p-3 space-y-2">
+            {nameSuggestions.length > 0 && (
+              <datalist id={nameListId}>
+                {nameSuggestions.map((s) => (
+                  <option key={s} value={s} />
+                ))}
+              </datalist>
+            )}
             {items.length === 0 && (
               <p className="text-[11px] text-slate-500">
                 No items yet — add {opt.toLowerCase()} items with a rate. Customers see each one on your listing.
@@ -577,7 +594,8 @@ export function App() {
                   type="text"
                   value={item.name}
                   onChange={(e) => updateOptionItem(opt, i, 'name', e.target.value)}
-                  placeholder={`Item name (e.g. ${ITEM_NAME_EXAMPLE[myVendor?.category ?? ''] ?? 'Service item'})`}
+                  placeholder={`Item name (e.g. ${nameExample})`}
+                  list={nameSuggestions.length > 0 ? nameListId : undefined}
                   className="flex-1 min-w-[150px] p-2 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs"
                 />
                 <div className="flex items-center gap-1">

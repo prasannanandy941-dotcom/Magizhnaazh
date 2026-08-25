@@ -12,6 +12,35 @@ import { GenericCategoryGrid } from './CategoryOptions';
 import { CustomRequestBox } from './CateringMenu';
 import { getVendorCoverImage } from './vendorUtils';
 
+// Category-appropriate name for the "Services" tab (the vendor's list of
+// offered, priced options). e.g. a Catering vendor's options ARE their menu, a
+// Transport vendor's are vehicles, a Priest's are rituals. Falls back to
+// "Services" for anything not listed.
+const SERVICES_TAB_LABEL: Record<string, string> = {
+  Catering: 'Menu',
+  Decoration: 'Decor Options',
+  'Makeup & Beauty': 'Beauty Services',
+  Media: 'Shoots & Coverage',
+  Transport: 'Vehicles',
+  'Pujari/Priest': 'Rituals',
+  Invitation: 'Invite Options',
+  Printing: 'Print Items',
+  'Return Gifts': 'Gift Options',
+  Entertainment: 'Acts & Shows',
+  'Music/DJ': 'Music Options',
+  Lighting: 'Lighting Options',
+  Flowers: 'Floral Options',
+  Mehendi: 'Mehendi Designs',
+  'Event Host/Anchor': 'Hosting Services',
+  Security: 'Security Services',
+  Cleaning: 'Cleaning Services',
+  'Rental Equipment': 'Rental Items',
+  'Utensils for Rent': 'Utensil Items',
+  'Wedding Planner': 'Planning Services',
+  'Corporate Event Services': 'Corporate Services',
+};
+const servicesTabLabel = (category: string) => SERVICES_TAB_LABEL[category] ?? 'Services';
+
 const isVideoUrl = (url: string | null) => {
   if (!url) return false;
   const cleanUrl = url.toLowerCase().split('?')[0].split('#')[0];
@@ -352,7 +381,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                 activeTab === 'services' ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-slate-400 hover:text-white'
               }`}
             >
-              <ListChecks className="w-3.5 h-3.5" /> Services
+              <ListChecks className="w-3.5 h-3.5" /> {servicesTabLabel(vendor.category)}
             </button>
           )}
 
@@ -468,7 +497,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
           {activeTab === 'services' && (
             <div className="space-y-4">
               <p className="text-xs text-slate-400">
-                Pick the services you want — tap to select, and they're added to your booking request.
+                Pick what you want — tap to select, and it's added to your booking request.
               </p>
               {(vendor.offeredOptions || []).map((o) => {
                 const price = vendor.offeredOptionPrices?.[o];
