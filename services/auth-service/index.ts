@@ -34,7 +34,84 @@ const transporter = nodemailer.createTransport({
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
+  // Fail fast instead of hanging the Send-OTP request forever when the SMTP
+  // host is unreachable (e.g. the platform blocks the outbound port). Without
+  // these, a blocked connection leaves the button spinning for minutes. On
+  // timeout the send throws, we log it, and fall back to the on-screen code.
+  connectionTimeout: 10000, // 10s to open the TCP/TLS connection
+  greetingTimeout: 10000,   // 10s to receive the server greeting
+  socketTimeout: 15000,     // 15s of inactivity on the socket
 });
+
+// The visible "from" address on OTP/reset emails. Reuses SMTP_FROM so a single
+// value drives both the SMTP and HTTP-API paths.
+const EMAIL_FROM = process.env.SMTP_FROM || process.env.SMTP_USER || 'no-reply@porulontech.com';
+const EMAIL_FROM_NAME = 'Magizhnaazh Platform';
+
+// Single email sender used by every OTP flow. It prefers Brevo's HTTPS API
+// (BREVO_API_KEY) because many hosts — including Render's free tier — block
+// outbound SMTP ports, which makes nodemailer hang/time out. The API call is
+// ordinary HTTPS (port 443) and is not blocked. If no API key is set it falls
+// back to SMTP (good for local dev / hosts that allow it). Returns true only
+// when the message was actually accepted for delivery; false means the caller
+// should surface the on-screen dev code instead.
+async function sendEmail(to: string, subject: string, html: string, text: string): Promise<boolean> {
+  // 1. Brevo HTTPS API — the reliable path on Render.
+  if (process.env.BREVO_API_KEY) {
+    try {
+      const resp = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'api-key': process.env.BREVO_API_KEY,
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({
+          sender: { email: EMAIL_FROM, name: EMAIL_FROM_NAME },
+          to: [{ email: to }],
+          subject,
+          htmlContent: html,
+          textContent: text,
+        }),
+      });
+      if (resp.ok) return true;
+      const errBody = await resp.text().catch(() => '');
+      console.error(`[email] Brevo API send failed (HTTP ${resp.status}): ${errBody}`);
+    } catch (err) {
+      console.error('[email] Brevo API request error:', err);
+    }
+    // Fall through to SMTP if the API attempt failed.
+  }
+
+  // 2. SMTP fallback — used locally / on hosts that permit outbound SMTP.
+  if (process.env.SMTP_USER) {
+    try {
+      await transporter.sendMail({
+        from: `"${EMAIL_FROM_NAME}" <${EMAIL_FROM}>`,
+        to,
+        subject,
+        text,
+        html,
+      });
+      return true;
+    } catch (err) {
+      console.error('[email] Nodemailer failed to send email:', err);
+    }
+  }
+
+  return false;
+}
+
+const otpEmailHtml = (heading: string, intro: string, code: string, footer: string) => `
+  <div style="font-family: sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 8px; max-width: 500px;">
+    <h2 style="color: #d4af37;">${heading}</h2>
+    <p>${intro}</p>
+    <div style="font-size: 24px; font-weight: bold; letter-spacing: 4px; padding: 12px; background: #f3f4f6; text-align: center; border-radius: 4px; margin: 20px 0; color: #111827;">
+      ${code}
+    </div>
+    <p style="font-size: 12px; color: #6b7280;">${footer}</p>
+  </div>
+`;
 
 // Verify a Google Identity Services ID token (the `credential` the browser gets
 // from the "Sign in with Google" button). We call Google's tokeninfo endpoint,
@@ -118,30 +195,17 @@ app.post('/api/v1/auth/send-otp', async (req: Request, res: Response) => {
 
     console.log(`[OTP DEBUG] Verification code for ${emailStr}: ${code}`);
 
-    let emailSent = false;
-    if (process.env.SMTP_USER) {
-      try {
-        await transporter.sendMail({
-          from: `"Magizhnaazh Platform" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
-          to: emailStr,
-          subject: "Email Verification Code",
-          text: `Your verification code is: ${code}. It is valid for 10 minutes.`,
-          html: `
-            <div style="font-family: sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 8px; max-width: 500px;">
-              <h2 style="color: #d4af37;">Email Verification</h2>
-              <p>Thank you for registering. Please enter the following 6-digit code to complete your signup:</p>
-              <div style="font-size: 24px; font-weight: bold; letter-spacing: 4px; padding: 12px; background: #f3f4f6; text-align: center; border-radius: 4px; margin: 20px 0; color: #111827;">
-                ${code}
-              </div>
-              <p style="font-size: 12px; color: #6b7280;">This code is valid for 10 minutes. If you did not request this code, please ignore this email.</p>
-            </div>
-          `
-        });
-        emailSent = true;
-      } catch (err) {
-        console.error("Nodemailer failed to send email:", err);
-      }
-    }
+    const emailSent = await sendEmail(
+      emailStr,
+      'Email Verification Code',
+      otpEmailHtml(
+        'Email Verification',
+        'Thank you for registering. Please enter the following 6-digit code to complete your signup:',
+        code,
+        'This code is valid for 10 minutes. If you did not request this code, please ignore this email.'
+      ),
+      `Your verification code is: ${code}. It is valid for 10 minutes.`
+    );
 
     res.json({
       success: true,
@@ -249,30 +313,17 @@ app.post('/api/v1/auth/forgot-password', async (req: Request, res: Response) => 
 
     console.log(`[OTP DEBUG] Forgot Password OTP for ${emailStr}: ${code}`);
 
-    let emailSent = false;
-    if (process.env.SMTP_USER) {
-      try {
-        await transporter.sendMail({
-          from: `"Magizhnaazh Platform" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
-          to: emailStr,
-          subject: "Password Reset Code",
-          text: `Your password reset code is: ${code}. It is valid for 10 minutes.`,
-          html: `
-            <div style="font-family: sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 8px; max-width: 500px;">
-              <h2 style="color: #d4af37;">Password Reset</h2>
-              <p>You requested to reset your password. Please enter the following 6-digit code in the app to proceed:</p>
-              <div style="font-size: 24px; font-weight: bold; letter-spacing: 4px; padding: 12px; background: #f3f4f6; text-align: center; border-radius: 4px; margin: 20px 0; color: #111827;">
-                ${code}
-              </div>
-              <p style="font-size: 12px; color: #6b7280;">This code is valid for 10 minutes. If you did not request a password reset, please ignore this email.</p>
-            </div>
-          `
-        });
-        emailSent = true;
-      } catch (err) {
-        console.error("Nodemailer failed to send email:", err);
-      }
-    }
+    const emailSent = await sendEmail(
+      emailStr,
+      'Password Reset Code',
+      otpEmailHtml(
+        'Password Reset',
+        'You requested to reset your password. Please enter the following 6-digit code in the app to proceed:',
+        code,
+        'This code is valid for 10 minutes. If you did not request a password reset, please ignore this email.'
+      ),
+      `Your password reset code is: ${code}. It is valid for 10 minutes.`
+    );
 
     res.json({
       success: true,
