@@ -76,6 +76,7 @@ export const ITEM_SUGGESTIONS: Record<string, Record<string, string[]>> = {
     Standees: ['Welcome Standee', 'Photo Standee'],
     'Stickers & Tags': ['Return Gift Tags', 'Bottle Stickers', 'Name Tags'],
     'Menu Cards': ['Table Menu Card', 'Buffet Menu Board'],
+    'Discount for Bulk': ['5% off above 500 cards', '10% off above 1000 cards', 'Bulk order discount'],
   },
   'Return Gifts': {
     'Traditional (Silver & Brass)': ['Silver Coin', 'Brass Diya', 'Kumkum Box', 'Brass Kalash'],
@@ -127,6 +128,13 @@ export const ITEM_SUGGESTIONS: Record<string, Record<string, string[]>> = {
     'Contemporary Design': ['Minimal Mehendi', 'Mandala Design'],
     'Mehendi Party Setup': ['Mehendi Stall', 'Decorated Mehendi Corner'],
   },
+  'Event Host/Anchor': {
+    'Wedding Anchor': ['Tamil Wedding Anchor', 'Muhurtham Anchoring', 'Full-Day Wedding Host', 'Reception Anchor'],
+    'Corporate Emcee': ['Corporate Event Emcee', 'Award Night Host', 'Conference MC', 'Product Launch Host'],
+    'Bilingual Hosting': ['Tamil-English Host', 'Hindi-English Host', 'Trilingual Anchor'],
+    'Game Coordination': ['Couple Games Host', 'Audience Games', 'Sangeet Games Coordinator'],
+    'Stage Management': ['Show Flow Management', 'Event Coordination', 'Backstage Management'],
+  },
   Security: {
     'Event Security Guards': ['Uniformed Guard', 'Armed Guard', 'Female Guard'],
     Bouncers: ['Standard Bouncer', 'VIP Bouncer'],
@@ -156,6 +164,8 @@ export const ITEM_SUGGESTIONS: Record<string, Record<string, string[]>> = {
     'Buffet Counters': ['Chafing Dish', 'Buffet Counter', 'Soup Station'],
     'Gas Stoves & Burners': ['Single Burner', 'Double Burner', 'High-Pressure Burner'],
     'Water Dispensers': ['Water Dispenser', 'Water Can Stand'],
+    'Steel Dining Sets': ['Steel Dining Set (10)', 'Steel Dining Set (25)', 'Full Steel Meals Set'],
+    'Traditional Brass & Copper': ['Brass Serving Set', 'Copper Water Pots', 'Traditional Brass Vessels'],
   },
   'Wedding Planner': {
     'Full Wedding Planning': ['End-to-End Planning', 'Vendor Coordination', 'Theme Design'],
@@ -171,8 +181,33 @@ export const ITEM_SUGGESTIONS: Record<string, Record<string, string[]>> = {
     'Team Building': ['Indoor Activities', 'Outdoor Activities'],
     'Award Ceremony': ['Stage Setup', 'Trophy & Certificates', 'Anchor'],
     'AV & Tech Support': ['Projector & Screen', 'Sound System', 'Live Streaming Setup'],
+    'Corporate Catering Coordination': ['Corporate Lunch Setup', 'Tea & Snacks Counter', 'Buffet Coordination'],
   },
 };
+
+// Type-ahead suggestions for the Venue amenity rate-option "name" field
+// (AC room → "1 hall with 1 AC", etc.). Keyed by the EXACT amenity label from
+// AMENITY_OPTIONS in vendor-web's App.tsx. Shown as a native datalist, filtered
+// to what's typed — hints only, the vendor can still type anything.
+export const AMENITY_SUGGESTIONS: Record<string, string[]> = {
+  'AC room': ['1 hall with 1 AC', '1 hall with 2 ACs', '2 halls with 1 AC', 'Fully AC banquet hall'],
+  'Fans only': ['1 hall with fans', '2 halls with fans', 'Open hall with ceiling fans'],
+  'VIP room': ['1 VIP room', '2 VIP rooms', 'VIP room with AC'],
+  'VIP front chairs': ['2 VIP chairs', '4 VIP chairs', 'VIP sofa set'],
+  Garlands: ['1 pair of garlands', 'Bride & groom garlands', 'Premium flower garlands'],
+  'Bride & groom room': ['1 room', 'AC bridal room', 'Bridal suite with makeup area'],
+  'Guest rooms': ['1 guest room', '2 guest rooms', 'AC guest room with attached washroom'],
+  'Dormitory hall': ['1 dormitory hall', 'Dormitory for 20', 'Dormitory for 50'],
+  'Separate guest washroom': ['1 washroom', '2 washrooms', 'Separate male & female washrooms'],
+  'Cooking utensils': ['Full utensil set', 'Basic cooking vessels', 'Large-scale cooking utensils'],
+  'Water filter': ['1 RO unit', '2 RO units', 'RO drinking water for guests'],
+};
+
+// Suggestions for a Venue amenity rate-option name, or an empty array when the
+// amenity has no curated hints.
+export function getAmenitySuggestions(label: string): string[] {
+  return AMENITY_SUGGESTIONS[label] ?? [];
+}
 
 // Return the suggestion list for a given vendor category + option label, or an
 // empty array when there are no curated hints (the field still works as a plain

@@ -11,6 +11,7 @@ import { authMiddleware, requireRole } from '../../packages/shared-utils/auth';
 import { requestLogger } from '../../packages/shared-utils/logging';
 import { registerHealthRoute } from '../../packages/shared-utils/health';
 import { LocalStorageProvider } from '../../packages/local-storage-provider';
+import { serviceUrl } from '../../packages/shared-utils/serviceUrl';
 import { VENDOR_CATEGORIES } from '../../packages/shared-types';
 import { INDIA_STATES_AND_CITIES } from '../../packages/shared-utils/indiaLocations';
 import { VendorModel } from './models/Vendor';
@@ -22,7 +23,14 @@ const app = express();
 const PORT = process.env.PORT || 8002;
 
 const UPLOADS_DIR = path.join(__dirname, '../../uploads');
-const storageProvider = new LocalStorageProvider(UPLOADS_DIR, `http://localhost:${PORT}/uploads`);
+// Files are served statically at `/uploads` (see below). The base URL baked
+// into each saved file's public URL must be reachable from the customer's
+// browser — in prod that's this service's own public https URL
+// (MARKETPLACE_SERVICE_URL), NOT localhost. Locally the env var is unset and we
+// fall back to localhost. Without this, uploaded menu/package/gallery images
+// resolve to http://localhost:8002 and show as broken images to customers.
+const PUBLIC_BASE_URL = serviceUrl(process.env.MARKETPLACE_SERVICE_URL, `http://localhost:${PORT}`);
+const storageProvider = new LocalStorageProvider(UPLOADS_DIR, `${PUBLIC_BASE_URL}/uploads`);
 const upload = multer({ storage: multer.memoryStorage() });
 
 app.use(cors());

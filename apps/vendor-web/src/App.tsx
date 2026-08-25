@@ -6,7 +6,7 @@ import { AuthGate } from './components/AuthGate';
 import { FloralGoldBackground } from './components/FloralGoldBackground';
 import { fetchMyVendor, createVendor, updateVendor, fetchVendorBookings, fetchVendorBookingsSilent, confirmBooking, sendCounterQuote, updateBookingStatus, updateSpendBreakdown, fetchVendorReviews, GATEWAY_URL } from './api';
 import { playNotificationSound } from './notificationSound';
-import { getItemSuggestions, suggestionListId } from './itemSuggestions';
+import { getItemSuggestions, getAmenitySuggestions, suggestionListId } from './itemSuggestions';
 
 // Work-progress stages a confirmed booking moves through, tracked on the
 // existing BookingStatus field — applies to every vendor category, not just
@@ -1817,17 +1817,27 @@ export function App() {
                     </p>
                     {AMENITY_OPTIONS.filter((a) => !!facilities[a.key]).map((a) => {
                       const items = offeredOptionItems[a.label] || [];
+                      const amenitySuggestions = getAmenitySuggestions(a.label);
+                      const amenityListId = suggestionListId('amenity', a.label);
                       return (
                         <div key={a.key} className="rounded-2xl border border-slate-800 bg-slate-900/40 p-3.5 space-y-2.5">
                           <div className="flex items-center gap-1.5 text-xs font-bold text-amber-300">
                             <Check className="w-3.5 h-3.5" /> {a.label}
                           </div>
+                          {amenitySuggestions.length > 0 && (
+                            <datalist id={amenityListId}>
+                              {amenitySuggestions.map((s) => (
+                                <option key={s} value={s} />
+                              ))}
+                            </datalist>
+                          )}
                           {items.map((it, i) => (
                             <div key={i} className="flex items-center gap-2 flex-wrap">
                               <input
                                 value={it.name}
                                 onChange={(e) => updateOptionItem(a.label, i, 'name', e.target.value)}
                                 placeholder={`e.g. ${a.example}`}
+                                list={amenitySuggestions.length > 0 ? amenityListId : undefined}
                                 className="flex-1 min-w-[140px] p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-xs"
                               />
                               <div className="flex items-center gap-1 px-2 rounded-lg bg-slate-950 border border-slate-800">
