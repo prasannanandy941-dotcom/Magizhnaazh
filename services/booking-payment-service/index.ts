@@ -383,6 +383,45 @@ app.put('/api/v1/bookings/:id/status', authMiddleware(), async (req: Request, re
   res.json({ success: true, message: 'Booking status updated.', data: { booking } });
 });
 
+// 4d. Vendor records what the agreed money was spent on — a line-item breakdown
+//     ("Mandap flowers ₹40,000", "Stage lighting ₹20,000"). This is purely an
+//     itemisation of the booking total; the customer sees it under this vendor
+//     in the Smart Budget "Where Your Money Went" view. Same ownership check as
+//     the status route — only the vendor who owns the listing (or an admin) may
+//     set it. Works for every vendor category.
+app.put('/api/v1/bookings/:id/spend-breakdown', authMiddleware(), async (req: Request, res: Response) => {
+  const booking = await BookingModel.findOne({ id: req.params.id });
+  if (!booking) return res.status(404).json({ success: false, message: 'Booking not found.' });
+
+  if (req.user!.role !== 'admin') {
+    try {
+      const vendorRes = await fetch(`${MARKETPLACE_SERVICE_URL}/api/v1/vendors/${booking.vendorId}`);
+      if (!vendorRes.ok) return res.status(404).json({ success: false, message: 'Vendor not found.' });
+      const vendorJson = await vendorRes.json();
+      if (vendorJson.data.vendor.userId !== req.user!.sub) {
+        return res.status(403).json({ success: false, message: 'This booking does not belong to your vendor listing.' });
+      }
+    } catch {
+      return res.status(502).json({ success: false, message: 'Could not verify vendor ownership.' });
+    }
+  }
+
+  const { spendItems } = req.body;
+  if (!Array.isArray(spendItems)) {
+    return res.status(400).json({ success: false, message: 'spendItems must be an array.' });
+  }
+
+  // Keep only well-formed, non-empty line items with a positive amount.
+  const cleaned = spendItems
+    .map((item: any) => ({ label: String(item?.label ?? '').trim(), amount: Number(item?.amount) }))
+    .filter((item) => item.label.length > 0 && Number.isFinite(item.amount) && item.amount > 0);
+
+  booking.spendItems = cleaned;
+  await booking.save();
+
+  res.json({ success: true, message: 'Spend breakdown saved.', data: { booking } });
+});
+
 // 5. Admin platform metrics
 app.get('/api/v1/bookings/admin/metrics', authMiddleware(), async (req: Request, res: Response) => {
   if (req.user!.role !== 'admin') {

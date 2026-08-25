@@ -6,6 +6,11 @@ const quoteHistorySchema = new Schema(
   { _id: false }
 );
 
+const spendItemSchema = new Schema(
+  { label: String, amount: Number },
+  { _id: false }
+);
+
 const bookingSchema = new Schema<Booking>({
   id: { type: String, required: true, unique: true },
   bookingNumber: { type: String, required: true, unique: true },
@@ -29,6 +34,7 @@ const bookingSchema = new Schema<Booking>({
   quotesHistory: { type: [quoteHistorySchema], default: [] },
   selectedOptions: { type: [String], default: [] },
   referenceImages: { type: [String], default: [] },
+  spendItems: { type: [spendItemSchema], default: [] },
   createdAt: { type: String, default: () => new Date().toISOString() },
 });
 

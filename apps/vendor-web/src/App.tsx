@@ -4,7 +4,7 @@ import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, Offered
 import { STATIC_CITY_GROUPS } from '../../../packages/shared-utils';
 import { AuthGate } from './components/AuthGate';
 import { FloralGoldBackground } from './components/FloralGoldBackground';
-import { fetchMyVendor, createVendor, updateVendor, fetchVendorBookings, fetchVendorBookingsSilent, confirmBooking, sendCounterQuote, updateBookingStatus, fetchVendorReviews, GATEWAY_URL } from './api';
+import { fetchMyVendor, createVendor, updateVendor, fetchVendorBookings, fetchVendorBookingsSilent, confirmBooking, sendCounterQuote, updateBookingStatus, updateSpendBreakdown, fetchVendorReviews, GATEWAY_URL } from './api';
 import { playNotificationSound } from './notificationSound';
 
 // Work-progress stages a confirmed booking moves through, tracked on the
@@ -1016,6 +1016,56 @@ export function App() {
 
   const [counterAmount, setCounterAmount] = useState<Record<string, string>>({});
 
+  // Draft spend line-items per booking, keyed by booking id. Each booking gets a
+  // working list the vendor edits inline, plus a saving flag for feedback.
+  const [spendDrafts, setSpendDrafts] = useState<Record<string, { label: string; amount: string }[]>>({});
+  const [spendSaving, setSpendSaving] = useState<Record<string, boolean>>({});
+  const [spendOpen, setSpendOpen] = useState<Record<string, boolean>>({});
+
+  // Seed the draft from the booking's saved items the first time the vendor
+  // opens the editor, so existing line-items are shown for editing.
+  const openSpendEditor = (b: Booking) => {
+    setSpendOpen((prev) => ({ ...prev, [b.id]: !prev[b.id] }));
+    setSpendDrafts((prev) => {
+      if (prev[b.id]) return prev;
+      const seed = (b.spendItems && b.spendItems.length > 0)
+        ? b.spendItems.map((s) => ({ label: s.label, amount: String(s.amount) }))
+        : [{ label: '', amount: '' }];
+      return { ...prev, [b.id]: seed };
+    });
+  };
+
+  const setSpendRow = (bookingId: string, idx: number, field: 'label' | 'amount', value: string) => {
+    setSpendDrafts((prev) => {
+      const rows = [...(prev[bookingId] || [])];
+      rows[idx] = { ...rows[idx], [field]: value };
+      return { ...prev, [bookingId]: rows };
+    });
+  };
+
+  const addSpendRow = (bookingId: string) => {
+    setSpendDrafts((prev) => ({ ...prev, [bookingId]: [...(prev[bookingId] || []), { label: '', amount: '' }] }));
+  };
+
+  const removeSpendRow = (bookingId: string, idx: number) => {
+    setSpendDrafts((prev) => ({ ...prev, [bookingId]: (prev[bookingId] || []).filter((_, i) => i !== idx) }));
+  };
+
+  const handleSaveSpend = async (bookingId: string) => {
+    if (!token) return;
+    const rows = (spendDrafts[bookingId] || [])
+      .map((r) => ({ label: r.label.trim(), amount: Number(r.amount) }))
+      .filter((r) => r.label.length > 0 && Number.isFinite(r.amount) && r.amount > 0);
+    setSpendSaving((prev) => ({ ...prev, [bookingId]: true }));
+    try {
+      await updateSpendBreakdown(token, bookingId, rows);
+      await refreshBookings();
+      setSpendOpen((prev) => ({ ...prev, [bookingId]: false }));
+    } finally {
+      setSpendSaving((prev) => ({ ...prev, [bookingId]: false }));
+    }
+  };
+
   const refreshBookings = async (notify = false) => {
     if (token && myVendor) {
       // Silent fetch: a booking-list refresh (poll or post-action) must never
@@ -1482,6 +1532,75 @@ export function App() {
                                 </button>
                               );
                             })}
+                          </div>
+                        )}
+
+                        {(b.status === 'confirmed' || b.status === 'in_progress' || b.status === 'completed') && (
+                          <div className="mt-3">
+                            <button
+                              onClick={() => openSpendEditor(b)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white text-[11px] font-bold"
+                            >
+                              <Receipt className="w-3.5 h-3.5 text-amber-400" />
+                              {b.spendItems && b.spendItems.length > 0 ? 'Edit spend breakdown' : 'Add spend breakdown'}
+                              {b.spendItems && b.spendItems.length > 0 && (
+                                <span className="ml-1 px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px]">
+                                  {b.spendItems.length}
+                                </span>
+                              )}
+                            </button>
+
+                            {spendOpen[b.id] && (
+                              <div className="mt-2 p-3 rounded-2xl bg-slate-950/60 border border-slate-800 max-w-md">
+                                <p className="text-[11px] text-slate-400 mb-2">
+                                  Tell the customer what this money was spent on. Each line shows under your name in their budget.
+                                </p>
+                                <div className="space-y-2">
+                                  {(spendDrafts[b.id] || []).map((row, idx) => (
+                                    <div key={idx} className="flex items-center gap-1.5">
+                                      <input
+                                        type="text"
+                                        placeholder="Spent on (e.g. Mandap flowers)"
+                                        value={row.label}
+                                        onChange={(e) => setSpendRow(b.id, idx, 'label', e.target.value)}
+                                        className="flex-1 min-w-0 p-2 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs"
+                                      />
+                                      <input
+                                        type="number"
+                                        placeholder="₹"
+                                        value={row.amount}
+                                        onChange={(e) => setSpendRow(b.id, idx, 'amount', e.target.value)}
+                                        className="w-24 p-2 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs"
+                                      />
+                                      <button
+                                        onClick={() => removeSpendRow(b.id, idx)}
+                                        className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-rose-400"
+                                        aria-label="Remove line"
+                                      >
+                                        <X className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+
+                                <div className="flex items-center justify-between mt-3 gap-2">
+                                  <button
+                                    onClick={() => addSpendRow(b.id)}
+                                    className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-300 hover:text-indigo-200"
+                                  >
+                                    <Plus className="w-3.5 h-3.5" /> Add line
+                                  </button>
+                                  <button
+                                    onClick={() => handleSaveSpend(b.id)}
+                                    disabled={spendSaving[b.id]}
+                                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-[11px] disabled:opacity-60"
+                                  >
+                                    {spendSaving[b.id] && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                                    Save breakdown
+                                  </button>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>

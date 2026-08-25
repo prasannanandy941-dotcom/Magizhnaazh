@@ -43,26 +43,46 @@ export const SmartBudgetPlanner: React.FC<SmartBudgetPlannerProps> = ({
     (b) => b.eventId === event.id && CONFIRMED_STATUSES.has(b.status)
   );
 
-  const totalSpent = confirmedBookings.reduce((acc, b) => acc + (b.agreedPrice || 0), 0);
+  // "Spent" is the money actually PAID to vendors so far (the advance the
+  // customer has handed over), not the full agreed order value. Only real money
+  // that has left the customer's pocket is deducted from the budget, so the
+  // remaining figure reflects what they still have to spend.
+  const totalSpent = confirmedBookings.reduce((acc, b) => acc + (b.advanceAmountPaid || 0), 0);
   const remainingBudget = event.totalBudget - totalSpent;
 
-  // Confirmed-order spend per category — drives each category row's Spent /
-  // Remaining / over-budget state from the same real money.
+  // Paid-so-far per category — drives each category row's Spent / Remaining /
+  // over-budget state from the same real money that's actually been paid.
   const spentByCategory: Record<string, number> = {};
   for (const b of confirmedBookings) {
-    spentByCategory[b.vendorCategory] = (spentByCategory[b.vendorCategory] || 0) + (b.agreedPrice || 0);
+    spentByCategory[b.vendorCategory] = (spentByCategory[b.vendorCategory] || 0) + (b.advanceAmountPaid || 0);
   }
 
   // Which real, confirmed vendor orders make up the spend — shown when the
   // customer taps the "Actual Spent" tile to drill in.
   const [spendExpanded, setSpendExpanded] = useState(false);
   const spendByCategory = confirmedBookings.reduce<
-    Record<string, { vendorName: string; bookingNumber: string; amount: number }[]>
+    Record<string, {
+      vendorName: string;
+      bookingNumber: string;
+      amount: number;
+      paid: number;
+      remaining: number;
+      items: { label: string; amount: number }[];
+    }[]>
   >((acc, b) => {
+    // Per-booking money split: the agreed total, how much the customer has
+    // actually paid so far (advance), and the balance still owed. remaining is
+    // derived from the agreed total minus what's paid so it always ties out even
+    // if the stored remainingAmount is stale.
+    const paid = b.advanceAmountPaid || 0;
     (acc[b.vendorCategory] ||= []).push({
       vendorName: b.vendorName,
       bookingNumber: b.bookingNumber,
       amount: b.agreedPrice,
+      paid,
+      remaining: Math.max(0, b.agreedPrice - paid),
+      // Vendor-entered itemisation of what the money was spent on, if any.
+      items: b.spendItems || [],
     });
     return acc;
   }, {});
@@ -160,7 +180,7 @@ export const SmartBudgetPlanner: React.FC<SmartBudgetPlannerProps> = ({
             ₹{totalSpent.toLocaleString('en-IN')}
           </div>
           <p className="text-xs text-slate-400 mt-2">
-            Full value of confirmed vendor orders — tap to see where it went
+            Money actually paid to vendors so far — tap to see the breakdown
           </p>
         </button>
 
@@ -189,7 +209,7 @@ export const SmartBudgetPlanner: React.FC<SmartBudgetPlannerProps> = ({
           ) : (
             <div className="space-y-4">
               {Object.entries(spendByCategory).map(([category, entries]) => {
-                const catTotal = entries.reduce((acc, e) => acc + e.amount, 0);
+                const catTotal = entries.reduce((acc, e) => acc + e.paid, 0);
                 return (
                   <div key={category}>
                     <div className="flex items-center justify-between mb-2">
@@ -198,11 +218,39 @@ export const SmartBudgetPlanner: React.FC<SmartBudgetPlannerProps> = ({
                     </div>
                     <ul className="space-y-1.5">
                       {entries.map((e) => (
-                        <li key={e.bookingNumber} className="flex items-center justify-between text-xs p-2.5 rounded-xl bg-slate-900/60 border border-slate-800">
-                          <span className="text-slate-200">
-                            {e.vendorName} <span className="text-slate-500">({e.bookingNumber})</span>
-                          </span>
-                          <span className="text-white font-semibold">₹{e.amount.toLocaleString('en-IN')}</span>
+                        <li key={e.bookingNumber} className="text-xs p-2.5 rounded-xl bg-slate-900/60 border border-slate-800">
+                          <div className="flex items-center justify-between">
+                            <span className="text-slate-200">
+                              {e.vendorName} <span className="text-slate-500">({e.bookingNumber})</span>
+                            </span>
+                            <span className="text-right">
+                              <span className="text-[10px] text-slate-500 block leading-none">Booking total</span>
+                              <span className="text-white font-semibold">₹{e.amount.toLocaleString('en-IN')}</span>
+                            </span>
+                          </div>
+
+                          {/* Payment split for this booking: what's been paid vs the balance still owed. */}
+                          <div className="mt-2 grid grid-cols-2 gap-2">
+                            <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                              <span className="text-[10px] font-bold uppercase text-emerald-300/80 block">Spent (paid)</span>
+                              <span className="text-emerald-300 font-bold">₹{e.paid.toLocaleString('en-IN')}</span>
+                            </div>
+                            <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                              <span className="text-[10px] font-bold uppercase text-amber-300/80 block">Remaining</span>
+                              <span className="text-amber-300 font-bold">₹{e.remaining.toLocaleString('en-IN')}</span>
+                            </div>
+                          </div>
+
+                          {e.items.length > 0 && (
+                            <ul className="mt-2 pl-3 border-l border-slate-700/70 space-y-1">
+                              {e.items.map((it, i) => (
+                                <li key={i} className="flex items-center justify-between text-[11px]">
+                                  <span className="text-slate-400">{it.label}</span>
+                                  <span className="text-slate-300">₹{it.amount.toLocaleString('en-IN')}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
                         </li>
                       ))}
                     </ul>

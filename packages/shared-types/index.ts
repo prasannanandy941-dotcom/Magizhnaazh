@@ -405,6 +405,11 @@ export interface Booking {
   // Reference images the customer uploaded for this booking (e.g. a decoration
   // style they want) — shown to the vendor so they know exactly what's expected.
   referenceImages?: string[];
+  // Vendor-entered itemisation of what the agreed money was spent on — e.g. a
+  // decorator's "Mandap flowers ₹40,000", "Stage lighting ₹20,000". Purely a
+  // breakdown of the total; the customer sees it under this vendor in the Smart
+  // Budget "Where Your Money Went" drill-down. Works for every vendor category.
+  spendItems?: { label: string; amount: number }[];
   createdAt: string;
 }
 

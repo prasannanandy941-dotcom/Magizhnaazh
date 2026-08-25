@@ -208,6 +208,19 @@ export function updateBookingStatus(token: string, bookingId: string, status: st
   });
 }
 
+// Save the vendor's line-item breakdown of what the booking money was spent on.
+// The customer sees this under the vendor in the Smart Budget drill-down.
+export function updateSpendBreakdown(
+  token: string,
+  bookingId: string,
+  spendItems: { label: string; amount: number }[]
+) {
+  return authedFetch(`/api/v1/bookings/${bookingId}/spend-breakdown`, token, {
+    method: 'PUT',
+    body: JSON.stringify({ spendItems }),
+  });
+}
+
 export interface VendorReviewsResponse {
   success: boolean;
   data?: { reviews: Review[]; averageRating: number; count: number };
