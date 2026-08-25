@@ -48,7 +48,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
       setOtpNotice(res.message || 'OTP sent successfully!');
       if (res._devOtp) {
         console.log(`[Dev Mode] Generated OTP: ${res._devOtp}`);
-        setOtpNotice(`OTP sent! (Dev Code: ${res._devOtp})`);
+        setOtpNotice(`Email delivery isn't set up yet — use this code to continue: ${res._devOtp}`);
       }
     } catch (err: any) {
       setError(err.message || 'Failed to send OTP. Please try again.');
@@ -70,7 +70,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
       setOtpNotice(res.message || 'Verification OTP sent to your email.');
       if (res._devOtp) {
         console.log(`[Dev Mode] Reset OTP: ${res._devOtp}`);
-        setOtpNotice(`OTP sent! (Dev Code: ${res._devOtp})`);
+        setOtpNotice(`Email delivery isn't set up yet — use this code to continue: ${res._devOtp}`);
       }
     } catch (err: any) {
       setError(err.message || 'Failed to send OTP. Please try again.');
