@@ -286,7 +286,6 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
                       <span className="text-[10px] uppercase font-bold text-slate-400 block">Starting From</span>
                       <span className="font-display font-extrabold text-xl text-amber-400">
                         ₹{vendor.startingPrice.toLocaleString('en-IN')}
-                        {vendor.category === 'Catering' ? <span className="text-xs text-slate-400 font-normal"> / plate</span> : ''}
                       </span>
                     </div>
 

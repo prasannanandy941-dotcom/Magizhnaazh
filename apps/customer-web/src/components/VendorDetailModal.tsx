@@ -1013,7 +1013,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
             <div className="text-white font-bold text-sm">
               {selectedPkg
                 ? <>{selectedPkg.packageName}{chosenTier ? ` — ${chosenTier.name}` : ''} — <span className="text-amber-400">₹{(effectivePkgPrice ?? 0).toLocaleString('en-IN')}{vendor.category === 'Security' ? ' per person' : vendor.category === 'Catering' && !chosenTier ? ' per plate' : ''}</span></>
-                : <span className="text-slate-400">No package — starting price ₹{(vendor.startingPrice || 0).toLocaleString('en-IN')}{vendor.category === 'Security' ? ' per person' : vendor.category === 'Catering' && !chosenTier ? ' per plate' : ''}</span>}
+                : <span className="text-slate-400">No package — starting price ₹{(vendor.startingPrice || 0).toLocaleString('en-IN')}</span>}
             </div>
             {customRequest && (
               <div className="mt-1 flex items-center gap-1 text-[11px] text-emerald-400 font-semibold">
