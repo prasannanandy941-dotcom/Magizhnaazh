@@ -69,7 +69,7 @@ EOT
       cat <<EOT >> "$env_file"
 MONGODB_URI=$MONGODB_BASE_URI/magizhnaazh_marketplace
 INTERNAL_API_SECRET=$INTERNAL_API_SECRET
-MARKETPLACE_SERVICE_URL=https://api.event-customer.com
+MARKETPLACE_SERVICE_URL=https://event-api.porulontech.com
 EOT
       ;;
     "event-budget-service")
