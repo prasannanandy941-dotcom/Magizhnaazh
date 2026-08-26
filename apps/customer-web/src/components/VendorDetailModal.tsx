@@ -1038,12 +1038,29 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
 
         <div className="px-6 py-4 border-t border-slate-800 bg-slate-900/80 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div>
-            <span className="text-[11px] font-bold text-slate-400 uppercase">Selected Package</span>
-            <div className="text-white font-bold text-sm">
-              {selectedPkg
-                ? <>{selectedPkg.packageName}{chosenTier ? ` — ${chosenTier.name}` : ''} — <span className="text-amber-400">₹{(effectivePkgPrice ?? 0).toLocaleString('en-IN')}{vendor.category === 'Security' ? ' per person' : vendor.category === 'Catering' && !chosenTier ? ' per plate' : ''}</span></>
-                : <span className="text-slate-400">No package — starting price ₹{(vendor.startingPrice || 0).toLocaleString('en-IN')}</span>}
-            </div>
+            {/* The chosen package/hall summary lives on the Packages tab only, so
+                each tab shows what belongs to it (options on the option tabs,
+                the package here). Other tabs show a neutral booking summary so
+                the Book button below is never orphaned. */}
+            {activeTab === 'packages' ? (
+              <>
+                <span className="text-[11px] font-bold text-slate-400 uppercase">Selected {vendor.category === 'Venue' ? 'Hall' : 'Package'}</span>
+                <div className="text-white font-bold text-sm">
+                  {selectedPkg
+                    ? <>{selectedPkg.packageName}{chosenTier ? ` — ${chosenTier.name}` : ''} — <span className="text-amber-400">₹{(effectivePkgPrice ?? 0).toLocaleString('en-IN')}{vendor.category === 'Security' ? ' per person' : vendor.category === 'Catering' && !chosenTier ? ' per plate' : ''}</span></>
+                    : <span className="text-slate-400">No package — starting price ₹{(vendor.startingPrice || 0).toLocaleString('en-IN')}</span>}
+                </div>
+              </>
+            ) : (
+              <>
+                <span className="text-[11px] font-bold text-slate-400 uppercase">Your Booking</span>
+                <div className="text-white font-bold text-sm">
+                  {selectedOptions.length > 0 || selectedPkg
+                    ? `${selectedOptions.length + (selectedPkg ? 1 : 0)} selection${selectedOptions.length + (selectedPkg ? 1 : 0) === 1 ? '' : 's'} — ready to book`
+                    : <span className="text-slate-400">Pick options or a package to book</span>}
+                </div>
+              </>
+            )}
             {customRequest && (
               <div className="mt-1 flex items-center gap-1 text-[11px] text-emerald-400 font-semibold">
                 <Check className="w-3 h-3" /> Your request will be shared with the vendor
