@@ -14,6 +14,9 @@ config.resolver.nodeModulesPaths = [
   path.resolve(projectRoot, 'node_modules'),
   path.resolve(workspaceRoot, 'node_modules'),
 ];
-config.resolver.disableHierarchicalLookup = true;
+// NOTE: leave hierarchical lookup ON. Some transitive deps (e.g. `color` ->
+// `simple-swizzle` -> `is-arrayish`) end up nested in a package's own
+// node_modules rather than hoisted to the root; disabling hierarchical lookup
+// makes Metro miss those and fail to resolve them.
 
 module.exports = config;
