@@ -58,7 +58,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
   };
 
   return (
-    <div className="relative min-h-screen text-slate-900 bg-gradient-to-br from-rose-50 via-white to-amber-50 flex items-center justify-center p-4 font-sans">
+    <div className="relative min-h-screen text-slate-100 flex items-center justify-center p-4 font-sans">
       <div className="fixed inset-0 -z-10">
         <FloralGoldBackground />
       </div>
