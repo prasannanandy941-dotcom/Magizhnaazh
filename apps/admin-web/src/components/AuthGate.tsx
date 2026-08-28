@@ -58,36 +58,36 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
   };
 
   return (
-    <div className="relative min-h-screen text-slate-100 flex items-center justify-center p-4 font-sans">
+    <div className="relative min-h-screen text-slate-900 bg-gradient-to-br from-rose-50 via-white to-amber-50 flex items-center justify-center p-4 font-sans">
       <div className="fixed inset-0 -z-10">
         <FloralGoldBackground />
       </div>
-      <div className="glass-card max-w-md w-full rounded-3xl border border-slate-800 shadow-2xl overflow-hidden">
-        <div className="px-6 py-6 border-b border-slate-800 bg-slate-900/60 flex items-center gap-3">
+      <div className="bg-white max-w-md w-full rounded-3xl border border-slate-200 shadow-2xl overflow-hidden">
+        <div className="px-6 py-6 border-b border-slate-200 bg-slate-50 flex items-center gap-3">
           <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-[#e85d8a] via-[#d4af37] to-[#b8336a] flex items-center justify-center font-bold text-white shadow-lg">
             <ShieldCheck className="w-6 h-6" />
           </div>
           <div>
-            <span className="font-display font-extrabold text-xl text-white block">Super Admin</span>
-            <span className="text-[10px] text-rose-400 font-bold uppercase tracking-wider">Governance & Microservices Portal</span>
+            <span className="font-display font-extrabold text-xl text-slate-900 block">Super Admin</span>
+            <span className="text-[10px] text-rose-500 font-bold uppercase tracking-wider">Governance & Microservices Portal</span>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className="block text-xs font-bold text-slate-400 mb-1.5">Admin Email</label>
+            <label className="block text-xs font-bold text-slate-600 mb-1.5">Admin Email</label>
             <input
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="admin@magizhnaazh.com"
-              className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm focus:outline-none focus:border-rose-500"
+              className="w-full p-3 rounded-xl bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 text-sm focus:outline-none focus:border-rose-500"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-400 mb-1.5">Password</label>
+            <label className="block text-xs font-bold text-slate-600 mb-1.5">Password</label>
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
@@ -95,13 +95,13 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full p-3 pr-11 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm focus:outline-none focus:border-rose-500"
+                className="w-full p-3 pr-11 rounded-xl bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 text-sm focus:outline-none focus:border-rose-500"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
-                className="absolute inset-y-0 right-0 px-3 flex items-center text-slate-400 hover:text-rose-400 transition-colors"
+                className="absolute inset-y-0 right-0 px-3 flex items-center text-slate-500 hover:text-rose-600 transition-colors"
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -109,7 +109,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
           </div>
 
           {error && (
-            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-semibold">
+            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
               {error}
             </div>
           )}
@@ -128,7 +128,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
           <p className="text-center text-[11px] text-slate-500">
             Demo login: admin@magizhnaazh.com / Passw0rd!
           </p>
-          <p className="text-center text-[10px] text-slate-600">
+          <p className="text-center text-[10px] text-slate-500">
             Admin accounts are provisioned by the platform team — there's no self-registration here.
           </p>
         </form>

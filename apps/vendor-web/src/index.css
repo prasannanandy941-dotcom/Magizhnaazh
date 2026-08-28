@@ -2,6 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ---------------------------------------------------------------------------
+   Light theme scoped to the vendor Sign In / Register screen (AuthGate root
+   carries `.auth-light`). The screen is otherwise built from dark slate
+   utilities; these remap just that screen's surfaces/text/borders to light.
+   Gradient CTAs use dark (text-slate-950) text, so nothing here fights them.
+--------------------------------------------------------------------------- */
+.auth-light .glass-card { background: #ffffff !important; border-color: #e2e8f0 !important; }
+.auth-light .text-white,
+.auth-light .text-slate-100 { color: #0f172a !important; }
+.auth-light .text-slate-400 { color: #475569 !important; }
+.auth-light .text-slate-500 { color: #64748b !important; }
+.auth-light .bg-slate-900 { background-color: #ffffff !important; }
+.auth-light .bg-slate-900\/60 { background-color: #f8fafc !important; }
+.auth-light .bg-slate-800 { background-color: #f1f5f9 !important; }
+.auth-light .bg-slate-700 { background-color: #e2e8f0 !important; }
+.auth-light .border-slate-800 { border-color: #e2e8f0 !important; }
+.auth-light .border-slate-700 { border-color: #cbd5e1 !important; }
+
 @layer utilities {
   .glass-card {
     background: rgba(15, 23, 42, 0.75);
