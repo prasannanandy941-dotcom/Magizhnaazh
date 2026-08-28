@@ -3,55 +3,45 @@ import {
   View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView,
   ActivityIndicator, KeyboardAvoidingView, Platform, Alert,
 } from 'react-native';
-import * as Google from 'expo-auth-session/providers/google';
-import * as WebBrowser from 'expo-web-browser';
+import {
+  GoogleSignin, isSuccessResponse, isErrorWithCode, statusCodes,
+} from '@react-native-google-signin/google-signin';
 import { useAuth } from '../auth';
 import * as api from '../api';
 import { colors, radius, space } from '../theme';
-import { GOOGLE_WEB_CLIENT_ID, GOOGLE_ANDROID_CLIENT_ID, GOOGLE_IOS_CLIENT_ID } from '../config';
-
-// Lets the browser-based Google flow hand control back to the app.
-WebBrowser.maybeCompleteAuthSession();
+import { GOOGLE_WEB_CLIENT_ID } from '../config';
 
 export default function LoginScreen() {
   const { login, register, loginWithGoogle } = useAuth();
-  const googleConfigured = !!GOOGLE_ANDROID_CLIENT_ID || !!GOOGLE_IOS_CLIENT_ID;
   const [googleBusy, setGoogleBusy] = useState(false);
 
-  const [gRequest, gResponse, gPromptAsync] = Google.useIdTokenAuthRequest({
-    webClientId: GOOGLE_WEB_CLIENT_ID,
-    androidClientId: GOOGLE_ANDROID_CLIENT_ID || undefined,
-    iosClientId: GOOGLE_IOS_CLIENT_ID || undefined,
-  });
-
+  // Native Google Sign-In: `webClientId` makes Google mint an ID token whose
+  // audience is our web client id — exactly what the backend verifies against.
   useEffect(() => {
-    if (gResponse?.type === 'success') {
-      const idToken = gResponse.params?.id_token;
-      if (idToken) {
-        setGoogleBusy(true);
-        loginWithGoogle(idToken)
-          .catch((e: any) => Alert.alert('Google sign-in failed', e.message || 'Please try again.'))
-          .finally(() => setGoogleBusy(false));
-      }
-    } else if (gResponse?.type === 'error') {
-      setGoogleBusy(false);
+    try {
+      GoogleSignin.configure({ webClientId: GOOGLE_WEB_CLIENT_ID });
+    } catch {
+      /* native module missing (running an old build) — button errors on tap */
     }
-  }, [gResponse]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   const onGoogle = async () => {
-    if (!googleConfigured) {
-      Alert.alert(
-        'Google sign-in not set up yet',
-        'This needs a development build + a Google Android client id. For now, use email + password or Sign Up.'
-      );
-      return;
-    }
     setGoogleBusy(true);
     try {
-      await gPromptAsync();
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      const res = await GoogleSignin.signIn();
+      if (!isSuccessResponse(res)) return; // cancelled
+      const idToken = res.data?.idToken;
+      if (!idToken) throw new Error('No ID token returned from Google.');
+      await loginWithGoogle(idToken);
+    } catch (e: any) {
+      if (isErrorWithCode(e) && e.code === statusCodes.SIGN_IN_CANCELLED) {
+        /* user cancelled — ignore */
+      } else {
+        Alert.alert('Google sign-in failed', e?.message || 'Please try again.');
+      }
     } finally {
-      // success is handled by the effect above; reset if the user cancelled.
-      setTimeout(() => setGoogleBusy(false), 500);
+      setGoogleBusy(false);
     }
   };
 

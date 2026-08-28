@@ -20,7 +20,13 @@
       "bundler": "metro"
     },
     "plugins": [
-      "expo-web-browser"
-    ]
+      "expo-web-browser",
+      "@react-native-google-signin/google-signin"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "0a90be42-573c-4ae3-bcd1-5a7f38396cf5"
+      }
+    }
   }
 }
