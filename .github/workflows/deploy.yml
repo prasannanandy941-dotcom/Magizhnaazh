@@ -28,11 +28,10 @@ jobs:
     steps:
       - name: Write SSH key (decode base64 → file)
         run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.VPS_SSH_KEY_B64 }}" | base64 -d > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
+          echo "${{ secrets.VPS_SSH_KEY_B64 }}" | base64 -d > "${{ github.workspace }}/deploy_key"
+          chmod 600 "${{ github.workspace }}/deploy_key"
           # Fail early with a clear message if the secret was empty/garbled.
-          head -1 ~/.ssh/deploy_key | grep -q "BEGIN OPENSSH PRIVATE KEY" \
+          head -1 "${{ github.workspace }}/deploy_key" | grep -q "BEGIN OPENSSH PRIVATE KEY" \
             || { echo "::error::VPS_SSH_KEY_B64 did not decode to a valid private key"; exit 1; }
 
       - name: Deploy over SSH
@@ -40,7 +39,7 @@ jobs:
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
-          key_path: ~/.ssh/deploy_key
+          key_path: ${{ github.workspace }}/deploy_key
           port: ${{ secrets.VPS_PORT || 22 }}
           command_timeout: 20m
           script: |
