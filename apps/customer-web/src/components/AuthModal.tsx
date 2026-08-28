@@ -193,20 +193,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {mode === 'signup' && (
             <div>
-              <label className="block text-xs font-bold text-slate-600 mb-1.5">Full Name</label>
+              <label className="block text-xs font-bold text-slate-800 mb-1.5">Full Name</label>
               <input
                 type="text"
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Felix Kumar"
-                className="w-full p-3 rounded-xl bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 text-sm focus:outline-none focus:border-indigo-500"
+                className="w-full p-3 rounded-xl bg-white border-2 border-slate-800 text-slate-900 placeholder:text-slate-500 text-sm focus:outline-none focus:border-indigo-500"
               />
             </div>
           )}
 
           <div>
-            <label className="block text-xs font-bold text-slate-600 mb-1.5">Email</label>
+            <label className="block text-xs font-bold text-slate-800 mb-1.5">Email</label>
             <div className="flex gap-2">
               <input
                 type="email"
@@ -214,7 +214,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
-                className="flex-1 p-3 rounded-xl bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 text-sm focus:outline-none focus:border-indigo-500"
+                className="flex-1 p-3 rounded-xl bg-white border-2 border-slate-800 text-slate-900 placeholder:text-slate-500 text-sm focus:outline-none focus:border-indigo-500"
               />
               {(mode === 'signup' || mode === 'forgot') && (
                 <button
@@ -234,7 +234,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) 
 
           {(mode === 'signup' || mode === 'forgot') && (
             <div>
-              <label className="block text-xs font-bold text-slate-600 mb-1.5">Verification Code (OTP)</label>
+              <label className="block text-xs font-bold text-slate-800 mb-1.5">Verification Code (OTP)</label>
               <input
                 type="text"
                 required
@@ -242,7 +242,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) 
                 onChange={(e) => setOtp(e.target.value)}
                 placeholder="Enter 6-digit OTP"
                 maxLength={6}
-                className="w-full p-3 rounded-xl bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 text-sm focus:outline-none focus:border-indigo-500 tracking-[0.25em] text-center font-mono font-bold"
+                className="w-full p-3 rounded-xl bg-white border-2 border-slate-800 text-slate-900 placeholder:text-slate-500 text-sm focus:outline-none focus:border-indigo-500 tracking-[0.25em] text-center font-mono font-bold"
               />
               <p className="text-[9px] text-slate-500 mt-1">Verification is required to proceed.</p>
             </div>
@@ -250,20 +250,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) 
 
           {mode === 'signup' && (
             <div>
-              <label className="block text-xs font-bold text-slate-600 mb-1.5">Phone (optional)</label>
+              <label className="block text-xs font-bold text-slate-800 mb-1.5">Phone (optional)</label>
               <input
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="+91 9840112233"
-                className="w-full p-3 rounded-xl bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 text-sm focus:outline-none focus:border-indigo-500"
+                className="w-full p-3 rounded-xl bg-white border-2 border-slate-800 text-slate-900 placeholder:text-slate-500 text-sm focus:outline-none focus:border-indigo-500"
               />
             </div>
           )}
 
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-xs font-bold text-slate-600">
+              <label className="block text-xs font-bold text-slate-800">
                 {mode === 'forgot' ? 'New Password' : 'Password'}
               </label>
               {mode === 'signin' && (
@@ -288,7 +288,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full p-3 pr-11 rounded-xl bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 text-sm focus:outline-none focus:border-indigo-500"
+                className="w-full p-3 pr-11 rounded-xl bg-white border-2 border-slate-800 text-slate-900 placeholder:text-slate-500 text-sm focus:outline-none focus:border-indigo-500"
               />
               <button
                 type="button"

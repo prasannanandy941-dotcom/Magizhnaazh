@@ -11,14 +11,15 @@
 .auth-light .glass-card { background: #ffffff !important; border-color: #e2e8f0 !important; }
 .auth-light .text-white,
 .auth-light .text-slate-100 { color: #0f172a !important; }
-.auth-light .text-slate-400 { color: #475569 !important; }
-.auth-light .text-slate-500 { color: #64748b !important; }
+.auth-light .text-slate-400 { color: #334155 !important; }
+.auth-light .text-slate-500 { color: #475569 !important; }
 .auth-light .bg-slate-900 { background-color: #ffffff !important; }
 .auth-light .bg-slate-900\/60 { background-color: #f8fafc !important; }
 .auth-light .bg-slate-800 { background-color: #f1f5f9 !important; }
 .auth-light .bg-slate-700 { background-color: #e2e8f0 !important; }
-.auth-light .border-slate-800 { border-color: #e2e8f0 !important; }
-.auth-light .border-slate-700 { border-color: #cbd5e1 !important; }
+/* Thick, dark borders so input boxes read clearly on the light background. */
+.auth-light .border-slate-800 { border-color: #1e293b !important; border-width: 2px !important; }
+.auth-light .border-slate-700 { border-color: #334155 !important; border-width: 2px !important; }
 
 @layer utilities {
   .glass-card {

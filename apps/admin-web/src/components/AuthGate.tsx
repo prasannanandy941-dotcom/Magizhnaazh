@@ -75,19 +75,19 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className="block text-xs font-bold text-slate-600 mb-1.5">Admin Email</label>
+            <label className="block text-xs font-bold text-slate-800 mb-1.5">Admin Email</label>
             <input
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="admin@magizhnaazh.com"
-              className="w-full p-3 rounded-xl bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 text-sm focus:outline-none focus:border-rose-500"
+              className="w-full p-3 rounded-xl bg-white border-2 border-slate-800 text-slate-900 placeholder:text-slate-500 text-sm focus:outline-none focus:border-rose-500"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-600 mb-1.5">Password</label>
+            <label className="block text-xs font-bold text-slate-800 mb-1.5">Password</label>
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
@@ -95,7 +95,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full p-3 pr-11 rounded-xl bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 text-sm focus:outline-none focus:border-rose-500"
+                className="w-full p-3 pr-11 rounded-xl bg-white border-2 border-slate-800 text-slate-900 placeholder:text-slate-500 text-sm focus:outline-none focus:border-rose-500"
               />
               <button
                 type="button"
