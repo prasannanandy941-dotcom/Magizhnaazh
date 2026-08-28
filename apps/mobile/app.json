@@ -3,9 +3,12 @@
     "name": "Magizhnaazh",
     "slug": "magizhnaazh",
     "version": "1.0.0",
+    "scheme": "magizhnaazh",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.porulontech.magizhnaazh"
@@ -15,6 +18,9 @@
     },
     "web": {
       "bundler": "metro"
-    }
+    },
+    "plugins": [
+      "expo-web-browser"
+    ]
   }
 }

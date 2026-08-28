@@ -60,6 +60,18 @@ export function sendOtp(email: string): Promise<{ message?: string; _devOtp?: st
   return request('/api/v1/auth/send-otp', { method: 'POST', body: { email } });
 }
 
+// Exchange a Google ID token (obtained on-device) for a Magizhnaazh session.
+// The backend verifies the token's audience against its GOOGLE_CLIENT_ID (the
+// web client id), so the id token must be minted for that web client id.
+export async function googleLogin(idToken: string): Promise<{ user: User; token: string }> {
+  const res = await request<AuthResponse>('/api/v1/auth/google', {
+    method: 'POST',
+    body: { credential: idToken, role: 'customer' },
+  });
+  if (!res.data) throw new Error(res.message || 'Google sign-in failed.');
+  return res.data;
+}
+
 export async function register(input: {
   name: string;
   email: string;

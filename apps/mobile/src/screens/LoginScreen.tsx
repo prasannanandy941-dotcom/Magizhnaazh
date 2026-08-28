@@ -1,14 +1,60 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView,
-  ActivityIndicator, KeyboardAvoidingView, Platform,
+  ActivityIndicator, KeyboardAvoidingView, Platform, Alert,
 } from 'react-native';
+import * as Google from 'expo-auth-session/providers/google';
+import * as WebBrowser from 'expo-web-browser';
 import { useAuth } from '../auth';
 import * as api from '../api';
 import { colors, radius, space } from '../theme';
+import { GOOGLE_WEB_CLIENT_ID, GOOGLE_ANDROID_CLIENT_ID, GOOGLE_IOS_CLIENT_ID } from '../config';
+
+// Lets the browser-based Google flow hand control back to the app.
+WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
-  const { login, register } = useAuth();
+  const { login, register, loginWithGoogle } = useAuth();
+  const googleConfigured = !!GOOGLE_ANDROID_CLIENT_ID || !!GOOGLE_IOS_CLIENT_ID;
+  const [googleBusy, setGoogleBusy] = useState(false);
+
+  const [gRequest, gResponse, gPromptAsync] = Google.useIdTokenAuthRequest({
+    webClientId: GOOGLE_WEB_CLIENT_ID,
+    androidClientId: GOOGLE_ANDROID_CLIENT_ID || undefined,
+    iosClientId: GOOGLE_IOS_CLIENT_ID || undefined,
+  });
+
+  useEffect(() => {
+    if (gResponse?.type === 'success') {
+      const idToken = gResponse.params?.id_token;
+      if (idToken) {
+        setGoogleBusy(true);
+        loginWithGoogle(idToken)
+          .catch((e: any) => Alert.alert('Google sign-in failed', e.message || 'Please try again.'))
+          .finally(() => setGoogleBusy(false));
+      }
+    } else if (gResponse?.type === 'error') {
+      setGoogleBusy(false);
+    }
+  }, [gResponse]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const onGoogle = async () => {
+    if (!googleConfigured) {
+      Alert.alert(
+        'Google sign-in not set up yet',
+        'This needs a development build + a Google Android client id. For now, use email + password or Sign Up.'
+      );
+      return;
+    }
+    setGoogleBusy(true);
+    try {
+      await gPromptAsync();
+    } finally {
+      // success is handled by the effect above; reset if the user cancelled.
+      setTimeout(() => setGoogleBusy(false), 500);
+    }
+  };
+
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -118,6 +164,19 @@ export default function LoginScreen() {
               : <Text style={styles.submitText}>{mode === 'signin' ? 'Sign In' : 'Create Account'}</Text>}
           </TouchableOpacity>
 
+          <View style={styles.orRow}>
+            <View style={styles.orLine} /><Text style={styles.orText}>OR</Text><View style={styles.orLine} />
+          </View>
+
+          <TouchableOpacity style={styles.googleBtn} onPress={onGoogle} disabled={googleBusy}>
+            {googleBusy ? <ActivityIndicator color={colors.text} /> : (
+              <>
+                <Text style={styles.googleG}>G</Text>
+                <Text style={styles.googleText}>Continue with Google</Text>
+              </>
+            )}
+          </TouchableOpacity>
+
           <Text style={styles.demo}>Demo: customer@magizhnaazh.com / Passw0rd!</Text>
         </View>
       </ScrollView>
@@ -182,5 +241,15 @@ const styles = StyleSheet.create({
     alignItems: 'center', marginTop: space.lg,
   },
   submitText: { color: colors.onPrimary, fontWeight: '800', fontSize: 15 },
+  orRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, marginTop: space.lg },
+  orLine: { flex: 1, height: 1, backgroundColor: colors.border },
+  orText: { color: colors.textMuted, fontSize: 11, fontWeight: '700' },
+  googleBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.sm,
+    borderWidth: 2, borderColor: colors.borderStrong, borderRadius: radius.md,
+    paddingVertical: 13, marginTop: space.lg, backgroundColor: colors.surface,
+  },
+  googleG: { color: '#4285F4', fontWeight: '900', fontSize: 18 },
+  googleText: { color: colors.text, fontWeight: '800', fontSize: 14 },
   demo: { textAlign: 'center', color: colors.textMuted, fontSize: 11, marginTop: space.md },
 });
