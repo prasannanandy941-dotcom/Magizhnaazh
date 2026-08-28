@@ -16,7 +16,7 @@ export const GOOGLE_WEB_CLIENT_ID =
 // com.porulontech.magizhnaazh + your dev build's SHA-1). Paste it here.
 // Until it's set, the Google button shows a "not configured yet" message and
 // email/password sign-in keeps working. See GOOGLE_SIGNIN_SETUP.md.
-export const GOOGLE_ANDROID_CLIENT_ID = '';
+export const GOOGLE_ANDROID_CLIENT_ID = '965066144511-6pji85k65umtvophe0j5ns60sald7qfl.apps.googleusercontent.com';
 
 // Optional: an iOS OAuth client id (only needed for iOS dev builds).
 export const GOOGLE_IOS_CLIENT_ID = '';
