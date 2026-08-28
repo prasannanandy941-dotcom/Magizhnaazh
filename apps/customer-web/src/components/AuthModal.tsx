@@ -4,6 +4,7 @@ import { User } from '../../../../packages/shared-types';
 import { checkPassword, isPasswordStrong } from '../../../../packages/shared-utils';
 import { login, register, sendOtp, forgotPassword, resetPassword, googleLogin } from '../api';
 import { GoogleSignInButton } from './GoogleSignInButton';
+import { FloralGoldBackground } from './FloralGoldBackground';
 
 interface AuthModalProps {
   onClose: () => void;
@@ -135,7 +136,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto bg-slate-900/40 backdrop-blur-md">
+    <div className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto">
+      {/* Same dark floral backdrop as the vendor/admin login pages, covering the
+          app behind so the sign-up sits on the branded background, not the
+          marketplace. */}
+      <div className="fixed inset-0 -z-10">
+        <FloralGoldBackground />
+      </div>
       <div className="bg-white max-w-md w-full rounded-3xl border border-slate-200 shadow-2xl overflow-hidden my-auto">
         <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
           <div className="flex items-center gap-2">
