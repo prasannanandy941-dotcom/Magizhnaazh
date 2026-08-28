@@ -125,7 +125,7 @@ function VendorCard({ vendor, onPress }: { vendor: Vendor; onPress: () => void }
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
+  container: { flex: 1, backgroundColor: 'transparent' },
   searchWrap: { paddingHorizontal: space.lg, paddingTop: space.md },
   search: {
     borderWidth: 2, borderColor: colors.borderStrong, borderRadius: radius.md,

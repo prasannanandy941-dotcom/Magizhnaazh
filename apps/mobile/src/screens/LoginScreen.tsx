@@ -200,7 +200,7 @@ function Field(props: {
 }
 
 const styles = StyleSheet.create({
-  scroll: { flexGrow: 1, justifyContent: 'center', padding: space.lg, backgroundColor: colors.bg },
+  scroll: { flexGrow: 1, justifyContent: 'center', padding: space.lg, backgroundColor: 'transparent' },
   brand: { alignItems: 'center', marginBottom: space.xl },
   brandTitle: { fontSize: 30, fontWeight: '800', color: colors.primary },
   brandSub: { fontSize: 13, color: colors.textMuted, marginTop: 4, fontWeight: '600' },

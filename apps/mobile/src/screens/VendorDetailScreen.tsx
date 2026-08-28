@@ -57,8 +57,8 @@ export default function VendorDetailScreen() {
   const advance = advanceFor(vendor, price);
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg }}>
-    <ScrollView style={{ backgroundColor: colors.bg }} contentContainerStyle={{ paddingBottom: 40 }}>
+    <View style={{ flex: 1, backgroundColor: 'transparent' }}>
+    <ScrollView style={{ backgroundColor: 'transparent' }} contentContainerStyle={{ paddingBottom: 40 }}>
       {gallery.length > 0 && (
         <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
           {gallery.map((uri, i) => (

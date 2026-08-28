@@ -1,9 +1,10 @@
 import React from 'react';
 import { View, Text, ActivityIndicator } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useAuth } from './auth';
+import { FloralBackground } from './components/FloralBackground';
 import type { RootStackParamList, AppTabParamList } from './navTypes';
 import LoginScreen from './screens/LoginScreen';
 import MarketplaceScreen from './screens/MarketplaceScreen';
@@ -22,6 +23,12 @@ const header = {
   headerTitleStyle: { fontWeight: '800' as const },
 };
 
+// Transparent so the FloralBackground shows through behind every screen.
+const navTheme = {
+  ...DefaultTheme,
+  colors: { ...DefaultTheme.colors, background: 'transparent' },
+};
+
 function tabIcon(emoji: string) {
   return ({ focused }: { focused: boolean }) => (
     <Text style={{ fontSize: 18, opacity: focused ? 1 : 0.5 }}>{emoji}</Text>
@@ -33,6 +40,7 @@ function Tabs() {
     <Tab.Navigator
       screenOptions={{
         ...header,
+        sceneStyle: { backgroundColor: 'transparent' },
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.border },
@@ -58,19 +66,22 @@ export function RootNavigation() {
   }
 
   return (
-    <NavigationContainer>
-      {user ? (
-        <Stack.Navigator screenOptions={header}>
-          <Stack.Screen name="Tabs" component={Tabs} options={{ headerShown: false }} />
-          <Stack.Screen
-            name="VendorDetail"
-            component={VendorDetailScreen}
-            options={({ route }) => ({ title: route.params.vendorName || 'Vendor' })}
-          />
-        </Stack.Navigator>
-      ) : (
-        <LoginScreen />
-      )}
-    </NavigationContainer>
+    <View style={{ flex: 1 }}>
+      <FloralBackground />
+      <NavigationContainer theme={navTheme}>
+        {user ? (
+          <Stack.Navigator screenOptions={{ ...header, contentStyle: { backgroundColor: 'transparent' } }}>
+            <Stack.Screen name="Tabs" component={Tabs} options={{ headerShown: false }} />
+            <Stack.Screen
+              name="VendorDetail"
+              component={VendorDetailScreen}
+              options={({ route }) => ({ title: route.params.vendorName || 'Vendor' })}
+            />
+          </Stack.Navigator>
+        ) : (
+          <LoginScreen />
+        )}
+      </NavigationContainer>
+    </View>
   );
 }

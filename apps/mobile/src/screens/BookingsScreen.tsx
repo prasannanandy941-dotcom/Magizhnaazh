@@ -40,7 +40,7 @@ export default function BookingsScreen() {
 
   return (
     <FlatList
-      style={{ backgroundColor: colors.bg }}
+      style={{ backgroundColor: 'transparent' }}
       data={bookings}
       keyExtractor={(b) => b.id}
       contentContainerStyle={{ padding: space.lg, gap: space.md, flexGrow: 1 }}

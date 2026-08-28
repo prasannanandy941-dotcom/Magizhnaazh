@@ -34,7 +34,7 @@ export default function EventsScreen() {
   useEffect(() => { load(); }, [load]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+    <View style={{ flex: 1, backgroundColor: 'transparent' }}>
       {loading ? (
         <ActivityIndicator style={{ marginTop: 40 }} color={colors.primary} size="large" />
       ) : (

@@ -8,7 +8,7 @@ export default function ProfileScreen() {
   const { user, logout } = useAuth();
 
   return (
-    <ScrollView style={{ backgroundColor: colors.bg }} contentContainerStyle={{ padding: space.lg }}>
+    <ScrollView style={{ backgroundColor: 'transparent' }} contentContainerStyle={{ padding: space.lg }}>
       <View style={styles.avatarWrap}>
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>{(user?.name || '?').charAt(0).toUpperCase()}</Text>
