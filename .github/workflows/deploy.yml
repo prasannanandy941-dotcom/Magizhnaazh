@@ -5,11 +5,12 @@ name: Deploy to VPS
 # frontend apps, and restarts the backend services under pm2.
 #
 # Required GitHub repo Secrets (Settings → Secrets and variables → Actions):
-#   VPS_HOST     – server IP or hostname (e.g. 163.128.113.77)
-#   VPS_USER     – SSH user (e.g. root)
-#   VPS_SSH_KEY  – the PRIVATE SSH key whose public half is in the VPS's
-#                  ~/.ssh/authorized_keys
-#   VPS_PORT     – (optional) SSH port; defaults to 22 if unset
+#   VPS_HOST         – server IP or hostname (e.g. 163.128.113.77)
+#   VPS_USER         – SSH user (e.g. root)
+#   VPS_SSH_KEY_B64  – the PRIVATE SSH key, base64-encoded to a single line so
+#                      the value has no line breaks to get mangled on copy.
+#                      Generate on the VPS with:  base64 -w0 /root/.ssh/gh_deploy
+#   VPS_PORT         – SSH port (this server uses 2244)
 
 on:
   push:
@@ -25,12 +26,21 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      - name: Write SSH key (decode base64 → file)
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_KEY_B64 }}" | base64 -d > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          # Fail early with a clear message if the secret was empty/garbled.
+          head -1 ~/.ssh/deploy_key | grep -q "BEGIN OPENSSH PRIVATE KEY" \
+            || { echo "::error::VPS_SSH_KEY_B64 did not decode to a valid private key"; exit 1; }
+
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
+          key_path: ~/.ssh/deploy_key
           port: ${{ secrets.VPS_PORT || 22 }}
           command_timeout: 20m
           script: |
