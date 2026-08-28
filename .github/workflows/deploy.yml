@@ -1,0 +1,56 @@
+name: Deploy to VPS
+
+# Push-to-deploy: every push to `main` (and the manual "Run workflow" button)
+# SSHes into the VPS, pulls the new code, reinstalls deps, rebuilds the three
+# frontend apps, and restarts the backend services under pm2.
+#
+# Required GitHub repo Secrets (Settings → Secrets and variables → Actions):
+#   VPS_HOST     – server IP or hostname (e.g. 163.128.113.77)
+#   VPS_USER     – SSH user (e.g. root)
+#   VPS_SSH_KEY  – the PRIVATE SSH key whose public half is in the VPS's
+#                  ~/.ssh/authorized_keys
+#   VPS_PORT     – (optional) SSH port; defaults to 22 if unset
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+# Never let two deploys run at once (a later push cancels an in-flight deploy).
+concurrency:
+  group: vps-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          command_timeout: 20m
+          script: |
+            set -e
+            cd /var/www/magizhnaazh
+
+            echo "==> Pulling latest code"
+            git pull origin main
+
+            echo "==> Installing dependencies (workspaces)"
+            npm install
+
+            echo "==> Building frontend apps"
+            npm run build:all
+
+            echo "==> Restarting backend services (magizh-* only)"
+            for a in magizh-auth magizh-gateway magizh-marketplace magizh-booking \
+                     magizh-event-budget magizh-invitation magizh-guest-feedback magizh-monitor; do
+              pm2 restart "$a" --update-env || echo "  (skip: $a not found)"
+            done
+            pm2 save
+
+            echo "==> Deploy complete"

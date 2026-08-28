@@ -7,6 +7,14 @@ echo "=========================================================="
 echo "   Generating Production Environment Configurations       "
 echo "=========================================================="
 
+# JWT_SECRET MUST be identical across every service — each service verifies the
+# Authorization Bearer token independently (packages/shared-utils/auth.ts), so if
+# auth-service signs with one secret and another service checks with a different
+# one, every authenticated call 401s. In the vendor app that surfaces as
+# "register business succeeds but drops you back to Sign In" (createVendor gets a
+# 401 and api.ts wipes the token + reloads). This script writes ONE generated
+# value to all services, which is correct — do NOT commit a divergent
+# services/auth-service/.env that would overwrite auth's copy on deploy.
 JWT_SECRET=$(openssl rand -hex 32)
 INTERNAL_API_SECRET=$(openssl rand -hex 32)
 
