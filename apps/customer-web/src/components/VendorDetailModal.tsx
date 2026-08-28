@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Star, MapPin, Check, ShieldCheck, Upload, Calendar as CalendarIcon, MessageSquare, Send, CreditCard, Sparkles, Camera, Bus, Flame, Gift, ListChecks, Phone, Copy, Clock, RefreshCw } from 'lucide-react';
+import { X, Star, MapPin, Check, ShieldCheck, Upload, Calendar as CalendarIcon, MessageSquare, Send, CreditCard, Sparkles, Camera, Bus, Flame, Gift, ListChecks, Phone, Copy, Clock, RefreshCw, Plus, Maximize2 } from 'lucide-react';
 import { Vendor } from '../../../../packages/shared-types';
 import { fetchVendorById, uploadReferenceImage } from '../api';
 import { PortfolioGrid } from './Portfolio';
@@ -251,6 +251,11 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
   // Reference images the customer uploads for this vendor — these travel with
   // the booking so the vendor sees exactly what the customer wants.
   const [customerUploads, setCustomerUploads] = useState<string[]>([]);
+  // Gallery images the customer picks ("I want a design like this one"). They're
+  // sent to the vendor as reference images alongside the customer's own uploads.
+  const [selectedGalleryImages, setSelectedGalleryImages] = useState<string[]>([]);
+  const toggleGalleryImage = (img: string) =>
+    setSelectedGalleryImages((prev) => (prev.includes(img) ? prev.filter((x) => x !== img) : [...prev, img]));
 
   const handleLocalUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -918,17 +923,61 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                 </div>
               ))}
 
+              {vendor.galleryImages.length > 0 && (
+                <p className="text-xs text-slate-400">
+                  Tap <span className="text-indigo-300 font-semibold">View</span> to see a design full-screen, or <span className="text-emerald-300 font-semibold">Select</span> the ones you like — your picks are sent to <span className="text-amber-400 font-semibold">{vendor.businessName}</span> with your booking.
+                </p>
+              )}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {vendor.galleryImages.map((img, idx) => (
-                  <div
-                    key={idx}
-                    onClick={() => { setSelectedImage(img); setLightboxImage(img); }}
-                    className="h-40 rounded-xl overflow-hidden bg-slate-900 border border-slate-800 cursor-pointer hover:border-indigo-500 transition-colors"
-                  >
-                    <img src={img} alt={`Gallery ${idx}`} className="w-full h-full object-cover" />
-                  </div>
-                ))}
+                {vendor.galleryImages.map((img, idx) => {
+                  const picked = selectedGalleryImages.includes(img);
+                  return (
+                    <div
+                      key={idx}
+                      className={`relative h-40 rounded-xl overflow-hidden bg-slate-900 border transition-colors ${
+                        picked ? 'border-emerald-500 ring-2 ring-emerald-500/40' : 'border-slate-800 hover:border-indigo-500'
+                      }`}
+                    >
+                      <img src={img} alt={`Gallery ${idx}`} className="w-full h-full object-cover" />
+
+                      {picked && (
+                        <span className="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-bold shadow">
+                          <Check className="w-3 h-3" /> Selected
+                        </span>
+                      )}
+
+                      {/* View (lightbox) + Select toggle live in a bottom bar so
+                          the two actions are always distinct and tappable. */}
+                      <div className="absolute inset-x-0 bottom-0 flex items-stretch gap-px bg-gradient-to-t from-slate-950/90 to-transparent p-2 pt-6">
+                        <button
+                          type="button"
+                          onClick={() => { setSelectedImage(img); setLightboxImage(img); }}
+                          className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-l-lg bg-slate-900/80 hover:bg-slate-800 text-white text-[11px] font-semibold transition-colors"
+                        >
+                          <Maximize2 className="w-3 h-3" /> View
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => toggleGalleryImage(img)}
+                          aria-pressed={picked}
+                          className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-r-lg text-[11px] font-bold transition-colors ${
+                            picked ? 'bg-emerald-600 hover:bg-emerald-500 text-white' : 'bg-indigo-600/90 hover:bg-indigo-500 text-white'
+                          }`}
+                        >
+                          {picked ? <><Check className="w-3 h-3" /> Selected</> : <><Plus className="w-3 h-3" /> Select</>}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
+
+              {selectedGalleryImages.length > 0 && (
+                <div className="px-1 py-2 flex items-center gap-2 text-xs font-semibold text-emerald-300">
+                  <Check className="w-3.5 h-3.5" />
+                  {selectedGalleryImages.length} design{selectedGalleryImages.length === 1 ? '' : 's'} selected — sent to the vendor with your booking.
+                </div>
+              )}
             </div>
           )}
 
@@ -1218,7 +1267,12 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                       const combined = [...selectedOptions, ...tierLabel];
                       return combined.length > 0 ? combined : undefined;
                     })(),
-                    customerUploads.length > 0 ? customerUploads : undefined
+                    (() => {
+                      // Send both the customer's own uploads AND any gallery
+                      // designs they selected as reference images to the vendor.
+                      const refs = [...customerUploads, ...selectedGalleryImages];
+                      return refs.length > 0 ? refs : undefined;
+                    })()
                   );
                   // Retire the QR the customer just paid against and roll a
                   // fresh session so the same code can't be reused.
