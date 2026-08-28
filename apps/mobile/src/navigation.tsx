@@ -1,0 +1,74 @@
+import React from 'react';
+import { View, Text, ActivityIndicator } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useAuth } from './auth';
+import type { RootStackParamList, AppTabParamList } from './navTypes';
+import LoginScreen from './screens/LoginScreen';
+import MarketplaceScreen from './screens/MarketplaceScreen';
+import VendorDetailScreen from './screens/VendorDetailScreen';
+import BookingsScreen from './screens/BookingsScreen';
+import ProfileScreen from './screens/ProfileScreen';
+import { colors } from './theme';
+
+const Stack = createNativeStackNavigator<RootStackParamList>();
+const Tab = createBottomTabNavigator<AppTabParamList>();
+
+const header = {
+  headerStyle: { backgroundColor: colors.headerBg },
+  headerTintColor: colors.headerText,
+  headerTitleStyle: { fontWeight: '800' as const },
+};
+
+function tabIcon(emoji: string) {
+  return ({ focused }: { focused: boolean }) => (
+    <Text style={{ fontSize: 18, opacity: focused ? 1 : 0.5 }}>{emoji}</Text>
+  );
+}
+
+function Tabs() {
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        ...header,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textMuted,
+        tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.border },
+      }}
+    >
+      <Tab.Screen name="Marketplace" component={MarketplaceScreen} options={{ title: 'Explore', tabBarIcon: tabIcon('🔍') }} />
+      <Tab.Screen name="Bookings" component={BookingsScreen} options={{ title: 'My Events', tabBarIcon: tabIcon('📅') }} />
+      <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profile', tabBarIcon: tabIcon('👤') }} />
+    </Tab.Navigator>
+  );
+}
+
+export function RootNavigation() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg }}>
+        <ActivityIndicator color={colors.primary} size="large" />
+      </View>
+    );
+  }
+
+  return (
+    <NavigationContainer>
+      {user ? (
+        <Stack.Navigator screenOptions={header}>
+          <Stack.Screen name="Tabs" component={Tabs} options={{ headerShown: false }} />
+          <Stack.Screen
+            name="VendorDetail"
+            component={VendorDetailScreen}
+            options={({ route }) => ({ title: route.params.vendorName || 'Vendor' })}
+          />
+        </Stack.Navigator>
+      ) : (
+        <LoginScreen />
+      )}
+    </NavigationContainer>
+  );
+}

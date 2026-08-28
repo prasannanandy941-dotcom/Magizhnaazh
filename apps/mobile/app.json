@@ -1,0 +1,20 @@
+{
+  "expo": {
+    "name": "Magizhnaazh",
+    "slug": "magizhnaazh",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.porulontech.magizhnaazh"
+    },
+    "android": {
+      "package": "com.porulontech.magizhnaazh"
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}
