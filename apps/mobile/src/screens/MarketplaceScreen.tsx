@@ -9,7 +9,12 @@ import type { Vendor } from '../types';
 import type { RootNav } from '../navTypes';
 import { colors, radius, space } from '../theme';
 
-const CATEGORIES = ['All', 'Venue', 'Catering', 'Media', 'Decoration', 'Makeup', 'Transport', 'Printing'];
+const CATEGORIES = [
+  'All', 'Venue', 'Catering', 'Media', 'Decoration', 'Makeup & Beauty', 'Transport',
+  'Pujari/Priest', 'Invitation', 'Printing', 'Return Gifts', 'Entertainment', 'Music/DJ',
+  'Lighting', 'Flowers', 'Mehendi', 'Event Host/Anchor', 'Security', 'Cleaning',
+  'Rental Equipment', 'Utensils for Rent', 'Wedding Planner', 'Corporate Event Services',
+];
 
 export default function MarketplaceScreen() {
   const nav = useNavigation<RootNav>();
@@ -91,7 +96,8 @@ export default function MarketplaceScreen() {
 }
 
 function VendorCard({ vendor, onPress }: { vendor: Vendor; onPress: () => void }) {
-  const img = vendor.coverImage || vendor.galleryImages?.[0];
+  const img = vendor.galleryImages?.[0];
+  const city = vendor.location?.city;
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
       {img ? (
@@ -106,11 +112,11 @@ function VendorCard({ vendor, onPress }: { vendor: Vendor; onPress: () => void }
           <Text style={styles.cardTitle} numberOfLines={1}>{vendor.businessName}</Text>
           {vendor.isVerified && <Text style={styles.verified}>✓ Verified</Text>}
         </View>
-        <Text style={styles.cardMeta}>{vendor.category} • {vendor.city}</Text>
+        <Text style={styles.cardMeta}>{vendor.category}{city ? ` • ${city}` : ''}</Text>
         <View style={styles.cardBottomRow}>
           <Text style={styles.price}>From ₹{(vendor.startingPrice || 0).toLocaleString('en-IN')}</Text>
-          {typeof vendor.rating === 'number' && vendor.rating > 0 && (
-            <Text style={styles.rating}>★ {vendor.rating.toFixed(1)}</Text>
+          {typeof vendor.ratingAverage === 'number' && vendor.ratingAverage > 0 && (
+            <Text style={styles.rating}>★ {vendor.ratingAverage.toFixed(1)}</Text>
           )}
         </View>
       </View>

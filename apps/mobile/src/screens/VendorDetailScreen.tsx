@@ -37,7 +37,8 @@ export default function VendorDetailScreen() {
     return <View style={styles.center}><Text style={styles.error}>{error || 'Vendor not found.'}</Text></View>;
   }
 
-  const gallery = vendor.galleryImages ?? (vendor.coverImage ? [vendor.coverImage] : []);
+  const gallery = vendor.galleryImages ?? [];
+  const city = vendor.location?.city;
 
   return (
     <ScrollView style={{ backgroundColor: colors.bg }} contentContainerStyle={{ paddingBottom: space.xl }}>
@@ -54,12 +55,12 @@ export default function VendorDetailScreen() {
           <Text style={styles.title}>{vendor.businessName}</Text>
           {vendor.isVerified && <Text style={styles.verified}>✓ Verified</Text>}
         </View>
-        <Text style={styles.meta}>{vendor.category} • {vendor.city}</Text>
+        <Text style={styles.meta}>{vendor.category}{city ? ` • ${city}` : ''}</Text>
 
         <View style={styles.statRow}>
           <Text style={styles.price}>From ₹{(vendor.startingPrice || 0).toLocaleString('en-IN')}</Text>
-          {typeof vendor.rating === 'number' && vendor.rating > 0 && (
-            <Text style={styles.rating}>★ {vendor.rating.toFixed(1)}{vendor.reviewCount ? ` (${vendor.reviewCount})` : ''}</Text>
+          {typeof vendor.ratingAverage === 'number' && vendor.ratingAverage > 0 && (
+            <Text style={styles.rating}>★ {vendor.ratingAverage.toFixed(1)}{vendor.reviewCount ? ` (${vendor.reviewCount})` : ''}</Text>
           )}
         </View>
 

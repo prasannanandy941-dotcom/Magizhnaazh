@@ -22,16 +22,22 @@ export interface VendorPackage {
   images?: string[];
 }
 
+export interface LocationPoint {
+  city?: string;
+  address?: string;
+  district?: string;
+  state?: string;
+}
+
 export interface Vendor {
   id: string;
   businessName: string;
   category: string;
-  city: string;
+  location?: LocationPoint;
   description?: string;
   startingPrice: number;
-  rating?: number;
+  ratingAverage?: number;
   reviewCount?: number;
-  coverImage?: string;
   galleryImages?: string[];
   packages?: VendorPackage[];
   isVerified?: boolean;
