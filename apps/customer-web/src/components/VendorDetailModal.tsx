@@ -141,6 +141,30 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
   const rateOptionLabel = (group: string, item: { name: string; price?: number; note?: string }) =>
     `${group}: ${item.name}${item.price ? ` — ₹${item.price.toLocaleString('en-IN')}` : ''}${item.note ? ` (${item.note})` : ''}`;
 
+  // All picks (options, service rates, amenity rates, themes…) share one flat
+  // `selectedOptions` list, and the booking sends that whole list so the vendor
+  // sees every selection. For DISPLAY only, we split it back by which tab a pick
+  // came from, so the "Your Selected Options" bar on each tab shows just that
+  // tab's own selections (e.g. Options picks under Options, Print Items rates
+  // under Print Items) instead of everything at once.
+  const serviceKeySet = new Set<string>();
+  (vendor.offeredOptions || []).forEach((o) => {
+    const items = vendor.offeredOptionItems?.[o] || [];
+    if (items.length > 0) items.forEach((item) => serviceKeySet.add(rateOptionLabel(o, item)));
+    else serviceKeySet.add(o);
+  });
+  const amenityKeySet = new Set<string>();
+  amenityRateGroups.forEach(([group, list]) =>
+    list.forEach((item) => amenityKeySet.add(rateOptionLabel(group, item)))
+  );
+  const selectionsForActiveTab = selectedOptions.filter((opt) => {
+    if (activeTab === 'services') return serviceKeySet.has(opt);
+    if (activeTab === 'amenities') return amenityKeySet.has(opt);
+    // The remaining option-style tabs (options/themes/looks/fleet/ceremonies/
+    // gifts) use plain labels — show whatever isn't a service/amenity rate key.
+    return !serviceKeySet.has(opt) && !amenityKeySet.has(opt);
+  });
+
   // Free-text request tied to this specific vendor — travels with the
   // booking as specialInstructions, so it actually reaches the vendor
   // (unlike the old marketplace-level boxes, which only ever saved locally).
@@ -1016,7 +1040,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
           </div>
         )}
 
-        {selectedOptions.length > 0 && ['themes', 'looks', 'fleet', 'ceremonies', 'gifts', 'options', 'services', 'amenities'].includes(activeTab) && (
+        {selectionsForActiveTab.length > 0 && ['themes', 'looks', 'fleet', 'ceremonies', 'gifts', 'options', 'services', 'amenities'].includes(activeTab) && (
           <div className="px-6 py-4 border-t border-slate-800 bg-emerald-950/20">
             <div className="flex items-center justify-between mb-2">
               <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-300 uppercase">
@@ -1024,7 +1048,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
               </span>
             </div>
             <div className="flex flex-wrap gap-2">
-              {selectedOptions.map((opt) => (
+              {selectionsForActiveTab.map((opt) => (
                 <span
                   key={opt}
                   className="flex items-center gap-1.5 pl-3 pr-2 py-1.5 rounded-full bg-emerald-600/20 border border-emerald-500/40 text-emerald-200 text-xs font-semibold"
