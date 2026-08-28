@@ -42,6 +42,19 @@ export interface Vendor {
   packages?: VendorPackage[];
   isVerified?: boolean;
   contactPhone?: string;
+  upiId?: string;
+  policies?: { advancePercentage?: number; advanceAmount?: number };
+}
+
+export interface EventItem {
+  id: string;
+  title: string;
+  eventType: string;
+  date: string;
+  location?: { city?: string };
+  guestCount: number;
+  totalBudget: number;
+  spentBudget: number;
 }
 
 export interface Booking {

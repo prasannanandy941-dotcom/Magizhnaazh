@@ -8,6 +8,7 @@ import type { RootStackParamList, AppTabParamList } from './navTypes';
 import LoginScreen from './screens/LoginScreen';
 import MarketplaceScreen from './screens/MarketplaceScreen';
 import VendorDetailScreen from './screens/VendorDetailScreen';
+import EventsScreen from './screens/EventsScreen';
 import BookingsScreen from './screens/BookingsScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import { colors } from './theme';
@@ -38,7 +39,8 @@ function Tabs() {
       }}
     >
       <Tab.Screen name="Marketplace" component={MarketplaceScreen} options={{ title: 'Explore', tabBarIcon: tabIcon('🔍') }} />
-      <Tab.Screen name="Bookings" component={BookingsScreen} options={{ title: 'My Events', tabBarIcon: tabIcon('📅') }} />
+      <Tab.Screen name="Events" component={EventsScreen} options={{ title: 'Events', tabBarIcon: tabIcon('📅') }} />
+      <Tab.Screen name="Bookings" component={BookingsScreen} options={{ title: 'Bookings', tabBarIcon: tabIcon('🧾') }} />
       <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profile', tabBarIcon: tabIcon('👤') }} />
     </Tab.Navigator>
   );

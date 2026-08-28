@@ -1,5 +1,5 @@
 import { GATEWAY_URL } from './config';
-import type { User, Vendor, Booking } from './types';
+import type { User, Vendor, Booking, EventItem } from './types';
 
 // --- low-level fetch helpers ------------------------------------------------
 
@@ -103,8 +103,52 @@ export async function fetchVendorById(id: string): Promise<Vendor> {
 // --- bookings ---------------------------------------------------------------
 
 interface BookingsListResponse { success: boolean; data?: { bookings: Booking[] } }
+interface BookingResponse { success: boolean; message?: string; data?: { booking: Booking } }
 
 export async function fetchMyBookings(token: string): Promise<Booking[]> {
   const res = await request<BookingsListResponse>('/api/v1/bookings', { token });
   return res.data?.bookings ?? [];
+}
+
+// --- events -----------------------------------------------------------------
+
+interface EventsListResponse { success: boolean; data?: { events: EventItem[] } }
+interface EventResponse { success: boolean; message?: string; data?: { event: EventItem } }
+
+export async function fetchEvents(token: string): Promise<EventItem[]> {
+  const res = await request<EventsListResponse>('/api/v1/events', { token });
+  return res.data?.events ?? [];
+}
+
+export async function createEvent(token: string, input: {
+  title: string;
+  eventType: string;
+  city: string;
+  date: string;
+  guestCount: number;
+  totalBudget: number;
+}): Promise<EventItem> {
+  const res = await request<EventResponse>('/api/v1/events', { method: 'POST', token, body: input });
+  if (!res.data?.event) throw new Error(res.message || 'Could not create event.');
+  return res.data.event;
+}
+
+// Create a booking for a vendor against an event. `advancePaymentClaimed` marks
+// that the customer says they've paid the advance — the vendor still verifies
+// and confirms it on their side (booking lands as pending).
+export async function createBooking(token: string, input: {
+  vendorId: string;
+  vendorName?: string;
+  vendorCategory?: string;
+  eventId: string;
+  packageId?: string;
+  packageName?: string;
+  price: number;
+  eventDate?: string;
+  notes?: string;
+  advancePaymentClaimed?: boolean;
+}): Promise<Booking> {
+  const res = await request<BookingResponse>('/api/v1/bookings/quote', { method: 'POST', token, body: input });
+  if (!res.data?.booking) throw new Error(res.message || 'Booking failed.');
+  return res.data.booking;
 }

@@ -7,6 +7,7 @@ export type RootStackParamList = {
 
 export type AppTabParamList = {
   Marketplace: undefined;
+  Events: undefined;
   Bookings: undefined;
   Profile: undefined;
 };
