@@ -6,7 +6,7 @@ import {
 import { useAuth } from '../auth';
 import * as api from '../api';
 import type { EventItem } from '../types';
-import { colors, radius, space } from '../theme';
+import { colors, radius, space, fonts } from '../theme';
 
 const EVENT_TYPES = ['Wedding', 'Reception', 'Engagement', 'Birthday', 'Baby Shower', 'Housewarming', 'Corporate', 'Other'];
 
@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
   empty: { textAlign: 'center', color: colors.textMuted, marginTop: 60, lineHeight: 22 },
   card: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: space.md, borderWidth: 1, borderColor: colors.border },
   topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  title: { fontSize: 16, fontWeight: '800', color: colors.text, flex: 1 },
+  title: { fontSize: 16, fontFamily: fonts.displayBlack, color: colors.text, flex: 1 },
   type: { fontSize: 11, fontWeight: '800', color: colors.primary, marginLeft: space.sm },
   meta: { fontSize: 12, color: colors.textMuted, marginTop: 4 },
   budgetRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: space.md },

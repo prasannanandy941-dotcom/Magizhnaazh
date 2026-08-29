@@ -9,7 +9,7 @@ import * as api from '../api';
 import { useAuth } from '../auth';
 import type { Vendor, VendorPackage, EventItem } from '../types';
 import type { RootStackParamList, RootNav } from '../navTypes';
-import { colors, radius, space } from '../theme';
+import { colors, radius, space, fonts } from '../theme';
 
 const { width } = Dimensions.get('window');
 
@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
   error: { color: colors.danger, fontWeight: '600' },
   body: { padding: space.lg },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  title: { fontSize: 22, fontWeight: '800', color: colors.text, flex: 1 },
+  title: { fontSize: 22, fontFamily: fonts.displayBlack, color: colors.text, flex: 1 },
   verified: { fontSize: 11, fontWeight: '800', color: colors.green, marginLeft: 8 },
   meta: { fontSize: 14, color: colors.textMuted, marginTop: 4 },
   statRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: space.md },

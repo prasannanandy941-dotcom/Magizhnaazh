@@ -8,7 +8,7 @@ import {
 } from '@react-native-google-signin/google-signin';
 import { useAuth } from '../auth';
 import * as api from '../api';
-import { colors, radius, space } from '../theme';
+import { colors, radius, space, fonts } from '../theme';
 import { GOOGLE_WEB_CLIENT_ID } from '../config';
 
 export default function LoginScreen() {
@@ -202,7 +202,7 @@ function Field(props: {
 const styles = StyleSheet.create({
   scroll: { flexGrow: 1, justifyContent: 'center', padding: space.lg, backgroundColor: 'transparent' },
   brand: { alignItems: 'center', marginBottom: space.xl },
-  brandTitle: { fontSize: 30, fontWeight: '800', color: colors.primary },
+  brandTitle: { fontSize: 30, fontFamily: fonts.displayBlack, color: colors.primary },
   brandSub: { fontSize: 13, color: colors.textMuted, marginTop: 4, fontWeight: '600' },
   // White auth card on the dark floral background — matches the website.
   card: {

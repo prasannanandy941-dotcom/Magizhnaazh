@@ -12,7 +12,7 @@ import VendorDetailScreen from './screens/VendorDetailScreen';
 import EventsScreen from './screens/EventsScreen';
 import BookingsScreen from './screens/BookingsScreen';
 import ProfileScreen from './screens/ProfileScreen';
-import { colors } from './theme';
+import { colors, fonts } from './theme';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<AppTabParamList>();
@@ -20,7 +20,7 @@ const Tab = createBottomTabNavigator<AppTabParamList>();
 const header = {
   headerStyle: { backgroundColor: colors.headerBg },
   headerTintColor: colors.headerText,
-  headerTitleStyle: { fontWeight: '800' as const },
+  headerTitleStyle: { fontFamily: fonts.displayBlack },
 };
 
 // Transparent so the FloralBackground shows through behind every screen.

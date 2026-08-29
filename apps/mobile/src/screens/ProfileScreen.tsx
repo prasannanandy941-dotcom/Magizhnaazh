@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { useAuth } from '../auth';
 import { GATEWAY_URL } from '../config';
-import { colors, radius, space } from '../theme';
+import { colors, radius, space, fonts } from '../theme';
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
@@ -48,7 +48,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   avatarText: { color: colors.onPrimary, fontSize: 34, fontWeight: '800' },
-  name: { fontSize: 20, fontWeight: '800', color: colors.text, marginTop: space.md },
+  name: { fontSize: 20, fontFamily: fonts.displayBlack, color: colors.text, marginTop: space.md },
   role: { fontSize: 13, color: colors.textMuted, textTransform: 'capitalize', marginTop: 2 },
   card: {
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,

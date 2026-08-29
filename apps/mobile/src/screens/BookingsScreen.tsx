@@ -3,7 +3,7 @@ import { View, Text, FlatList, StyleSheet, ActivityIndicator, RefreshControl } f
 import { useAuth } from '../auth';
 import * as api from '../api';
 import type { Booking } from '../types';
-import { colors, radius, space } from '../theme';
+import { colors, radius, space, fonts } from '../theme';
 
 const STATUS_COLOR: Record<string, string> = {
   confirmed: colors.green,
@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: colors.border,
   },
   topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  vendor: { fontSize: 16, fontWeight: '800', color: colors.text, flex: 1 },
+  vendor: { fontSize: 16, fontFamily: fonts.displayBlack, color: colors.text, flex: 1 },
   status: { fontSize: 11, fontWeight: '800', textTransform: 'capitalize', marginLeft: space.sm },
   pkg: { fontSize: 13, color: colors.textMuted, marginTop: 4 },
   bottomRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: space.sm },

@@ -7,7 +7,7 @@ import { useNavigation } from '@react-navigation/native';
 import * as api from '../api';
 import type { Vendor } from '../types';
 import type { RootNav } from '../navTypes';
-import { colors, radius, space } from '../theme';
+import { colors, radius, space, fonts } from '../theme';
 
 const CATEGORIES = [
   'All', 'Venue', 'Catering', 'Media', 'Decoration', 'Makeup & Beauty', 'Transport',
@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
   cardImgFallbackText: { color: colors.textMuted, fontWeight: '700' },
   cardBody: { padding: space.md },
   cardTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  cardTitle: { fontSize: 16, fontWeight: '800', color: colors.text, flex: 1 },
+  cardTitle: { fontSize: 16, fontFamily: fonts.displayBlack, color: colors.text, flex: 1 },
   verified: { fontSize: 10, fontWeight: '800', color: colors.green, marginLeft: 8 },
   cardMeta: { fontSize: 13, color: colors.textMuted, marginTop: 2 },
   cardBottomRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: space.sm },
