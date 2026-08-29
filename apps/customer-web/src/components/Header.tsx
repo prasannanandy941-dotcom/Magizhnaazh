@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, Calendar, Heart, Store, User as UserIcon, LogIn, LogOut, ChevronDown, ClipboardList } from 'lucide-react';
+import { Sparkles, Calendar, Heart, Store, User as UserIcon, LogIn, LogOut, ChevronDown, ClipboardList, Menu, X } from 'lucide-react';
 import { User } from '../../../../packages/shared-types';
 
 interface HeaderProps {
@@ -24,6 +24,18 @@ export const Header: React.FC<HeaderProps> = ({
   onLogout,
 }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
+
+  // Shared nav definition, used by both the desktop bar and the mobile menu.
+  const navItems: { id: string; label: string; icon: React.ReactNode }[] = [
+    { id: 'marketplace', label: 'Marketplace', icon: <Store className="w-4 h-4" /> },
+    { id: 'events', label: 'My Events', icon: <Calendar className="w-4 h-4" /> },
+    { id: 'budget', label: 'Smart Budget', icon: <span className="font-bold text-[#e8c874]">₹</span> },
+    { id: 'invitations', label: 'Canva Invites', icon: <Sparkles className="w-4 h-4 text-[#f0c869]" /> },
+    { id: 'guests', label: 'Guests & RSVP', icon: <UserIcon className="w-4 h-4" /> },
+    { id: 'orders', label: 'My Orders', icon: <ClipboardList className="w-4 h-4" /> },
+  ];
+
   return (
     <header className="sticky top-0 z-50 border-b border-[#6b2140]/50 bg-[#1a0a14]/85 backdrop-blur-xl">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
@@ -185,9 +197,45 @@ export const Header: React.FC<HeaderProps> = ({
               Sign In
             </button>
           )}
+
+          {/* Mobile menu toggle (shown < md, where the desktop nav is hidden) */}
+          <button
+            onClick={() => setShowMobileMenu((s) => !s)}
+            className="md:hidden p-2.5 rounded-xl bg-[#26101c] border border-[#6b2140]/60 text-[#cf9bb3] hover:text-[#f0c869] transition-colors"
+            aria-label="Menu"
+          >
+            {showMobileMenu ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
         </div>
 
       </div>
+
+      {/* Mobile navigation menu */}
+      {showMobileMenu && (
+        <nav className="md:hidden border-t border-[#6b2140]/50 bg-[#1a0a14]/95 backdrop-blur-xl px-4 py-3 space-y-1">
+          {navItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => { setActiveTab(item.id); setShowMobileMenu(false); }}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition-all ${
+                activeTab === item.id
+                  ? 'bg-gradient-to-r from-[#c9a648] to-[#b8860b] text-[#1a0a14] shadow-md'
+                  : 'text-[#cf9bb3] hover:text-[#e8c874] hover:bg-[#6b2140]/30'
+              }`}
+            >
+              {item.icon}
+              {item.label}
+            </button>
+          ))}
+          <button
+            onClick={() => { openEventWizard(); setShowMobileMenu(false); }}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-[#d4af37] via-[#c9a648] to-[#e85d8a] text-[#1a0a14] font-bold text-sm shadow-lg"
+          >
+            <Sparkles className="w-4 h-4" />
+            + Create Event
+          </button>
+        </nav>
+      )}
     </header>
   );
 };
