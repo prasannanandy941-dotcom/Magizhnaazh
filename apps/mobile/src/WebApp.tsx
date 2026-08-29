@@ -8,6 +8,11 @@ import { colors } from './theme';
 // identical to the web, with every feature, always in sync with the site.
 const SITE_URL = 'https://event-customer.porulontech.com';
 
+// Present a normal Chrome-on-Android user agent so Google's "disallowed
+// user-agent" check doesn't block Sign in with Google inside the WebView.
+const CHROME_UA =
+  'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36';
+
 export function WebApp() {
   const ref = useRef<WebView>(null);
   const canGoBack = useRef(false);
@@ -32,8 +37,11 @@ export function WebApp() {
         source={{ uri: SITE_URL }}
         style={styles.web}
         originWhitelist={['*']}
+        userAgent={CHROME_UA}
         javaScriptEnabled
         domStorageEnabled
+        thirdPartyCookiesEnabled
+        sharedCookiesEnabled
         allowsBackForwardNavigationGestures
         setSupportMultipleWindows={false}
         startInLoadingState
