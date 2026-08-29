@@ -97,30 +97,56 @@ export default function MarketplaceScreen() {
 
 function VendorCard({ vendor, onPress }: { vendor: Vendor; onPress: () => void }) {
   const img = vendor.galleryImages?.[0];
-  const city = vendor.location?.city;
+  const loc = [vendor.location?.address, vendor.location?.city].filter(Boolean).join(', ');
+  const pkgCount = vendor.packages?.length ?? 0;
+  const rating = vendor.ratingAverage;
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
-      {img ? (
-        <Image source={{ uri: img }} style={styles.cardImg} />
-      ) : (
-        <View style={[styles.cardImg, styles.cardImgFallback]}>
-          <Text style={styles.cardImgFallbackText}>{vendor.category}</Text>
+    <View style={styles.card}>
+      <View style={styles.imgWrap}>
+        {img ? (
+          <Image source={{ uri: img }} style={styles.cardImg} />
+        ) : (
+          <View style={[styles.cardImg, styles.cardImgFallback]}>
+            <Text style={styles.cardImgFallbackText}>{vendor.category}</Text>
+          </View>
+        )}
+        <View style={styles.imgScrim} />
+
+        <View style={styles.imgTopRow}>
+          <View style={styles.catBadge}><Text style={styles.catBadgeText}>{vendor.category}</Text></View>
+          <View style={styles.heartBtn}><Text style={styles.heart}>♡</Text></View>
         </View>
-      )}
-      <View style={styles.cardBody}>
-        <View style={styles.cardTopRow}>
-          <Text style={styles.cardTitle} numberOfLines={1}>{vendor.businessName}</Text>
-          {vendor.isVerified && <Text style={styles.verified}>✓ Verified</Text>}
-        </View>
-        <Text style={styles.cardMeta}>{vendor.category}{city ? ` • ${city}` : ''}</Text>
-        <View style={styles.cardBottomRow}>
-          <Text style={styles.price}>From ₹{(vendor.startingPrice || 0).toLocaleString('en-IN')}</Text>
-          {typeof vendor.ratingAverage === 'number' && vendor.ratingAverage > 0 && (
-            <Text style={styles.rating}>★ {vendor.ratingAverage.toFixed(1)}</Text>
+
+        <View style={styles.imgBottomRow}>
+          {typeof rating === 'number' && rating > 0 && (
+            <View style={styles.ratingBadge}>
+              <Text style={styles.ratingText}>★ {rating.toFixed(1)}{vendor.reviewCount ? ` (${vendor.reviewCount})` : ''}</Text>
+            </View>
+          )}
+          {vendor.isVerified && (
+            <View style={styles.verifiedBadge}><Text style={styles.verifiedText}>✓ Verified</Text></View>
           )}
         </View>
       </View>
-    </TouchableOpacity>
+
+      <View style={styles.cardBody}>
+        <Text style={styles.cardTitle} numberOfLines={1}>{vendor.businessName}</Text>
+        {!!loc && <Text style={styles.cardMeta} numberOfLines={1}>📍 {loc}</Text>}
+        {!!vendor.description && <Text style={styles.cardDesc} numberOfLines={2}>{vendor.description}</Text>}
+
+        <View style={styles.priceRow}>
+          <View>
+            <Text style={styles.startingLabel}>STARTING FROM</Text>
+            <Text style={styles.price}>₹{(vendor.startingPrice || 0).toLocaleString('en-IN')}</Text>
+          </View>
+          <Text style={styles.pkgCount}>{pkgCount} Package{pkgCount === 1 ? '' : 's'}</Text>
+        </View>
+
+        <TouchableOpacity style={styles.viewBtn} onPress={onPress} activeOpacity={0.85}>
+          <Text style={styles.viewBtnText}>View Details</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 }
 
@@ -136,23 +162,40 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14, paddingVertical: 7, borderRadius: 999,
     borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface,
   },
-  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  chipActive: { backgroundColor: '#6d5ef6', borderColor: '#6d5ef6' },
   chipText: { color: colors.textMuted, fontWeight: '700', fontSize: 12 },
   chipTextActive: { color: colors.onPrimary },
   card: {
-    backgroundColor: colors.surface, borderRadius: radius.lg, overflow: 'hidden',
+    backgroundColor: colors.surface, borderRadius: radius.xl, overflow: 'hidden',
     borderWidth: 1, borderColor: colors.border,
   },
-  cardImg: { width: '100%', height: 150, backgroundColor: colors.surfaceAlt },
+  imgWrap: { height: 200, width: '100%' },
+  cardImg: { width: '100%', height: '100%', backgroundColor: colors.surfaceAlt },
   cardImgFallback: { alignItems: 'center', justifyContent: 'center' },
   cardImgFallbackText: { color: colors.textMuted, fontWeight: '700' },
-  cardBody: { padding: space.md },
-  cardTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  cardTitle: { fontSize: 16, fontFamily: fonts.displayBlack, color: colors.text, flex: 1 },
-  verified: { fontSize: 10, fontWeight: '800', color: colors.green, marginLeft: 8 },
-  cardMeta: { fontSize: 13, color: colors.textMuted, marginTop: 2 },
-  cardBottomRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: space.sm },
-  price: { fontSize: 15, fontWeight: '800', color: colors.gold },
-  rating: { fontSize: 13, fontWeight: '700', color: colors.primary },
+  imgScrim: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '55%', backgroundColor: 'rgba(10,4,8,0.55)' },
+  imgTopRow: { position: 'absolute', top: 12, left: 12, right: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  catBadge: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 999, backgroundColor: 'rgba(18,6,11,0.8)', borderWidth: 1, borderColor: 'rgba(107,33,64,0.5)' },
+  catBadgeText: { color: '#f1e3ea', fontSize: 11, fontWeight: '700' },
+  heartBtn: { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(18,6,11,0.8)', borderWidth: 1, borderColor: 'rgba(107,33,64,0.5)', alignItems: 'center', justifyContent: 'center' },
+  heart: { color: '#f1e3ea', fontSize: 16 },
+  imgBottomRow: { position: 'absolute', bottom: 12, left: 12, right: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  ratingBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.md, backgroundColor: 'rgba(212,175,55,0.92)' },
+  ratingText: { color: '#12060b', fontSize: 12, fontWeight: '800' },
+  verifiedBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.sm, backgroundColor: 'rgba(18,6,11,0.8)', borderWidth: 1, borderColor: 'rgba(52,211,153,0.35)' },
+  verifiedText: { color: colors.green, fontSize: 11, fontWeight: '800' },
+  cardBody: { padding: space.lg },
+  cardTitle: { fontSize: 18, fontFamily: fonts.displayBlack, color: colors.text },
+  cardMeta: { fontSize: 12, color: colors.textMuted, marginTop: 4 },
+  cardDesc: { fontSize: 12, color: '#e0c3d0', marginTop: space.sm, lineHeight: 18 },
+  priceRow: {
+    flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between',
+    marginTop: space.md, paddingTop: space.md, borderTopWidth: 1, borderTopColor: colors.border,
+  },
+  startingLabel: { fontSize: 10, fontWeight: '800', color: colors.textMuted, letterSpacing: 0.5 },
+  price: { fontSize: 20, fontFamily: fonts.displayBlack, color: colors.gold, marginTop: 2 },
+  pkgCount: { fontSize: 12, color: colors.textMuted, fontWeight: '600' },
+  viewBtn: { marginTop: space.md, backgroundColor: '#6d5ef6', borderRadius: radius.md, paddingVertical: 12, alignItems: 'center' },
+  viewBtnText: { color: '#ffffff', fontSize: 13, fontWeight: '800' },
   empty: { textAlign: 'center', color: colors.textMuted, marginTop: 40, paddingHorizontal: space.lg },
 });
