@@ -6,6 +6,12 @@
     "scheme": "magizhnaazh",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1a0a14"
+    },
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -14,7 +20,11 @@
       "bundleIdentifier": "com.porulontech.magizhnaazh"
     },
     "android": {
-      "package": "com.porulontech.magizhnaazh"
+      "package": "com.porulontech.magizhnaazh",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1a0a14"
+      }
     },
     "web": {
       "bundler": "metro"
