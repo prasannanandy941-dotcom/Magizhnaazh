@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, ActivityIndicator, StyleSheet, BackHandler } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet, BackHandler } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import { colors } from './theme';
@@ -64,6 +64,11 @@ export function WebApp({ token, user }: { token?: string | null; user?: unknown 
           <ActivityIndicator color={colors.primary} size="large" />
         </View>
       )}
+
+      {/* Floating refresh — reloads the live site (e.g. after a deploy). */}
+      <TouchableOpacity style={styles.refreshBtn} onPress={() => ref.current?.reload()} activeOpacity={0.8}>
+        <Text style={styles.refreshIcon}>⟳</Text>
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
@@ -72,4 +77,12 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   web: { flex: 1, backgroundColor: colors.bg },
   loader: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
+  refreshBtn: {
+    position: 'absolute', right: 16, bottom: 28,
+    width: 48, height: 48, borderRadius: 24,
+    backgroundColor: 'rgba(38,16,28,0.92)', borderWidth: 1, borderColor: 'rgba(212,175,55,0.5)',
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: '#000', shadowOpacity: 0.35, shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 5,
+  },
+  refreshIcon: { color: '#e8c874', fontSize: 24, fontWeight: '900', marginTop: -2 },
 });
