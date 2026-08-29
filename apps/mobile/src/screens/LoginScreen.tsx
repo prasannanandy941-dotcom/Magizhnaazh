@@ -125,7 +125,7 @@ export default function LoginScreen() {
               value={email}
               onChangeText={setEmail}
               placeholder="you@example.com"
-              placeholderTextColor={colors.textMuted}
+              placeholderTextColor="#94a3b8"
               autoCapitalize="none"
               keyboardType="email-address"
             />
@@ -190,7 +190,7 @@ function Field(props: {
         value={props.value}
         onChangeText={props.onChangeText}
         placeholder={props.placeholder}
-        placeholderTextColor={colors.textMuted}
+        placeholderTextColor="#94a3b8"
         secureTextEntry={props.secureTextEntry}
         keyboardType={props.keyboardType}
         autoCapitalize={props.secureTextEntry || props.keyboardType === 'email-address' ? 'none' : 'sentences'}
@@ -204,42 +204,43 @@ const styles = StyleSheet.create({
   brand: { alignItems: 'center', marginBottom: space.xl },
   brandTitle: { fontSize: 30, fontWeight: '800', color: colors.primary },
   brandSub: { fontSize: 13, color: colors.textMuted, marginTop: 4, fontWeight: '600' },
+  // White auth card on the dark floral background — matches the website.
   card: {
-    backgroundColor: colors.surface, borderRadius: radius.xl, padding: space.lg,
-    borderWidth: 1, borderColor: colors.border,
+    backgroundColor: '#ffffff', borderRadius: radius.xl, padding: space.lg,
+    borderWidth: 1, borderColor: '#e2e8f0',
   },
-  tabs: { flexDirection: 'row', backgroundColor: colors.surfaceAlt, borderRadius: radius.md, padding: 4, marginBottom: space.lg },
+  tabs: { flexDirection: 'row', backgroundColor: '#f1f5f9', borderRadius: radius.md, padding: 4, marginBottom: space.lg },
   tab: { flex: 1, paddingVertical: 10, borderRadius: radius.sm, alignItems: 'center' },
   tabActive: { backgroundColor: colors.primary },
-  tabText: { fontWeight: '700', color: colors.textMuted, fontSize: 13 },
-  tabTextActive: { color: colors.onPrimary },
-  label: { fontSize: 12, fontWeight: '700', color: colors.text, marginBottom: 6, marginTop: space.sm },
+  tabText: { fontWeight: '700', color: '#64748b', fontSize: 13 },
+  tabTextActive: { color: '#ffffff' },
+  label: { fontSize: 12, fontWeight: '700', color: '#1e293b', marginBottom: 6, marginTop: space.sm },
   row: { flexDirection: 'row', gap: space.sm, alignItems: 'stretch' },
   input: {
-    borderWidth: 2, borderColor: colors.borderStrong, borderRadius: radius.md,
-    paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: colors.text, backgroundColor: colors.surface,
+    borderWidth: 2, borderColor: '#334155', borderRadius: radius.md,
+    paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: '#0f172a', backgroundColor: '#ffffff',
   },
   otpBtn: {
     justifyContent: 'center', paddingHorizontal: 14, borderRadius: radius.md,
-    borderWidth: 2, borderColor: colors.border, backgroundColor: colors.chipBg,
+    borderWidth: 2, borderColor: '#cbd5e1', backgroundColor: '#f1f5f9',
   },
-  otpBtnText: { color: colors.primary, fontWeight: '700', fontSize: 12 },
-  notice: { color: colors.green, fontSize: 12, marginTop: 6, fontWeight: '600' },
-  error: { color: colors.danger, fontSize: 13, marginTop: space.md, fontWeight: '600' },
+  otpBtnText: { color: colors.primaryDark, fontWeight: '700', fontSize: 12 },
+  notice: { color: '#0f9d58', fontSize: 12, marginTop: 6, fontWeight: '600' },
+  error: { color: '#c0392b', fontSize: 13, marginTop: space.md, fontWeight: '600' },
   submit: {
     backgroundColor: colors.primary, borderRadius: radius.md, paddingVertical: 15,
     alignItems: 'center', marginTop: space.lg,
   },
-  submitText: { color: colors.onPrimary, fontWeight: '800', fontSize: 15 },
+  submitText: { color: '#ffffff', fontWeight: '800', fontSize: 15 },
   orRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, marginTop: space.lg },
-  orLine: { flex: 1, height: 1, backgroundColor: colors.border },
-  orText: { color: colors.textMuted, fontSize: 11, fontWeight: '700' },
+  orLine: { flex: 1, height: 1, backgroundColor: '#e2e8f0' },
+  orText: { color: '#94a3b8', fontSize: 11, fontWeight: '700' },
   googleBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.sm,
-    borderWidth: 2, borderColor: colors.borderStrong, borderRadius: radius.md,
-    paddingVertical: 13, marginTop: space.lg, backgroundColor: colors.surface,
+    borderWidth: 2, borderColor: '#cbd5e1', borderRadius: radius.md,
+    paddingVertical: 13, marginTop: space.lg, backgroundColor: '#ffffff',
   },
   googleG: { color: '#4285F4', fontWeight: '900', fontSize: 18 },
-  googleText: { color: colors.text, fontWeight: '800', fontSize: 14 },
-  demo: { textAlign: 'center', color: colors.textMuted, fontSize: 11, marginTop: space.md },
+  googleText: { color: '#0f172a', fontWeight: '800', fontSize: 14 },
+  demo: { textAlign: 'center', color: '#94a3b8', fontSize: 11, marginTop: space.md },
 });
