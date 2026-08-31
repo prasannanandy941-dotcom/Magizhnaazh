@@ -60,6 +60,12 @@ jobs:
             npm install
 
             echo "==> Building frontend apps"
+            # The frontends bake VITE_GATEWAY_URL in at build time. The committed
+            # .env.local files point it at localhost for dev, and a real env var
+            # outranks them in Vite — so set the production API URL here, or the
+            # built site calls localhost:8000 in the user's browser (connection
+            # refused). Keep this in sync with nginx's event-api server_name.
+            export VITE_GATEWAY_URL=https://event-api.porulontech.com
             npm run build:all
 
             echo "==> Restarting backend services (magizh-* only)"
