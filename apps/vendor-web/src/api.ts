@@ -28,8 +28,12 @@ export interface AuthResponse {
 // 90s when a service is off. Detect a local gateway and fail fast there
 // (~6s), while keeping the long budget for the deployed cloud.
 const IS_LOCAL_GATEWAY = /\/\/(localhost|127\.0\.0\.1|192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\.)/.test(GATEWAY_URL);
-const COLD_START_RETRIES = IS_LOCAL_GATEWAY ? 3 : 18;
-const COLD_START_DELAY_MS = IS_LOCAL_GATEWAY ? 2000 : 5000;
+// Retry budget for a transient 502/503/network blip. The backend runs on an
+// always-on VPS (pm2), so there's no ~50s cold start to wait out — a short
+// budget (~12s) covers a brief restart during deploy without making every
+// hiccup hang the UI for a minute and a half.
+const COLD_START_RETRIES = IS_LOCAL_GATEWAY ? 3 : 6;
+const COLD_START_DELAY_MS = 2000;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 

@@ -102,6 +102,23 @@ async function sendEmail(to: string, subject: string, html: string, text: string
   return false;
 }
 
+// Whether any email provider is configured. When it is, we can respond to the
+// client immediately and let the actual send happen in the background.
+const EMAIL_CONFIGURED = !!(process.env.BREVO_API_KEY || process.env.SMTP_USER);
+
+// Fire-and-forget email: kicks the send off WITHOUT blocking the HTTP response,
+// so Send-OTP / forgot-password return instantly instead of waiting on the
+// email provider (Brevo API round-trip, or an SMTP handshake that can take
+// 10-15s). The OTP is already persisted before this is called, so the code is
+// valid regardless of email latency. Returns true when a provider is configured
+// (caller then tells the user "sent"); false in local dev with no provider, so
+// the caller can surface the on-screen dev code instead.
+function dispatchEmail(to: string, subject: string, html: string, text: string): boolean {
+  if (!EMAIL_CONFIGURED) return false;
+  sendEmail(to, subject, html, text).catch((err) => console.error('[email] background send failed:', err));
+  return true;
+}
+
 const otpEmailHtml = (heading: string, intro: string, code: string, footer: string) => `
   <div style="font-family: sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 8px; max-width: 500px;">
     <h2 style="color: #d4af37;">${heading}</h2>
@@ -195,7 +212,7 @@ app.post('/api/v1/auth/send-otp', async (req: Request, res: Response) => {
 
     console.log(`[OTP DEBUG] Verification code for ${emailStr}: ${code}`);
 
-    const emailSent = await sendEmail(
+    const emailSent = dispatchEmail(
       emailStr,
       'Email Verification Code',
       otpEmailHtml(
@@ -313,7 +330,7 @@ app.post('/api/v1/auth/forgot-password', async (req: Request, res: Response) => 
 
     console.log(`[OTP DEBUG] Forgot Password OTP for ${emailStr}: ${code}`);
 
-    const emailSent = await sendEmail(
+    const emailSent = dispatchEmail(
       emailStr,
       'Password Reset Code',
       otpEmailHtml(

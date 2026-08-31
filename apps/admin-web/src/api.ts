@@ -36,8 +36,10 @@ export interface AuthResponse {
 // delay so a cold start is invisible to the user. Only cold-start signals are
 // retried (gateway 5xx, HTML body, or a network error); real application
 // errors return JSON and are passed straight through.
-const COLD_START_RETRIES = 12;
-const COLD_START_DELAY_MS = 4000;
+// Always-on VPS (pm2): a short retry budget (~12s) covers a brief deploy
+// restart without hanging the UI for the better part of a minute.
+const COLD_START_RETRIES = 6;
+const COLD_START_DELAY_MS = 2000;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
