@@ -23,13 +23,18 @@ const app = express();
 const PORT = process.env.PORT || 8002;
 
 const UPLOADS_DIR = path.join(__dirname, '../../uploads');
-// Files are served statically at `/uploads` (see below). The base URL baked
-// into each saved file's public URL must be reachable from the customer's
-// browser — in prod that's this service's own public https URL
-// (MARKETPLACE_SERVICE_URL), NOT localhost. Locally the env var is unset and we
-// fall back to localhost. Without this, uploaded menu/package/gallery images
-// resolve to http://localhost:8002 and show as broken images to customers.
-const PUBLIC_BASE_URL = serviceUrl(process.env.MARKETPLACE_SERVICE_URL, `http://localhost:${PORT}`);
+// The base URL baked into each saved file's public URL must be reachable from
+// the customer's BROWSER. In prod, nginx serves /uploads on the public API
+// domain (e.g. https://event-api.porulontech.com/uploads), so set
+// PUBLIC_UPLOADS_BASE_URL to that. It intentionally does NOT default to
+// MARKETPLACE_SERVICE_URL — that is the INTERNAL address services use to call
+// each other (localhost:8002), which the browser can't reach, so uploaded
+// images would resolve to localhost and show as broken. Falls back to
+// MARKETPLACE_SERVICE_URL then localhost only for local dev where they coincide.
+const PUBLIC_BASE_URL = serviceUrl(
+  process.env.PUBLIC_UPLOADS_BASE_URL || process.env.MARKETPLACE_SERVICE_URL,
+  `http://localhost:${PORT}`,
+);
 const storageProvider = new LocalStorageProvider(UPLOADS_DIR, `${PUBLIC_BASE_URL}/uploads`);
 const upload = multer({ storage: multer.memoryStorage() });
 
