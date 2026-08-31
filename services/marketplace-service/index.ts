@@ -790,7 +790,13 @@ app.delete('/api/v1/banners/:id', authMiddleware(), requireRole('admin'), async 
 async function start() {
   await connectDB(process.env.MONGODB_URI, 'marketplace-service');
   await migrateMediaAndAdvance();
-  await seedIfEmpty();
+  // Demo/sample vendors are opt-in (SEED_DEMO_VENDORS=true) — off by default so
+  // production only ever shows real, registered vendors. The seed is additive,
+  // so leaving it on would re-create the demo vendors on every restart even
+  // after they're deleted.
+  if (process.env.SEED_DEMO_VENDORS === 'true') {
+    await seedIfEmpty();
+  }
   await seedCategoriesAndCities();
   app.listen(PORT, () => {
     console.log(`[Marketplace Microservice] Running on http://localhost:${PORT}`);
