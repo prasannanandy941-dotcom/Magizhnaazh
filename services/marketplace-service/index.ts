@@ -420,14 +420,25 @@ app.post('/api/v1/vendors/:id/book-date', authMiddleware(), async (req: Request,
   if (!date) return res.status(400).json({ success: false, message: 'date is required.' });
   const vendor = await VendorModel.findOne({ id: req.params.id });
   if (!vendor) return res.status(404).json({ success: false, message: 'Vendor not found.' });
-  // Move the date out of "available" and into "booked" so the customer listing
-  // can show it as Booked rather than having it vanish.
-  if (Array.isArray(vendor.availableDates) && vendor.availableDates.includes(date)) {
-    vendor.availableDates = vendor.availableDates.filter((d) => d !== date);
-    const booked = Array.isArray(vendor.bookedDates) ? vendor.bookedDates : [];
-    if (!booked.includes(date)) vendor.bookedDates = [...booked, date];
-    await vendor.save();
-  }
+  // Block the date unconditionally: take it out of "available" (if listed) and
+  // add it to "booked" so a confirmed booking's date is closed off for everyone,
+  // even for vendors that don't publish explicit availability.
+  vendor.availableDates = (vendor.availableDates || []).filter((d) => d !== date);
+  const booked = Array.isArray(vendor.bookedDates) ? vendor.bookedDates : [];
+  if (!booked.includes(date)) vendor.bookedDates = [...booked, date];
+  await vendor.save();
+  res.json({ success: true, data: { availableDates: vendor.availableDates, bookedDates: vendor.bookedDates } });
+});
+
+// Free a previously-blocked date (e.g. a booking was cancelled) — moves it back
+// out of bookedDates. Does not re-add to availableDates (the vendor re-opens it).
+app.post('/api/v1/vendors/:id/free-date', authMiddleware(), async (req: Request, res: Response) => {
+  const { date } = req.body;
+  if (!date) return res.status(400).json({ success: false, message: 'date is required.' });
+  const vendor = await VendorModel.findOne({ id: req.params.id });
+  if (!vendor) return res.status(404).json({ success: false, message: 'Vendor not found.' });
+  vendor.bookedDates = (vendor.bookedDates || []).filter((d) => d !== date);
+  await vendor.save();
   res.json({ success: true, data: { availableDates: vendor.availableDates, bookedDates: vendor.bookedDates } });
 });
 
@@ -438,7 +449,11 @@ app.put('/api/v1/vendors/:id', authMiddleware(), async (req: Request, res: Respo
     return res.status(403).json({ success: false, message: 'You do not own this vendor listing.' });
   }
 
-  const { businessName, category, description, city, startingPrice, contactEmail, contactPhone, upiId, packages, facilities, galleryImages, availableDates, offeredOptions, offeredOptionPrices, offeredOptionItems, offeredOptionQuality, offeredOptionImages, giftCount, giftDiscount, policies } = req.body;
+  const { businessName, category, description, city, startingPrice, contactEmail, contactPhone, upiId, packages, facilities, galleryImages, availableDates, offeredOptions, offeredOptionPrices, offeredOptionItems, offeredOptionQuality, offeredOptionImages, giftCount, giftDiscount, policies, deals } = req.body;
+  if (Array.isArray(deals)) {
+    vendor.deals = deals;
+    vendor.markModified('deals');
+  }
   if (offeredOptionImages !== undefined) {
     (vendor as any).offeredOptionImages = offeredOptionImages;
     vendor.markModified('offeredOptionImages');
@@ -604,12 +619,64 @@ app.put('/api/v1/vendors/:id/rating', async (req: Request, res: Response) => {
   res.json({ success: true, data: { vendor } });
 });
 
-// 7. Admin/vendor verification toggle
+// 6b. Vendor submits a verification request (KYC details + proof documents) to
+// earn the Verified badge. Owner-only; moves status to 'pending' for admin review.
+app.post('/api/v1/vendors/:id/verification', authMiddleware(), requireRole('vendor', 'admin'), async (req: Request, res: Response) => {
+  const vendor = await VendorModel.findOne({ id: req.params.id });
+  if (!vendor) return res.status(404).json({ success: false, message: 'Vendor not found.' });
+  if (vendor.userId !== req.user!.sub && req.user!.role !== 'admin') {
+    return res.status(403).json({ success: false, message: 'You can only submit verification for your own listing.' });
+  }
+  if (vendor.verification?.status === 'verified') {
+    return res.status(409).json({ success: false, message: 'This listing is already verified.' });
+  }
+
+  const { legalName, registrationNumber, gstNumber, contactPerson, documents } = req.body;
+  vendor.verification = {
+    status: 'pending',
+    legalName: (legalName || '').trim(),
+    registrationNumber: (registrationNumber || '').trim(),
+    gstNumber: (gstNumber || '').trim(),
+    contactPerson: (contactPerson || '').trim(),
+    documents: Array.isArray(documents) ? documents.filter((d: any) => typeof d === 'string') : [],
+    submittedAt: new Date().toISOString(),
+    reviewedAt: '',
+    rejectionReason: '',
+  };
+  await vendor.save();
+  res.json({ success: true, message: 'Verification request submitted for review.', data: { vendor } });
+});
+
+// 7. Admin verification decision. With a body of { decision: 'approve' | 'reject',
+// reason? } it records the review outcome; with no body it toggles (legacy UI).
 app.put('/api/v1/vendors/:id/verify', authMiddleware(), requireRole('admin'), async (req: Request, res: Response) => {
   const vendor = await VendorModel.findOne({ id: req.params.id });
   if (!vendor) return res.status(404).json({ success: false, message: 'Vendor not found.' });
 
-  vendor.isVerified = !vendor.isVerified;
+  const decision = req.body?.decision as 'approve' | 'reject' | undefined;
+  const now = new Date().toISOString();
+  const v = vendor.verification;
+  // Preserve the KYC details the vendor submitted; only the status/review fields change.
+  const current = {
+    legalName: v?.legalName || '',
+    registrationNumber: v?.registrationNumber || '',
+    gstNumber: v?.gstNumber || '',
+    contactPerson: v?.contactPerson || '',
+    documents: v?.documents || [],
+    submittedAt: v?.submittedAt || '',
+  };
+
+  if (decision === 'approve') {
+    vendor.isVerified = true;
+    vendor.verification = { ...current, status: 'verified', reviewedAt: now, rejectionReason: '' };
+  } else if (decision === 'reject') {
+    vendor.isVerified = false;
+    vendor.verification = { ...current, status: 'rejected', reviewedAt: now, rejectionReason: (req.body?.reason || '').trim() };
+  } else {
+    // Legacy toggle — keep verification.status consistent with the flag.
+    vendor.isVerified = !vendor.isVerified;
+    vendor.verification = { ...current, status: vendor.isVerified ? 'verified' : 'unverified', reviewedAt: now, rejectionReason: '' };
+  }
   await vendor.save();
   res.json({ success: true, message: `Vendor verification status updated to ${vendor.isVerified}.`, data: { vendor } });
 });

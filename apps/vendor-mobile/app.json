@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "Magizhnaazh Vendor",
+    "slug": "magizhnaazh-vendor",
+    "version": "1.0.0",
+    "scheme": "magizhnaazhvendor",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1a0a14"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.porulontech.magizhnaazhvendor"
+    },
+    "android": {
+      "package": "com.porulontech.magizhnaazhvendor",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1a0a14"
+      }
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-web-browser",
+      "@react-native-google-signin/google-signin",
+      "expo-font"
+    ]
+  }
+}

@@ -7,6 +7,7 @@ export const SettingsTab: React.FC<{ token: string }> = ({ token }) => {
   // instead of forcing a number (which is what caused the leading-zero bug).
   const [commissionPercent, setCommissionPercent] = useState('10');
   const [advancePercent, setAdvancePercent] = useState('30');
+  const [gstPercent, setGstPercent] = useState('18');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState('');
@@ -17,6 +18,7 @@ export const SettingsTab: React.FC<{ token: string }> = ({ token }) => {
       if (res.data?.settings) {
         setCommissionPercent(String(Math.round(res.data.settings.commissionRate * 100)));
         setAdvancePercent(String(Math.round(res.data.settings.advanceDepositRate * 100)));
+        if (typeof res.data.settings.gstRate === 'number') setGstPercent(String(Math.round(res.data.settings.gstRate * 100)));
       }
       setLoading(false);
     })();
@@ -29,6 +31,7 @@ export const SettingsTab: React.FC<{ token: string }> = ({ token }) => {
       await updateSettings(token, {
         commissionRate: (Number(commissionPercent) || 0) / 100,
         advanceDepositRate: (Number(advancePercent) || 0) / 100,
+        gstRate: (Number(gstPercent) || 0) / 100,
       });
       setNotice('Platform settings saved — new bookings will use these rates immediately.');
     } catch (err: any) {
@@ -109,6 +112,21 @@ export const SettingsTab: React.FC<{ token: string }> = ({ token }) => {
             className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white font-bold text-lg"
           />
           <p className="text-[11px] text-slate-500 mt-1">Percentage collected as advance when a booking is confirmed.</p>
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold text-slate-400 mb-1.5">GST Rate (%)</label>
+          <input
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            value={gstPercent}
+            onFocus={handleFocusClear}
+            onChange={(e) => setGstPercent(sanitizeDigits(e.target.value))}
+            onBlur={() => handleBlurFallback(gstPercent, setGstPercent)}
+            className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white font-bold text-lg"
+          />
+          <p className="text-[11px] text-slate-500 mt-1">Used to compute the GST breakup on booking invoices (prices are GST-inclusive).</p>
         </div>
 
         {notice && <p className="text-xs text-emerald-400 font-semibold">{notice}</p>}

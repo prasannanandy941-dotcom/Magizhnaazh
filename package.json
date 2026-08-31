@@ -7,6 +7,7 @@
     "dev:vendor": "npm run dev --prefix apps/vendor-web",
     "dev:admin": "npm run dev --prefix apps/admin-web",
     "dev:mobile": "npm run start --prefix apps/mobile",
+    "dev:vendor-mobile": "npm run start --prefix apps/vendor-mobile",
     "dev:gateway": "npx tsx watch services/gateway/index.ts",
     "dev:auth": "npx tsx watch services/auth-service/index.ts",
     "dev:marketplace": "npx tsx watch services/marketplace-service/index.ts",
@@ -29,6 +30,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.11.24",
+    "sharp": "^0.35.4",
     "tsx": "^4.23.11",
     "typescript": "^5.3.3"
   }

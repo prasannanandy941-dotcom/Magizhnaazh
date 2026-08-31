@@ -234,3 +234,39 @@ export async function fetchVendorReviews(vendorId: string): Promise<VendorReview
   return json;
 }
 
+// The vendor's private calendar-feed token, used to build the .ics subscribe URL.
+export async function fetchCalendarToken(token: string, vendorId: string): Promise<{ success: boolean; data?: { token: string } }> {
+  return authedFetch(`/api/v1/bookings/vendor/${vendorId}/calendar-token`, token, { method: 'GET' });
+}
+
+// Confirm a customer's claimed balance payment on a booking.
+export function confirmBookingPayment(token: string, bookingId: string, paymentId: string) {
+  return authedFetch(`/api/v1/bookings/${bookingId}/payments/${paymentId}/confirm`, token, { method: 'PUT' });
+}
+
+// Fetch the GST invoice for one of this vendor's bookings.
+export async function fetchBookingInvoice(token: string, bookingId: string): Promise<{ success: boolean; data?: { invoice: any } }> {
+  return authedFetch(`/api/v1/bookings/${bookingId}/invoice`, token, { method: 'GET' });
+}
+
+// Submit a verification request (KYC details + proof document URLs) to earn the
+// Verified badge. Returns the updated vendor with verification.status === 'pending'.
+export function submitVerification(
+  token: string,
+  vendorId: string,
+  input: { legalName: string; registrationNumber: string; gstNumber: string; contactPerson: string; documents: string[] }
+): Promise<MyVendorResponse> {
+  return authedFetch(`/api/v1/vendors/${encodeURIComponent(vendorId)}/verification`, token, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+// Post (or edit/clear) the vendor's public reply to one of its reviews.
+export async function replyToReview(token: string, reviewId: string, reply: string): Promise<{ success: boolean; data?: { review: Review } }> {
+  return authedFetch(`/api/v1/reviews/${encodeURIComponent(reviewId)}/reply`, token, {
+    method: 'POST',
+    body: JSON.stringify({ reply }),
+  });
+}
+

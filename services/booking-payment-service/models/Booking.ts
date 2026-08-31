@@ -11,6 +11,20 @@ const spendItemSchema = new Schema(
   { _id: false }
 );
 
+const paymentSchema = new Schema(
+  {
+    id: String,
+    type: { type: String, enum: ['advance', 'balance'], default: 'balance' },
+    amount: Number,
+    method: { type: String, default: 'upi' },
+    reference: String,
+    status: { type: String, enum: ['claimed', 'confirmed'], default: 'claimed' },
+    claimedAt: { type: String, default: () => new Date().toISOString() },
+    confirmedAt: String,
+  },
+  { _id: false }
+);
+
 const bookingSchema = new Schema<Booking>({
   id: { type: String, required: true, unique: true },
   bookingNumber: { type: String, required: true, unique: true },
@@ -19,6 +33,7 @@ const bookingSchema = new Schema<Booking>({
   vendorId: { type: String, required: true },
   vendorName: { type: String, default: '' },
   vendorCategory: { type: String, default: 'Other' },
+  customerName: { type: String, default: '' },
   packageId: String,
   packageName: String,
   agreedPrice: { type: Number, default: 0 },
@@ -35,6 +50,12 @@ const bookingSchema = new Schema<Booking>({
   selectedOptions: { type: [String], default: [] },
   referenceImages: { type: [String], default: [] },
   spendItems: { type: [spendItemSchema], default: [] },
+  payments: { type: [paymentSchema], default: [] },
+  paidInFull: { type: Boolean, default: false },
+  invoiceNumber: String,
+  invoiceIssuedAt: String,
+  settlementStatus: { type: String, enum: ['pending', 'settled'], default: 'pending' },
+  settledAt: String,
   createdAt: { type: String, default: () => new Date().toISOString() },
 });
 

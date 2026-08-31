@@ -1090,6 +1090,7 @@ export function App() {
                   vendorId: v.id,
                   vendorName: v.businessName,
                   vendorCategory: v.category,
+                  customerName: user?.name,
                   eventId: activeEvent.id,
                   packageId: pkgId,
                   packageName: pkg?.packageName,

@@ -87,6 +87,7 @@ app.use('/api/v1/uploads', createProxyMiddleware({ target: SERVICES.marketplace,
 app.use('/api/v1/events', createProxyMiddleware({ target: SERVICES.eventBudget, ...proxyDefaults }));
 app.use('/api/v1/bookings', createProxyMiddleware({ target: SERVICES.bookingPayment, ...proxyDefaults }));
 app.use('/api/v1/settings', createProxyMiddleware({ target: SERVICES.bookingPayment, ...proxyDefaults }));
+app.use('/api/v1/settlements', createProxyMiddleware({ target: SERVICES.bookingPayment, ...proxyDefaults }));
 app.use('/api/v1/coupons', createProxyMiddleware({ target: SERVICES.bookingPayment, ...proxyDefaults }));
 app.use('/api/v1/invitation-templates', createProxyMiddleware({ target: SERVICES.invitation, ...proxyDefaults }));
 app.use('/api/v1/invitations', createProxyMiddleware({ target: SERVICES.invitation, ...proxyDefaults }));

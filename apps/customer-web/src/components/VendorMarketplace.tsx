@@ -6,7 +6,7 @@ import {
   SprayCan, Package, Utensils, ClipboardList, Briefcase, MoreHorizontal,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { Vendor, VendorCategory, VENDOR_CATEGORIES } from '../../../../packages/shared-types';
+import { Vendor, VendorCategory, VENDOR_CATEGORIES, getLiveDeals } from '../../../../packages/shared-types';
 import { STATIC_CITY_GROUPS } from '../../../../packages/shared-utils';
 import { FacilityChips, filterVenuesByFacilities, FacilityImagePreview } from './FacilitiesForm';
 import { CateringMenuChips } from './CateringMenu';
@@ -261,6 +261,11 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
                   {vendor.isVerified && (
                     <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-400 bg-slate-950/80 px-2.5 py-1 rounded-lg border border-emerald-500/30">
                       <CheckCircle2 className="w-3 h-3" /> Verified
+                    </span>
+                  )}
+                  {getLiveDeals(vendor).length > 0 && (
+                    <span className="flex items-center gap-1 text-[11px] font-bold text-amber-300 bg-slate-950/80 px-2.5 py-1 rounded-lg border border-amber-500/40">
+                      🎉 Offer
                     </span>
                   )}
                 </div>

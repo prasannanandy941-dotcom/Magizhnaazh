@@ -1,4 +1,5 @@
 import path from 'path';
+import crypto from 'crypto';
 import dotenv from 'dotenv';
 dotenv.config({ path: path.resolve(__dirname, '.env'), override: true });
 
@@ -21,6 +22,74 @@ app.use(cors());
 app.use(express.json());
 app.use(requestLogger('booking-payment-service'));
 registerHealthRoute(app, 'booking-payment-service');
+
+// A stable, hard-to-guess token for a vendor's private calendar feed. Derived
+// from the vendor id and the shared JWT secret so no new secret/storage is
+// needed, and the same vendor always gets the same subscribe URL.
+const CALENDAR_SECRET = process.env.JWT_SECRET || 'magizhnaazh-dev-secret';
+function calendarToken(vendorId: string): string {
+  return crypto.createHmac('sha256', CALENDAR_SECRET).update(`calendar:${vendorId}`).digest('hex').slice(0, 32);
+}
+
+// Escape a string for an ICS text field (commas, semicolons, newlines).
+function icsEscape(s: string): string {
+  return String(s || '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+}
+
+// 'YYYY-MM-DD' -> 'YYYYMMDD' for all-day ICS dates; '' if unparseable.
+function icsDate(d: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d || '');
+  return m ? `${m[1]}${m[2]}${m[3]}` : '';
+}
+function icsDatePlusOne(d: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d || '');
+  if (!m) return '';
+  const dt = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
+  dt.setUTCDate(dt.getUTCDate() + 1);
+  return `${dt.getUTCFullYear()}${String(dt.getUTCMonth() + 1).padStart(2, '0')}${String(dt.getUTCDate()).padStart(2, '0')}`;
+}
+
+// Fetch the marketplace vendor record referenced by a booking (or null).
+async function fetchVendor(vendorId: string): Promise<any | null> {
+  try {
+    const r = await fetch(`${MARKETPLACE_SERVICE_URL}/api/v1/vendors/${vendorId}`);
+    if (!r.ok) return null;
+    return (await r.json()).data?.vendor ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// True when the caller owns this booking's vendor listing, or is an admin.
+async function callerOwnsVendor(req: Request, vendorId: string): Promise<boolean> {
+  if (req.user!.role === 'admin') return true;
+  const vendor = await fetchVendor(vendorId);
+  return !!vendor && vendor.userId === req.user!.sub;
+}
+
+// Bookings confirmed before the payment ledger existed carry an advance in
+// advanceAmountPaid but no ledger entry. Backfill a synthetic confirmed advance
+// so ledger-based recomputation stays correct for them. Mutates, does not save.
+function ensureAdvanceLedger(booking: any): void {
+  const hasAdvance = (booking.payments || []).some((p: any) => p.type === 'advance');
+  if (!hasAdvance && (booking.advanceAmountPaid || 0) > 0) {
+    booking.payments = [
+      ...(booking.payments || []),
+      { id: `pay-legacy-${booking.id}`, type: 'advance', amount: booking.advanceAmountPaid, method: 'upi', status: 'confirmed', claimedAt: booking.createdAt || new Date().toISOString(), confirmedAt: booking.createdAt || new Date().toISOString() },
+    ];
+  }
+}
+
+// Recompute paid/remaining from the confirmed payments in the ledger, and the
+// paid-in-full flag. Mutates the booking document (does not save).
+function recomputePayments(booking: any): void {
+  ensureAdvanceLedger(booking);
+  const confirmed = (booking.payments || []).filter((p: any) => p.status === 'confirmed');
+  const paid = confirmed.reduce((s: number, p: any) => s + (Number(p.amount) || 0), 0);
+  booking.advanceAmountPaid = paid;
+  booking.remainingAmount = Math.max(0, booking.agreedPrice - paid);
+  booking.paidInFull = booking.agreedPrice > 0 && paid >= booking.agreedPrice;
+}
 
 async function seedIfEmpty() {
   const count = await BookingModel.countDocuments();
@@ -192,6 +261,7 @@ app.post('/api/v1/bookings/quote', authMiddleware(), async (req: Request, res: R
     bookingNumber: `BK-${Date.now()}`,
     eventId: eventId || 'evt-101',
     customerId: req.user!.sub,
+    customerName: (req.body.customerName || req.user!.email || '').trim(),
     vendorId: vendorId || 'vnd-1',
     vendorName: vendorName || 'Vendor Partner',
     vendorCategory: vendorCategory || 'Other',
@@ -319,9 +389,27 @@ app.put('/api/v1/bookings/:id/confirm', authMiddleware(), async (req: Request, r
     advance = Math.round(booking.agreedPrice * (await getSettings()).advanceDepositRate);
   }
   booking.status = 'confirmed';
-  booking.advanceAmountPaid = advance;
-  booking.remainingAmount = booking.agreedPrice - advance;
+  // Record the advance in the payment ledger (idempotent — only if not present),
+  // then derive paid/remaining from the ledger.
+  const hasAdvance = (booking.payments || []).some((p: any) => p.type === 'advance');
+  if (!hasAdvance) {
+    booking.payments = [
+      ...(booking.payments || []),
+      { id: `pay-${Date.now()}`, type: 'advance', amount: advance, method: 'upi', status: 'confirmed', claimedAt: new Date().toISOString(), confirmedAt: new Date().toISOString() },
+    ];
+  }
+  recomputePayments(booking);
   await booking.save();
+
+  // Auto-block the event date on the vendor's calendar so the same day can't be
+  // double-booked. Best-effort — confirmation already succeeded.
+  if (booking.vendorId && booking.eventDate) {
+    fetch(`${MARKETPLACE_SERVICE_URL}/api/v1/vendors/${booking.vendorId}/book-date`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: req.headers.authorization || '' },
+      body: JSON.stringify({ date: booking.eventDate }),
+    }).catch(() => { /* the vendor can still block it manually */ });
+  }
 
   res.json({ success: true, message: 'Booking quote confirmed and advance deposit processed.', data: { booking } });
 });
@@ -422,6 +510,236 @@ app.put('/api/v1/bookings/:id/spend-breakdown', authMiddleware(), async (req: Re
   res.json({ success: true, message: 'Spend breakdown saved.', data: { booking } });
 });
 
+// 4e. Customer records a balance payment against a confirmed booking (manual UPI
+//     claim). Lands as a 'claimed' entry the vendor then confirms. Owner-checked
+//     against the booking's customer.
+app.post('/api/v1/bookings/:id/payments', authMiddleware(), async (req: Request, res: Response) => {
+  const booking = await BookingModel.findOne({ id: req.params.id });
+  if (!booking) return res.status(404).json({ success: false, message: 'Booking not found.' });
+  if (booking.customerId !== req.user!.sub && req.user!.role !== 'admin') {
+    return res.status(403).json({ success: false, message: 'This booking does not belong to you.' });
+  }
+  if (!['confirmed', 'in_progress', 'completed'].includes(booking.status)) {
+    return res.status(400).json({ success: false, message: 'The balance can only be paid after the booking is confirmed.' });
+  }
+
+  recomputePayments(booking); // make sure remainingAmount is current
+  const remaining = booking.remainingAmount;
+  if (remaining <= 0) {
+    return res.status(409).json({ success: false, message: 'This booking is already paid in full.' });
+  }
+  const amount = req.body.amount != null ? Number(req.body.amount) : remaining;
+  if (!Number.isFinite(amount) || amount <= 0) {
+    return res.status(400).json({ success: false, message: 'A valid payment amount is required.' });
+  }
+  if (amount > remaining) {
+    return res.status(400).json({ success: false, message: `Amount exceeds the balance due (₹${remaining}).` });
+  }
+
+  booking.payments = [
+    ...(booking.payments || []),
+    {
+      id: `pay-${Date.now()}`,
+      type: 'balance',
+      amount,
+      method: (req.body.method || 'upi').toString(),
+      reference: (req.body.reference || '').toString(),
+      status: 'claimed',
+      claimedAt: new Date().toISOString(),
+    },
+  ];
+  await booking.save();
+  res.status(201).json({ success: true, message: 'Balance payment recorded — awaiting vendor confirmation.', data: { booking } });
+});
+
+// 4f. Vendor (or admin) confirms a claimed payment; paid/remaining are recomputed.
+app.put('/api/v1/bookings/:id/payments/:paymentId/confirm', authMiddleware(), async (req: Request, res: Response) => {
+  const booking = await BookingModel.findOne({ id: req.params.id });
+  if (!booking) return res.status(404).json({ success: false, message: 'Booking not found.' });
+  if (!(await callerOwnsVendor(req, booking.vendorId))) {
+    return res.status(403).json({ success: false, message: 'This booking does not belong to your vendor listing.' });
+  }
+
+  const payment = (booking.payments || []).find((p: any) => p.id === req.params.paymentId);
+  if (!payment) return res.status(404).json({ success: false, message: 'Payment not found.' });
+  if (payment.status === 'confirmed') {
+    return res.status(409).json({ success: false, message: 'This payment is already confirmed.' });
+  }
+  payment.status = 'confirmed';
+  payment.confirmedAt = new Date().toISOString();
+  booking.markModified('payments');
+  recomputePayments(booking);
+  await booking.save();
+  res.json({ success: true, message: 'Payment confirmed.', data: { booking } });
+});
+
+// 4g. GST invoice for a booking, rendered as a printable document by the web
+//     apps. Accessible to the customer, the owning vendor, or an admin.
+app.get('/api/v1/bookings/:id/invoice', authMiddleware(), async (req: Request, res: Response) => {
+  const booking = await BookingModel.findOne({ id: req.params.id });
+  if (!booking) return res.status(404).json({ success: false, message: 'Booking not found.' });
+
+  const isCustomer = booking.customerId === req.user!.sub;
+  const isOwner = await callerOwnsVendor(req, booking.vendorId);
+  if (!isCustomer && !isOwner) {
+    return res.status(403).json({ success: false, message: 'You are not allowed to view this invoice.' });
+  }
+
+  // Assign a stable invoice number the first time an invoice is generated.
+  if (!booking.invoiceNumber) {
+    booking.invoiceNumber = `INV-${booking.bookingNumber}`;
+    booking.invoiceIssuedAt = new Date().toISOString();
+    // Backfill the customer name from the requester when missing.
+    if (!booking.customerName && isCustomer) booking.customerName = req.user!.email || '';
+    await booking.save();
+  }
+
+  const { gstRate } = await getSettings();
+  const vendor = await fetchVendor(booking.vendorId);
+  recomputePayments(booking);
+
+  const grandTotal = booking.agreedPrice;
+  // Prices are treated as GST-inclusive; back out the taxable value and tax.
+  const taxableValue = Math.round(grandTotal / (1 + gstRate));
+  const totalGst = grandTotal - taxableValue;
+  const cgst = Math.round(totalGst / 2);
+  const sgst = totalGst - cgst;
+
+  const lineItems = (booking.spendItems && booking.spendItems.length > 0)
+    ? booking.spendItems.map((s: any) => ({ label: s.label, amount: s.amount }))
+    : [{ label: booking.packageName || `${booking.vendorCategory} service`, amount: grandTotal }];
+
+  const invoice = {
+    invoiceNumber: booking.invoiceNumber,
+    issuedAt: booking.invoiceIssuedAt,
+    eventDate: booking.eventDate,
+    seller: {
+      name: booking.vendorName || vendor?.businessName || 'Vendor',
+      gstin: vendor?.verification?.gstNumber || undefined,
+      address: vendor ? [vendor.location?.address, vendor.location?.city, vendor.location?.state, vendor.location?.pincode].filter(Boolean).join(', ') : undefined,
+      email: vendor?.contactEmail || undefined,
+      phone: vendor?.contactPhone || undefined,
+    },
+    buyer: { name: booking.customerName || 'Customer', email: isCustomer ? req.user!.email : undefined },
+    lineItems,
+    gstRate,
+    taxableValue,
+    cgst,
+    sgst,
+    totalGst,
+    grandTotal,
+    advancePaid: booking.advanceAmountPaid,
+    balanceDue: booking.remainingAmount,
+    paidInFull: booking.paidInFull,
+  };
+  res.json({ success: true, data: { invoice } });
+});
+
+// 4h. Admin settlement register — per-booking commission and vendor payout.
+app.get('/api/v1/settlements', authMiddleware(), async (req: Request, res: Response) => {
+  if (req.user!.role !== 'admin') {
+    return res.status(403).json({ success: false, message: 'Admin access required.' });
+  }
+  const { commissionRate } = await getSettings();
+  const bookings = await BookingModel.find({ status: { $in: ['confirmed', 'in_progress', 'completed'] } }).sort({ createdAt: -1 }).limit(500);
+  const settlements = bookings.map((b) => {
+    const commission = Math.round(b.agreedPrice * commissionRate);
+    return {
+      bookingId: b.id,
+      bookingNumber: b.bookingNumber,
+      vendorId: b.vendorId,
+      vendorName: b.vendorName,
+      agreedPrice: b.agreedPrice,
+      collected: b.advanceAmountPaid,
+      commission,
+      vendorPayout: b.agreedPrice - commission,
+      paidInFull: b.paidInFull || false,
+      settlementStatus: b.settlementStatus || 'pending',
+      settledAt: b.settledAt || null,
+      eventDate: b.eventDate,
+    };
+  });
+  const totals = settlements.reduce(
+    (acc, s) => {
+      acc.commission += s.commission;
+      acc.payout += s.vendorPayout;
+      acc.collected += s.collected;
+      if (s.settlementStatus === 'pending') acc.pendingPayout += s.vendorPayout;
+      return acc;
+    },
+    { commission: 0, payout: 0, collected: 0, pendingPayout: 0 }
+  );
+  res.json({ success: true, data: { settlements, totals } });
+});
+
+// 4i. Admin marks a booking's vendor payout as settled.
+app.put('/api/v1/bookings/:id/settle', authMiddleware(), async (req: Request, res: Response) => {
+  if (req.user!.role !== 'admin') {
+    return res.status(403).json({ success: false, message: 'Admin access required.' });
+  }
+  const booking = await BookingModel.findOne({ id: req.params.id });
+  if (!booking) return res.status(404).json({ success: false, message: 'Booking not found.' });
+  const settle = req.body?.settled !== false; // default true
+  booking.settlementStatus = settle ? 'settled' : 'pending';
+  booking.settledAt = settle ? new Date().toISOString() : undefined;
+  await booking.save();
+  res.json({ success: true, message: `Marked ${settle ? 'settled' : 'pending'}.`, data: { booking } });
+});
+
+// 4j. The vendor's private calendar-subscription token (owner/admin only). The
+//     web app builds the .ics subscribe URL from this so vendors can add their
+//     bookings to Google/Apple/Outlook Calendar.
+app.get('/api/v1/bookings/vendor/:vendorId/calendar-token', authMiddleware(), async (req: Request, res: Response) => {
+  if (!(await callerOwnsVendor(req, req.params.vendorId))) {
+    return res.status(403).json({ success: false, message: 'This vendor listing does not belong to you.' });
+  }
+  res.json({ success: true, data: { token: calendarToken(req.params.vendorId) } });
+});
+
+// 4k. Public iCalendar feed of a vendor's confirmed bookings, gated by the
+//     per-vendor token (calendar apps can't send auth headers, so a secret URL
+//     is the standard approach). Subscribe to it in Google Calendar via
+//     "Add calendar → From URL".
+app.get('/api/v1/bookings/vendor/:vendorId/calendar.ics', async (req: Request, res: Response) => {
+  const { vendorId } = req.params;
+  if (req.query.token !== calendarToken(vendorId)) {
+    return res.status(403).send('Invalid calendar token.');
+  }
+  const bookings = await BookingModel.find({
+    vendorId,
+    status: { $in: ['confirmed', 'in_progress', 'completed'] },
+  }).limit(1000);
+
+  const now = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+  const lines: string[] = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Magizhnaazh//Vendor Bookings//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'X-WR-CALNAME:Magizhnaazh Bookings',
+  ];
+  for (const b of bookings) {
+    const start = icsDate(b.eventDate);
+    if (!start) continue;
+    lines.push(
+      'BEGIN:VEVENT',
+      `UID:${b.id}@magizhnaazh`,
+      `DTSTAMP:${now}`,
+      `DTSTART;VALUE=DATE:${start}`,
+      `DTEND;VALUE=DATE:${icsDatePlusOne(b.eventDate)}`,
+      `SUMMARY:${icsEscape(`${b.vendorCategory || 'Booking'} — ${b.customerName || 'Customer'}`)}`,
+      `DESCRIPTION:${icsEscape(`Booking ${b.bookingNumber}. ${b.packageName || ''} ₹${b.agreedPrice}. Status: ${b.status}.`)}`,
+      'END:VEVENT'
+    );
+  }
+  lines.push('END:VCALENDAR');
+
+  res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
+  res.setHeader('Content-Disposition', 'inline; filename="magizhnaazh-bookings.ics"');
+  res.send(lines.join('\r\n'));
+});
+
 // 5. Admin platform metrics
 app.get('/api/v1/bookings/admin/metrics', authMiddleware(), async (req: Request, res: Response) => {
   if (req.user!.role !== 'admin') {
@@ -467,12 +785,15 @@ app.put('/api/v1/settings', authMiddleware(), async (req: Request, res: Response
     return res.status(403).json({ success: false, message: 'Admin access required.' });
   }
 
-  const { commissionRate, advanceDepositRate, theme } = req.body;
+  const { commissionRate, advanceDepositRate, gstRate, theme } = req.body;
   if (commissionRate !== undefined && (isNaN(Number(commissionRate)) || Number(commissionRate) < 0 || Number(commissionRate) > 1)) {
     return res.status(400).json({ success: false, message: 'commissionRate must be a fraction between 0 and 1 (e.g. 0.1 for 10%).' });
   }
   if (advanceDepositRate !== undefined && (isNaN(Number(advanceDepositRate)) || Number(advanceDepositRate) < 0 || Number(advanceDepositRate) > 1)) {
     return res.status(400).json({ success: false, message: 'advanceDepositRate must be a fraction between 0 and 1 (e.g. 0.3 for 30%).' });
+  }
+  if (gstRate !== undefined && (isNaN(Number(gstRate)) || Number(gstRate) < 0 || Number(gstRate) > 1)) {
+    return res.status(400).json({ success: false, message: 'gstRate must be a fraction between 0 and 1 (e.g. 0.18 for 18%).' });
   }
   if (theme !== undefined && theme !== 'light' && theme !== 'dark') {
     return res.status(400).json({ success: false, message: "theme must be 'light' or 'dark'." });
@@ -483,6 +804,7 @@ app.put('/api/v1/settings', authMiddleware(), async (req: Request, res: Response
 
   if (commissionRate !== undefined) settings.commissionRate = Number(commissionRate);
   if (advanceDepositRate !== undefined) settings.advanceDepositRate = Number(advanceDepositRate);
+  if (gstRate !== undefined) settings.gstRate = Number(gstRate);
   if (theme !== undefined) settings.theme = theme;
   settings.updatedAt = new Date().toISOString();
   await settings.save();

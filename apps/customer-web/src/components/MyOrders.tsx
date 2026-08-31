@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { ClipboardList, RefreshCw, Loader2, CheckCircle2, Circle, IndianRupee, LogIn, Star, Send } from 'lucide-react';
+import { ClipboardList, RefreshCw, Loader2, CheckCircle2, Circle, IndianRupee, LogIn, Star, Send, FileText, Wallet, CalendarPlus } from 'lucide-react';
 import { Booking, Review } from '../../../../packages/shared-types';
-import { fetchMyBookings, fetchMyReviews, submitReview } from '../api';
+import { fetchMyBookings, fetchMyReviews, submitReview, recordBalancePayment, fetchBookingInvoice } from '../api';
+import { openInvoicePrintWindow } from './invoice';
+import { downloadBookingIcs } from './calendar';
 
 // Work-progress stages a confirmed booking moves through — mirrors the
 // vendor-side tracker in vendor-web/App.tsx. Applies to every vendor
@@ -180,6 +182,10 @@ export const MyOrders: React.FC<{ isAuthenticated: boolean; onSignIn: () => void
                   <p className="text-xs text-slate-500">Tracking starts once the vendor confirms this booking.</p>
                 )}
 
+                {isTrackable && (
+                  <PaymentBlock booking={b} onUpdated={(nb) => setBookings((prev) => prev.map((x) => (x.id === nb.id ? nb : x)))} />
+                )}
+
                 {b.status === 'completed' && (
                   <ReviewBlock
                     booking={b}
@@ -192,6 +198,99 @@ export const MyOrders: React.FC<{ isAuthenticated: boolean; onSignIn: () => void
           })}
         </div>
       )}
+    </div>
+  );
+};
+
+// Balance-payment + invoice controls for a confirmed booking. The customer
+// records that they've paid the balance (manual UPI); the vendor confirms it.
+const PaymentBlock: React.FC<{ booking: Booking; onUpdated: (b: Booking) => void }> = ({ booking, onUpdated }) => {
+  const [paying, setPaying] = useState(false);
+  const [reference, setReference] = useState('');
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState('');
+  const [invoiceBusy, setInvoiceBusy] = useState(false);
+
+  const remaining = booking.remainingAmount;
+  const paidInFull = booking.paidInFull || remaining <= 0;
+  // A balance the customer has recorded but the vendor hasn't confirmed yet.
+  const pendingClaim = (booking.payments || []).some((p) => p.type === 'balance' && p.status === 'claimed');
+
+  const submitPayment = async () => {
+    setBusy(true);
+    setNotice('');
+    try {
+      const res = await recordBalancePayment(booking.id, remaining, reference.trim() || undefined);
+      if (res.data?.booking) onUpdated(res.data.booking);
+      setOpen(false);
+      setPaying(false);
+    } catch (err: any) {
+      setNotice(err?.message || 'Could not record the payment. Please try again.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const viewInvoice = async () => {
+    setInvoiceBusy(true);
+    try {
+      const res = await fetchBookingInvoice(booking.id);
+      if (res.data?.invoice) openInvoicePrintWindow(res.data.invoice);
+    } catch (err: any) {
+      setNotice(err?.message || 'Could not load the invoice.');
+    } finally {
+      setInvoiceBusy(false);
+    }
+  };
+
+  return (
+    <div className="pt-3 border-t border-slate-800 space-y-3">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="text-xs">
+          {paidInFull ? (
+            <span className="text-emerald-400 font-bold flex items-center gap-1"><CheckCircle2 className="w-4 h-4" /> Paid in full</span>
+          ) : (
+            <span className="text-slate-300">Balance due: <strong className="text-amber-400">₹{remaining.toLocaleString('en-IN')}</strong></span>
+          )}
+          {pendingClaim && !paidInFull && <span className="block text-[11px] text-sky-400 mt-0.5">Balance payment recorded — awaiting vendor confirmation.</span>}
+        </div>
+        <div className="flex items-center gap-2">
+          {!paidInFull && !pendingClaim && (
+            <button onClick={() => { setPaying(true); setOpen(true); }}
+              className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[11px] flex items-center gap-1.5">
+              <Wallet className="w-3.5 h-3.5" /> Pay balance
+            </button>
+          )}
+          <button onClick={() => downloadBookingIcs(booking)}
+            className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-[11px] flex items-center gap-1.5">
+            <CalendarPlus className="w-3.5 h-3.5" /> Add to Calendar
+          </button>
+          <button onClick={viewInvoice} disabled={invoiceBusy}
+            className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-[11px] flex items-center gap-1.5 disabled:opacity-60">
+            {invoiceBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />} Invoice
+          </button>
+        </div>
+      </div>
+
+      {paying && open && !paidInFull && (
+        <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2">
+          <p className="text-[11px] text-slate-400">
+            Pay the vendor <strong className="text-amber-400">₹{remaining.toLocaleString('en-IN')}</strong> via their UPI (shown on their page or your confirmation), then record it here. The vendor confirms receipt.
+          </p>
+          <input value={reference} onChange={(e) => setReference(e.target.value)} placeholder="UPI reference / txn note (optional)"
+            className="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-white text-xs" />
+          {notice && <p className="text-[11px] text-rose-400">{notice}</p>}
+          <div className="flex items-center gap-2">
+            <button onClick={submitPayment} disabled={busy}
+              className="px-3 py-1.5 rounded-lg bg-emerald-500 text-slate-950 font-bold text-[11px] disabled:opacity-60 flex items-center gap-1.5">
+              {busy && <Loader2 className="w-3.5 h-3.5 animate-spin" />} I've paid the balance
+            </button>
+            <button onClick={() => { setOpen(false); setPaying(false); }} className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 font-semibold text-[11px]">Cancel</button>
+          </div>
+        </div>
+      )}
+      {notice && !open && <p className="text-[11px] text-rose-400">{notice}</p>}
     </div>
   );
 };

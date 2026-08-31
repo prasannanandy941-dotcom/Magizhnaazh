@@ -16,6 +16,22 @@ const vendorPackageSchema = new Schema(
   { _id: false }
 );
 
+const vendorDealSchema = new Schema(
+  {
+    id: String,
+    title: String,
+    description: String,
+    discountType: { type: String, enum: ['percent', 'flat'], default: 'percent' },
+    discountValue: Number,
+    minOrderAmount: Number,
+    startsAt: String,
+    expiresAt: String,
+    isActive: { type: Boolean, default: true },
+    createdAt: { type: String, default: () => new Date().toISOString() },
+  },
+  { _id: false }
+);
+
 const vendorSchema = new Schema<Vendor>({
   id: { type: String, required: true, unique: true },
   userId: { type: String, required: true },
@@ -87,6 +103,21 @@ const vendorSchema = new Schema<Vendor>({
   offeredOptionImages: { type: Schema.Types.Mixed, default: {} },
   giftCount: Number,
   giftDiscount: String,
+  // Promotional deals the vendor publishes on their own listing.
+  deals: { type: [vendorDealSchema], default: [] },
+  // Verification request the vendor submits to earn the Verified badge; reviewed
+  // by an admin. `isVerified` above mirrors verification.status === 'verified'.
+  verification: {
+    status: { type: String, enum: ['unverified', 'pending', 'verified', 'rejected'], default: 'unverified' },
+    legalName: { type: String, default: '' },
+    registrationNumber: { type: String, default: '' },
+    gstNumber: { type: String, default: '' },
+    contactPerson: { type: String, default: '' },
+    documents: { type: [String], default: [] },
+    submittedAt: { type: String, default: '' },
+    reviewedAt: { type: String, default: '' },
+    rejectionReason: { type: String, default: '' },
+  },
   createdAt: { type: String, default: () => new Date().toISOString() },
 });
 

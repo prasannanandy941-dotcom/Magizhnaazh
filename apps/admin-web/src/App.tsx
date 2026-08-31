@@ -15,6 +15,7 @@ import {
   Image as ImageIcon,
   Megaphone,
   Ticket,
+  Wallet,
   Settings as SettingsIcon,
   BarChart3,
   Activity,
@@ -36,6 +37,7 @@ import { InvitationTemplatesTab } from './components/InvitationTemplatesTab';
 import { BannersTab } from './components/BannersTab';
 import { CouponsTab } from './components/CouponsTab';
 import { SettingsTab } from './components/SettingsTab';
+import { SettlementsTab } from './components/SettlementsTab';
 import { AnalyticsTab } from './components/AnalyticsTab';
 import { EcosystemMonitor } from './components/EcosystemMonitor';
 import { fetchSettings, GATEWAY_URL } from './api';
@@ -47,7 +49,7 @@ function applyTheme(theme: 'light' | 'dark') {
 
 type TabKey =
   | 'dashboard' | 'monitor' | 'users' | 'vendors' | 'categories' | 'locations' | 'events' | 'bookings'
-  | 'reviews' | 'feedback' | 'complaints' | 'templates' | 'banners' | 'coupons' | 'settings' | 'analytics';
+  | 'reviews' | 'feedback' | 'complaints' | 'templates' | 'banners' | 'coupons' | 'settlements' | 'settings' | 'analytics';
 
 const NAV: { key: TabKey; label: string; icon: React.ElementType }[] = [
   { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -64,6 +66,7 @@ const NAV: { key: TabKey; label: string; icon: React.ElementType }[] = [
   { key: 'templates', label: 'Invitation Templates', icon: ImageIcon },
   { key: 'banners', label: 'Banners', icon: Megaphone },
   { key: 'coupons', label: 'Coupons', icon: Ticket },
+  { key: 'settlements', label: 'Settlements', icon: Wallet },
   { key: 'settings', label: 'Settings', icon: SettingsIcon },
   { key: 'analytics', label: 'Analytics', icon: BarChart3 },
 ];
@@ -223,6 +226,7 @@ export function App() {
           {activeTab === 'templates' && <InvitationTemplatesTab token={token} />}
           {activeTab === 'banners' && <BannersTab token={token} />}
           {activeTab === 'coupons' && <CouponsTab token={token} />}
+          {activeTab === 'settlements' && <SettlementsTab token={token} />}
           {activeTab === 'settings' && <SettingsTab token={token} />}
           {activeTab === 'analytics' && <AnalyticsTab token={token} />}
         </main>

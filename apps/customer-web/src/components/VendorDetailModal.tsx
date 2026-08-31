@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Star, MapPin, Check, ShieldCheck, Upload, Calendar as CalendarIcon, MessageSquare, Send, CreditCard, Sparkles, Camera, Bus, Flame, Gift, ListChecks, Phone, Copy, Clock, RefreshCw, Plus, Maximize2 } from 'lucide-react';
-import { Vendor } from '../../../../packages/shared-types';
-import { fetchVendorById, uploadReferenceImage } from '../api';
+import { Vendor, Review, getVendorTrustBadges, getLiveDeals, bestDealForAmount } from '../../../../packages/shared-types';
+import { fetchVendorById, uploadReferenceImage, fetchVendorReviews } from '../api';
 import { PortfolioGrid } from './Portfolio';
 import { DecorationGrid } from './DecorationThemes';
 import { MakeupGrid } from './MakeupLooks';
@@ -89,7 +89,19 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialVendor.id]);
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'portfolio' | 'themes' | 'looks' | 'fleet' | 'ceremonies' | 'gifts' | 'options' | 'services' | 'amenities' | 'packages' | 'gallery' | 'upload'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'portfolio' | 'themes' | 'looks' | 'fleet' | 'ceremonies' | 'gifts' | 'options' | 'services' | 'amenities' | 'packages' | 'gallery' | 'reviews' | 'upload'>('overview');
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviewsLoaded, setReviewsLoaded] = useState(false);
+
+  // Load public reviews the first time the shopper opens the Reviews tab.
+  useEffect(() => {
+    if (activeTab !== 'reviews' || reviewsLoaded) return;
+    fetchVendorReviews(initialVendor.id)
+      .then((res) => setReviews(res.data?.reviews || []))
+      .catch(() => setReviews([]))
+      .finally(() => setReviewsLoaded(true));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, initialVendor.id]);
   const isDecoration = vendor.category === 'Decoration';
   const isMakeup = vendor.category === 'Makeup & Beauty';
   const isTransport = vendor.category === 'Transport';
@@ -302,12 +314,20 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
   // against a nonexistent ₹0 package price.
   const referencePrice = effectivePkgPrice || vendor.startingPrice || 0;
 
+  // Auto-apply the vendor's best live offer to the running total.
+  const appliedDeal = bestDealForAmount(vendor, referencePrice);
+  const dealDiscount = appliedDeal?.discount ?? 0;
+  const netPrice = Math.max(0, referencePrice - dealDiscount);
+  // The concrete price the booking is created with — discounted when an offer
+  // applies, otherwise the package price (or undefined to use starting price).
+  const bookingPrice = appliedDeal ? netPrice : effectivePkgPrice;
+
   // A flat advanceAmount the vendor set overrides the percentage-based calc.
   const flatAdvance = vendor.policies.advanceAmount;
   const advanceIsFlat = typeof flatAdvance === 'number' && flatAdvance > 0;
   const advanceAmountDue = advanceIsFlat
-    ? (referencePrice > 0 ? Math.min(flatAdvance!, referencePrice) : flatAdvance!)
-    : Math.round((referencePrice * vendor.policies.advancePercentage) / 100);
+    ? (netPrice > 0 ? Math.min(flatAdvance!, netPrice) : flatAdvance!)
+    : Math.round((netPrice * vendor.policies.advancePercentage) / 100);
   const advanceLabel = advanceIsFlat ? 'Advance required' : `Advance required (${vendor.policies.advancePercentage}%)`;
 
   return (
@@ -444,6 +464,15 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
           </button>
 
           <button
+            onClick={() => setActiveTab('reviews')}
+            className={`py-3 font-semibold text-xs border-b-2 transition-colors ${
+              activeTab === 'reviews' ? 'border-amber-500 text-amber-400' : 'border-transparent text-slate-400 hover:text-white'
+            }`}
+          >
+            Reviews ({vendor.reviewCount})
+          </button>
+
+          <button
             onClick={() => setActiveTab('upload')}
             className={`py-3 font-semibold text-xs border-b-2 transition-colors flex items-center gap-1 ${
               activeTab === 'upload' ? 'border-amber-500 text-amber-400' : 'border-transparent text-slate-400 hover:text-white'
@@ -485,6 +514,52 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                   </span>
                 </div>
               </div>
+
+              {(() => {
+                const badges = getVendorTrustBadges(vendor);
+                const tone: Record<string, string> = {
+                  verified: 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300',
+                  rating: 'bg-amber-500/15 border-amber-500/30 text-amber-300',
+                  popular: 'bg-pink-500/15 border-pink-500/30 text-pink-300',
+                  experience: 'bg-indigo-500/15 border-indigo-500/30 text-indigo-300',
+                  tenure: 'bg-slate-700/40 border-slate-600/50 text-slate-300',
+                };
+                return badges.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {badges.map((b) => (
+                      <span key={b.key} className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full border ${tone[b.tone]}`}>
+                        {b.tone === 'verified' && <ShieldCheck className="w-3.5 h-3.5" />}
+                        {b.tone === 'rating' && <Star className="w-3.5 h-3.5 fill-current" />}
+                        {b.label}
+                      </span>
+                    ))}
+                  </div>
+                ) : null;
+              })()}
+
+              {(() => {
+                const live = getLiveDeals(vendor);
+                return live.length > 0 ? (
+                  <div className="p-5 rounded-2xl bg-gradient-to-r from-amber-500/10 to-pink-500/10 border border-amber-500/30 space-y-2.5">
+                    <h4 className="font-bold text-sm text-amber-300 flex items-center gap-1.5">🎉 Offers from {vendor.businessName}</h4>
+                    {live.map((d) => (
+                      <div key={d.id} className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold text-white">{d.title}</p>
+                          {d.description && <p className="text-xs text-slate-400">{d.description}</p>}
+                          <p className="text-[10px] text-slate-500 mt-0.5">
+                            {d.minOrderAmount ? `On orders over ₹${d.minOrderAmount.toLocaleString('en-IN')}` : 'On any order'}
+                            {d.expiresAt ? ` · until ${new Date(d.expiresAt).toLocaleDateString()}` : ''}
+                          </p>
+                        </div>
+                        <span className="shrink-0 px-3 py-1.5 rounded-xl bg-amber-500 text-slate-950 text-xs font-bold">
+                          {d.discountType === 'percent' ? `${d.discountValue}% OFF` : `₹${d.discountValue.toLocaleString('en-IN')} OFF`}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : null;
+              })()}
 
               <div className="p-5 rounded-2xl bg-slate-900/40 border border-slate-800/80">
                 <h4 className="font-bold text-sm text-white mb-2">About {vendor.businessName}</h4>
@@ -981,6 +1056,61 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
             </div>
           )}
 
+          {activeTab === 'reviews' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-5 rounded-2xl bg-slate-900/60 border border-slate-800">
+                <div>
+                  <h4 className="font-bold text-white">Verified customer reviews</h4>
+                  <p className="text-xs text-slate-400 mt-1">From customers whose booking with {vendor.businessName} was completed.</p>
+                </div>
+                <div className="text-right shrink-0">
+                  <span className="text-2xl font-bold text-amber-400 flex items-center gap-1 justify-end">
+                    <Star className="w-5 h-5 fill-amber-400" /> {vendor.ratingAverage || '0.0'}
+                  </span>
+                  <span className="text-xs text-slate-400">{vendor.reviewCount} review{vendor.reviewCount === 1 ? '' : 's'}</span>
+                </div>
+              </div>
+
+              {!reviewsLoaded ? (
+                <p className="text-center text-sm text-slate-400 py-10">Loading reviews…</p>
+              ) : reviews.length === 0 ? (
+                <p className="text-center text-sm text-slate-400 py-10">No reviews yet. Be the first to book and review this vendor.</p>
+              ) : (
+                reviews.map((r) => (
+                  <div key={r.id} className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800">
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-500 to-orange-600 flex items-center justify-center text-slate-950 font-bold text-xs">
+                          {(r.customerName || 'C').charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-white">{r.customerName || 'Customer'}</p>
+                          <p className="text-[10px] text-slate-500">{r.eventType ? `${r.eventType} · ` : ''}{new Date(r.createdAt).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-0.5">
+                        {[1, 2, 3, 4, 5].map((n) => (
+                          <Star key={n} className={`w-4 h-4 ${n <= r.overallRating ? 'text-amber-400 fill-amber-400' : 'text-slate-700'}`} />
+                        ))}
+                      </div>
+                    </div>
+                    {r.comment && <p className="text-sm text-slate-300 mt-2.5 italic">"{r.comment}"</p>}
+
+                    {r.vendorReply && (
+                      <div className="mt-3 ml-4 pl-3 border-l-2 border-indigo-500/40">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wide">Response from {vendor.businessName}</span>
+                          {r.vendorReplyAt && <span className="text-[10px] text-slate-500">{new Date(r.vendorReplyAt).toLocaleDateString()}</span>}
+                        </div>
+                        <p className="text-sm text-slate-300">{r.vendorReply}</p>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
           {activeTab === 'upload' && (
             <div className="p-8 rounded-2xl bg-slate-900/60 border border-slate-800 text-center max-w-lg mx-auto">
               <Upload className="w-12 h-12 text-indigo-400 mx-auto mb-4" />
@@ -1174,8 +1304,20 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
               <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-slate-400">{selectedPkg?.packageName || 'Starting Price'}</span>
-                  <span className="text-white font-semibold">₹{referencePrice.toLocaleString('en-IN')}</span>
+                  <span className={`font-semibold ${appliedDeal ? 'text-slate-500 line-through' : 'text-white'}`}>₹{referencePrice.toLocaleString('en-IN')}</span>
                 </div>
+                {appliedDeal && (
+                  <>
+                    <div className="flex items-center justify-between text-sm mt-2">
+                      <span className="text-emerald-400 flex items-center gap-1">🎉 {appliedDeal.deal.title}</span>
+                      <span className="text-emerald-400 font-semibold">− ₹{dealDiscount.toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm mt-2 pt-2 border-t border-slate-800">
+                      <span className="text-slate-300 font-semibold">You pay</span>
+                      <span className="text-white font-bold">₹{netPrice.toLocaleString('en-IN')}</span>
+                    </div>
+                  </>
+                )}
                 <div className="flex items-center justify-between text-sm mt-2 pt-2 border-t border-slate-800">
                   <span className="text-slate-400">{advanceLabel}</span>
                   <span className="text-amber-400 font-bold">₹{advanceAmountDue.toLocaleString('en-IN')}</span>
@@ -1257,7 +1399,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                   onBookVendor(
                     vendor,
                     selectedPkg?.id,
-                    effectivePkgPrice,
+                    bookingPrice,
                     customRequest || undefined,
                     selectedEventDate || undefined,
                     (() => {

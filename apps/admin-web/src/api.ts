@@ -142,6 +142,14 @@ export function toggleVendorVerification(token: string, vendorId: string) {
   return authedFetch(`/api/v1/vendors/${vendorId}/verify`, token, { method: 'PUT' });
 }
 
+// Record an explicit verification decision on a vendor's pending request.
+export function decideVendorVerification(token: string, vendorId: string, decision: 'approve' | 'reject', reason?: string) {
+  return authedFetch(`/api/v1/vendors/${vendorId}/verify`, token, {
+    method: 'PUT',
+    body: JSON.stringify({ decision, reason }),
+  });
+}
+
 export function toggleVendorSuspension(token: string, vendorId: string) {
   return authedFetch(`/api/v1/vendors/${vendorId}/suspend`, token, { method: 'PUT' });
 }
@@ -350,8 +358,35 @@ export function fetchSettings(token: string): Promise<{ success: boolean; data?:
   return authedFetch('/api/v1/settings', token);
 }
 
-export function updateSettings(token: string, input: { commissionRate?: number; advanceDepositRate?: number; theme?: 'light' | 'dark' }) {
+export function updateSettings(token: string, input: { commissionRate?: number; advanceDepositRate?: number; gstRate?: number; theme?: 'light' | 'dark' }) {
   return authedFetch('/api/v1/settings', token, { method: 'PUT', body: JSON.stringify(input) });
+}
+
+// --- Settlements (vendor payouts) ---
+
+export interface Settlement {
+  bookingId: string;
+  bookingNumber: string;
+  vendorId: string;
+  vendorName: string;
+  agreedPrice: number;
+  collected: number;
+  commission: number;
+  vendorPayout: number;
+  paidInFull: boolean;
+  settlementStatus: 'pending' | 'settled';
+  settledAt: string | null;
+  eventDate: string;
+}
+
+export interface SettlementTotals { commission: number; payout: number; collected: number; pendingPayout: number; }
+
+export function fetchSettlements(token: string): Promise<{ success: boolean; data?: { settlements: Settlement[]; totals: SettlementTotals } }> {
+  return authedFetch('/api/v1/settlements', token);
+}
+
+export function markSettlement(token: string, bookingId: string, settled: boolean) {
+  return authedFetch(`/api/v1/bookings/${bookingId}/settle`, token, { method: 'PUT', body: JSON.stringify({ settled }) });
 }
 
 // --- Reviews ---

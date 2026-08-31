@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Store, Star, Upload, Check, LogOut, Loader2, Plus, SlidersHorizontal, ChevronDown, Receipt, X, Bell } from 'lucide-react';
-import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, OfferedOptionItem, VENDOR_CATEGORIES, CATEGORY_OPTIONS, CATERING_OPTION_STYLE, MEDIA_QUALITY_OPTIONS, MEDIA_EQUIPMENT_OPTIONS, mediaExtraField } from '../../../packages/shared-types';
+import { Store, Star, Upload, Check, LogOut, Loader2, Plus, SlidersHorizontal, ChevronDown, Receipt, X, Bell, ShieldCheck, Clock as ClockIcon, AlertCircle, FileText } from 'lucide-react';
+import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, VendorDeal, OfferedOptionItem, VENDOR_CATEGORIES, CATEGORY_OPTIONS, CATERING_OPTION_STYLE, MEDIA_QUALITY_OPTIONS, MEDIA_EQUIPMENT_OPTIONS, mediaExtraField, isDealLive } from '../../../packages/shared-types';
 import { STATIC_CITY_GROUPS } from '../../../packages/shared-utils';
 import { AuthGate } from './components/AuthGate';
 import { FloralGoldBackground } from './components/FloralGoldBackground';
-import { fetchMyVendor, createVendor, updateVendor, fetchVendorBookings, fetchVendorBookingsSilent, confirmBooking, sendCounterQuote, updateBookingStatus, updateSpendBreakdown, fetchVendorReviews, GATEWAY_URL } from './api';
+import { fetchMyVendor, createVendor, updateVendor, fetchVendorBookings, fetchVendorBookingsSilent, confirmBooking, sendCounterQuote, updateBookingStatus, updateSpendBreakdown, fetchVendorReviews, replyToReview, submitVerification, confirmBookingPayment, fetchBookingInvoice, fetchCalendarToken, GATEWAY_URL } from './api';
+import { openInvoicePrintWindow } from './invoice';
 import { playNotificationSound } from './notificationSound';
 import { getItemSuggestions, getAmenitySuggestions, suggestionListId } from './itemSuggestions';
 
@@ -155,12 +156,30 @@ export function App() {
     setBookings([]);
   };
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'reviews' | 'portfolio' | 'facilities' | 'availability' | 'packages' | 'profile'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'reviews' | 'portfolio' | 'facilities' | 'availability' | 'packages' | 'offers' | 'profile'>('dashboard');
   // Bookable packages the vendor offers — shown on the customer's "Packages" tab.
   const [packages, setPackages] = useState<VendorPackage[]>([]);
+  // Promotional deals the vendor publishes on their listing.
+  const [deals, setDeals] = useState<VendorDeal[]>([]);
+  const [dealForm, setDealForm] = useState<{ title: string; description: string; discountType: 'percent' | 'flat'; discountValue: string; minOrderAmount: string; expiresAt: string }>({ title: '', description: '', discountType: 'percent', discountValue: '', minOrderAmount: '', expiresAt: '' });
+  const [dealSaving, setDealSaving] = useState(false);
+  const [dealNotice, setDealNotice] = useState('');
+  // Private .ics subscribe URL for syncing bookings to Google/Apple/Outlook.
+  const [calendarUrl, setCalendarUrl] = useState('');
+  const [calendarCopied, setCalendarCopied] = useState(false);
   const [savingPackages, setSavingPackages] = useState(false);
   const [packagesNotice, setPackagesNotice] = useState('');
   const [reviews, setReviews] = useState<Review[]>([]);
+  // Which review's reply box is open, the draft text, and in-flight state.
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyDraft, setReplyDraft] = useState('');
+  const [replySaving, setReplySaving] = useState(false);
+  // Verification request form (KYC + proof documents) shown on the Profile tab.
+  const [verifyForm, setVerifyForm] = useState({ legalName: '', registrationNumber: '', gstNumber: '', contactPerson: '' });
+  const [verifyDocs, setVerifyDocs] = useState<string[]>([]);
+  const [verifyUploading, setVerifyUploading] = useState(false);
+  const [verifySaving, setVerifySaving] = useState(false);
+  const [verifyNotice, setVerifyNotice] = useState('');
   const [facilities, setFacilities] = useState<Partial<VendorFacilities>>({});
   const [savingFacilities, setSavingFacilities] = useState(false);
   const [facilitiesNotice, setFacilitiesNotice] = useState('');
@@ -286,6 +305,19 @@ export function App() {
         setOfferedOptionQuality(v.offeredOptionQuality || {});
         setAvailableDates(v.availableDates || []);
         setPackages(v.packages || []);
+        setDeals(v.deals || []);
+        // Build the private calendar-subscribe URL for this vendor.
+        fetchCalendarToken(token, v.id)
+          .then((r) => { if (r.data?.token) setCalendarUrl(`${GATEWAY_URL}/api/v1/bookings/vendor/${v.id}/calendar.ics?token=${r.data.token}`); })
+          .catch(() => {});
+        // Seed the verification form from any prior submission.
+        setVerifyForm({
+          legalName: v.verification?.legalName || v.businessName || '',
+          registrationNumber: v.verification?.registrationNumber || '',
+          gstNumber: v.verification?.gstNumber || '',
+          contactPerson: v.verification?.contactPerson || '',
+        });
+        setVerifyDocs(v.verification?.documents || []);
 
         // Bookings/reviews are secondary — a hiccup here must not blank out the
         // listing that already loaded, so they get their own error handling
@@ -337,6 +369,113 @@ export function App() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, token]);
+
+  const handleReplySubmit = async (reviewId: string) => {
+    if (!token) return;
+    setReplySaving(true);
+    try {
+      const res = await replyToReview(token, reviewId, replyDraft.trim());
+      if (res.data?.review) {
+        setReviews((prev) => prev.map((r) => (r.id === reviewId ? res.data!.review : r)));
+      }
+      setReplyingTo(null);
+      setReplyDraft('');
+    } catch (err: any) {
+      alert(err?.message || 'Could not post your reply. Please try again.');
+    } finally {
+      setReplySaving(false);
+    }
+  };
+
+  const handleVerifyDocUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !myVendor || !token) return;
+    setVerifyUploading(true);
+    setVerifyNotice('');
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch(`${GATEWAY_URL}/api/v1/vendors/${myVendor.id}/upload`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+      const json = await res.json();
+      if (json.success && json.data?.fileUrl) {
+        setVerifyDocs((prev) => [...prev, json.data.fileUrl]);
+      } else {
+        setVerifyNotice(json.message || 'Upload failed.');
+      }
+    } catch {
+      setVerifyNotice('Upload failed — is the gateway running?');
+    } finally {
+      setVerifyUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleSubmitVerification = async () => {
+    if (!token || !myVendor) return;
+    if (!verifyForm.legalName.trim() || !verifyForm.registrationNumber.trim()) {
+      setVerifyNotice('Legal business name and registration number are required.');
+      return;
+    }
+    if (verifyDocs.length === 0) {
+      setVerifyNotice('Please upload at least one proof document (registration / GST / ID).');
+      return;
+    }
+    setVerifySaving(true);
+    setVerifyNotice('');
+    try {
+      const res = await submitVerification(token, myVendor.id, { ...verifyForm, documents: verifyDocs });
+      if (res.data?.vendor) setMyVendor(res.data.vendor);
+      setVerifyNotice('Verification request submitted — our team will review it shortly.');
+    } catch (err: any) {
+      setVerifyNotice(err?.message || 'Could not submit verification. Please try again.');
+    } finally {
+      setVerifySaving(false);
+    }
+  };
+
+  // Persist a new deals array to the vendor and reflect it locally.
+  const persistDeals = async (next: VendorDeal[]) => {
+    if (!token || !myVendor) return;
+    setDeals(next);
+    try {
+      const res = await updateVendor(token, myVendor.id, { deals: next } as any);
+      if (res.data?.vendor) setMyVendor(res.data.vendor);
+    } catch (err: any) {
+      setDealNotice(err?.message || 'Could not save the offer. Please try again.');
+    }
+  };
+
+  const handleAddDeal = async () => {
+    if (!dealForm.title.trim()) { setDealNotice('Give the offer a title.'); return; }
+    const value = Number(dealForm.discountValue);
+    if (!value || value <= 0) { setDealNotice('Enter a discount value greater than zero.'); return; }
+    if (dealForm.discountType === 'percent' && value > 100) { setDealNotice('A percentage discount can’t exceed 100%.'); return; }
+    setDealSaving(true);
+    setDealNotice('');
+    const deal: VendorDeal = {
+      id: `deal-${Date.now()}`,
+      title: dealForm.title.trim(),
+      description: dealForm.description.trim(),
+      discountType: dealForm.discountType,
+      discountValue: value,
+      minOrderAmount: dealForm.minOrderAmount ? Number(dealForm.minOrderAmount) : undefined,
+      expiresAt: dealForm.expiresAt || undefined,
+      isActive: true,
+      createdAt: new Date().toISOString(),
+    };
+    await persistDeals([deal, ...deals]);
+    setDealForm({ title: '', description: '', discountType: 'percent', discountValue: '', minOrderAmount: '', expiresAt: '' });
+    setDealSaving(false);
+  };
+
+  const handleToggleDeal = (id: string) =>
+    persistDeals(deals.map((d) => (d.id === id ? { ...d, isActive: !d.isActive } : d)));
+
+  const handleDeleteDeal = (id: string) => persistDeals(deals.filter((d) => d.id !== id));
 
   const handleSaveProfile = async () => {
     if (!token || !myVendor) return;
@@ -1127,6 +1266,26 @@ export function App() {
     await refreshBookings();
   };
 
+  const handleConfirmPayment = async (bookingId: string, paymentId: string) => {
+    if (!token) return;
+    try {
+      await confirmBookingPayment(token, bookingId, paymentId);
+      await refreshBookings();
+    } catch (err: any) {
+      alert(err?.message || 'Could not confirm the payment.');
+    }
+  };
+
+  const handleViewInvoice = async (bookingId: string) => {
+    if (!token) return;
+    try {
+      const res = await fetchBookingInvoice(token, bookingId);
+      if (res.data?.invoice) openInvoicePrintWindow(res.data.invoice);
+    } catch (err: any) {
+      alert(err?.message || 'Could not load the invoice.');
+    }
+  };
+
   const confirmedBookings = bookings.filter((b) => b.status === 'confirmed' || b.status === 'in_progress' || b.status === 'completed');
   const totalEarnings = confirmedBookings.reduce((acc, b) => acc + b.advanceAmountPaid, 0);
   const [earningsExpanded, setEarningsExpanded] = useState(false);
@@ -1381,6 +1540,7 @@ export function App() {
             { key: 'reviews', label: `Reviews${reviews.length ? ` (${reviews.length})` : ''}` },
             { key: 'facilities', label: 'Facilities & Options' },
             { key: 'packages', label: `${myVendor?.category === 'Venue' ? 'Halls' : 'Packages'}${packages.length ? ` (${packages.length})` : ''}` },
+            { key: 'offers', label: `Offers${deals.length ? ` (${deals.length})` : ''}` },
             ...(myVendor?.category !== 'Invitation' ? [{ key: 'availability', label: 'Availability' }] : []),
             { key: 'portfolio', label: 'Local Disk Portfolio' },
             { key: 'profile', label: 'Business Profile' },
@@ -1630,6 +1790,34 @@ export function App() {
                         <span className="text-[11px] text-slate-400 block">
                           Advance Paid: ₹{b.advanceAmountPaid.toLocaleString('en-IN')}
                         </span>
+                        {(b.status === 'confirmed' || b.status === 'in_progress' || b.status === 'completed') && (
+                          <span className={`text-[11px] block ${(b.remainingAmount ?? 0) <= 0 ? 'text-emerald-400' : 'text-amber-300'}`}>
+                            {(b.remainingAmount ?? 0) <= 0 ? '✓ Paid in full' : `Balance due: ₹${(b.remainingAmount ?? 0).toLocaleString('en-IN')}`}
+                          </span>
+                        )}
+
+                        {/* A balance the customer has recorded, awaiting the vendor's confirmation. */}
+                        {(() => {
+                          const claim = (b.payments || []).find((p) => p.type === 'balance' && p.status === 'claimed');
+                          return claim ? (
+                            <div className="mt-2 flex flex-col items-end gap-1">
+                              <p className="text-[10px] text-sky-300 text-right max-w-[220px]">
+                                Customer recorded a balance payment of ₹{claim.amount.toLocaleString('en-IN')}{claim.reference ? ` (ref: ${claim.reference})` : ''}. Verify it landed, then confirm.
+                              </p>
+                              <button onClick={() => handleConfirmPayment(b.id, claim.id)}
+                                className="px-4 py-2 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs shadow-md">
+                                Confirm Balance Received
+                              </button>
+                            </div>
+                          ) : null;
+                        })()}
+
+                        {(b.status === 'confirmed' || b.status === 'in_progress' || b.status === 'completed') && (
+                          <button onClick={() => handleViewInvoice(b.id)}
+                            className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white text-[11px] font-bold">
+                            <Receipt className="w-3.5 h-3.5 text-indigo-400" /> Invoice
+                          </button>
+                        )}
 
                         {b.status === 'pending_payment' && (
                           <div className="mt-3 flex flex-col items-end gap-1.5">
@@ -1728,6 +1916,71 @@ export function App() {
                       </div>
                     </div>
                     {r.comment && <p className="text-sm text-slate-300 mt-2.5 italic">"{r.comment}"</p>}
+
+                    {/* Vendor's public reply */}
+                    {r.vendorReply && replyingTo !== r.id && (
+                      <div className="mt-3 ml-4 pl-3 border-l-2 border-amber-500/40">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wide">Your reply</span>
+                          {r.vendorReplyAt && (
+                            <span className="text-[10px] text-slate-500">{new Date(r.vendorReplyAt).toLocaleDateString()}</span>
+                          )}
+                        </div>
+                        <p className="text-sm text-slate-300">{r.vendorReply}</p>
+                        <button
+                          onClick={() => { setReplyingTo(r.id); setReplyDraft(r.vendorReply || ''); }}
+                          className="mt-1.5 text-[11px] font-semibold text-amber-400 hover:text-amber-300"
+                        >
+                          Edit reply
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Reply composer */}
+                    {replyingTo === r.id ? (
+                      <div className="mt-3 ml-4 pl-3 border-l-2 border-amber-500/40">
+                        <textarea
+                          value={replyDraft}
+                          onChange={(e) => setReplyDraft(e.target.value)}
+                          rows={3}
+                          maxLength={1000}
+                          autoFocus
+                          placeholder="Write a public response to this customer…"
+                          className="w-full rounded-xl bg-slate-900 border border-slate-700 text-sm text-white p-3 focus:outline-none focus:border-amber-500"
+                        />
+                        <div className="flex items-center gap-2 mt-2">
+                          <button
+                            onClick={() => handleReplySubmit(r.id)}
+                            disabled={replySaving}
+                            className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-bold text-xs disabled:opacity-50"
+                          >
+                            {replySaving ? 'Saving…' : r.vendorReply ? 'Update reply' : 'Post reply'}
+                          </button>
+                          <button
+                            onClick={() => { setReplyingTo(null); setReplyDraft(''); }}
+                            className="px-4 py-1.5 rounded-xl bg-slate-800 text-slate-300 font-semibold text-xs hover:bg-slate-700"
+                          >
+                            Cancel
+                          </button>
+                          {r.vendorReply && (
+                            <button
+                              onClick={() => { setReplyDraft(''); handleReplySubmit(r.id); }}
+                              disabled={replySaving}
+                              className="ml-auto text-[11px] font-semibold text-rose-400 hover:text-rose-300 disabled:opacity-50"
+                            >
+                              Delete reply
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ) : !r.vendorReply && (
+                      <button
+                        onClick={() => { setReplyingTo(r.id); setReplyDraft(''); }}
+                        className="mt-3 text-[11px] font-semibold text-amber-400 hover:text-amber-300"
+                      >
+                        + Reply to this review
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -2306,10 +2559,38 @@ export function App() {
 
         {/* Availability Tab */}
         {activeTab === 'availability' && myVendor?.category !== 'Invitation' && (
-          <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-800 max-w-2xl space-y-5">
+          <div className="max-w-2xl space-y-5">
+          {/* Calendar sync — subscribe bookings into Google/Apple/Outlook. */}
+          <div className="glass-card p-6 rounded-3xl border border-indigo-500/30 bg-indigo-500/5 space-y-3">
+            <div className="flex items-start gap-3">
+              <ClockIcon className="w-6 h-6 text-indigo-400 shrink-0" />
+              <div>
+                <h3 className="font-bold text-white">Sync bookings to your calendar</h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Add this private link to Google Calendar (<span className="text-slate-300">Other calendars → From URL</span>), Apple Calendar, or Outlook. Every confirmed booking shows up automatically.
+                </p>
+              </div>
+            </div>
+            {calendarUrl ? (
+              <div className="flex items-center gap-2">
+                <input readOnly value={calendarUrl} onClick={(e) => (e.target as HTMLInputElement).select()}
+                  className="flex-1 min-w-0 p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-300 text-[11px] font-mono" />
+                <button
+                  onClick={() => { navigator.clipboard?.writeText(calendarUrl); setCalendarCopied(true); setTimeout(() => setCalendarCopied(false), 2000); }}
+                  className="px-3 py-2.5 rounded-lg bg-indigo-500 text-white font-bold text-[11px] shrink-0">
+                  {calendarCopied ? 'Copied!' : 'Copy'}
+                </button>
+              </div>
+            ) : (
+              <p className="text-[11px] text-slate-500">Preparing your calendar link…</p>
+            )}
+            <p className="text-[10px] text-slate-500">Keep this link private — anyone with it can see your booking dates.</p>
+          </div>
+
+          <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-5">
             <div>
               <h3 className="font-bold text-xl text-white">Availability Calendar</h3>
-              <p className="text-xs text-slate-400 mt-1">Add the dates you're open to book. Customers can only request these dates.</p>
+              <p className="text-xs text-slate-400 mt-1">Add the dates you're open to book. Customers can only request these dates. Confirmed booking dates are blocked automatically.</p>
             </div>
 
             <div className="flex items-end gap-2">
@@ -2389,11 +2670,209 @@ export function App() {
               );
             })()}
           </div>
+          </div>
         )}
 
         {/* Profile Tab */}
+        {activeTab === 'offers' && (
+          <div className="max-w-2xl mx-auto space-y-5">
+            <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-4">
+              <div>
+                <h3 className="font-bold text-xl text-white">Publish an Offer</h3>
+                <p className="text-xs text-slate-400 mt-1">Deals show on your listing and are auto-applied to the customer's price — the biggest applicable one wins.</p>
+              </div>
+
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Offer Title *</label>
+                <input type="text" value={dealForm.title} maxLength={60} placeholder="e.g. Monsoon Special"
+                  onChange={(e) => setDealForm((f) => ({ ...f, title: e.target.value }))}
+                  className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm" />
+              </div>
+
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Description (optional)</label>
+                <input type="text" value={dealForm.description} maxLength={140} placeholder="What's included / any conditions"
+                  onChange={(e) => setDealForm((f) => ({ ...f, description: e.target.value }))}
+                  className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">Discount Type</label>
+                  <select value={dealForm.discountType}
+                    onChange={(e) => setDealForm((f) => ({ ...f, discountType: e.target.value as 'percent' | 'flat' }))}
+                    className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs font-semibold">
+                    <option value="percent">Percentage off (%)</option>
+                    <option value="flat">Flat amount off (₹)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">{dealForm.discountType === 'percent' ? 'Percent (%)' : 'Amount (₹)'} *</label>
+                  <input type="number" value={dealForm.discountValue}
+                    onChange={(e) => setDealForm((f) => ({ ...f, discountValue: e.target.value }))}
+                    className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">Min order (₹, optional)</label>
+                  <input type="number" value={dealForm.minOrderAmount} placeholder="No minimum"
+                    onChange={(e) => setDealForm((f) => ({ ...f, minOrderAmount: e.target.value }))}
+                    className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">Valid until (optional)</label>
+                  <input type="date" value={dealForm.expiresAt}
+                    onChange={(e) => setDealForm((f) => ({ ...f, expiresAt: e.target.value }))}
+                    className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm" />
+                </div>
+              </div>
+
+              {dealNotice && <p className="text-xs text-amber-400 font-semibold">{dealNotice}</p>}
+
+              <button onClick={handleAddDeal} disabled={dealSaving}
+                className="px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-bold text-xs shadow-lg disabled:opacity-50 inline-flex items-center gap-2">
+                {dealSaving && <Loader2 className="w-4 h-4 animate-spin" />} <Plus className="w-4 h-4" /> Publish Offer
+              </button>
+            </div>
+
+            {deals.length > 0 && (
+              <div className="space-y-3">
+                {deals.map((d) => {
+                  const live = isDealLive(d);
+                  return (
+                    <div key={d.id} className="glass-card p-5 rounded-2xl border border-slate-800 flex items-start justify-between gap-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-bold text-white text-sm">{d.title}</span>
+                          <span className="px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[10px] font-bold">
+                            {d.discountType === 'percent' ? `${d.discountValue}% OFF` : `₹${d.discountValue.toLocaleString('en-IN')} OFF`}
+                          </span>
+                          {!live && <span className="px-2 py-0.5 rounded-full bg-slate-700/50 text-slate-400 text-[10px] font-bold">{d.isActive ? 'Scheduled/Expired' : 'Paused'}</span>}
+                          {live && <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[10px] font-bold">Live</span>}
+                        </div>
+                        {d.description && <p className="text-xs text-slate-400 mt-1">{d.description}</p>}
+                        <p className="text-[10px] text-slate-500 mt-1">
+                          {d.minOrderAmount ? `Min order ₹${d.minOrderAmount.toLocaleString('en-IN')} · ` : ''}
+                          {d.expiresAt ? `Valid until ${new Date(d.expiresAt).toLocaleDateString()}` : 'No expiry'}
+                        </p>
+                      </div>
+                      <div className="flex flex-col gap-2 shrink-0">
+                        <button onClick={() => handleToggleDeal(d.id)}
+                          className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-[11px]">
+                          {d.isActive ? 'Pause' : 'Resume'}
+                        </button>
+                        <button onClick={() => handleDeleteDeal(d.id)}
+                          className="px-3 py-1.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 font-semibold text-[11px]">
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
         {activeTab === 'profile' && (
-          <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-800 max-w-2xl mx-auto space-y-4">
+          <div className="max-w-2xl mx-auto space-y-5">
+          {/* Business verification — earn the Verified badge */}
+          {(() => {
+            const vs = myVendor.verification?.status || (myVendor.isVerified ? 'verified' : 'unverified');
+            if (vs === 'verified') {
+              return (
+                <div className="glass-card p-6 rounded-3xl border border-emerald-500/30 bg-emerald-500/5 flex items-center gap-3">
+                  <ShieldCheck className="w-8 h-8 text-emerald-400 shrink-0" />
+                  <div>
+                    <h3 className="font-bold text-white">Verified Business</h3>
+                    <p className="text-xs text-slate-400 mt-0.5">Your listing carries the Verified badge — it builds trust and ranks higher with customers.</p>
+                  </div>
+                </div>
+              );
+            }
+            if (vs === 'pending') {
+              return (
+                <div className="glass-card p-6 rounded-3xl border border-amber-500/30 bg-amber-500/5 flex items-center gap-3">
+                  <ClockIcon className="w-8 h-8 text-amber-400 shrink-0" />
+                  <div>
+                    <h3 className="font-bold text-white">Verification under review</h3>
+                    <p className="text-xs text-slate-400 mt-0.5">We're reviewing the documents you submitted. This usually takes 1–2 business days.</p>
+                  </div>
+                </div>
+              );
+            }
+            return (
+              <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-4">
+                <div className="flex items-start gap-3">
+                  <ShieldCheck className="w-7 h-7 text-indigo-400 shrink-0" />
+                  <div>
+                    <h3 className="font-bold text-lg text-white">Get Verified</h3>
+                    <p className="text-xs text-slate-400 mt-1">Submit your business details and proof documents to earn the Verified badge customers look for.</p>
+                  </div>
+                </div>
+
+                {vs === 'rejected' && myVendor.verification?.rejectionReason && (
+                  <div className="flex items-start gap-2 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30">
+                    <AlertCircle className="w-4 h-4 text-rose-400 mt-0.5 shrink-0" />
+                    <p className="text-xs text-rose-300">Previous request declined: {myVendor.verification.rejectionReason}. Please correct and resubmit.</p>
+                  </div>
+                )}
+
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1">Legal Business Name *</label>
+                    <input type="text" value={verifyForm.legalName} onChange={(e) => setVerifyForm((f) => ({ ...f, legalName: e.target.value }))}
+                      className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1">Registration Number *</label>
+                    <input type="text" value={verifyForm.registrationNumber} onChange={(e) => setVerifyForm((f) => ({ ...f, registrationNumber: e.target.value }))}
+                      className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1">GSTIN (optional)</label>
+                    <input type="text" value={verifyForm.gstNumber} onChange={(e) => setVerifyForm((f) => ({ ...f, gstNumber: e.target.value }))}
+                      className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1">Contact Person (optional)</label>
+                    <input type="text" value={verifyForm.contactPerson} onChange={(e) => setVerifyForm((f) => ({ ...f, contactPerson: e.target.value }))}
+                      className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1.5">Proof Documents * (registration / GST certificate / owner ID)</label>
+                  {verifyDocs.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {verifyDocs.map((url, i) => (
+                        <div key={i} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-slate-300">
+                          <FileText className="w-3.5 h-3.5 text-indigo-400" />
+                          <a href={url} target="_blank" rel="noreferrer" className="hover:text-white underline">Document {i + 1}</a>
+                          <button onClick={() => setVerifyDocs((prev) => prev.filter((_, idx) => idx !== i))} className="text-rose-400 hover:text-rose-300 ml-1">✕</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs">
+                    <Upload className="w-3.5 h-3.5" /> {verifyUploading ? 'Uploading…' : 'Upload document'}
+                    <input type="file" accept="image/*,application/pdf" onChange={handleVerifyDocUpload} className="hidden" disabled={verifyUploading} />
+                  </label>
+                </div>
+
+                {verifyNotice && <p className="text-xs text-amber-400 font-semibold">{verifyNotice}</p>}
+
+                <button onClick={handleSubmitVerification} disabled={verifySaving}
+                  className="px-6 py-3 rounded-2xl bg-gradient-to-r from-indigo-500 to-indigo-600 text-white font-bold text-xs shadow-lg disabled:opacity-50">
+                  {verifySaving ? 'Submitting…' : 'Submit for verification'}
+                </button>
+              </div>
+            );
+          })()}
+
+          <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-4">
             <h3 className="font-bold text-xl text-white">Vendor Profile Settings</h3>
 
             <div>
@@ -2549,6 +3028,7 @@ export function App() {
             >
               {savingProfile && <Loader2 className="w-4 h-4 animate-spin" />} Save Profile Changes
             </button>
+          </div>
           </div>
         )}
 

@@ -162,7 +162,116 @@ export interface Vendor {
   // quantity-based discount, shown to customers on the listing.
   giftCount?: number;
   giftDiscount?: string;
+  // Verification request the vendor submits to earn the Verified badge. `status`
+  // drives the admin review queue; `isVerified` above stays in sync (true only
+  // when status === 'verified') for backward compatibility.
+  verification?: VendorVerification;
+  // Promotional deals/offers the vendor publishes on their own listing.
+  deals?: VendorDeal[];
   createdAt: string;
+}
+
+// A discount/offer a vendor publishes on their listing. Percentage or flat rupee
+// off, optionally gated by a minimum order value and a validity window.
+export interface VendorDeal {
+  id: string;
+  title: string;
+  description?: string;
+  discountType: 'percent' | 'flat';
+  discountValue: number; // percent (1–100) or flat rupees off
+  minOrderAmount?: number; // only applies when the subtotal reaches this
+  startsAt?: string; // ISO date; empty = live immediately
+  expiresAt?: string; // ISO date; empty = no expiry
+  isActive: boolean;
+  createdAt: string;
+}
+
+// Whether a deal is currently live: active, started, and not expired.
+export function isDealLive(deal: VendorDeal, now: Date = new Date()): boolean {
+  if (!deal.isActive) return false;
+  if (deal.startsAt && new Date(deal.startsAt) > now) return false;
+  if (deal.expiresAt) {
+    // Treat expiry as end-of-day so a deal valid "until the 5th" works all day.
+    const end = new Date(deal.expiresAt);
+    end.setHours(23, 59, 59, 999);
+    if (end < now) return false;
+  }
+  return true;
+}
+
+// The vendor's deals that are live right now.
+export function getLiveDeals(vendor: Pick<Vendor, 'deals'>): VendorDeal[] {
+  return (vendor.deals || []).filter((d) => isDealLive(d));
+}
+
+// Rupees a single deal takes off a given subtotal (0 if the subtotal doesn't
+// meet the deal's minimum). Percentage discounts are capped at the subtotal.
+export function dealDiscountAmount(deal: VendorDeal, subtotal: number): number {
+  if (subtotal <= 0) return 0;
+  if (deal.minOrderAmount && subtotal < deal.minOrderAmount) return 0;
+  const raw = deal.discountType === 'percent'
+    ? (subtotal * Math.min(deal.discountValue, 100)) / 100
+    : deal.discountValue;
+  return Math.max(0, Math.min(Math.round(raw), subtotal));
+}
+
+// The live deal that saves the customer the most on this subtotal, with its
+// rupee discount — or null when nothing applies.
+export function bestDealForAmount(vendor: Pick<Vendor, 'deals'>, subtotal: number): { deal: VendorDeal; discount: number } | null {
+  let best: { deal: VendorDeal; discount: number } | null = null;
+  for (const deal of getLiveDeals(vendor)) {
+    const discount = dealDiscountAmount(deal, subtotal);
+    if (discount > 0 && (!best || discount > best.discount)) best = { deal, discount };
+  }
+  return best;
+}
+
+export type VerificationStatus = 'unverified' | 'pending' | 'verified' | 'rejected';
+
+export interface VendorVerification {
+  status: VerificationStatus;
+  // Legal / KYC details the vendor supplies to prove the business is real.
+  legalName?: string;
+  registrationNumber?: string;
+  gstNumber?: string;
+  contactPerson?: string;
+  // URLs of proof documents (business registration, GST certificate, ID) the
+  // vendor uploaded via the existing vendor upload endpoint.
+  documents?: string[];
+  submittedAt?: string;
+  reviewedAt?: string;
+  rejectionReason?: string;
+}
+
+// A trust signal shown to shoppers. `tone` maps to a colour treatment in the UI.
+export interface VendorTrustBadge {
+  key: string;
+  label: string;
+  tone: 'verified' | 'rating' | 'experience' | 'popular' | 'tenure';
+}
+
+// Derive the trust badges a vendor has earned from its public stats. Pure and
+// deterministic so the customer web, compare modal, and vendor dashboard all
+// show the same set without duplicating the rules.
+export function getVendorTrustBadges(vendor: Pick<Vendor, 'isVerified' | 'ratingAverage' | 'reviewCount' | 'yearsOfExperience' | 'createdAt'>): VendorTrustBadge[] {
+  const badges: VendorTrustBadge[] = [];
+  if (vendor.isVerified) {
+    badges.push({ key: 'verified', label: 'Verified Business', tone: 'verified' });
+  }
+  if (vendor.ratingAverage >= 4.5 && vendor.reviewCount >= 5) {
+    badges.push({ key: 'top-rated', label: 'Top Rated', tone: 'rating' });
+  }
+  if (vendor.reviewCount >= 20) {
+    badges.push({ key: 'popular', label: 'Highly Booked', tone: 'popular' });
+  }
+  if (vendor.yearsOfExperience >= 5) {
+    badges.push({ key: 'experienced', label: `${vendor.yearsOfExperience}+ Yrs Experience`, tone: 'experience' });
+  }
+  const joinedYear = vendor.createdAt ? new Date(vendor.createdAt).getFullYear() : NaN;
+  if (!Number.isNaN(joinedYear)) {
+    badges.push({ key: 'since', label: `On Magizhnaazh since ${joinedYear}`, tone: 'tenure' });
+  }
+  return badges;
 }
 
 // A single priced item a vendor lists under one of their offered options —
@@ -384,6 +493,9 @@ export interface Booking {
   vendorId: string;
   vendorName: string;
   vendorCategory: VendorCategory;
+  // Customer's display name, captured for invoices (bookings predate this field,
+  // so it may be absent on older records).
+  customerName?: string;
   packageId?: string;
   packageName?: string;
   agreedPrice: number;
@@ -410,7 +522,52 @@ export interface Booking {
   // breakdown of the total; the customer sees it under this vendor in the Smart
   // Budget "Where Your Money Went" drill-down. Works for every vendor category.
   spendItems?: { label: string; amount: number }[];
+  // Ledger of payments made against this booking (advance + balance). Each entry
+  // is a customer claim the vendor confirms, mirroring the manual-UPI flow.
+  payments?: BookingPayment[];
+  // True once confirmed payments cover the full agreed price.
+  paidInFull?: boolean;
+  // Sequential GST invoice number, assigned the first time an invoice is issued.
+  invoiceNumber?: string;
+  invoiceIssuedAt?: string;
+  // Vendor payout settlement (platform pays the vendor their share minus commission).
+  settlementStatus?: 'pending' | 'settled';
+  settledAt?: string;
   createdAt: string;
+}
+
+// One payment against a booking. Customers record a claim (status 'claimed');
+// the vendor confirms it (status 'confirmed'), which updates the paid/remaining
+// amounts. Method is 'upi' | 'cash' | 'card' | 'bank' etc.
+export interface BookingPayment {
+  id: string;
+  type: 'advance' | 'balance';
+  amount: number;
+  method: string;
+  reference?: string;
+  status: 'claimed' | 'confirmed';
+  claimedAt: string;
+  confirmedAt?: string;
+}
+
+// Structured GST invoice for a booking, computed server-side and rendered as a
+// printable document in the web apps. Prices are treated as GST-inclusive.
+export interface BookingInvoice {
+  invoiceNumber: string;
+  issuedAt: string;
+  eventDate: string;
+  seller: { name: string; gstin?: string; address?: string; email?: string; phone?: string };
+  buyer: { name: string; email?: string };
+  lineItems: { label: string; amount: number }[];
+  gstRate: number; // fraction, e.g. 0.18
+  taxableValue: number;
+  cgst: number;
+  sgst: number;
+  totalGst: number;
+  grandTotal: number;
+  advancePaid: number;
+  balanceDue: number;
+  paidInFull: boolean;
 }
 
 export interface CanvasElement {
@@ -504,6 +661,9 @@ export interface Review {
   eventType: string;
   eventDate: string;
   createdAt: string;
+  // Vendor's public response to this review — vendors can reply once, and edit it.
+  vendorReply?: string;
+  vendorReplyAt?: string;
 }
 
 export interface ApiResponse<T> {
@@ -579,6 +739,7 @@ export type ThemePreference = 'light' | 'dark';
 export interface PlatformSettings {
   commissionRate: number; // e.g. 0.1 = 10%
   advanceDepositRate: number; // e.g. 0.3 = 30%
+  gstRate?: number; // e.g. 0.18 = 18%, used for GST invoices
   // Site-wide theme chosen in the admin console. Applied across the admin and
   // customer apps so the light/dark choice stays in sync everywhere.
   theme?: ThemePreference;

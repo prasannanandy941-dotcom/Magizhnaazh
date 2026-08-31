@@ -256,6 +256,33 @@ app.get('/api/v1/reviews/vendor/:vendorId', async (req: Request, res: Response) 
   res.json({ success: true, data: { reviews, averageRating, count } });
 });
 
+// 5d. Vendor reply — the vendor that owns the review can post/edit a public
+// response to it. Ownership is verified against the marketplace vendor record.
+app.post('/api/v1/reviews/:id/reply', authMiddleware(), requireRole('vendor', 'admin'), async (req: Request, res: Response) => {
+  const reply = typeof req.body.reply === 'string' ? req.body.reply.trim() : '';
+  const review = await ReviewModel.findOne({ id: req.params.id });
+  if (!review) return res.status(404).json({ success: false, message: 'Review not found.' });
+
+  if (req.user!.role !== 'admin') {
+    let vendor: any;
+    try {
+      const vres = await fetch(`${MARKETPLACE_SERVICE_URL}/api/v1/vendors/${review.vendorId}`);
+      if (!vres.ok) return res.status(404).json({ success: false, message: 'Vendor listing not found.' });
+      vendor = (await vres.json()).data.vendor;
+    } catch {
+      return res.status(502).json({ success: false, message: 'Could not reach marketplace to verify ownership.' });
+    }
+    if (vendor.userId !== req.user!.sub) {
+      return res.status(403).json({ success: false, message: 'You can only reply to reviews on your own listing.' });
+    }
+  }
+
+  review.vendorReply = reply;
+  review.vendorReplyAt = reply ? new Date().toISOString() : '';
+  await review.save();
+  res.json({ success: true, message: reply ? 'Reply posted.' : 'Reply removed.', data: { review } });
+});
+
 // --- Admin moderation: reviews ---
 app.get('/api/v1/reviews', authMiddleware(), requireRole('admin'), async (req: Request, res: Response) => {
   const reviews = await ReviewModel.find().sort({ createdAt: -1 }).limit(200);

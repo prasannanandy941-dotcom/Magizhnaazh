@@ -17,6 +17,9 @@ const reviewSchema = new Schema<Review>({
   eventType: { type: String, default: '' },
   eventDate: { type: String, default: '' },
   createdAt: { type: String, default: () => new Date().toISOString() },
+  // Vendor's public response to this review.
+  vendorReply: { type: String, default: '' },
+  vendorReplyAt: { type: String, default: '' },
 });
 
 // Prevent duplicate/fake reviews: one review per customer, per vendor, per booking.

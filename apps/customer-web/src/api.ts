@@ -1,4 +1,4 @@
-import { User, Event, Booking, Vendor, Invitation, Guest, City, Review, EventFeedback } from '../../../packages/shared-types';
+import { User, Event, Booking, Vendor, Invitation, Guest, City, Review, EventFeedback, BookingInvoice } from '../../../packages/shared-types';
 
 // In production this is baked in at build time from the VITE_GATEWAY_URL env
 // var (set in Render). Falls back to the local gateway for `npm run dev`.
@@ -348,6 +348,7 @@ export function createBookingQuote(input: {
   vendorId: string;
   vendorName?: string;
   vendorCategory?: string;
+  customerName?: string;
   eventId: string;
   packageId?: string;
   packageName?: string;
@@ -387,6 +388,20 @@ export async function uploadReferenceImage(file: File): Promise<string> {
 // to the caller's own customerId, so this needs no extra params.
 export function fetchMyBookings(): Promise<BookingsListResponse> {
   return authedFetch<BookingsListResponse>('/api/v1/bookings', { method: 'GET' });
+}
+
+// Record a balance payment against a confirmed booking (manual UPI claim). The
+// vendor confirms it afterwards. Amount defaults server-side to the full balance.
+export function recordBalancePayment(bookingId: string, amount?: number, reference?: string): Promise<BookingResponse> {
+  return authedFetch<BookingResponse>(`/api/v1/bookings/${bookingId}/payments`, {
+    method: 'POST',
+    body: JSON.stringify({ amount, reference, method: 'upi' }),
+  });
+}
+
+// Structured GST invoice for one of the customer's bookings.
+export function fetchBookingInvoice(bookingId: string): Promise<{ success: boolean; data?: { invoice: BookingInvoice } }> {
+  return authedFetch<{ success: boolean; data?: { invoice: BookingInvoice } }>(`/api/v1/bookings/${bookingId}/invoice`, { method: 'GET' });
 }
 
 // --- Invitations ---
@@ -486,6 +501,12 @@ export function submitReview(input: {
 // The signed-in customer's own reviews — used to show which orders are reviewed.
 export function fetchMyReviews(): Promise<{ success: boolean; data?: { reviews: Review[] } }> {
   return authedFetch<{ success: boolean; data?: { reviews: Review[] } }>('/api/v1/reviews/mine', { method: 'GET' });
+}
+
+// Public reviews for a vendor — shown on the vendor detail page so shoppers can
+// read verified feedback and the vendor's replies. No account required.
+export function fetchVendorReviews(vendorId: string): Promise<{ success: boolean; data?: { reviews: Review[]; averageRating: number; count: number } }> {
+  return publicFetch<{ success: boolean; data?: { reviews: Review[]; averageRating: number; count: number } }>(`/api/v1/reviews/vendor/${encodeURIComponent(vendorId)}`, { method: 'GET' });
 }
 
 // --- Event guest feedback ---
