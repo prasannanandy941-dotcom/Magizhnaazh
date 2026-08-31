@@ -44,7 +44,30 @@ export interface VendorPackage {
   // Catering-only structured menu details. Only set/shown for Catering vendors,
   // whose package form replaces the generic fields with these.
   catering?: CateringPackageDetails;
+  // Venue-only structured hall details. Only set/shown for Venue vendors.
+  venue?: VenuePackageDetails;
 }
+
+// Structured hall details for a Venue vendor's package (priced per session).
+// Hall name = packageName, seating capacity = capacityPersons (reused).
+export interface VenuePackageDetails {
+  sessions?: string[]; // Morning / Evening / Full Day (priced per session)
+  hallType?: string; // AC / Non-AC
+  hallClass?: string; // Premium / Normal
+  parking?: boolean;
+  powerBackup?: boolean; // power backup / generator
+  bridalRoom?: boolean; // bridal / green room
+  accommodationRooms?: number;
+  cateringPolicy?: string; // In-house only / External allowed
+  stageIncluded?: boolean;
+  valetService?: boolean; // valet / parking service
+}
+
+// Option sets for the Venue package form.
+export const VENUE_SESSIONS = ['Morning', 'Evening', 'Full Day'] as const;
+export const VENUE_HALL_TYPES = ['AC', 'Non-AC'] as const;
+export const VENUE_HALL_CLASSES = ['Premium', 'Normal'] as const;
+export const VENUE_CATERING_POLICIES = ['In-house only', 'External allowed'] as const;
 
 // Structured menu details for a Catering vendor's package (per-plate menu).
 export interface CateringPackageDetails {

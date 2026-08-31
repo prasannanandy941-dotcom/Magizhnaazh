@@ -31,6 +31,23 @@ const vendorPackageSchema = new Schema(
       default: undefined,
       _id: false,
     },
+    // Venue-only structured hall details.
+    venue: {
+      type: {
+        sessions: [String],
+        hallType: String,
+        hallClass: String,
+        parking: Boolean,
+        powerBackup: Boolean,
+        bridalRoom: Boolean,
+        accommodationRooms: Number,
+        cateringPolicy: String,
+        stageIncluded: Boolean,
+        valetService: Boolean,
+      },
+      default: undefined,
+      _id: false,
+    },
   },
   { _id: false }
 );

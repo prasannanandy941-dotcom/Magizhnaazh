@@ -950,6 +950,37 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
 
                       <p className="text-xs text-slate-400 mt-2">{pkg.description}</p>
 
+                      {pkg.venue && (() => {
+                        const v = pkg.venue;
+                        const chip = 'text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200';
+                        const amenities: [string, boolean | undefined][] = [
+                          ['Parking', v.parking], ['Power backup', v.powerBackup], ['Bridal/green room', v.bridalRoom],
+                          ['Stage', v.stageIncluded], ['Valet', v.valetService],
+                        ];
+                        return (
+                          <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2" onClick={(e) => e.stopPropagation()}>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase block">Hall details</span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {v.hallType && <span className={chip}>{v.hallType}</span>}
+                              {v.hallClass && <span className={chip}>{v.hallClass}</span>}
+                              {(v.sessions || []).map((s) => <span key={s} className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-200 font-bold">{s}</span>)}
+                            </div>
+                            <div className="space-y-1 text-[11px] text-slate-300">
+                              {pkg.capacityPersons ? <div>Seating capacity: <span className="text-white font-semibold">{pkg.capacityPersons}</span></div> : null}
+                              {v.accommodationRooms ? <div>Accommodation rooms: <span className="text-white font-semibold">{v.accommodationRooms}</span></div> : null}
+                              {v.cateringPolicy ? <div>Catering: {v.cateringPolicy}</div> : null}
+                            </div>
+                            {amenities.some(([, val]) => val !== undefined) && (
+                              <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px]">
+                                {amenities.filter(([, val]) => val !== undefined).map(([label, val]) => (
+                                  <span key={label} className="text-slate-400">{label}: <b className={val ? 'text-emerald-400' : 'text-slate-500'}>{val ? 'Yes' : 'No'}</b></span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+
                       {/* Hall / Package Photos */}
                       {pkg.images && pkg.images.length > 0 && (
                         <div className="space-y-1.5 mt-3 mb-3">

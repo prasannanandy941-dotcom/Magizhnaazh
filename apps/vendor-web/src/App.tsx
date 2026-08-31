@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Store, Star, Upload, Check, LogOut, Loader2, Plus, SlidersHorizontal, ChevronDown, Receipt, X, Bell, ShieldCheck, Clock as ClockIcon, AlertCircle, FileText } from 'lucide-react';
-import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, VendorDeal, OfferedOptionItem, VENDOR_CATEGORIES, CATEGORY_OPTIONS, CATERING_OPTION_STYLE, MEDIA_QUALITY_OPTIONS, MEDIA_EQUIPMENT_OPTIONS, mediaExtraField, isDealLive, CATERING_MENU_TIERS, CATERING_FOOD_TYPES, CATERING_CUISINES, CATERING_LIVE_COUNTERS, CATERING_SERVICE_STYLES, slotLabelWithTime, AVAILABILITY_SLOTS, offeredSlotIds } from '../../../packages/shared-types';
+import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, VendorDeal, OfferedOptionItem, VENDOR_CATEGORIES, CATEGORY_OPTIONS, CATERING_OPTION_STYLE, MEDIA_QUALITY_OPTIONS, MEDIA_EQUIPMENT_OPTIONS, mediaExtraField, isDealLive, CATERING_MENU_TIERS, CATERING_FOOD_TYPES, CATERING_CUISINES, CATERING_LIVE_COUNTERS, CATERING_SERVICE_STYLES, slotLabelWithTime, AVAILABILITY_SLOTS, offeredSlotIds, VENUE_SESSIONS, VENUE_HALL_TYPES, VENUE_HALL_CLASSES, VENUE_CATERING_POLICIES } from '../../../packages/shared-types';
 import { STATIC_CITY_GROUPS } from '../../../packages/shared-utils';
 import { AuthGate } from './components/AuthGate';
 import { FloralGoldBackground } from './components/FloralGoldBackground';
@@ -989,6 +989,18 @@ export function App() {
     }));
   const catChip = (active: boolean) =>
     `px-2.5 py-1 rounded-lg text-xs font-semibold border transition-colors ${active ? 'bg-amber-500 text-slate-950 border-amber-500' : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-600'}`;
+
+  // Venue packages carry structured hall details (sessions, AC/Non-AC, class,
+  // amenities). Same shape of helpers as catering.
+  const updatePackageVenue = (pkgId: string, field: string, value: any) =>
+    setPackages((prev) => prev.map((p) => (p.id === pkgId ? { ...p, venue: { ...(p.venue || {}), [field]: value } } : p)));
+  const toggleVenueSession = (pkgId: string, session: string) =>
+    setPackages((prev) => prev.map((p) => {
+      if (p.id !== pkgId) return p;
+      const current: string[] = (p.venue?.sessions) || [];
+      const next = current.includes(session) ? current.filter((x) => x !== session) : [...current, session];
+      return { ...p, venue: { ...(p.venue || {}), sessions: next } };
+    }));
 
   // Photos of a package / hall — uploaded to the shared storage endpoint and
   // attached to that package so customers see them on the package card.
@@ -2347,7 +2359,7 @@ export function App() {
                   <div className={`grid grid-cols-1 ${myVendor?.category === 'Catering' ? 'sm:grid-cols-1' : myVendor?.category === 'Pujari/Priest' || myVendor?.category === 'Security' ? 'sm:grid-cols-2' : 'sm:grid-cols-3'} gap-3`}>
                     <div>
                       <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
-                        {myVendor?.category === 'Catering' ? 'Price per plate (₹)' : myVendor?.category === 'Security' ? 'Cost per person (₹)' : 'Price (₹)'}
+                        {myVendor?.category === 'Catering' ? 'Price per plate (₹)' : myVendor?.category === 'Security' ? 'Cost per person (₹)' : myVendor?.category === 'Venue' ? 'Price per session (₹)' : 'Price (₹)'}
                       </label>
                       <input
                         type="number"
@@ -2533,8 +2545,72 @@ export function App() {
                         </div>
                       )}
 
-                      {/* Price tiers — non-catering only (catering uses the menu spec above). */}
-                      {myVendor?.category !== 'Catering' && (
+                      {/* Venue: structured hall spec (replaces the generic price tiers). */}
+                      {myVendor?.category === 'Venue' && (
+                        <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/40 p-3">
+                          <p className="text-[10px] text-amber-400 uppercase font-bold">Hall details</p>
+                          <p className="text-[10px] text-slate-500">Hall name is the package name above; seating capacity is the "Capacity (persons)" field; price is per session.</p>
+
+                          <div>
+                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Sessions offered (priced per session)</label>
+                            <div className="flex flex-wrap gap-2">
+                              {VENUE_SESSIONS.map((s) => (
+                                <button type="button" key={s} onClick={() => toggleVenueSession(p.id, s)} className={catChip((p.venue?.sessions || []).includes(s))}>{s}</button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Hall Type</label>
+                              <div className="flex flex-wrap gap-2">
+                                {VENUE_HALL_TYPES.map((t) => (
+                                  <button type="button" key={t} onClick={() => updatePackageVenue(p.id, 'hallType', t)} className={catChip(p.venue?.hallType === t)}>{t}</button>
+                                ))}
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Hall Class</label>
+                              <div className="flex flex-wrap gap-2">
+                                {VENUE_HALL_CLASSES.map((c) => (
+                                  <button type="button" key={c} onClick={() => updatePackageVenue(p.id, 'hallClass', c)} className={catChip(p.venue?.hallClass === c)}>{c}</button>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Accommodation rooms</label>
+                              <input type="number" min={0} value={p.venue?.accommodationRooms ?? ''} onChange={(e) => updatePackageVenue(p.id, 'accommodationRooms', e.target.value === '' ? undefined : Number(e.target.value))}
+                                placeholder="e.g. 4" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Catering</label>
+                              <select value={p.venue?.cateringPolicy ?? ''} onChange={(e) => updatePackageVenue(p.id, 'cateringPolicy', e.target.value || undefined)}
+                                className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm">
+                                <option value="">Select…</option>
+                                {VENUE_CATERING_POLICIES.map((c) => (<option key={c} value={c}>{c}</option>))}
+                              </select>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {([['parking', 'Parking available'], ['powerBackup', 'Power backup / generator'], ['bridalRoom', 'Bridal / green room'], ['stageIncluded', 'Stage included'], ['valetService', 'Valet / parking service']] as const).map(([field, label]) => (
+                              <div key={field}>
+                                <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">{label}</label>
+                                <div className="flex gap-1.5">
+                                  <button type="button" onClick={() => updatePackageVenue(p.id, field, true)} className={catChip((p.venue as any)?.[field] === true)}>Yes</button>
+                                  <button type="button" onClick={() => updatePackageVenue(p.id, field, false)} className={catChip((p.venue as any)?.[field] === false)}>No</button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Price tiers — non-catering/venue only (they use the structured spec above). */}
+                      {myVendor?.category !== 'Catering' && myVendor?.category !== 'Venue' && (
                       <div>
                         <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1.5">
                           Price tiers (optional — e.g. Normal / HD / Premium)
