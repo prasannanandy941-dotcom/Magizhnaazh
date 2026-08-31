@@ -2463,14 +2463,18 @@ export function App() {
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-3 gap-2">
-                            {([['starters', 'Starters'], ['mains', 'Mains'], ['desserts', 'Desserts']] as const).map(([field, label]) => (
-                              <div key={field}>
-                                <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">{label}</label>
-                                <input type="number" min={0} value={(p.catering as any)?.[field] ?? ''} onChange={(e) => updatePackageCatering(p.id, field, e.target.value === '' ? undefined : Number(e.target.value))}
-                                  placeholder="0" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
-                              </div>
-                            ))}
+                          <div>
+                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Number of dishes included</label>
+                            <p className="text-[10px] text-slate-500 mb-1.5">How many items the customer gets in each course. e.g. 6 starters, 8 mains, 3 desserts.</p>
+                            <div className="grid grid-cols-3 gap-2">
+                              {([['starters', 'Starters'], ['mains', 'Mains'], ['desserts', 'Desserts']] as const).map(([field, label]) => (
+                                <div key={field}>
+                                  <label className="block text-[10px] text-slate-500 mb-1">{label}</label>
+                                  <input type="number" min={0} value={(p.catering as any)?.[field] ?? ''} onChange={(e) => updatePackageCatering(p.id, field, e.target.value === '' ? undefined : Number(e.target.value))}
+                                    placeholder="e.g. 6" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                                </div>
+                              ))}
+                            </div>
                           </div>
 
                           <div>
