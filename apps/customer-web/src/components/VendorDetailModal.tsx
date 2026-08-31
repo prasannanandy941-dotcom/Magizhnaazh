@@ -837,6 +837,38 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                       {pkg.description && (
                         <p className="text-xs text-slate-400 mt-3 border-t border-slate-800/80 pt-3">{pkg.description}</p>
                       )}
+                      {pkg.catering && (() => {
+                        const c = pkg.catering;
+                        const chip = 'text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200';
+                        const incl: [string, boolean | undefined][] = [
+                          ['Welcome drinks', c.welcomeDrinks],
+                          ['Serving staff', c.servingStaff],
+                          ['Free tasting', c.freeTasting],
+                        ];
+                        return (
+                          <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2" onClick={(e) => e.stopPropagation()}>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase block">Menu details</span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {c.menuTier && <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-200 font-bold">{c.menuTier}</span>}
+                              {(c.foodTypes || []).map((f) => <span key={`f-${f}`} className={chip}>{f}</span>)}
+                              {(c.cuisines || []).map((f) => <span key={`c-${f}`} className={chip}>{f}</span>)}
+                            </div>
+                            <div className="space-y-1 text-[11px] text-slate-300">
+                              {(c.starters || c.mains || c.desserts) ? <div>Dishes: {c.starters || 0} starters · {c.mains || 0} mains · {c.desserts || 0} desserts</div> : null}
+                              {c.minGuests ? <div>Minimum guests: <span className="text-white font-semibold">{c.minGuests}</span></div> : null}
+                              {c.serviceStyle ? <div>Service style: <span className="text-white font-semibold">{c.serviceStyle}</span></div> : null}
+                              {(c.liveCounters || []).length > 0 ? <div>Live counters: {c.liveCounters!.join(', ')}</div> : null}
+                            </div>
+                            {incl.some(([, v]) => v !== undefined) && (
+                              <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px]">
+                                {incl.filter(([, v]) => v !== undefined).map(([label, v]) => (
+                                  <span key={label} className="text-slate-400">{label}: <b className={v ? 'text-emerald-400' : 'text-slate-500'}>{v ? 'Yes' : 'No'}</b></span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
                       {pkg.images && pkg.images.length > 0 && (
                         <div className="mt-3 pt-3 border-t border-slate-800/80" onClick={(e) => e.stopPropagation()}>
                           <span className="text-[10px] font-bold text-slate-400 uppercase block mb-2">Menu Card / Photos</span>

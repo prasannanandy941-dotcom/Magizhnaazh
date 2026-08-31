@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Store, Star, Upload, Check, LogOut, Loader2, Plus, SlidersHorizontal, ChevronDown, Receipt, X, Bell, ShieldCheck, Clock as ClockIcon, AlertCircle, FileText } from 'lucide-react';
-import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, VendorDeal, OfferedOptionItem, VENDOR_CATEGORIES, CATEGORY_OPTIONS, CATERING_OPTION_STYLE, MEDIA_QUALITY_OPTIONS, MEDIA_EQUIPMENT_OPTIONS, mediaExtraField, isDealLive } from '../../../packages/shared-types';
+import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, VendorDeal, OfferedOptionItem, VENDOR_CATEGORIES, CATEGORY_OPTIONS, CATERING_OPTION_STYLE, MEDIA_QUALITY_OPTIONS, MEDIA_EQUIPMENT_OPTIONS, mediaExtraField, isDealLive, CATERING_MENU_TIERS, CATERING_FOOD_TYPES, CATERING_CUISINES, CATERING_LIVE_COUNTERS, CATERING_SERVICE_STYLES } from '../../../packages/shared-types';
 import { STATIC_CITY_GROUPS } from '../../../packages/shared-utils';
 import { AuthGate } from './components/AuthGate';
 import { FloralGoldBackground } from './components/FloralGoldBackground';
@@ -971,6 +971,21 @@ export function App() {
     );
   const removePackageTier = (pkgId: string, idx: number) =>
     setPackages((prev) => prev.map((p) => (p.id === pkgId ? { ...p, tiers: (p.tiers || []).filter((_, i) => i !== idx) } : p)));
+
+  // Catering packages carry a structured menu spec (food types, cuisines, dish
+  // counts, live counters, service style, inclusions). Update one field:
+  const updatePackageCatering = (pkgId: string, field: string, value: any) =>
+    setPackages((prev) => prev.map((p) => (p.id === pkgId ? { ...p, catering: { ...(p.catering || {}), [field]: value } } : p)));
+  // Toggle membership of a value in one of the catering multi-select arrays.
+  const toggleCateringOption = (pkgId: string, field: 'foodTypes' | 'cuisines' | 'liveCounters', item: string) =>
+    setPackages((prev) => prev.map((p) => {
+      if (p.id !== pkgId) return p;
+      const current: string[] = ((p.catering as any)?.[field]) || [];
+      const next = current.includes(item) ? current.filter((x) => x !== item) : [...current, item];
+      return { ...p, catering: { ...(p.catering || {}), [field]: next } };
+    }));
+  const catChip = (active: boolean) =>
+    `px-2.5 py-1 rounded-lg text-xs font-semibold border transition-colors ${active ? 'bg-amber-500 text-slate-950 border-amber-500' : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-600'}`;
 
   // Photos of a package / hall — uploaded to the shared storage endpoint and
   // attached to that package so customers see them on the package card.
@@ -2416,10 +2431,91 @@ export function App() {
                         </div>
                       )}
 
-                      {/* Price tiers — vendor names them (Normal / HD / Premium, etc.) */}
+                      {/* Catering: structured menu spec (replaces the generic tiers/options). */}
+                      {myVendor?.category === 'Catering' && (
+                        <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/40 p-3">
+                          <p className="text-[10px] text-amber-400 uppercase font-bold">Menu details</p>
+
+                          <div>
+                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Menu Tier</label>
+                            <div className="flex flex-wrap gap-2">
+                              {CATERING_MENU_TIERS.map((t) => (
+                                <button type="button" key={t} onClick={() => updatePackageCatering(p.id, 'menuTier', t)} className={catChip(p.catering?.menuTier === t)}>{t}</button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Food Type</label>
+                            <div className="flex flex-wrap gap-2">
+                              {CATERING_FOOD_TYPES.map((f) => (
+                                <button type="button" key={f} onClick={() => toggleCateringOption(p.id, 'foodTypes', f)} className={catChip((p.catering?.foodTypes || []).includes(f))}>{f}</button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Cuisine</label>
+                            <div className="flex flex-wrap gap-2">
+                              {CATERING_CUISINES.map((c) => (
+                                <button type="button" key={c} onClick={() => toggleCateringOption(p.id, 'cuisines', c)} className={catChip((p.catering?.cuisines || []).includes(c))}>{c}</button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-2">
+                            {([['starters', 'Starters'], ['mains', 'Mains'], ['desserts', 'Desserts']] as const).map(([field, label]) => (
+                              <div key={field}>
+                                <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">{label}</label>
+                                <input type="number" min={0} value={(p.catering as any)?.[field] ?? ''} onChange={(e) => updatePackageCatering(p.id, field, e.target.value === '' ? undefined : Number(e.target.value))}
+                                  placeholder="0" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                              </div>
+                            ))}
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Minimum guest count</label>
+                            <input type="number" min={0} value={p.catering?.minGuests ?? ''} onChange={(e) => updatePackageCatering(p.id, 'minGuests', e.target.value === '' ? undefined : Number(e.target.value))}
+                              placeholder="e.g. 100" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Live Counters</label>
+                            <div className="flex flex-wrap gap-2">
+                              {CATERING_LIVE_COUNTERS.map((lc) => (
+                                <button type="button" key={lc} onClick={() => toggleCateringOption(p.id, 'liveCounters', lc)} className={catChip((p.catering?.liveCounters || []).includes(lc))}>{lc}</button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Service Style</label>
+                            <select value={p.catering?.serviceStyle ?? ''} onChange={(e) => updatePackageCatering(p.id, 'serviceStyle', e.target.value || undefined)}
+                              className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm">
+                              <option value="">Select…</option>
+                              {CATERING_SERVICE_STYLES.map((s) => (<option key={s} value={s}>{s}</option>))}
+                            </select>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            {([['welcomeDrinks', 'Welcome drinks'], ['servingStaff', 'Serving staff included'], ['freeTasting', 'Free tasting / trial']] as const).map(([field, label]) => (
+                              <div key={field}>
+                                <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">{label}</label>
+                                <div className="flex gap-1.5">
+                                  <button type="button" onClick={() => updatePackageCatering(p.id, field, true)} className={catChip((p.catering as any)?.[field] === true)}>Yes</button>
+                                  <button type="button" onClick={() => updatePackageCatering(p.id, field, false)} className={catChip((p.catering as any)?.[field] === false)}>No</button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Price tiers — non-catering only (catering uses the menu spec above). */}
+                      {myVendor?.category !== 'Catering' && (
                       <div>
                         <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1.5">
-                          {myVendor?.category === 'Catering' ? 'Serving options (optional — e.g. For 2 Persons / Jumbo)' : 'Price tiers (optional — e.g. Normal / HD / Premium)'}
+                          Price tiers (optional — e.g. Normal / HD / Premium)
                         </label>
                         <div className="space-y-2">
                           {(p.tiers || []).map((t, ti) => (
@@ -2455,10 +2551,11 @@ export function App() {
                             onClick={() => addPackageTier(p.id)}
                             className="flex items-center gap-1 text-[11px] font-bold text-amber-400 hover:text-amber-300"
                           >
-                            <Plus className="w-3.5 h-3.5" /> {myVendor?.category === 'Catering' ? 'Add serving option' : 'Add tier'}
+                            <Plus className="w-3.5 h-3.5" /> Add tier
                           </button>
                         </div>
                       </div>
+                      )}
 
                       {myVendor?.category !== 'Catering' && (
                         <div>

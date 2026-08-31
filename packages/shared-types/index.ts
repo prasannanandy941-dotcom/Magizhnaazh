@@ -41,7 +41,34 @@ export interface VendorPackage {
   // Normal / HD / Premium, Silver / Gold, …). When present the customer picks
   // one and its price is used; when empty the flat `price` applies.
   tiers?: PackageTier[];
+  // Catering-only structured menu details. Only set/shown for Catering vendors,
+  // whose package form replaces the generic fields with these.
+  catering?: CateringPackageDetails;
 }
+
+// Structured menu details for a Catering vendor's package (per-plate menu).
+export interface CateringPackageDetails {
+  menuTier?: string; // Silver / Gold / Platinum
+  foodTypes?: string[]; // Veg / Non-Veg / Jain
+  cuisines?: string[]; // South Indian, Chettinad, North Indian, Continental
+  starters?: number; // number of starter dishes
+  mains?: number; // number of main-course dishes
+  desserts?: number; // number of desserts
+  minGuests?: number; // minimum guest count
+  liveCounters?: string[]; // Chaat, Dosa, Ice Cream, …
+  serviceStyle?: string; // Buffet / Seated / Banana-leaf
+  welcomeDrinks?: boolean;
+  servingStaff?: boolean; // serving staff included
+  freeTasting?: boolean; // free tasting/trial offered
+}
+
+// Option sets for the Catering package form (single source of truth for the
+// vendor editor and the customer listing).
+export const CATERING_MENU_TIERS = ['Silver', 'Gold', 'Platinum'] as const;
+export const CATERING_FOOD_TYPES = ['Veg', 'Non-Veg', 'Jain'] as const;
+export const CATERING_CUISINES = ['South Indian', 'Chettinad', 'North Indian', 'Continental'] as const;
+export const CATERING_LIVE_COUNTERS = ['Chaat', 'Dosa', 'Ice Cream'] as const;
+export const CATERING_SERVICE_STYLES = ['Buffet', 'Seated', 'Banana-leaf'] as const;
 
 // A named price tier within a package.
 export interface PackageTier {

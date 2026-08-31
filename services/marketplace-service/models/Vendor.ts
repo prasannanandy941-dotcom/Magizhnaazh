@@ -12,6 +12,25 @@ const vendorPackageSchema = new Schema(
     capacityPersons: Number,
     images: [String],
     tiers: [{ name: String, price: Number, _id: false }],
+    // Catering-only structured menu details.
+    catering: {
+      type: {
+        menuTier: String,
+        foodTypes: [String],
+        cuisines: [String],
+        starters: Number,
+        mains: Number,
+        desserts: Number,
+        minGuests: Number,
+        liveCounters: [String],
+        serviceStyle: String,
+        welcomeDrinks: Boolean,
+        servingStaff: Boolean,
+        freeTasting: Boolean,
+      },
+      default: undefined,
+      _id: false,
+    },
   },
   { _id: false }
 );
