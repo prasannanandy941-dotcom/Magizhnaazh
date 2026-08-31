@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Sparkles, LogIn, UserPlus, Loader2, Eye, EyeOff, Check } from 'lucide-react';
 import { User } from '../../../../packages/shared-types';
 import { checkPassword, isPasswordStrong } from '../../../../packages/shared-utils';
-import { login, register, sendOtp, forgotPassword, resetPassword, googleLogin } from '../api';
+import { login, register, sendOtp, verifyOtp, forgotPassword, resetPassword, googleLogin } from '../api';
 import { GoogleSignInButton } from './GoogleSignInButton';
 import { FloralGoldBackground } from './FloralGoldBackground';
 
@@ -25,6 +25,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) 
   const [otp, setOtp] = useState('');
   const [otpSending, setOtpSending] = useState(false);
   const [otpNotice, setOtpNotice] = useState('');
+  // Live check of the typed OTP so the user sees ✓/✗ before submitting.
+  const [otpStatus, setOtpStatus] = useState<'idle' | 'checking' | 'valid' | 'invalid'>('idle');
+
+  // Whenever a full 6-digit code is entered, verify it against the backend.
+  const handleOtpChange = (value: string) => {
+    const clean = value.replace(/\D/g, '').slice(0, 6);
+    setOtp(clean);
+    if (clean.length < 6) {
+      setOtpStatus('idle');
+      return;
+    }
+    setOtpStatus('checking');
+    verifyOtp(email.trim(), clean)
+      .then((r) => setOtpStatus(r.valid ? 'valid' : 'invalid'))
+      .catch(() => setOtpStatus('idle'));
+  };
 
   // Lock background scroll while the modal is open so scroll gestures move the
   // (tall) form itself, not the page behind it.
@@ -41,6 +57,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) 
     }
     setError('');
     setOtpNotice('');
+    setOtp('');
+    setOtpStatus('idle');
     setOtpSending(true);
     try {
       const res = await sendOtp(email);
@@ -250,16 +268,34 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) 
           {(mode === 'signup' || mode === 'forgot') && (
             <div>
               <label className="block text-xs font-bold text-slate-800 mb-1.5">Verification Code (OTP)</label>
-              <input
-                type="text"
-                required
-                value={otp}
-                onChange={(e) => setOtp(e.target.value)}
-                placeholder="Enter 6-digit OTP"
-                maxLength={6}
-                className="w-full p-3 rounded-xl bg-white border-2 border-slate-800 text-slate-900 placeholder:text-slate-500 text-sm focus:outline-none focus:border-indigo-500 tracking-[0.25em] text-center font-mono font-bold"
-              />
-              <p className="text-[9px] text-slate-500 mt-1">Verification is required to proceed.</p>
+              <div className="relative">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  required
+                  value={otp}
+                  onChange={(e) => handleOtpChange(e.target.value)}
+                  placeholder="Enter 6-digit OTP"
+                  maxLength={6}
+                  className={`w-full p-3 pr-10 rounded-xl bg-white border-2 text-slate-900 placeholder:text-slate-500 text-sm focus:outline-none tracking-[0.25em] text-center font-mono font-bold ${
+                    otpStatus === 'valid' ? 'border-emerald-500 focus:border-emerald-500'
+                    : otpStatus === 'invalid' ? 'border-rose-500 focus:border-rose-500'
+                    : 'border-slate-800 focus:border-indigo-500'
+                  }`}
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2">
+                  {otpStatus === 'checking' && <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />}
+                  {otpStatus === 'valid' && <Check className="w-4 h-4 text-emerald-600" />}
+                  {otpStatus === 'invalid' && <X className="w-4 h-4 text-rose-600" />}
+                </span>
+              </div>
+              {otpStatus === 'valid' ? (
+                <p className="text-[10px] text-emerald-600 mt-1 font-semibold">✓ Code verified</p>
+              ) : otpStatus === 'invalid' ? (
+                <p className="text-[10px] text-rose-600 mt-1 font-semibold">✗ Incorrect or expired code</p>
+              ) : (
+                <p className="text-[9px] text-slate-500 mt-1">Verification is required to proceed.</p>
+              )}
             </div>
           )}
 

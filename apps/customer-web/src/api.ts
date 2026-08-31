@@ -234,6 +234,12 @@ export function sendOtp(email: string): Promise<any> {
   return postJson('/api/v1/auth/send-otp', { email });
 }
 
+// Check whether a typed OTP is correct, for instant signup feedback (does not
+// consume the code — register still verifies it).
+export function verifyOtp(email: string, otp: string): Promise<{ success: boolean; valid: boolean; message?: string }> {
+  return postJson('/api/v1/auth/verify-otp', { email, otp }) as any;
+}
+
 export function forgotPassword(email: string): Promise<any> {
   return postJson('/api/v1/auth/forgot-password', { email });
 }

@@ -241,6 +241,22 @@ app.post('/api/v1/auth/send-otp', async (req: Request, res: Response) => {
   }
 });
 
+// 0b. Check an OTP WITHOUT consuming it — lets the signup form tell the user
+// immediately whether the code they typed is correct, before they submit.
+// Registration / password-reset still verify (and delete) the OTP themselves,
+// so this is purely for instant feedback and can't be used to bypass anything.
+app.post('/api/v1/auth/verify-otp', async (req: Request, res: Response) => {
+  const { email, otp } = req.body;
+  if (!email || !otp) {
+    return res.status(400).json({ success: false, valid: false, message: 'Email and OTP are required.' });
+  }
+  const emailStr = String(email).toLowerCase().trim();
+  const record = await OtpModel.findOne({ email: emailStr });
+  // Expired codes are auto-removed by the TTL index, so a missing record = invalid.
+  const valid = !!record && record.code === String(otp).trim();
+  res.json({ success: true, valid, message: valid ? 'Code verified.' : 'Incorrect or expired code.' });
+});
+
 // 1. Register
 app.post('/api/v1/auth/register', async (req: Request, res: Response) => {
   try {
