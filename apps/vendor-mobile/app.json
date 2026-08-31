@@ -17,10 +17,16 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.porulontech.magizhnaazhvendor"
+      "bundleIdentifier": "com.porulontech.magizhnaazhvendor",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Allow Magizhnaazh Vendor to use the camera so you can take and upload photos of your work.",
+        "NSPhotoLibraryUsageDescription": "Allow Magizhnaazh Vendor to access your photos so you can upload images to your listing.",
+        "NSPhotoLibraryAddUsageDescription": "Allow Magizhnaazh Vendor to save images to your photo library."
+      }
     },
     "android": {
       "package": "com.porulontech.magizhnaazhvendor",
+      "permissions": ["CAMERA", "READ_EXTERNAL_STORAGE", "READ_MEDIA_IMAGES"],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#1a0a14"

@@ -53,6 +53,12 @@ export function WebApp({ token, user }: { token?: string | null; user?: unknown 
         thirdPartyCookiesEnabled
         sharedCookiesEnabled
         allowsBackForwardNavigationGestures
+        // Let the in-page <input type="file"> open the gallery/camera so image
+        // uploads (gallery, menu photos, reference images) work inside the app.
+        allowFileAccess
+        allowsInlineMediaPlayback
+        mediaPlaybackRequiresUserAction={false}
+        mediaCapturePermissionGrantType="grant"
         setSupportMultipleWindows={false}
         startInLoadingState
         onLoadStart={() => setLoading(true)}

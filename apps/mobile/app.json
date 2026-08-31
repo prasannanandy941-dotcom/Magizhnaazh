@@ -17,10 +17,16 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.porulontech.magizhnaazh"
+      "bundleIdentifier": "com.porulontech.magizhnaazh",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Allow Magizhnaazh to use the camera so you can take and upload photos.",
+        "NSPhotoLibraryUsageDescription": "Allow Magizhnaazh to access your photos so you can upload images.",
+        "NSPhotoLibraryAddUsageDescription": "Allow Magizhnaazh to save images to your photo library."
+      }
     },
     "android": {
       "package": "com.porulontech.magizhnaazh",
+      "permissions": ["CAMERA", "READ_EXTERNAL_STORAGE", "READ_MEDIA_IMAGES"],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#1a0a14"
