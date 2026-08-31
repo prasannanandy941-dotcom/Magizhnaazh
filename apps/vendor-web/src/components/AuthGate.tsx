@@ -209,12 +209,17 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
     }
   };
 
+  // The registration form has many fields; on a wide screen lay them out in two
+  // columns inside a wider card so it fits without scrolling. Sign-in / forgot
+  // stay a narrow single column.
+  const wideForm = mode === 'signup' || mode === 'google-setup';
+
   return (
     <div className="auth-light relative min-h-screen text-slate-100 flex items-center justify-center p-4 font-sans">
       <div className="fixed inset-0 -z-10">
         <FloralGoldBackground />
       </div>
-      <div className="glass-card max-w-md w-full rounded-3xl border border-slate-800 shadow-2xl overflow-hidden">
+      <div className={`glass-card w-full rounded-3xl border border-slate-800 shadow-2xl overflow-hidden ${wideForm ? 'max-w-3xl' : 'max-w-md'}`}>
         <div className="px-6 py-6 border-b border-slate-800 bg-slate-900/60 flex items-center gap-3">
           <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-600 flex items-center justify-center font-bold text-slate-950">
             <Store className="w-6 h-6" />
@@ -279,7 +284,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className={`p-6 gap-4 ${wideForm ? 'grid grid-cols-1 sm:grid-cols-2' : 'space-y-4'}`}>
           {(mode === 'signup' || mode === 'google-setup') && (
             <>
               <div>
@@ -338,7 +343,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
                 </select>
                 <p className="text-[10px] text-slate-500 mt-1">Customers filter vendors by city — pick where you operate.</p>
               </div>
-              <div>
+              <div className="sm:col-span-2">
                 <label className="block text-xs font-bold text-slate-400 mb-1.5">Description (optional)</label>
                 <textarea
                   rows={2}
@@ -352,7 +357,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
           )}
 
           {mode !== 'google-setup' && (
-          <div>
+          <div className="sm:col-span-2">
             <label className="block text-xs font-bold text-slate-400 mb-1.5">Email</label>
             <div className="flex gap-2">
               <input
@@ -433,7 +438,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
           )}
 
           {mode !== 'google-setup' && (
-          <div>
+          <div className="sm:col-span-2">
             <div className="flex items-center justify-between mb-1.5">
               <label className="block text-xs font-bold text-slate-400">
                 {mode === 'forgot' ? 'New Password' : 'Password'}
@@ -489,13 +494,13 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
           )}
 
           {success && (
-            <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
+            <div className="sm:col-span-2 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
               {success}
             </div>
           )}
 
           {error && (
-            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-semibold">
+            <div className="sm:col-span-2 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-semibold">
               {error}
             </div>
           )}
@@ -503,21 +508,23 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
           <button
             type="submit"
             disabled={loading || ((mode === 'signup' || mode === 'forgot') && !isPasswordStrong(password))}
-            className="shine-sweep w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-slate-950 font-bold text-sm shadow-md hover:scale-[1.01] transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+            className="sm:col-span-2 shine-sweep w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-slate-950 font-bold text-sm shadow-md hover:scale-[1.01] transition-all disabled:opacity-60 flex items-center justify-center gap-2"
           >
             {loading && <Loader2 className="w-4 h-4 animate-spin" />}
             {mode === 'signin' ? 'Sign In' : mode === 'signup' ? 'Register Business' : mode === 'google-setup' ? 'Finish Setup' : 'Reset Password'}
           </button>
 
           {(mode === 'signin' || mode === 'signup') && (
-            <GoogleSignInButton
-              onCredential={handleGoogleCredential}
-              text={mode === 'signup' ? 'signup_with' : 'signin_with'}
-            />
+            <div className="sm:col-span-2">
+              <GoogleSignInButton
+                onCredential={handleGoogleCredential}
+                text={mode === 'signup' ? 'signup_with' : 'signin_with'}
+              />
+            </div>
           )}
 
           {mode !== 'google-setup' && (
-            <p className="text-center text-[11px] text-slate-500">
+            <p className="sm:col-span-2 text-center text-[11px] text-slate-500">
               Demo login: vendor@magizhnaazh.com / Passw0rd!
             </p>
           )}
