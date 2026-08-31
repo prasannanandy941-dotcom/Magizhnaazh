@@ -60,6 +60,12 @@ export function sendOtp(email: string): Promise<{ message?: string; _devOtp?: st
   return request('/api/v1/auth/send-otp', { method: 'POST', body: { email } });
 }
 
+// Check a typed OTP for instant signup feedback (non-consuming — register still
+// verifies it).
+export function verifyOtp(email: string, otp: string): Promise<{ success: boolean; valid: boolean; message?: string }> {
+  return request('/api/v1/auth/verify-otp', { method: 'POST', body: { email, otp } });
+}
+
 // Exchange a Google ID token for a vendor session. The backend verifies the
 // token's audience against its GOOGLE_CLIENT_ID (the web client id).
 export async function googleLogin(idToken: string): Promise<{ user: User; token: string }> {

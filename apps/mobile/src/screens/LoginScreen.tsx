@@ -51,10 +51,23 @@ export default function LoginScreen() {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [otp, setOtp] = useState('');
+  const [otpStatus, setOtpStatus] = useState<'idle' | 'checking' | 'valid' | 'invalid'>('idle');
   const [loading, setLoading] = useState(false);
   const [otpSending, setOtpSending] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+
+  // Verify the code against the backend once all 6 digits are entered, so the
+  // user sees ✓/✗ before submitting.
+  const handleOtpChange = (value: string) => {
+    const clean = value.replace(/[^0-9]/g, '').slice(0, 6);
+    setOtp(clean);
+    if (clean.length < 6) { setOtpStatus('idle'); return; }
+    setOtpStatus('checking');
+    api.verifyOtp(email.trim(), clean)
+      .then((r) => setOtpStatus(r.valid ? 'valid' : 'invalid'))
+      .catch(() => setOtpStatus('idle'));
+  };
 
   const submit = async () => {
     setError('');
@@ -77,6 +90,8 @@ export default function LoginScreen() {
     if (!email.trim()) { setError('Enter your email first.'); return; }
     setError('');
     setNotice('');
+    setOtp('');
+    setOtpStatus('idle');
     setOtpSending(true);
     try {
       const res = await api.sendOtp(email.trim());
@@ -138,7 +153,25 @@ export default function LoginScreen() {
           {!!notice && <Text style={styles.notice}>{notice}</Text>}
 
           {mode === 'signup' && (
-            <Field label="Verification Code (OTP)" value={otp} onChangeText={setOtp} placeholder="6-digit code" keyboardType="number-pad" />
+            <>
+              <Text style={styles.label}>Verification Code (OTP)</Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  otpStatus === 'valid' && { borderColor: '#0f9d58' },
+                  otpStatus === 'invalid' && { borderColor: '#c0392b' },
+                ]}
+                value={otp}
+                onChangeText={handleOtpChange}
+                placeholder="6-digit code"
+                placeholderTextColor="#94a3b8"
+                keyboardType="number-pad"
+                maxLength={6}
+              />
+              {otpStatus === 'checking' && <Text style={styles.otpChecking}>Checking…</Text>}
+              {otpStatus === 'valid' && <Text style={styles.otpValid}>✓ Code verified</Text>}
+              {otpStatus === 'invalid' && <Text style={styles.otpInvalid}>✗ Incorrect or expired code</Text>}
+            </>
           )}
           {mode === 'signup' && (
             <Field label="Phone (optional)" value={phone} onChangeText={setPhone} placeholder="+91 98400 11223" keyboardType="phone-pad" />
@@ -226,6 +259,9 @@ const styles = StyleSheet.create({
   },
   otpBtnText: { color: colors.primaryDark, fontWeight: '700', fontSize: 12 },
   notice: { color: '#0f9d58', fontSize: 12, marginTop: 6, fontWeight: '600' },
+  otpChecking: { color: '#64748b', fontSize: 11, marginTop: 4, fontWeight: '600' },
+  otpValid: { color: '#0f9d58', fontSize: 11, marginTop: 4, fontWeight: '700' },
+  otpInvalid: { color: '#c0392b', fontSize: 11, marginTop: 4, fontWeight: '700' },
   error: { color: '#c0392b', fontSize: 13, marginTop: space.md, fontWeight: '600' },
   submit: {
     backgroundColor: colors.primary, borderRadius: radius.md, paddingVertical: 15,
