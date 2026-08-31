@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Store, Star, Upload, Check, LogOut, Loader2, Plus, SlidersHorizontal, ChevronDown, Receipt, X, Bell, ShieldCheck, Clock as ClockIcon, AlertCircle, FileText } from 'lucide-react';
-import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, VendorDeal, OfferedOptionItem, VENDOR_CATEGORIES, CATEGORY_OPTIONS, CATERING_OPTION_STYLE, MEDIA_QUALITY_OPTIONS, MEDIA_EQUIPMENT_OPTIONS, mediaExtraField, isDealLive, CATERING_MENU_TIERS, CATERING_FOOD_TYPES, CATERING_CUISINES, CATERING_LIVE_COUNTERS, CATERING_SERVICE_STYLES, slotLabelWithTime } from '../../../packages/shared-types';
+import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, VendorDeal, OfferedOptionItem, VENDOR_CATEGORIES, CATEGORY_OPTIONS, CATERING_OPTION_STYLE, MEDIA_QUALITY_OPTIONS, MEDIA_EQUIPMENT_OPTIONS, mediaExtraField, isDealLive, CATERING_MENU_TIERS, CATERING_FOOD_TYPES, CATERING_CUISINES, CATERING_LIVE_COUNTERS, CATERING_SERVICE_STYLES, slotLabelWithTime, AVAILABILITY_SLOTS, offeredSlotIds } from '../../../packages/shared-types';
 import { STATIC_CITY_GROUPS } from '../../../packages/shared-utils';
 import { AuthGate } from './components/AuthGate';
 import { FloralGoldBackground } from './components/FloralGoldBackground';
@@ -196,6 +196,8 @@ export function App() {
   const [giftCount, setGiftCount] = useState<string>('');
   const [giftDiscount, setGiftDiscount] = useState('');
   const [availableDates, setAvailableDates] = useState<string[]>([]);
+  // Which time slots the vendor offers per date (date -> slot ids).
+  const [availableSlots, setAvailableSlots] = useState<Record<string, string[]>>({});
   const [newDate, setNewDate] = useState('');
   const [savingAvailability, setSavingAvailability] = useState(false);
   const [availabilityNotice, setAvailabilityNotice] = useState('');
@@ -304,6 +306,7 @@ export function App() {
         setOfferedOptionImages(v.offeredOptionImages || {});
         setOfferedOptionQuality(v.offeredOptionQuality || {});
         setAvailableDates(v.availableDates || []);
+        setAvailableSlots(v.availableSlots || {});
         setPackages(v.packages || []);
         setDeals(v.deals || []);
         // Build the private calendar-subscribe URL for this vendor.
@@ -1087,20 +1090,35 @@ export function App() {
   };
 
   const addDate = () => {
-    if (newDate && !availableDates.includes(newDate)) setAvailableDates((prev) => [...prev, newDate].sort());
+    if (newDate && !availableDates.includes(newDate)) {
+      setAvailableDates((prev) => [...prev, newDate].sort());
+      // A new date offers all slots by default; the vendor can trim them below.
+      setAvailableSlots((prev) => ({ ...prev, [newDate]: AVAILABILITY_SLOTS.map((s) => s.id) }));
+    }
     setNewDate('');
   };
-  const removeDate = (d: string) => setAvailableDates((prev) => prev.filter((x) => x !== d));
+  const removeDate = (d: string) => {
+    setAvailableDates((prev) => prev.filter((x) => x !== d));
+    setAvailableSlots((prev) => { const next = { ...prev }; delete next[d]; return next; });
+  };
+  // Toggle whether the vendor offers a given slot on a given date.
+  const toggleDateSlot = (date: string, slot: string) =>
+    setAvailableSlots((prev) => {
+      const current = prev[date] && prev[date].length ? prev[date] : AVAILABILITY_SLOTS.map((s) => s.id);
+      const next = current.includes(slot) ? current.filter((x) => x !== slot) : [...current, slot];
+      return { ...prev, [date]: next };
+    });
 
   const handleSaveAvailability = async () => {
     if (!token || !myVendor) return;
     setSavingAvailability(true);
     setAvailabilityNotice('');
     try {
-      const res = await updateVendor(token, myVendor.id, { availableDates } as any);
+      const res = await updateVendor(token, myVendor.id, { availableDates, availableSlots } as any);
       if (res.data?.vendor) {
         setMyVendor(res.data.vendor);
         setAvailableDates(res.data.vendor.availableDates || []);
+        setAvailableSlots(res.data.vendor.availableSlots || {});
       }
       setAvailabilityNotice('Availability saved — customers see only your open dates.');
     } catch (err: any) {
@@ -2716,13 +2734,34 @@ export function App() {
             {availableDates.length === 0 ? (
               <p className="text-xs text-slate-500">No open dates yet — add some above.</p>
             ) : (
-              <div className="flex flex-wrap gap-2">
-                {availableDates.map((d) => (
-                  <span key={d} className="flex items-center gap-1.5 pl-3 pr-2 py-1.5 rounded-full bg-emerald-600/20 border border-emerald-500/40 text-emerald-200 text-xs font-semibold">
-                    {new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                    <button type="button" onClick={() => removeDate(d)} aria-label={`Remove ${d}`} className="w-4 h-4 rounded-full flex items-center justify-center hover:bg-emerald-500/40 hover:text-white">×</button>
-                  </span>
-                ))}
+              <div className="space-y-2">
+                <p className="text-[11px] text-slate-500">For each open date, choose which time slots you offer. Tap a slot to include/exclude it.</p>
+                {availableDates.map((d) => {
+                  const offered = offeredSlotIds({ availableSlots }, d);
+                  return (
+                    <div key={d} className="rounded-2xl border border-slate-800 bg-slate-900/40 p-3">
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <span className="text-sm font-bold text-emerald-200">
+                          {new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </span>
+                        <button type="button" onClick={() => removeDate(d)} aria-label={`Remove ${d}`} className="w-6 h-6 rounded-lg flex items-center justify-center text-slate-400 hover:text-rose-400 hover:bg-slate-800">×</button>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {AVAILABILITY_SLOTS.map((s) => {
+                          const on = offered.includes(s.id);
+                          return (
+                            <button key={s.id} type="button" onClick={() => toggleDateSlot(d, s.id)}
+                              className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold border text-left transition-colors ${on ? 'bg-emerald-500 text-slate-950 border-emerald-500' : 'bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-600'}`}>
+                              <span className="block">{s.label}</span>
+                              <span className={`block text-[10px] font-normal ${on ? 'text-emerald-900' : 'text-slate-500'}`}>{s.time}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {offered.length === 0 && <p className="text-[10px] text-amber-400 mt-1.5">No slots selected — customers can't book this date. Pick at least one.</p>}
+                    </div>
+                  );
+                })}
               </div>
             )}
 

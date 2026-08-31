@@ -153,6 +153,9 @@ export interface Vendor {
   qrCodeImage?: string;
   packages: VendorPackage[];
   availableDates: string[]; // ISO date strings the vendor opened for booking
+  // Which time-of-day slots the vendor offers per date (map date -> slot ids).
+  // A date missing here (or empty) means all slots are offered — back-compat.
+  availableSlots?: Record<string, string[]>;
   // Dates that have been booked — moved here from availableDates when a
   // customer confirms a booking, so the customer listing can show them as
   // "Booked" (visible but not selectable) rather than silently disappearing.
@@ -334,9 +337,17 @@ export function isSlotBooked(
   return (vendor.bookedSlots || []).some((b) => b.date === date && b.slot === slot);
 }
 
-// The slots still open on a date.
-export function openSlots(vendor: Pick<Vendor, 'bookedDates' | 'bookedSlots'>, date: string) {
-  return AVAILABILITY_SLOTS.filter((s) => !isSlotBooked(vendor, date, s.id));
+// The slot ids the vendor OFFERS on a date (defaults to all slots when the
+// vendor hasn't restricted the date to specific slots).
+export function offeredSlotIds(vendor: Pick<Vendor, 'availableSlots'>, date: string): string[] {
+  const chosen = vendor.availableSlots?.[date];
+  return chosen && chosen.length ? chosen : AVAILABILITY_SLOTS.map((s) => s.id);
+}
+
+// The slots still open on a date: offered by the vendor AND not already booked.
+export function openSlots(vendor: Pick<Vendor, 'bookedDates' | 'bookedSlots' | 'availableSlots'>, date: string) {
+  const offered = offeredSlotIds(vendor, date);
+  return AVAILABILITY_SLOTS.filter((s) => offered.includes(s.id) && !isSlotBooked(vendor, date, s.id));
 }
 
 // Human label for a slot id (e.g. 'morning' -> 'Morning'); '' if none/unknown.

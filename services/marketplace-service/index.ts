@@ -518,6 +518,10 @@ app.put('/api/v1/vendors/:id', authMiddleware(), async (req: Request, res: Respo
     vendor.availableDates = availableDates;
     vendor.markModified('availableDates');
   }
+  if (req.body.availableSlots !== undefined && typeof req.body.availableSlots === 'object') {
+    (vendor as any).availableSlots = req.body.availableSlots;
+    vendor.markModified('availableSlots');
+  }
   if (Array.isArray(offeredOptions)) (vendor as any).offeredOptions = offeredOptions;
   if (offeredOptionPrices !== undefined) {
     (vendor as any).offeredOptionPrices = offeredOptionPrices;

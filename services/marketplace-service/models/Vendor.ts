@@ -81,6 +81,8 @@ const vendorSchema = new Schema<Vendor>({
   qrCodeImage: String,
   packages: { type: [vendorPackageSchema], default: [] },
   availableDates: { type: [String], default: [] },
+  // Slots the vendor offers per date (map date -> [slot ids]). Empty = all slots.
+  availableSlots: { type: Schema.Types.Mixed, default: {} },
   bookedDates: { type: [String], default: [] },
   // Per-date time slots already booked (e.g. { date, slot: 'morning' }).
   bookedSlots: { type: [{ date: String, slot: String, _id: false }], default: [] },

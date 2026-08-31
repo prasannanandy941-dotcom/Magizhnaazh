@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Star, MapPin, Check, ShieldCheck, Upload, Calendar as CalendarIcon, MessageSquare, Send, CreditCard, Sparkles, Camera, Bus, Flame, Gift, ListChecks, Phone, Copy, Clock, RefreshCw, Plus, Maximize2 } from 'lucide-react';
-import { Vendor, Review, getVendorTrustBadges, getLiveDeals, bestDealForAmount, AVAILABILITY_SLOTS, isSlotBooked, openSlots } from '../../../../packages/shared-types';
+import { Vendor, Review, getVendorTrustBadges, getLiveDeals, bestDealForAmount, AVAILABILITY_SLOTS, isSlotBooked, openSlots, offeredSlotIds } from '../../../../packages/shared-types';
 import { fetchVendorById, uploadReferenceImage, fetchVendorReviews } from '../api';
 import { PortfolioGrid } from './Portfolio';
 import { DecorationGrid } from './DecorationThemes';
@@ -1252,7 +1252,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                   <Clock className="w-3.5 h-3.5 text-indigo-400" /> Pick a time slot for {new Date(selectedEventDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
                 </span>
                 <div className="flex flex-wrap gap-2">
-                  {AVAILABILITY_SLOTS.map((s) => {
+                  {AVAILABILITY_SLOTS.filter((s) => offeredSlotIds(vendor, selectedEventDate).includes(s.id)).map((s) => {
                     const booked = isSlotBooked(vendor, selectedEventDate, s.id);
                     const active = selectedSlot === s.id;
                     return (
