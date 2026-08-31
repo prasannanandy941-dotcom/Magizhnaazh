@@ -1574,7 +1574,7 @@ export function App() {
             { key: 'facilities', label: 'Facilities & Options' },
             { key: 'packages', label: `${myVendor?.category === 'Venue' ? 'Halls' : 'Packages'}${packages.length ? ` (${packages.length})` : ''}` },
             { key: 'offers', label: `Offers${deals.length ? ` (${deals.length})` : ''}` },
-            ...(myVendor?.category !== 'Invitation' ? [{ key: 'availability', label: 'Availability' }] : []),
+            { key: 'availability', label: 'Availability' },
             { key: 'portfolio', label: 'Local Disk Portfolio' },
             { key: 'profile', label: 'Business Profile' },
           ].map((tab) => (
@@ -2677,7 +2677,7 @@ export function App() {
         )}
 
         {/* Availability Tab */}
-        {activeTab === 'availability' && myVendor?.category !== 'Invitation' && (
+        {activeTab === 'availability' && (
           <div className="max-w-2xl space-y-5">
           {/* Calendar sync — subscribe bookings into Google/Apple/Outlook. */}
           <div className="glass-card p-6 rounded-3xl border border-indigo-500/30 bg-indigo-500/5 space-y-3">
