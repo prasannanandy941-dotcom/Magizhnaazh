@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Star, MapPin, Check, ShieldCheck, Upload, Calendar as CalendarIcon, MessageSquare, Send, CreditCard, Sparkles, Camera, Bus, Flame, Gift, ListChecks, Phone, Copy, Clock, RefreshCw, Plus, Maximize2 } from 'lucide-react';
-import { Vendor, Review, getVendorTrustBadges, getLiveDeals, bestDealForAmount } from '../../../../packages/shared-types';
+import { Vendor, Review, getVendorTrustBadges, getLiveDeals, bestDealForAmount, AVAILABILITY_SLOTS, isSlotBooked, openSlots } from '../../../../packages/shared-types';
 import { fetchVendorById, uploadReferenceImage, fetchVendorReviews } from '../api';
 import { PortfolioGrid } from './Portfolio';
 import { DecorationGrid } from './DecorationThemes';
@@ -67,7 +67,8 @@ interface VendorDetailModalProps {
     notes?: string,
     eventDate?: string,
     selectedOptions?: string[],
-    referenceImages?: string[]
+    referenceImages?: string[],
+    timeSlot?: string
   ) => void;
 }
 
@@ -198,6 +199,15 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
   const [selectedTierByPkg, setSelectedTierByPkg] = useState<Record<string, { name: string; price: number }>>({});
   const hasFixedAvailability = (vendor.availableDates?.length ?? 0) > 0;
   const [selectedEventDate, setSelectedEventDate] = useState(hasFixedAvailability ? vendor.availableDates[0] : '');
+  // Time-of-day slot the customer picks for the chosen date (Morning/Afternoon/Evening).
+  const [selectedSlot, setSelectedSlot] = useState('');
+  // Whenever the date changes, reset the slot to the first one still open.
+  useEffect(() => {
+    if (!selectedEventDate) { setSelectedSlot(''); return; }
+    const open = openSlots(vendor, selectedEventDate);
+    setSelectedSlot(open.length ? open[0].id : '');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedEventDate, vendor.bookedSlots, vendor.bookedDates]);
 
   // "Book & Pay Advance" opens a small panel showing exactly what this
   // vendor's advance requirement comes to in rupees, a way to call the
@@ -1234,6 +1244,42 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
             {vendor.availableDates.length === 0 && (vendor.bookedDates?.length ?? 0) > 0 && (
               <p className="text-[11px] text-amber-400 mt-2">All listed dates are booked — check back or contact the vendor for other dates.</p>
             )}
+
+            {/* Time-slot picker for the chosen date — a booked slot leaves the rest of the day open. */}
+            {selectedEventDate && (
+              <div className="mt-4">
+                <span className="text-[11px] font-bold text-slate-400 uppercase flex items-center gap-1.5 mb-2">
+                  <Clock className="w-3.5 h-3.5 text-indigo-400" /> Pick a time slot for {new Date(selectedEventDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {AVAILABILITY_SLOTS.map((s) => {
+                    const booked = isSlotBooked(vendor, selectedEventDate, s.id);
+                    const active = selectedSlot === s.id;
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        disabled={booked}
+                        onClick={() => setSelectedSlot(s.id)}
+                        className={`px-3 py-2 rounded-xl text-xs font-semibold border text-left transition-colors ${
+                          booked
+                            ? 'bg-slate-950 border-slate-800 text-slate-600 line-through cursor-not-allowed'
+                            : active
+                              ? 'bg-indigo-600 border-indigo-600 text-white'
+                              : 'bg-slate-900 border-slate-800 text-slate-300 hover:border-indigo-500/50'
+                        }`}
+                      >
+                        <span className="block">{s.label}{booked ? ' — Booked' : ''}</span>
+                        <span className={`block text-[10px] font-normal ${booked ? 'text-slate-700' : active ? 'text-indigo-100' : 'text-slate-500'}`}>{s.time}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {openSlots(vendor, selectedEventDate).length === 0 && (
+                  <p className="text-[11px] text-amber-400 mt-2">All slots on this date are booked — pick another date.</p>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -1446,7 +1492,8 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                       // designs they selected as reference images to the vendor.
                       const refs = [...customerUploads, ...selectedGalleryImages];
                       return refs.length > 0 ? refs : undefined;
-                    })()
+                    })(),
+                    selectedSlot || undefined
                   );
                   // Retire the QR the customer just paid against and roll a
                   // fresh session so the same code can't be reused.

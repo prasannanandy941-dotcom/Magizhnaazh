@@ -364,6 +364,7 @@ export function createBookingQuote(input: {
   packageName?: string;
   price?: number;
   eventDate?: string;
+  timeSlot?: string;
   notes?: string;
   selectedOptions?: string[];
   referenceImages?: string[];

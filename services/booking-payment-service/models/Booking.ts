@@ -45,6 +45,7 @@ const bookingSchema = new Schema<Booking>({
     default: 'quote_requested',
   },
   eventDate: { type: String, required: true },
+  timeSlot: { type: String, default: '' },
   specialInstructions: String,
   quotesHistory: { type: [quoteHistorySchema], default: [] },
   selectedOptions: { type: [String], default: [] },

@@ -82,6 +82,8 @@ const vendorSchema = new Schema<Vendor>({
   packages: { type: [vendorPackageSchema], default: [] },
   availableDates: { type: [String], default: [] },
   bookedDates: { type: [String], default: [] },
+  // Per-date time slots already booked (e.g. { date, slot: 'morning' }).
+  bookedSlots: { type: [{ date: String, slot: String, _id: false }], default: [] },
   policies: {
     cancellation: { type: String, default: '' },
     refund: { type: String, default: '' },

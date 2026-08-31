@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ClipboardList, RefreshCw, Loader2, CheckCircle2, Circle, IndianRupee, LogIn, Star, Send, FileText, Wallet, CalendarPlus } from 'lucide-react';
-import { Booking, Review } from '../../../../packages/shared-types';
+import { Booking, Review, slotLabelWithTime } from '../../../../packages/shared-types';
 import { fetchMyBookings, fetchMyReviews, submitReview, recordBalancePayment, fetchBookingInvoice } from '../api';
 import { openInvoicePrintWindow } from './invoice';
 import { downloadBookingIcs } from './calendar';
@@ -123,6 +123,7 @@ export const MyOrders: React.FC<{ isAuthenticated: boolean; onSignIn: () => void
                     </div>
                     <p className="text-xs text-slate-400 mt-1">
                       <strong className="text-slate-200">{b.vendorName}</strong> · {b.vendorCategory} · Event date: <strong className="text-amber-400">{b.eventDate}</strong>
+                      {b.timeSlot && <> · <span className="text-indigo-300">{slotLabelWithTime(b.timeSlot)}</span></>}
                     </p>
                   </div>
                   <div className="text-right shrink-0">

@@ -227,10 +227,11 @@ async function seedDemoBookings() {
 app.post('/api/v1/bookings/quote', authMiddleware(), async (req: Request, res: Response) => {
   // The customer-web client sends this as `notes` (its own custom-request text
   // field); accept `specialInstructions` too for any other caller.
-  const { eventId, vendorId, vendorName, vendorCategory, packageId, packageName, price, eventDate, notes, specialInstructions, selectedOptions, referenceImages, advancePaymentClaimed } = req.body;
+  const { eventId, vendorId, vendorName, vendorCategory, packageId, packageName, price, eventDate, timeSlot, notes, specialInstructions, selectedOptions, referenceImages, advancePaymentClaimed } = req.body;
 
   const agreedPrice = Number(price) || 50000;
   const resolvedEventDate = eventDate || '2026-12-15';
+  const resolvedSlot = typeof timeSlot === 'string' ? timeSlot : '';
 
   // Reject the request outright if the vendor has opened up specific dates and
   // this isn't one of them — a vendor who has never set any availability is
@@ -276,6 +277,7 @@ app.post('/api/v1/bookings/quote', authMiddleware(), async (req: Request, res: R
     // confirmation" rather than being silently auto-confirmed client-side.
     status: advancePaymentClaimed ? 'pending_payment' : 'quote_requested',
     eventDate: resolvedEventDate,
+    timeSlot: resolvedSlot,
     specialInstructions: notes || specialInstructions || '',
     selectedOptions: Array.isArray(selectedOptions) ? selectedOptions : [],
     referenceImages: Array.isArray(referenceImages) ? referenceImages : [],
@@ -287,12 +289,14 @@ app.post('/api/v1/bookings/quote', authMiddleware(), async (req: Request, res: R
   // when the vendor actually uses date-based availability (an enquiry-only
   // quote_requested doesn't lock the date).
   if (advancePaymentClaimed && vendorId && resolvedEventDate) {
-    fetch(`${MARKETPLACE_SERVICE_URL}/api/v1/vendors/${vendorId}/book-date`, {
+    // Block only the chosen slot (Morning/Afternoon/Evening) so the rest of the
+    // day stays open; with no slot this closes the whole date (book-slot handles both).
+    fetch(`${MARKETPLACE_SERVICE_URL}/api/v1/vendors/${vendorId}/book-slot`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: req.headers.authorization || '' },
-      body: JSON.stringify({ date: resolvedEventDate }),
+      body: JSON.stringify({ date: resolvedEventDate, slot: resolvedSlot }),
     }).catch(() => {
-      /* vendor availability will still show the date until they refresh — not fatal */
+      /* vendor availability will still show the slot until they refresh — not fatal */
     });
   }
 
@@ -404,10 +408,10 @@ app.put('/api/v1/bookings/:id/confirm', authMiddleware(), async (req: Request, r
   // Auto-block the event date on the vendor's calendar so the same day can't be
   // double-booked. Best-effort — confirmation already succeeded.
   if (booking.vendorId && booking.eventDate) {
-    fetch(`${MARKETPLACE_SERVICE_URL}/api/v1/vendors/${booking.vendorId}/book-date`, {
+    fetch(`${MARKETPLACE_SERVICE_URL}/api/v1/vendors/${booking.vendorId}/book-slot`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: req.headers.authorization || '' },
-      body: JSON.stringify({ date: booking.eventDate }),
+      body: JSON.stringify({ date: booking.eventDate, slot: booking.timeSlot || '' }),
     }).catch(() => { /* the vendor can still block it manually */ });
   }
 

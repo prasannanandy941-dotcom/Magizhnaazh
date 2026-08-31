@@ -156,7 +156,12 @@ export interface Vendor {
   // Dates that have been booked — moved here from availableDates when a
   // customer confirms a booking, so the customer listing can show them as
   // "Booked" (visible but not selectable) rather than silently disappearing.
+  // A date lands here only when the WHOLE day is taken (all slots booked, or a
+  // full-day booking with no slot).
   bookedDates?: string[];
+  // Time-of-day slots already booked, per date. Lets a single date be partly
+  // booked — e.g. Morning taken while Afternoon/Evening stay open.
+  bookedSlots?: BookedSlot[];
   policies: {
     cancellation: string;
     refund: string;
@@ -299,6 +304,50 @@ export function getVendorTrustBadges(vendor: Pick<Vendor, 'isVerified' | 'rating
     badges.push({ key: 'since', label: `On Magizhnaazh since ${joinedYear}`, tone: 'tenure' });
   }
   return badges;
+}
+
+// One booked time-of-day slot on a specific date.
+export interface BookedSlot {
+  date: string; // ISO date (YYYY-MM-DD)
+  slot: string; // AvailabilitySlot id: 'morning' | 'afternoon' | 'evening'
+}
+
+// The time-of-day slots a date can be booked in. Booking one leaves the others
+// on that day open. Single source of truth for the customer picker, the vendor
+// availability view, and the booking service's blocking logic.
+export const AVAILABILITY_SLOTS = [
+  { id: 'morning', label: 'Morning', time: '6:00 AM – 1:00 PM' },
+  { id: 'afternoon', label: 'Afternoon', time: '1:00 PM – 5:00 PM' },
+  { id: 'evening', label: 'Evening', time: '5:00 PM – 11:00 PM' },
+] as const;
+
+export type AvailabilitySlotId = (typeof AVAILABILITY_SLOTS)[number]['id'];
+
+// Whether a given (date, slot) is unavailable — either the whole day is booked
+// (legacy full-day block) or that specific slot is taken.
+export function isSlotBooked(
+  vendor: Pick<Vendor, 'bookedDates' | 'bookedSlots'>,
+  date: string,
+  slot: string,
+): boolean {
+  if ((vendor.bookedDates || []).includes(date)) return true;
+  return (vendor.bookedSlots || []).some((b) => b.date === date && b.slot === slot);
+}
+
+// The slots still open on a date.
+export function openSlots(vendor: Pick<Vendor, 'bookedDates' | 'bookedSlots'>, date: string) {
+  return AVAILABILITY_SLOTS.filter((s) => !isSlotBooked(vendor, date, s.id));
+}
+
+// Human label for a slot id (e.g. 'morning' -> 'Morning'); '' if none/unknown.
+export function slotLabel(id?: string): string {
+  return AVAILABILITY_SLOTS.find((s) => s.id === id)?.label || '';
+}
+
+// Label + time for a slot id (e.g. 'Morning (6:00 AM – 1:00 PM)'); '' if unknown.
+export function slotLabelWithTime(id?: string): string {
+  const s = AVAILABILITY_SLOTS.find((x) => x.id === id);
+  return s ? `${s.label} (${s.time})` : '';
 }
 
 // A single priced item a vendor lists under one of their offered options —
@@ -530,6 +579,9 @@ export interface Booking {
   remainingAmount: number;
   status: BookingStatus;
   eventDate: string;
+  // Time-of-day slot booked on that date (AvailabilitySlot id), when the vendor
+  // uses slot-based availability. Empty for legacy full-day bookings.
+  timeSlot?: string;
   specialInstructions?: string;
   quotesHistory?: {
     sender: 'customer' | 'vendor';

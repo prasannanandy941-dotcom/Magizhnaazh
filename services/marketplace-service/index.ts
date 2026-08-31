@@ -11,6 +11,7 @@ import { authMiddleware, requireRole } from '../../packages/shared-utils/auth';
 import { requestLogger } from '../../packages/shared-utils/logging';
 import { registerHealthRoute } from '../../packages/shared-utils/health';
 import { LocalStorageProvider } from '../../packages/local-storage-provider';
+import { AVAILABILITY_SLOTS } from '../../packages/shared-types';
 import { serviceUrl } from '../../packages/shared-utils/serviceUrl';
 import { VENDOR_CATEGORIES } from '../../packages/shared-types';
 import { INDIA_STATES_AND_CITIES } from '../../packages/shared-utils/indiaLocations';
@@ -433,6 +434,37 @@ app.post('/api/v1/vendors/:id/book-date', authMiddleware(), async (req: Request,
   if (!booked.includes(date)) vendor.bookedDates = [...booked, date];
   await vendor.save();
   res.json({ success: true, data: { availableDates: vendor.availableDates, bookedDates: vendor.bookedDates } });
+});
+
+// Close a single TIME SLOT on a date (Morning/Afternoon/Evening). Booking one
+// slot leaves the others on that day open. When every slot on the date is taken,
+// the whole date is closed (added to bookedDates). With no `slot`, this behaves
+// like book-date (full-day block). Called server-to-server by the booking service.
+app.post('/api/v1/vendors/:id/book-slot', authMiddleware(), async (req: Request, res: Response) => {
+  const { date, slot } = req.body;
+  if (!date) return res.status(400).json({ success: false, message: 'date is required.' });
+  const vendor = await VendorModel.findOne({ id: req.params.id });
+  if (!vendor) return res.status(404).json({ success: false, message: 'Vendor not found.' });
+
+  if (!slot) {
+    // No slot → block the whole day (legacy behaviour).
+    vendor.availableDates = (vendor.availableDates || []).filter((d) => d !== date);
+    if (!(vendor.bookedDates || []).includes(date)) vendor.bookedDates = [...(vendor.bookedDates || []), date];
+  } else {
+    const slots = Array.isArray(vendor.bookedSlots) ? vendor.bookedSlots : [];
+    if (!slots.some((b) => b.date === date && b.slot === slot)) {
+      vendor.bookedSlots = [...slots, { date, slot }];
+      vendor.markModified('bookedSlots');
+    }
+    // If every slot on this date is now booked, close the whole date.
+    const bookedForDate = new Set((vendor.bookedSlots || []).filter((b) => b.date === date).map((b) => b.slot));
+    if (AVAILABILITY_SLOTS.every((s) => bookedForDate.has(s.id))) {
+      vendor.availableDates = (vendor.availableDates || []).filter((d) => d !== date);
+      if (!(vendor.bookedDates || []).includes(date)) vendor.bookedDates = [...(vendor.bookedDates || []), date];
+    }
+  }
+  await vendor.save();
+  res.json({ success: true, data: { availableDates: vendor.availableDates, bookedDates: vendor.bookedDates, bookedSlots: vendor.bookedSlots } });
 });
 
 // Free a previously-blocked date (e.g. a booking was cancelled) — moves it back

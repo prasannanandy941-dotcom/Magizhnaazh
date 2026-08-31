@@ -1074,7 +1074,7 @@ export function App() {
           onClose={() => setSelectedVendorForModal(null)}
           isAuthenticated={!!user}
           onRequireAuth={() => setShowAuthModal(true)}
-          onBookVendor={(v, pkgId, price, notes, eventDate, selectedOptions, referenceImages) => {
+          onBookVendor={(v, pkgId, price, notes, eventDate, selectedOptions, referenceImages, timeSlot) => {
             // Named so it can be re-run automatically after a re-login: the
             // customer's `user` staying set doesn't mean their token is
             // still valid (it expires after a few hours), so requireAuth's
@@ -1096,6 +1096,7 @@ export function App() {
                   packageName: pkg?.packageName,
                   price: p,
                   eventDate: eventDate || activeEvent.date,
+                  timeSlot,
                   notes,
                   selectedOptions,
                   referenceImages,
