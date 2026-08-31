@@ -46,8 +46,15 @@ jobs:
             set -e
             cd /var/www/magizhnaazh
 
-            echo "==> Pulling latest code"
-            git pull origin main
+            echo "==> Fetching latest code"
+            git fetch origin main
+            # Force the tracked tree to exactly match origin/main. A plain
+            # `git pull` aborts if a tracked file was edited directly on the VPS
+            # (local changes would be overwritten by the merge); a deploy target
+            # should mirror main, so discard that drift. Note: this only touches
+            # tracked files — untracked runtime data (uploads/, .env, node_modules)
+            # is left alone (no `git clean`).
+            git reset --hard origin/main
 
             echo "==> Installing dependencies (workspaces)"
             npm install
