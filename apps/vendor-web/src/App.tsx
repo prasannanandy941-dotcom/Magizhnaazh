@@ -2415,7 +2415,7 @@ export function App() {
                     </button>
                   </div>
 
-                  <div className={`grid grid-cols-1 ${myVendor?.category === 'Catering' ? 'sm:grid-cols-1' : myVendor?.category === 'Pujari/Priest' || myVendor?.category === 'Security' ? 'sm:grid-cols-2' : 'sm:grid-cols-3'} gap-3`}>
+                  <div className={`grid grid-cols-1 ${myVendor?.category === 'Catering' ? 'sm:grid-cols-1' : myVendor?.category === 'Security' ? 'sm:grid-cols-2' : 'sm:grid-cols-3'} gap-3`}>
                     <div>
                       <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
                         {myVendor?.category === 'Catering' ? 'Price per plate (₹)' : myVendor?.category === 'Security' ? 'Cost per person (₹)' : myVendor?.category === 'Venue' ? 'Price per session (₹)' : myVendor?.category === 'Decoration' ? 'Price per function (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Price per look / function (₹)' : myVendor?.category === 'Media' ? 'Price per event / day (₹)' : myVendor?.category === 'Transport' ? 'Price per vehicle (₹)' : myVendor?.category === 'Pujari/Priest' ? 'Price per ceremony (₹)' : myVendor?.category === 'Invitation' ? 'Price per design / quantity (₹)' : 'Price (₹)'}
@@ -2428,10 +2428,10 @@ export function App() {
                         className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
                       />
                     </div>
-                    {myVendor?.category !== 'Pujari/Priest' && myVendor?.category !== 'Security' && myVendor?.category !== 'Catering' && myVendor?.category !== 'Media' && myVendor?.category !== 'Transport' && myVendor?.category !== 'Invitation' && (
+                    {myVendor?.category !== 'Security' && myVendor?.category !== 'Catering' && myVendor?.category !== 'Media' && myVendor?.category !== 'Transport' && myVendor?.category !== 'Invitation' && (
                       <div>
                         <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
-                          {myVendor?.category === 'Return Gifts' ? 'Count of items' : 'Capacity (persons)'}
+                          {myVendor?.category === 'Return Gifts' ? 'Count of items' : myVendor?.category === 'Pujari/Priest' ? 'No. of persons' : 'Capacity (persons)'}
                         </label>
                         <input
                           type="number"
@@ -2442,7 +2442,7 @@ export function App() {
                         />
                       </div>
                     )}
-                    {myVendor?.category !== 'Pujari/Priest' && myVendor?.category !== 'Security' && myVendor?.category !== 'Catering' && myVendor?.category !== 'Media' && myVendor?.category !== 'Transport' && myVendor?.category !== 'Invitation' && (
+                    {myVendor?.category !== 'Security' && myVendor?.category !== 'Catering' && myVendor?.category !== 'Media' && myVendor?.category !== 'Transport' && myVendor?.category !== 'Invitation' && (
                       <div>
                         <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
                           {myVendor?.category === 'Return Gifts' ? 'Packing time (days)' : 'Duration (hours)'}
@@ -2954,17 +2954,10 @@ export function App() {
                               <input type="text" value={p.priest?.community ?? ''} onChange={(e) => updatePackagePriest(p.id, 'community', e.target.value)}
                                 placeholder="e.g. Iyer / Iyengar / North Indian" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
                             </div>
-                            <div className="grid grid-cols-2 gap-2">
-                              <div>
-                                <label className="block text-[10px] text-slate-500 mb-1">No. of priests</label>
-                                <input type="number" min={0} value={p.priest?.numPriests ?? ''} onChange={(e) => updatePackagePriest(p.id, 'numPriests', e.target.value === '' ? undefined : Number(e.target.value))}
-                                  placeholder="e.g. 2" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
-                              </div>
-                              <div>
-                                <label className="block text-[10px] text-slate-500 mb-1">Duration (hrs)</label>
-                                <input type="number" min={0} value={p.priest?.durationHours ?? ''} onChange={(e) => updatePackagePriest(p.id, 'durationHours', e.target.value === '' ? undefined : Number(e.target.value))}
-                                  placeholder="e.g. 4" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
-                              </div>
+                            <div>
+                              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">No. of priests</label>
+                              <input type="number" min={0} value={p.priest?.numPriests ?? ''} onChange={(e) => updatePackagePriest(p.id, 'numPriests', e.target.value === '' ? undefined : Number(e.target.value))}
+                                placeholder="e.g. 2" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
                             </div>
                           </div>
 

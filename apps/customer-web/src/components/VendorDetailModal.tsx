@@ -1117,7 +1117,8 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                             </div>
                             <div className="space-y-1 text-[11px] text-slate-300">
                               {pr.numPriests ? <div>Priests: <span className="text-white font-semibold">{pr.numPriests}</span></div> : null}
-                              {pr.durationHours ? <div>Duration: <span className="text-white font-semibold">{pr.durationHours} hrs</span></div> : null}
+                              {pkg.capacityPersons ? <div>Persons: <span className="text-white font-semibold">{pkg.capacityPersons}</span></div> : null}
+                              {pkg.durationHours ? <div>Duration: <span className="text-white font-semibold">{pkg.durationHours} hrs</span></div> : null}
                             </div>
                             {incl.some(([, v]) => v !== undefined) && (
                               <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px]">
