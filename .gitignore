@@ -7,3 +7,6 @@ uploads/
 .DS_Store
 npm-debug.log*
 *.tsbuildinfo
+
+# Accidental nested clone — do not track
+/Magizhnaazh/
