@@ -58,7 +58,23 @@ export interface VendorPackage {
   priest?: PriestPackageDetails;
   // Invitation-only structured details.
   invitation?: InvitationPackageDetails;
+  // Printing-only structured details.
+  printing?: PrintingPackageDetails;
 }
+
+// Structured details for a Printing vendor's package (per quantity).
+export interface PrintingPackageDetails {
+  product?: string; // Banners / Flex / Albums / Standees / Photo frames / Thank-you cards
+  size?: string; // free text
+  quantity?: number;
+  finishes?: string[]; // Matte / Glossy / Lamination
+  designIncluded?: boolean; // design included
+  deliveryTime?: string; // free text, e.g. "2 days"
+}
+
+// Option sets for the Printing package form.
+export const PRINTING_PRODUCTS = ['Banners', 'Flex', 'Albums', 'Standees', 'Photo frames', 'Thank-you cards'] as const;
+export const PRINTING_FINISHES = ['Matte', 'Glossy', 'Lamination'] as const;
 
 // Structured details for an Invitation vendor's package (per design / quantity).
 export interface InvitationPackageDetails {

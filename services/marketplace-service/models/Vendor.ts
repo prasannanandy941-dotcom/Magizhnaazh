@@ -142,6 +142,15 @@ const vendorPackageSchema = new Schema(
       deliveryTime: String,
       languages: [String],
     },
+    // Printing-only structured details.
+    printing: {
+      product: String,
+      size: String,
+      quantity: Number,
+      finishes: [String],
+      designIncluded: Boolean,
+      deliveryTime: String,
+    },
   },
   { _id: false }
 );
