@@ -128,19 +128,19 @@ const vendorPackageSchema = new Schema(
       _id: false,
     },
     // Invitation-only structured details.
+    // Plain nested object (not the `type:` wrapper) because it has a field
+    // literally named "type", which the wrapper form misreads as a Mongoose
+    // type declaration. `type: { type: String }` is the correct way to declare
+    // a String field named "type".
     invitation: {
-      type: {
-        tier: String,
-        type: String,
-        design: String,
-        quantity: Number,
-        revisions: Number,
-        addOns: [String],
-        deliveryTime: String,
-        languages: [String],
-      },
-      default: undefined,
-      _id: false,
+      tier: String,
+      type: { type: String },
+      design: String,
+      quantity: Number,
+      revisions: Number,
+      addOns: [String],
+      deliveryTime: String,
+      languages: [String],
     },
   },
   { _id: false }
