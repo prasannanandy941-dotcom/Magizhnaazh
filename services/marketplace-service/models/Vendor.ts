@@ -97,6 +97,22 @@ const vendorPackageSchema = new Schema(
       default: undefined,
       _id: false,
     },
+    // Transport-only structured details.
+    transport: {
+      type: {
+        tier: String,
+        vehicleType: String,
+        pricingBasis: String,
+        numVehicles: Number,
+        seatsPerVehicle: Number,
+        kmHoursIncluded: Number,
+        driverFuel: Boolean,
+        carDecoration: Boolean,
+        use: String,
+      },
+      default: undefined,
+      _id: false,
+    },
   },
   { _id: false }
 );

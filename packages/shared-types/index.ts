@@ -52,7 +52,28 @@ export interface VendorPackage {
   makeup?: MakeupPackageDetails;
   // Media (Photo/Video)-only structured details.
   media?: MediaPackageDetails;
+  // Transport-only structured details.
+  transport?: TransportPackageDetails;
 }
+
+// Structured details for a Transport vendor's package (per vehicle).
+export interface TransportPackageDetails {
+  tier?: string; // Economy / Sedan / Luxury / Vintage-decorated
+  vehicleType?: string; // Car / SUV / Tempo Traveller / Bus / Decorated car
+  pricingBasis?: string; // Per day / Per km
+  numVehicles?: number;
+  seatsPerVehicle?: number;
+  kmHoursIncluded?: number; // kilometres / hours included
+  driverFuel?: boolean; // driver + fuel included
+  carDecoration?: boolean;
+  use?: string; // Baraat / Guests / Couple
+}
+
+// Option sets for the Transport package form.
+export const TRANSPORT_TIERS = ['Economy', 'Sedan', 'Luxury', 'Vintage-decorated'] as const;
+export const TRANSPORT_VEHICLE_TYPES = ['Car', 'SUV', 'Tempo Traveller', 'Bus', 'Decorated car'] as const;
+export const TRANSPORT_PRICING_BASIS = ['Per day', 'Per km'] as const;
+export const TRANSPORT_USES = ['Baraat', 'Guests', 'Couple'] as const;
 
 // Structured details for a Media vendor's package (per event / per day).
 export interface MediaPackageDetails {

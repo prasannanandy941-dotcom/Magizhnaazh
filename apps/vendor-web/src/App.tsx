@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Store, Star, Upload, Check, LogOut, Loader2, Plus, SlidersHorizontal, ChevronDown, Receipt, X, Bell, ShieldCheck, Clock as ClockIcon, AlertCircle, FileText } from 'lucide-react';
-import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, VendorDeal, OfferedOptionItem, VENDOR_CATEGORIES, CATEGORY_OPTIONS, CATERING_OPTION_STYLE, MEDIA_QUALITY_OPTIONS, MEDIA_EQUIPMENT_OPTIONS, mediaExtraField, isDealLive, CATERING_MENU_TIERS, CATERING_FOOD_TYPES, CATERING_CUISINES, CATERING_LIVE_COUNTERS, CATERING_SERVICE_STYLES, slotLabelWithTime, AVAILABILITY_SLOTS, offeredSlotIds, VENUE_SESSIONS, VENUE_HALL_TYPES, VENUE_HALL_CLASSES, VENUE_CATERING_POLICIES, DECORATION_TIERS, DECORATION_THEMES, DECORATION_AREAS, DECORATION_FLOWER_TYPES, MAKEUP_TYPES, MAKEUP_FINISHES, MEDIA_TIERS, MEDIA_COVERAGE, MEDIA_STYLES } from '../../../packages/shared-types';
+import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, VendorDeal, OfferedOptionItem, VENDOR_CATEGORIES, CATEGORY_OPTIONS, CATERING_OPTION_STYLE, MEDIA_QUALITY_OPTIONS, MEDIA_EQUIPMENT_OPTIONS, mediaExtraField, isDealLive, CATERING_MENU_TIERS, CATERING_FOOD_TYPES, CATERING_CUISINES, CATERING_LIVE_COUNTERS, CATERING_SERVICE_STYLES, slotLabelWithTime, AVAILABILITY_SLOTS, offeredSlotIds, VENUE_SESSIONS, VENUE_HALL_TYPES, VENUE_HALL_CLASSES, VENUE_CATERING_POLICIES, DECORATION_TIERS, DECORATION_THEMES, DECORATION_AREAS, DECORATION_FLOWER_TYPES, MAKEUP_TYPES, MAKEUP_FINISHES, MEDIA_TIERS, MEDIA_COVERAGE, MEDIA_STYLES, TRANSPORT_TIERS, TRANSPORT_VEHICLE_TYPES, TRANSPORT_PRICING_BASIS, TRANSPORT_USES } from '../../../packages/shared-types';
 import { STATIC_CITY_GROUPS } from '../../../packages/shared-utils';
 import { AuthGate } from './components/AuthGate';
 import { FloralGoldBackground } from './components/FloralGoldBackground';
@@ -1034,6 +1034,10 @@ export function App() {
       const next = current.includes(item) ? current.filter((x) => x !== item) : [...current, item];
       return { ...p, media: { ...(p.media || {}), styles: next } };
     }));
+
+  // Transport packages carry structured details (vehicle, capacity, inclusions).
+  const updatePackageTransport = (pkgId: string, field: string, value: any) =>
+    setPackages((prev) => prev.map((p) => (p.id === pkgId ? { ...p, transport: { ...(p.transport || {}), [field]: value } } : p)));
 
   // Photos of a package / hall — uploaded to the shared storage endpoint and
   // attached to that package so customers see them on the package card.
@@ -2392,7 +2396,7 @@ export function App() {
                   <div className={`grid grid-cols-1 ${myVendor?.category === 'Catering' ? 'sm:grid-cols-1' : myVendor?.category === 'Pujari/Priest' || myVendor?.category === 'Security' ? 'sm:grid-cols-2' : 'sm:grid-cols-3'} gap-3`}>
                     <div>
                       <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
-                        {myVendor?.category === 'Catering' ? 'Price per plate (₹)' : myVendor?.category === 'Security' ? 'Cost per person (₹)' : myVendor?.category === 'Venue' ? 'Price per session (₹)' : myVendor?.category === 'Decoration' ? 'Price per function (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Price per look / function (₹)' : myVendor?.category === 'Media' ? 'Price per event / day (₹)' : 'Price (₹)'}
+                        {myVendor?.category === 'Catering' ? 'Price per plate (₹)' : myVendor?.category === 'Security' ? 'Cost per person (₹)' : myVendor?.category === 'Venue' ? 'Price per session (₹)' : myVendor?.category === 'Decoration' ? 'Price per function (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Price per look / function (₹)' : myVendor?.category === 'Media' ? 'Price per event / day (₹)' : myVendor?.category === 'Transport' ? 'Price per vehicle (₹)' : 'Price (₹)'}
                       </label>
                       <input
                         type="number"
@@ -2402,7 +2406,7 @@ export function App() {
                         className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
                       />
                     </div>
-                    {myVendor?.category !== 'Pujari/Priest' && myVendor?.category !== 'Security' && myVendor?.category !== 'Catering' && myVendor?.category !== 'Media' && (
+                    {myVendor?.category !== 'Pujari/Priest' && myVendor?.category !== 'Security' && myVendor?.category !== 'Catering' && myVendor?.category !== 'Media' && myVendor?.category !== 'Transport' && (
                       <div>
                         <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
                           {myVendor?.category === 'Return Gifts' ? 'Count of items' : 'Capacity (persons)'}
@@ -2416,7 +2420,7 @@ export function App() {
                         />
                       </div>
                     )}
-                    {myVendor?.category !== 'Pujari/Priest' && myVendor?.category !== 'Security' && myVendor?.category !== 'Catering' && myVendor?.category !== 'Media' && (
+                    {myVendor?.category !== 'Pujari/Priest' && myVendor?.category !== 'Security' && myVendor?.category !== 'Catering' && myVendor?.category !== 'Media' && myVendor?.category !== 'Transport' && (
                       <div>
                         <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
                           {myVendor?.category === 'Return Gifts' ? 'Packing time (days)' : 'Duration (hours)'}
@@ -2833,8 +2837,74 @@ export function App() {
                         </div>
                       )}
 
+                      {/* Transport: structured spec (replaces capacity + generic price tiers). */}
+                      {myVendor?.category === 'Transport' && (
+                        <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/40 p-3">
+                          <p className="text-[10px] text-amber-400 uppercase font-bold">Vehicle details</p>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Tier</label>
+                              <div className="flex flex-wrap gap-2">
+                                {TRANSPORT_TIERS.map((t) => (
+                                  <button type="button" key={t} onClick={() => updatePackageTransport(p.id, 'tier', t)} className={catChip(p.transport?.tier === t)}>{t}</button>
+                                ))}
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Priced</label>
+                              <div className="flex flex-wrap gap-2">
+                                {TRANSPORT_PRICING_BASIS.map((b) => (
+                                  <button type="button" key={b} onClick={() => updatePackageTransport(p.id, 'pricingBasis', b)} className={catChip(p.transport?.pricingBasis === b)}>{b}</button>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Vehicle Type</label>
+                            <div className="flex flex-wrap gap-2">
+                              {TRANSPORT_VEHICLE_TYPES.map((v) => (
+                                <button type="button" key={v} onClick={() => updatePackageTransport(p.id, 'vehicleType', v)} className={catChip(p.transport?.vehicleType === v)}>{v}</button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Use</label>
+                            <div className="flex flex-wrap gap-2">
+                              {TRANSPORT_USES.map((u) => (
+                                <button type="button" key={u} onClick={() => updatePackageTransport(p.id, 'use', u)} className={catChip(p.transport?.use === u)}>{u}</button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-2">
+                            {([['numVehicles', 'No. of vehicles'], ['seatsPerVehicle', 'Seats / vehicle'], ['kmHoursIncluded', 'Km / hours included']] as const).map(([field, label]) => (
+                              <div key={field}>
+                                <label className="block text-[10px] text-slate-500 mb-1">{label}</label>
+                                <input type="number" min={0} value={(p.transport as any)?.[field] ?? ''} onChange={(e) => updatePackageTransport(p.id, field, e.target.value === '' ? undefined : Number(e.target.value))}
+                                  placeholder="0" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2">
+                            {([['driverFuel', 'Driver + fuel included'], ['carDecoration', 'Car decoration']] as const).map(([field, label]) => (
+                              <div key={field}>
+                                <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">{label}</label>
+                                <div className="flex gap-1.5">
+                                  <button type="button" onClick={() => updatePackageTransport(p.id, field, true)} className={catChip((p.transport as any)?.[field] === true)}>Yes</button>
+                                  <button type="button" onClick={() => updatePackageTransport(p.id, field, false)} className={catChip((p.transport as any)?.[field] === false)}>No</button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       {/* Price tiers — categories with no structured spec above. */}
-                      {myVendor?.category !== 'Catering' && myVendor?.category !== 'Venue' && myVendor?.category !== 'Decoration' && myVendor?.category !== 'Makeup & Beauty' && myVendor?.category !== 'Media' && (
+                      {myVendor?.category !== 'Catering' && myVendor?.category !== 'Venue' && myVendor?.category !== 'Decoration' && myVendor?.category !== 'Makeup & Beauty' && myVendor?.category !== 'Media' && myVendor?.category !== 'Transport' && (
                       <div>
                         <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1.5">
                           Price tiers (optional — e.g. Normal / HD / Premium)

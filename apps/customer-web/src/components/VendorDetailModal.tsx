@@ -1070,6 +1070,37 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                         );
                       })()}
 
+                      {pkg.transport && (() => {
+                        const t = pkg.transport;
+                        const chip = 'text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200';
+                        const incl: [string, boolean | undefined][] = [
+                          ['Driver + fuel', t.driverFuel], ['Car decoration', t.carDecoration],
+                        ];
+                        return (
+                          <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2" onClick={(e) => e.stopPropagation()}>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase block">Vehicle details</span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {t.tier && <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-200 font-bold">{t.tier}</span>}
+                              {t.vehicleType && <span className={chip}>{t.vehicleType}</span>}
+                              {t.use && <span className={chip}>For {t.use}</span>}
+                              {t.pricingBasis && <span className={chip}>{t.pricingBasis}</span>}
+                            </div>
+                            <div className="space-y-1 text-[11px] text-slate-300">
+                              {t.numVehicles ? <div>Vehicles: <span className="text-white font-semibold">{t.numVehicles}</span></div> : null}
+                              {t.seatsPerVehicle ? <div>Seats / vehicle: <span className="text-white font-semibold">{t.seatsPerVehicle}</span></div> : null}
+                              {t.kmHoursIncluded ? <div>Km / hours included: <span className="text-white font-semibold">{t.kmHoursIncluded}</span></div> : null}
+                            </div>
+                            {incl.some(([, v]) => v !== undefined) && (
+                              <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px]">
+                                {incl.filter(([, v]) => v !== undefined).map(([label, v]) => (
+                                  <span key={label} className="text-slate-400">{label}: <b className={v ? 'text-emerald-400' : 'text-slate-500'}>{v ? 'Yes' : 'No'}</b></span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+
                       {/* Hall / Package Photos */}
                       {pkg.images && pkg.images.length > 0 && (
                         <div className="space-y-1.5 mt-3 mb-3">
