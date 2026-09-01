@@ -127,6 +127,21 @@ const vendorPackageSchema = new Schema(
       default: undefined,
       _id: false,
     },
+    // Invitation-only structured details.
+    invitation: {
+      type: {
+        tier: String,
+        type: String,
+        design: String,
+        quantity: Number,
+        revisions: Number,
+        addOns: [String],
+        deliveryTime: String,
+        languages: [String],
+      },
+      default: undefined,
+      _id: false,
+    },
   },
   { _id: false }
 );

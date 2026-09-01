@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Store, Star, Upload, Check, LogOut, Loader2, Plus, SlidersHorizontal, ChevronDown, Receipt, X, Bell, ShieldCheck, Clock as ClockIcon, AlertCircle, FileText } from 'lucide-react';
-import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, VendorDeal, OfferedOptionItem, VENDOR_CATEGORIES, CATEGORY_OPTIONS, CATERING_OPTION_STYLE, MEDIA_QUALITY_OPTIONS, MEDIA_EQUIPMENT_OPTIONS, mediaExtraField, isDealLive, CATERING_MENU_TIERS, CATERING_FOOD_TYPES, CATERING_CUISINES, CATERING_LIVE_COUNTERS, CATERING_SERVICE_STYLES, slotLabelWithTime, AVAILABILITY_SLOTS, offeredSlotIds, VENUE_SESSIONS, VENUE_HALL_TYPES, VENUE_HALL_CLASSES, VENUE_CATERING_POLICIES, DECORATION_TIERS, DECORATION_THEMES, DECORATION_AREAS, DECORATION_FLOWER_TYPES, MAKEUP_TYPES, MAKEUP_FINISHES, MEDIA_TIERS, MEDIA_COVERAGE, MEDIA_STYLES, TRANSPORT_TIERS, TRANSPORT_VEHICLE_TYPES, TRANSPORT_PRICING_BASIS, TRANSPORT_USES, PRIEST_CEREMONY_TYPES, PRIEST_LANGUAGES } from '../../../packages/shared-types';
+import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, VendorDeal, OfferedOptionItem, VENDOR_CATEGORIES, CATEGORY_OPTIONS, CATERING_OPTION_STYLE, MEDIA_QUALITY_OPTIONS, MEDIA_EQUIPMENT_OPTIONS, mediaExtraField, isDealLive, CATERING_MENU_TIERS, CATERING_FOOD_TYPES, CATERING_CUISINES, CATERING_LIVE_COUNTERS, CATERING_SERVICE_STYLES, slotLabelWithTime, AVAILABILITY_SLOTS, offeredSlotIds, VENUE_SESSIONS, VENUE_HALL_TYPES, VENUE_HALL_CLASSES, VENUE_CATERING_POLICIES, DECORATION_TIERS, DECORATION_THEMES, DECORATION_AREAS, DECORATION_FLOWER_TYPES, MAKEUP_TYPES, MAKEUP_FINISHES, MEDIA_TIERS, MEDIA_COVERAGE, MEDIA_STYLES, TRANSPORT_TIERS, TRANSPORT_VEHICLE_TYPES, TRANSPORT_PRICING_BASIS, TRANSPORT_USES, PRIEST_CEREMONY_TYPES, PRIEST_LANGUAGES, INVITATION_TIERS, INVITATION_TYPES, INVITATION_DESIGNS, INVITATION_ADDONS, INVITATION_LANGUAGES } from '../../../packages/shared-types';
 import { STATIC_CITY_GROUPS } from '../../../packages/shared-utils';
 import { AuthGate } from './components/AuthGate';
 import { FloralGoldBackground } from './components/FloralGoldBackground';
@@ -1048,6 +1048,17 @@ export function App() {
       const current: string[] = (p.priest?.languages) || [];
       const next = current.includes(lang) ? current.filter((x) => x !== lang) : [...current, lang];
       return { ...p, priest: { ...(p.priest || {}), languages: next } };
+    }));
+
+  // Invitation packages carry structured design details.
+  const updatePackageInvitation = (pkgId: string, field: string, value: any) =>
+    setPackages((prev) => prev.map((p) => (p.id === pkgId ? { ...p, invitation: { ...(p.invitation || {}), [field]: value } } : p)));
+  const toggleInvitationArray = (pkgId: string, field: 'addOns' | 'languages', item: string) =>
+    setPackages((prev) => prev.map((p) => {
+      if (p.id !== pkgId) return p;
+      const current: string[] = ((p.invitation as any)?.[field]) || [];
+      const next = current.includes(item) ? current.filter((x) => x !== item) : [...current, item];
+      return { ...p, invitation: { ...(p.invitation || {}), [field]: next } };
     }));
 
   // Photos of a package / hall — uploaded to the shared storage endpoint and
@@ -2407,7 +2418,7 @@ export function App() {
                   <div className={`grid grid-cols-1 ${myVendor?.category === 'Catering' ? 'sm:grid-cols-1' : myVendor?.category === 'Pujari/Priest' || myVendor?.category === 'Security' ? 'sm:grid-cols-2' : 'sm:grid-cols-3'} gap-3`}>
                     <div>
                       <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
-                        {myVendor?.category === 'Catering' ? 'Price per plate (₹)' : myVendor?.category === 'Security' ? 'Cost per person (₹)' : myVendor?.category === 'Venue' ? 'Price per session (₹)' : myVendor?.category === 'Decoration' ? 'Price per function (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Price per look / function (₹)' : myVendor?.category === 'Media' ? 'Price per event / day (₹)' : myVendor?.category === 'Transport' ? 'Price per vehicle (₹)' : myVendor?.category === 'Pujari/Priest' ? 'Price per ceremony (₹)' : 'Price (₹)'}
+                        {myVendor?.category === 'Catering' ? 'Price per plate (₹)' : myVendor?.category === 'Security' ? 'Cost per person (₹)' : myVendor?.category === 'Venue' ? 'Price per session (₹)' : myVendor?.category === 'Decoration' ? 'Price per function (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Price per look / function (₹)' : myVendor?.category === 'Media' ? 'Price per event / day (₹)' : myVendor?.category === 'Transport' ? 'Price per vehicle (₹)' : myVendor?.category === 'Pujari/Priest' ? 'Price per ceremony (₹)' : myVendor?.category === 'Invitation' ? 'Price per design / quantity (₹)' : 'Price (₹)'}
                       </label>
                       <input
                         type="number"
@@ -2417,7 +2428,7 @@ export function App() {
                         className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
                       />
                     </div>
-                    {myVendor?.category !== 'Pujari/Priest' && myVendor?.category !== 'Security' && myVendor?.category !== 'Catering' && myVendor?.category !== 'Media' && myVendor?.category !== 'Transport' && (
+                    {myVendor?.category !== 'Pujari/Priest' && myVendor?.category !== 'Security' && myVendor?.category !== 'Catering' && myVendor?.category !== 'Media' && myVendor?.category !== 'Transport' && myVendor?.category !== 'Invitation' && (
                       <div>
                         <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
                           {myVendor?.category === 'Return Gifts' ? 'Count of items' : 'Capacity (persons)'}
@@ -2431,7 +2442,7 @@ export function App() {
                         />
                       </div>
                     )}
-                    {myVendor?.category !== 'Pujari/Priest' && myVendor?.category !== 'Security' && myVendor?.category !== 'Catering' && myVendor?.category !== 'Media' && myVendor?.category !== 'Transport' && (
+                    {myVendor?.category !== 'Pujari/Priest' && myVendor?.category !== 'Security' && myVendor?.category !== 'Catering' && myVendor?.category !== 'Media' && myVendor?.category !== 'Transport' && myVendor?.category !== 'Invitation' && (
                       <div>
                         <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
                           {myVendor?.category === 'Return Gifts' ? 'Packing time (days)' : 'Duration (hours)'}
@@ -2971,8 +2982,79 @@ export function App() {
                         </div>
                       )}
 
+                      {/* Invitation: structured design spec (replaces generic price tiers). */}
+                      {myVendor?.category === 'Invitation' && (
+                        <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/40 p-3">
+                          <p className="text-[10px] text-amber-400 uppercase font-bold">Invitation details</p>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Tier</label>
+                              <div className="flex flex-wrap gap-2">
+                                {INVITATION_TIERS.map((t) => (
+                                  <button type="button" key={t} onClick={() => updatePackageInvitation(p.id, 'tier', t)} className={catChip(p.invitation?.tier === t)}>{t}</button>
+                                ))}
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Design</label>
+                              <div className="flex flex-wrap gap-2">
+                                {INVITATION_DESIGNS.map((d) => (
+                                  <button type="button" key={d} onClick={() => updatePackageInvitation(p.id, 'design', d)} className={catChip(p.invitation?.design === d)}>{d}</button>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Type</label>
+                            <div className="flex flex-wrap gap-2">
+                              {INVITATION_TYPES.map((t) => (
+                                <button type="button" key={t} onClick={() => updatePackageInvitation(p.id, 'type', t)} className={catChip(p.invitation?.type === t)}>{t}</button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Add-ons</label>
+                            <div className="flex flex-wrap gap-2">
+                              {INVITATION_ADDONS.map((a) => (
+                                <button type="button" key={a} onClick={() => toggleInvitationArray(p.id, 'addOns', a)} className={catChip((p.invitation?.addOns || []).includes(a))}>{a}</button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Languages</label>
+                            <div className="flex flex-wrap gap-2">
+                              {INVITATION_LANGUAGES.map((l) => (
+                                <button type="button" key={l} onClick={() => toggleInvitationArray(p.id, 'languages', l)} className={catChip((p.invitation?.languages || []).includes(l))}>{l}</button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-2">
+                            <div>
+                              <label className="block text-[10px] text-slate-500 mb-1">Quantity (printed)</label>
+                              <input type="number" min={0} value={p.invitation?.quantity ?? ''} onChange={(e) => updatePackageInvitation(p.id, 'quantity', e.target.value === '' ? undefined : Number(e.target.value))}
+                                placeholder="e.g. 250" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] text-slate-500 mb-1">Design revisions</label>
+                              <input type="number" min={0} value={p.invitation?.revisions ?? ''} onChange={(e) => updatePackageInvitation(p.id, 'revisions', e.target.value === '' ? undefined : Number(e.target.value))}
+                                placeholder="e.g. 3" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] text-slate-500 mb-1">Delivery time</label>
+                              <input type="text" value={p.invitation?.deliveryTime ?? ''} onChange={(e) => updatePackageInvitation(p.id, 'deliveryTime', e.target.value)}
+                                placeholder="e.g. 3 days" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Price tiers — categories with no structured spec above. */}
-                      {myVendor?.category !== 'Catering' && myVendor?.category !== 'Venue' && myVendor?.category !== 'Decoration' && myVendor?.category !== 'Makeup & Beauty' && myVendor?.category !== 'Media' && myVendor?.category !== 'Transport' && myVendor?.category !== 'Pujari/Priest' && (
+                      {myVendor?.category !== 'Catering' && myVendor?.category !== 'Venue' && myVendor?.category !== 'Decoration' && myVendor?.category !== 'Makeup & Beauty' && myVendor?.category !== 'Media' && myVendor?.category !== 'Transport' && myVendor?.category !== 'Pujari/Priest' && myVendor?.category !== 'Invitation' && (
                       <div>
                         <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1.5">
                           Price tiers (optional — e.g. Normal / HD / Premium)

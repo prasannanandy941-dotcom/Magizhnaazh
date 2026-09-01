@@ -56,7 +56,28 @@ export interface VendorPackage {
   transport?: TransportPackageDetails;
   // Pujari/Priest-only structured details.
   priest?: PriestPackageDetails;
+  // Invitation-only structured details.
+  invitation?: InvitationPackageDetails;
 }
+
+// Structured details for an Invitation vendor's package (per design / quantity).
+export interface InvitationPackageDetails {
+  tier?: string; // Digital / Printed / Premium
+  type?: string; // Digital e-invite / Video invite / Printed card
+  design?: string; // Custom / Template
+  quantity?: number; // for printed
+  revisions?: number; // number of design revisions
+  addOns?: string[]; // RSVP link, Map, Caricature
+  deliveryTime?: string; // free text, e.g. "3 days"
+  languages?: string[]; // Tamil / Hindi / English / Telugu
+}
+
+// Option sets for the Invitation package form.
+export const INVITATION_TIERS = ['Digital', 'Printed', 'Premium'] as const;
+export const INVITATION_TYPES = ['Digital e-invite', 'Video invite', 'Printed card'] as const;
+export const INVITATION_DESIGNS = ['Custom', 'Template'] as const;
+export const INVITATION_ADDONS = ['RSVP link', 'Map', 'Caricature'] as const;
+export const INVITATION_LANGUAGES = ['Tamil', 'Hindi', 'English', 'Telugu'] as const;
 
 // Structured details for a Pujari/Priest vendor's package (per ceremony).
 export interface PriestPackageDetails {
