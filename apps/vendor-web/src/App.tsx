@@ -3137,16 +3137,26 @@ export function App() {
 
                           <div className="grid grid-cols-3 gap-2">
                             <div>
+                              <label className="block text-[10px] text-slate-500 mb-1">Count of gifts</label>
+                              <input type="number" min={0} value={p.returnGifts?.countOfGifts ?? ''} onChange={(e) => updatePackageReturnGifts(p.id, 'countOfGifts', e.target.value === '' ? undefined : Number(e.target.value))}
+                                placeholder="e.g. 1 set" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                            </div>
+                            <div>
                               <label className="block text-[10px] text-slate-500 mb-1">Minimum quantity</label>
                               <input type="number" min={0} value={p.returnGifts?.minQuantity ?? ''} onChange={(e) => updatePackageReturnGifts(p.id, 'minQuantity', e.target.value === '' ? undefined : Number(e.target.value))}
                                 placeholder="e.g. 50" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] text-slate-500 mb-1">Packing time (days)</label>
+                              <input type="number" min={0} value={p.returnGifts?.packingTimeDays ?? ''} onChange={(e) => updatePackageReturnGifts(p.id, 'packingTimeDays', e.target.value === '' ? undefined : Number(e.target.value))}
+                                placeholder="e.g. 3" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
                             </div>
                             <div>
                               <label className="block text-[10px] text-slate-500 mb-1">Packaging type</label>
                               <input type="text" value={p.returnGifts?.packagingType ?? ''} onChange={(e) => updatePackageReturnGifts(p.id, 'packagingType', e.target.value)}
                                 placeholder="e.g. Gift box" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
                             </div>
-                            <div>
+                            <div className="col-span-2">
                               <label className="block text-[10px] text-slate-500 mb-1">Bulk quantity discount</label>
                               <input type="text" value={p.returnGifts?.bulkDiscount ?? ''} onChange={(e) => updatePackageReturnGifts(p.id, 'bulkDiscount', e.target.value)}
                                 placeholder="e.g. 10% off above 200" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />

@@ -1186,7 +1186,9 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                               {rg.giftType && <span className={chip}>{rg.giftType}</span>}
                             </div>
                             <div className="space-y-1 text-[11px] text-slate-300">
+                              {rg.countOfGifts ? <div>Count of gifts: <span className="text-white font-semibold">{rg.countOfGifts}</span></div> : null}
                               {rg.minQuantity ? <div>Minimum quantity: <span className="text-white font-semibold">{rg.minQuantity}</span></div> : null}
+                              {rg.packingTimeDays ? <div>Packing time: <span className="text-white font-semibold">{rg.packingTimeDays} days</span></div> : null}
                               {rg.packagingType ? <div>Packaging: <span className="text-white font-semibold">{rg.packagingType}</span></div> : null}
                               {rg.bulkDiscount ? <div>Bulk discount: <span className="text-white font-semibold">{rg.bulkDiscount}</span></div> : null}
                             </div>

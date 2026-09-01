@@ -155,7 +155,9 @@ const vendorPackageSchema = new Schema(
     returnGifts: {
       tier: String,
       giftType: String,
+      countOfGifts: Number,
       minQuantity: Number,
+      packingTimeDays: Number,
       customization: Boolean,
       packagingType: String,
       bulkDiscount: String,

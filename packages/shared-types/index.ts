@@ -68,7 +68,9 @@ export interface VendorPackage {
 export interface ReturnGiftsPackageDetails {
   tier?: string; // Economy / Standard / Premium
   giftType?: string; // Dry fruits / Silver items / Potli bags / Plants / Hampers / Sweets
+  countOfGifts?: number; // number of gift pieces per order/set
   minQuantity?: number;
+  packingTimeDays?: number; // packing time in days
   customization?: boolean; // name / date print
   packagingType?: string; // free text
   bulkDiscount?: string; // free text, e.g. "10% off above 200"
