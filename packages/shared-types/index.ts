@@ -83,7 +83,23 @@ export interface VendorPackage {
   utensils?: UtensilsPackageDetails;
   // Wedding Planner-only structured details.
   weddingPlanner?: WeddingPlannerPackageDetails;
+  // Corporate Event Services-only structured details.
+  corporate?: CorporatePackageDetails;
 }
+
+// Structured details for a Corporate Event Services vendor's package (per event / head).
+export interface CorporatePackageDetails {
+  eventType?: string; // Conference / Product launch / Awards / Team outing
+  numAttendees?: number;
+  avStageBranding?: boolean; // AV + stage + branding
+  registrationDesk?: boolean;
+  cateringCoordination?: boolean;
+  mcHost?: boolean; // MC / host
+  numDays?: number;
+}
+
+// Option set for the Corporate Event Services package form.
+export const CORPORATE_EVENT_TYPES = ['Conference', 'Product launch', 'Awards', 'Team outing'] as const;
 
 // Structured details for a Wedding Planner vendor's package (per package / function).
 export interface WeddingPlannerPackageDetails {

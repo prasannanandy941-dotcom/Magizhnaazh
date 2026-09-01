@@ -1465,6 +1465,32 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                         );
                       })()}
 
+                      {pkg.corporate && (() => {
+                        const c = pkg.corporate;
+                        const incl: [string, boolean | undefined][] = [
+                          ['AV + stage + branding', c.avStageBranding], ['Registration desk', c.registrationDesk], ['Catering coordination', c.cateringCoordination], ['MC / host', c.mcHost],
+                        ];
+                        return (
+                          <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2" onClick={(e) => e.stopPropagation()}>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase block">Event details</span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {c.eventType && <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-200 font-bold">{c.eventType}</span>}
+                            </div>
+                            <div className="space-y-1 text-[11px] text-slate-300">
+                              {c.numAttendees ? <div>Attendees: <span className="text-white font-semibold">{c.numAttendees}</span></div> : null}
+                              {c.numDays ? <div>Days: <span className="text-white font-semibold">{c.numDays}</span></div> : null}
+                            </div>
+                            {incl.some(([, v]) => v !== undefined) && (
+                              <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px]">
+                                {incl.filter(([, v]) => v !== undefined).map(([label, v]) => (
+                                  <span key={label} className="text-slate-400">{label}: <b className={v ? 'text-emerald-400' : 'text-slate-500'}>{v ? 'Yes' : 'No'}</b></span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+
                       {/* Hall / Package Photos */}
                       {pkg.images && pkg.images.length > 0 && (
                         <div className="space-y-1.5 mt-3 mb-3">

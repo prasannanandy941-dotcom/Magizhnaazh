@@ -259,6 +259,16 @@ const vendorPackageSchema = new Schema(
       guestManagement: Boolean,
       planningMeetings: Number,
     },
+    // Corporate Event Services-only structured details.
+    corporate: {
+      eventType: String,
+      numAttendees: Number,
+      avStageBranding: Boolean,
+      registrationDesk: Boolean,
+      cateringCoordination: Boolean,
+      mcHost: Boolean,
+      numDays: Number,
+    },
   },
   { _id: false }
 );
