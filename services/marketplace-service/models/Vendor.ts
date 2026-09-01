@@ -113,6 +113,20 @@ const vendorPackageSchema = new Schema(
       default: undefined,
       _id: false,
     },
+    // Pujari/Priest-only structured details.
+    priest: {
+      type: {
+        ceremonyType: String,
+        community: String,
+        languages: [String],
+        samagriIncluded: Boolean,
+        numPriests: Number,
+        durationHours: Number,
+        muhurthamConsult: Boolean,
+      },
+      default: undefined,
+      _id: false,
+    },
   },
   { _id: false }
 );

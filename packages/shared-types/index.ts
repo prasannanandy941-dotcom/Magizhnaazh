@@ -54,7 +54,24 @@ export interface VendorPackage {
   media?: MediaPackageDetails;
   // Transport-only structured details.
   transport?: TransportPackageDetails;
+  // Pujari/Priest-only structured details.
+  priest?: PriestPackageDetails;
 }
+
+// Structured details for a Pujari/Priest vendor's package (per ceremony).
+export interface PriestPackageDetails {
+  ceremonyType?: string; // Wedding / Engagement / Griha Pravesh / Naming
+  community?: string; // free text: Iyer / Iyengar / North Indian / etc.
+  languages?: string[]; // Tamil / Sanskrit / Hindi
+  samagriIncluded?: boolean; // pooja items (samagri) included
+  numPriests?: number;
+  durationHours?: number;
+  muhurthamConsult?: boolean; // muhurtham consultation
+}
+
+// Option sets for the Pujari/Priest package form.
+export const PRIEST_CEREMONY_TYPES = ['Wedding', 'Engagement', 'Griha Pravesh', 'Naming'] as const;
+export const PRIEST_LANGUAGES = ['Tamil', 'Sanskrit', 'Hindi'] as const;
 
 // Structured details for a Transport vendor's package (per vehicle).
 export interface TransportPackageDetails {
