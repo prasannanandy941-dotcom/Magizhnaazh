@@ -2,6 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Native date/time controls sit on dark fields — tell the browser so it paints
+   the calendar glyph, placeholder and picker popup for a dark background.
+   Without this the icon/text render near-black and vanish on mobile WebView.
+   Flipped to light under the admin's light theme so it stays visible there too. */
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"],
+input[type="month"] {
+  color-scheme: dark;
+}
+html[data-theme="light"] input[type="date"],
+html[data-theme="light"] input[type="time"],
+html[data-theme="light"] input[type="datetime-local"],
+html[data-theme="light"] input[type="month"] {
+  color-scheme: light;
+}
+
 /* ---------------------------------------------------------------------------
    Light theme, driven by the admin's site-wide choice (shared via platform
    settings; applied on <html data-theme="light">). The customer UI is a
