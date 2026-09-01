@@ -62,7 +62,20 @@ export interface VendorPackage {
   printing?: PrintingPackageDetails;
   // Return Gifts-only structured details.
   returnGifts?: ReturnGiftsPackageDetails;
+  // Entertainment-only structured details. (Number of performers reuses
+  // capacityPersons; Duration reuses durationHours.)
+  entertainment?: EntertainmentPackageDetails;
 }
+
+// Structured details for an Entertainment vendor's package (per act / per hour).
+export interface EntertainmentPackageDetails {
+  actType?: string; // Fireworks / Celebrity / Live band / Dance troupe / Magician / Folk artists
+  equipmentIncluded?: boolean;
+  travelIncluded?: boolean;
+}
+
+// Option set for the Entertainment package form.
+export const ENTERTAINMENT_ACT_TYPES = ['Fireworks', 'Celebrity', 'Live band', 'Dance troupe', 'Magician', 'Folk artists'] as const;
 
 // Structured details for a Return Gifts vendor's package (per piece).
 export interface ReturnGiftsPackageDetails {

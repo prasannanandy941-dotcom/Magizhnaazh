@@ -162,6 +162,12 @@ const vendorPackageSchema = new Schema(
       packagingType: String,
       bulkDiscount: String,
     },
+    // Entertainment-only structured details.
+    entertainment: {
+      actType: String,
+      equipmentIncluded: Boolean,
+      travelIncluded: Boolean,
+    },
   },
   { _id: false }
 );
