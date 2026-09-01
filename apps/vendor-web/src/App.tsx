@@ -1708,7 +1708,7 @@ export function App() {
             { key: 'reviews', label: `Reviews${reviews.length ? ` (${reviews.length})` : ''}` },
             { key: 'facilities', label: 'Facilities & Options' },
             { key: 'packages', label: `${myVendor?.category === 'Venue' ? 'Halls' : 'Packages'}${packages.length ? ` (${packages.length})` : ''}` },
-            { key: 'offers', label: `Offers${deals.length ? ` (${deals.length})` : ''}` },
+            ...(myVendor?.category !== 'Security' ? [{ key: 'offers', label: `Offers${deals.length ? ` (${deals.length})` : ''}` }] : []),
             { key: 'availability', label: 'Availability' },
             { key: 'portfolio', label: 'Local Disk Portfolio' },
             { key: 'profile', label: 'Business Profile' },
@@ -3857,7 +3857,7 @@ export function App() {
         )}
 
         {/* Profile Tab */}
-        {activeTab === 'offers' && (
+        {activeTab === 'offers' && myVendor?.category !== 'Security' && (
           <div className="max-w-2xl mx-auto space-y-5">
             <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-4">
               <div>
