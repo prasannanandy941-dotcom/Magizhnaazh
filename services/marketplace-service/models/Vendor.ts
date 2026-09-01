@@ -200,6 +200,17 @@ const vendorPackageSchema = new Schema(
       deliveryTiming: String,
       whichFunction: String,
     },
+    // Mehendi-only structured details. Plain nested (has a `type` field).
+    mehendi: {
+      tier: String,
+      type: { type: String },
+      intricacy: String,
+      numArtists: Number,
+      perHandPrice: Number,
+      organicHenna: Boolean,
+      durationHours: Number,
+      travelIncluded: Boolean,
+    },
   },
   { _id: false }
 );

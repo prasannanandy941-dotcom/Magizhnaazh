@@ -71,7 +71,26 @@ export interface VendorPackage {
   lighting?: LightingPackageDetails;
   // Flowers-only structured details.
   flowers?: FlowersPackageDetails;
+  // Mehendi-only structured details.
+  mehendi?: MehendiPackageDetails;
 }
+
+// Structured details for a Mehendi vendor's package (per bride / per hand).
+export interface MehendiPackageDetails {
+  tier?: string; // Guest-simple / Bridal / Arabic / Rajasthani
+  type?: string; // Bridal / Guest / Arabic / Rajasthani / Glitter
+  intricacy?: string; // Simple / Full hands + feet
+  numArtists?: number; // for guest stalls
+  perHandPrice?: number; // per-hand price for guests
+  organicHenna?: boolean;
+  durationHours?: number;
+  travelIncluded?: boolean;
+}
+
+// Option sets for the Mehendi package form.
+export const MEHENDI_TIERS = ['Guest-simple', 'Bridal', 'Arabic', 'Rajasthani'] as const;
+export const MEHENDI_TYPES = ['Bridal', 'Guest', 'Arabic', 'Rajasthani', 'Glitter'] as const;
+export const MEHENDI_INTRICACY = ['Simple', 'Full hands + feet'] as const;
 
 // Structured details for a Flowers vendor's package (per item / per function).
 export interface FlowersPackageDetails {
