@@ -151,6 +151,15 @@ const vendorPackageSchema = new Schema(
       designIncluded: Boolean,
       deliveryTime: String,
     },
+    // Return Gifts-only structured details.
+    returnGifts: {
+      tier: String,
+      giftType: String,
+      minQuantity: Number,
+      customization: Boolean,
+      packagingType: String,
+      bulkDiscount: String,
+    },
   },
   { _id: false }
 );

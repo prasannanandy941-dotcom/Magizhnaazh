@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Store, Star, Upload, Check, LogOut, Loader2, Plus, SlidersHorizontal, ChevronDown, Receipt, X, Bell, ShieldCheck, Clock as ClockIcon, AlertCircle, FileText } from 'lucide-react';
-import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, VendorDeal, OfferedOptionItem, VENDOR_CATEGORIES, CATEGORY_OPTIONS, CATERING_OPTION_STYLE, MEDIA_QUALITY_OPTIONS, MEDIA_EQUIPMENT_OPTIONS, mediaExtraField, isDealLive, CATERING_MENU_TIERS, CATERING_FOOD_TYPES, CATERING_CUISINES, CATERING_LIVE_COUNTERS, CATERING_SERVICE_STYLES, slotLabelWithTime, AVAILABILITY_SLOTS, offeredSlotIds, VENUE_SESSIONS, VENUE_HALL_TYPES, VENUE_HALL_CLASSES, VENUE_CATERING_POLICIES, DECORATION_TIERS, DECORATION_THEMES, DECORATION_AREAS, DECORATION_FLOWER_TYPES, MAKEUP_TYPES, MAKEUP_FINISHES, MEDIA_TIERS, MEDIA_COVERAGE, MEDIA_STYLES, TRANSPORT_TIERS, TRANSPORT_VEHICLE_TYPES, TRANSPORT_PRICING_BASIS, TRANSPORT_USES, PRIEST_CEREMONY_TYPES, PRIEST_LANGUAGES, INVITATION_TIERS, INVITATION_TYPES, INVITATION_DESIGNS, INVITATION_ADDONS, INVITATION_LANGUAGES, PRINTING_PRODUCTS, PRINTING_FINISHES } from '../../../packages/shared-types';
+import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, VendorDeal, OfferedOptionItem, VENDOR_CATEGORIES, CATEGORY_OPTIONS, CATERING_OPTION_STYLE, MEDIA_QUALITY_OPTIONS, MEDIA_EQUIPMENT_OPTIONS, mediaExtraField, isDealLive, CATERING_MENU_TIERS, CATERING_FOOD_TYPES, CATERING_CUISINES, CATERING_LIVE_COUNTERS, CATERING_SERVICE_STYLES, slotLabelWithTime, AVAILABILITY_SLOTS, offeredSlotIds, VENUE_SESSIONS, VENUE_HALL_TYPES, VENUE_HALL_CLASSES, VENUE_CATERING_POLICIES, DECORATION_TIERS, DECORATION_THEMES, DECORATION_AREAS, DECORATION_FLOWER_TYPES, MAKEUP_TYPES, MAKEUP_FINISHES, MEDIA_TIERS, MEDIA_COVERAGE, MEDIA_STYLES, TRANSPORT_TIERS, TRANSPORT_VEHICLE_TYPES, TRANSPORT_PRICING_BASIS, TRANSPORT_USES, PRIEST_CEREMONY_TYPES, PRIEST_LANGUAGES, INVITATION_TIERS, INVITATION_TYPES, INVITATION_DESIGNS, INVITATION_ADDONS, INVITATION_LANGUAGES, PRINTING_PRODUCTS, PRINTING_FINISHES, RETURN_GIFTS_TIERS, RETURN_GIFT_TYPES } from '../../../packages/shared-types';
 import { STATIC_CITY_GROUPS } from '../../../packages/shared-utils';
 import { AuthGate } from './components/AuthGate';
 import { FloralGoldBackground } from './components/FloralGoldBackground';
@@ -1071,6 +1071,10 @@ export function App() {
       const next = current.includes(finish) ? current.filter((x) => x !== finish) : [...current, finish];
       return { ...p, printing: { ...(p.printing || {}), finishes: next } };
     }));
+
+  // Return Gifts packages carry structured gift details.
+  const updatePackageReturnGifts = (pkgId: string, field: string, value: any) =>
+    setPackages((prev) => prev.map((p) => (p.id === pkgId ? { ...p, returnGifts: { ...(p.returnGifts || {}), [field]: value } } : p)));
 
   // Photos of a package / hall — uploaded to the shared storage endpoint and
   // attached to that package so customers see them on the package card.
@@ -2429,7 +2433,7 @@ export function App() {
                   <div className={`grid grid-cols-1 ${myVendor?.category === 'Catering' ? 'sm:grid-cols-1' : myVendor?.category === 'Security' ? 'sm:grid-cols-2' : 'sm:grid-cols-3'} gap-3`}>
                     <div>
                       <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
-                        {myVendor?.category === 'Catering' ? 'Price per plate (₹)' : myVendor?.category === 'Security' ? 'Cost per person (₹)' : myVendor?.category === 'Venue' ? 'Price per session (₹)' : myVendor?.category === 'Decoration' ? 'Price per function (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Price per look / function (₹)' : myVendor?.category === 'Media' ? 'Price per event / day (₹)' : myVendor?.category === 'Transport' ? 'Price per vehicle (₹)' : myVendor?.category === 'Pujari/Priest' ? 'Price per ceremony (₹)' : myVendor?.category === 'Invitation' ? 'Price per design / quantity (₹)' : myVendor?.category === 'Printing' ? 'Price per quantity (₹)' : 'Price (₹)'}
+                        {myVendor?.category === 'Catering' ? 'Price per plate (₹)' : myVendor?.category === 'Security' ? 'Cost per person (₹)' : myVendor?.category === 'Venue' ? 'Price per session (₹)' : myVendor?.category === 'Decoration' ? 'Price per function (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Price per look / function (₹)' : myVendor?.category === 'Media' ? 'Price per event / day (₹)' : myVendor?.category === 'Transport' ? 'Price per vehicle (₹)' : myVendor?.category === 'Pujari/Priest' ? 'Price per ceremony (₹)' : myVendor?.category === 'Invitation' ? 'Price per design / quantity (₹)' : myVendor?.category === 'Printing' ? 'Price per quantity (₹)' : myVendor?.category === 'Return Gifts' ? 'Price per piece (₹)' : 'Price (₹)'}
                       </label>
                       <input
                         type="number"
@@ -2439,30 +2443,30 @@ export function App() {
                         className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
                       />
                     </div>
-                    {myVendor?.category !== 'Security' && myVendor?.category !== 'Catering' && myVendor?.category !== 'Media' && myVendor?.category !== 'Transport' && myVendor?.category !== 'Invitation' && myVendor?.category !== 'Printing' && (
+                    {myVendor?.category !== 'Security' && myVendor?.category !== 'Catering' && myVendor?.category !== 'Media' && myVendor?.category !== 'Transport' && myVendor?.category !== 'Invitation' && myVendor?.category !== 'Printing' && myVendor?.category !== 'Return Gifts' && (
                       <div>
                         <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
-                          {myVendor?.category === 'Return Gifts' ? 'Count of items' : myVendor?.category === 'Pujari/Priest' ? 'No. of persons' : 'Capacity (persons)'}
+                          {myVendor?.category === 'Pujari/Priest' ? 'No. of persons' : 'Capacity (persons)'}
                         </label>
                         <input
                           type="number"
                           value={p.capacityPersons ?? ''}
                           onChange={(e) => updatePackageField(p.id, 'capacityPersons', e.target.value)}
-                          placeholder={myVendor?.category === 'Return Gifts' ? '100' : '500'}
+                          placeholder="500"
                           className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
                         />
                       </div>
                     )}
-                    {myVendor?.category !== 'Security' && myVendor?.category !== 'Catering' && myVendor?.category !== 'Media' && myVendor?.category !== 'Transport' && myVendor?.category !== 'Invitation' && myVendor?.category !== 'Printing' && (
+                    {myVendor?.category !== 'Security' && myVendor?.category !== 'Catering' && myVendor?.category !== 'Media' && myVendor?.category !== 'Transport' && myVendor?.category !== 'Invitation' && myVendor?.category !== 'Printing' && myVendor?.category !== 'Return Gifts' && (
                       <div>
                         <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
-                          {myVendor?.category === 'Return Gifts' ? 'Packing time (days)' : 'Duration (hours)'}
+                          Duration (hours)
                         </label>
                         <input
                           type="number"
                           value={p.durationHours ?? ''}
                           onChange={(e) => updatePackageField(p.id, 'durationHours', e.target.value)}
-                          placeholder={myVendor?.category === 'Return Gifts' ? '2' : '8'}
+                          placeholder="8"
                           className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
                         />
                       </div>
@@ -3108,8 +3112,59 @@ export function App() {
                         </div>
                       )}
 
+                      {/* Return Gifts: structured spec (replaces capacity + generic price tiers). */}
+                      {myVendor?.category === 'Return Gifts' && (
+                        <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/40 p-3">
+                          <p className="text-[10px] text-amber-400 uppercase font-bold">Return gift details</p>
+
+                          <div>
+                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Tier (per-piece budget)</label>
+                            <div className="flex flex-wrap gap-2">
+                              {RETURN_GIFTS_TIERS.map((t) => (
+                                <button type="button" key={t} onClick={() => updatePackageReturnGifts(p.id, 'tier', t)} className={catChip(p.returnGifts?.tier === t)}>{t}</button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Gift Type</label>
+                            <div className="flex flex-wrap gap-2">
+                              {RETURN_GIFT_TYPES.map((g) => (
+                                <button type="button" key={g} onClick={() => updatePackageReturnGifts(p.id, 'giftType', g)} className={catChip(p.returnGifts?.giftType === g)}>{g}</button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-2">
+                            <div>
+                              <label className="block text-[10px] text-slate-500 mb-1">Minimum quantity</label>
+                              <input type="number" min={0} value={p.returnGifts?.minQuantity ?? ''} onChange={(e) => updatePackageReturnGifts(p.id, 'minQuantity', e.target.value === '' ? undefined : Number(e.target.value))}
+                                placeholder="e.g. 50" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] text-slate-500 mb-1">Packaging type</label>
+                              <input type="text" value={p.returnGifts?.packagingType ?? ''} onChange={(e) => updatePackageReturnGifts(p.id, 'packagingType', e.target.value)}
+                                placeholder="e.g. Gift box" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] text-slate-500 mb-1">Bulk quantity discount</label>
+                              <input type="text" value={p.returnGifts?.bulkDiscount ?? ''} onChange={(e) => updatePackageReturnGifts(p.id, 'bulkDiscount', e.target.value)}
+                                placeholder="e.g. 10% off above 200" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Customization (name / date print)</label>
+                            <div className="flex gap-1.5">
+                              <button type="button" onClick={() => updatePackageReturnGifts(p.id, 'customization', true)} className={catChip(p.returnGifts?.customization === true)}>Yes</button>
+                              <button type="button" onClick={() => updatePackageReturnGifts(p.id, 'customization', false)} className={catChip(p.returnGifts?.customization === false)}>No</button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Price tiers — categories with no structured spec above. */}
-                      {myVendor?.category !== 'Catering' && myVendor?.category !== 'Venue' && myVendor?.category !== 'Decoration' && myVendor?.category !== 'Makeup & Beauty' && myVendor?.category !== 'Media' && myVendor?.category !== 'Transport' && myVendor?.category !== 'Pujari/Priest' && myVendor?.category !== 'Invitation' && myVendor?.category !== 'Printing' && (
+                      {myVendor?.category !== 'Catering' && myVendor?.category !== 'Venue' && myVendor?.category !== 'Decoration' && myVendor?.category !== 'Makeup & Beauty' && myVendor?.category !== 'Media' && myVendor?.category !== 'Transport' && myVendor?.category !== 'Pujari/Priest' && myVendor?.category !== 'Invitation' && myVendor?.category !== 'Printing' && myVendor?.category !== 'Return Gifts' && (
                       <div>
                         <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1.5">
                           Price tiers (optional — e.g. Normal / HD / Premium)

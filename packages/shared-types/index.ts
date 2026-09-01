@@ -60,7 +60,23 @@ export interface VendorPackage {
   invitation?: InvitationPackageDetails;
   // Printing-only structured details.
   printing?: PrintingPackageDetails;
+  // Return Gifts-only structured details.
+  returnGifts?: ReturnGiftsPackageDetails;
 }
+
+// Structured details for a Return Gifts vendor's package (per piece).
+export interface ReturnGiftsPackageDetails {
+  tier?: string; // Economy / Standard / Premium
+  giftType?: string; // Dry fruits / Silver items / Potli bags / Plants / Hampers / Sweets
+  minQuantity?: number;
+  customization?: boolean; // name / date print
+  packagingType?: string; // free text
+  bulkDiscount?: string; // free text, e.g. "10% off above 200"
+}
+
+// Option sets for the Return Gifts package form.
+export const RETURN_GIFTS_TIERS = ['Economy', 'Standard', 'Premium'] as const;
+export const RETURN_GIFT_TYPES = ['Dry fruits', 'Silver items', 'Potli bags', 'Plants', 'Hampers', 'Sweets'] as const;
 
 // Structured details for a Printing vendor's package (per quantity).
 export interface PrintingPackageDetails {

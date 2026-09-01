@@ -1175,6 +1175,28 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                         );
                       })()}
 
+                      {pkg.returnGifts && (() => {
+                        const rg = pkg.returnGifts;
+                        const chip = 'text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200';
+                        return (
+                          <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2" onClick={(e) => e.stopPropagation()}>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase block">Return gift details</span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {rg.tier && <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-200 font-bold">{rg.tier}</span>}
+                              {rg.giftType && <span className={chip}>{rg.giftType}</span>}
+                            </div>
+                            <div className="space-y-1 text-[11px] text-slate-300">
+                              {rg.minQuantity ? <div>Minimum quantity: <span className="text-white font-semibold">{rg.minQuantity}</span></div> : null}
+                              {rg.packagingType ? <div>Packaging: <span className="text-white font-semibold">{rg.packagingType}</span></div> : null}
+                              {rg.bulkDiscount ? <div>Bulk discount: <span className="text-white font-semibold">{rg.bulkDiscount}</span></div> : null}
+                            </div>
+                            {rg.customization !== undefined && (
+                              <div className="text-[11px]"><span className="text-slate-400">Customization (name / date): <b className={rg.customization ? 'text-emerald-400' : 'text-slate-500'}>{rg.customization ? 'Yes' : 'No'}</b></span></div>
+                            )}
+                          </div>
+                        );
+                      })()}
+
                       {/* Hall / Package Photos */}
                       {pkg.images && pkg.images.length > 0 && (
                         <div className="space-y-1.5 mt-3 mb-3">
