@@ -17,27 +17,28 @@ import { getVendorCoverImage } from './vendorUtils';
 // Transport vendor's are vehicles, a Priest's are rituals. Falls back to
 // "Services" for anything not listed.
 const SERVICES_TAB_LABEL: Record<string, string> = {
-  Catering: 'Menu',
-  Decoration: 'Decor Options',
+  Catering: 'Food Services',
+  Venue: 'Hall Facilities',
+  Decoration: 'Decor Services',
   'Makeup & Beauty': 'Beauty Services',
-  Media: 'Shoots & Coverage',
-  Transport: 'Vehicles',
-  'Pujari/Priest': 'Rituals',
-  Invitation: 'Invite Options',
-  Printing: 'Print Items',
-  'Return Gifts': 'Gift Options',
-  Entertainment: 'Acts & Shows',
-  'Music/DJ': 'Music Options',
-  Lighting: 'Lighting Options',
-  Flowers: 'Floral Options',
-  Mehendi: 'Mehendi Designs',
+  Media: 'Shoot Services',
+  Transport: 'Vehicles & Services',
+  'Pujari/Priest': 'Ceremony Services',
+  Invitation: 'Design Services',
+  Printing: 'Print Services',
+  'Return Gifts': 'Gifting Choices',
+  Entertainment: 'Performances Offered',
+  'Music/DJ': 'Sound Services',
+  Lighting: 'Lighting Services',
+  Flowers: 'Floral Services',
+  Mehendi: 'Designs & Services',
   'Event Host/Anchor': 'Hosting Services',
-  Security: 'Security Services',
-  Cleaning: 'Cleaning Services',
-  'Rental Equipment': 'Rental Items',
-  'Utensils for Rent': 'Utensil Items',
-  'Wedding Planner': 'Planning Services',
-  'Corporate Event Services': 'Corporate Services',
+  Security: 'Protection & Staffing',
+  Cleaning: 'Housekeeping Services',
+  'Rental Equipment': 'Rental Options',
+  'Utensils for Rent': 'Services',
+  'Wedding Planner': 'Planning Service',
+  'Corporate Event Services': 'Corporate Solutions',
 };
 const servicesTabLabel = (category: string) => SERVICES_TAB_LABEL[category] ?? 'Services';
 
@@ -422,14 +423,14 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
             </button>
           )}
 
-          {isGenericOptions && (
+          {isGenericOptions && !hasServices && (
             <button
               onClick={() => setActiveTab('options')}
               className={`py-3 font-semibold text-xs border-b-2 transition-colors flex items-center gap-1 ${
                 activeTab === 'options' ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-slate-400 hover:text-white'
               }`}
             >
-              <Sparkles className="w-3.5 h-3.5" /> Options
+              <Sparkles className="w-3.5 h-3.5" /> {servicesTabLabel(vendor.category)}
             </button>
           )}
 
@@ -451,7 +452,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                 activeTab === 'amenities' ? 'border-amber-500 text-amber-400' : 'border-transparent text-slate-400 hover:text-white'
               }`}
             >
-              <ListChecks className="w-3.5 h-3.5" /> Amenity Options
+              <ListChecks className="w-3.5 h-3.5" /> {hasServices ? 'Amenities' : servicesTabLabel(vendor.category)}
             </button>
           )}
 
