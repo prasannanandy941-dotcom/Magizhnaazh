@@ -39,6 +39,36 @@ const STATUS_LABEL: Record<string, string> = {
 // `example` is a per-amenity placeholder for the rate-option name field, so
 // each amenity suggests a fitting example (chairs vs halls vs rooms) instead
 // of a one-size-fits-all "1 hall with 1 AC".
+// Per-category name for the vendor's "Facilities & Options" tab + heading, so a
+// logged-in vendor sees their own trade (a Catering vendor sees "Food Services",
+// a Venue sees "Hall Facilities", …). Mirrors the customer-side SERVICES_TAB_LABEL.
+const FACILITIES_SECTION_LABEL: Record<string, string> = {
+  Catering: 'Food Services',
+  Venue: 'Hall Facilities',
+  Decoration: 'Decor Services',
+  'Makeup & Beauty': 'Beauty Services',
+  Media: 'Shoot Services',
+  Transport: 'Vehicles & Services',
+  'Pujari/Priest': 'Ceremony Services',
+  Invitation: 'Design Services',
+  Printing: 'Print Services',
+  'Return Gifts': 'Gifting Choices',
+  Entertainment: 'Performances Offered',
+  'Music/DJ': 'Sound Services',
+  Lighting: 'Lighting Services',
+  Flowers: 'Floral Services',
+  Mehendi: 'Designs & Services',
+  'Event Host/Anchor': 'Hosting Services',
+  Security: 'Protection & Staffing',
+  Cleaning: 'Housekeeping Services',
+  'Rental Equipment': 'Rental Options',
+  'Utensils for Rent': 'Services',
+  'Wedding Planner': 'Planning Service',
+  'Corporate Event Services': 'Corporate Solutions',
+};
+const facilitiesSectionLabel = (category?: string) =>
+  (category && FACILITIES_SECTION_LABEL[category]) || 'Facilities & Options';
+
 const AMENITY_OPTIONS: { key: keyof VendorFacilities; label: string; example: string }[] = [
   { key: 'acRoom', label: 'AC room', example: '1 hall with 1 AC' },
   { key: 'fansOnly', label: 'Fans only', example: '1 hall with fans' },
@@ -1735,7 +1765,7 @@ export function App() {
           {[
             { key: 'dashboard', label: 'Bookings & Quotes' },
             { key: 'reviews', label: `Reviews${reviews.length ? ` (${reviews.length})` : ''}` },
-            { key: 'facilities', label: 'Facilities & Options' },
+            { key: 'facilities', label: facilitiesSectionLabel(myVendor?.category) },
             { key: 'packages', label: `${myVendor?.category === 'Venue' ? 'Halls' : 'Packages'}${packages.length ? ` (${packages.length})` : ''}` },
             ...(myVendor?.category !== 'Security' ? [{ key: 'offers', label: `Offers${deals.length ? ` (${deals.length})` : ''}` }] : []),
             { key: 'availability', label: 'Availability' },
@@ -2225,7 +2255,7 @@ export function App() {
           <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-800 max-w-3xl space-y-6">
             <div>
               <h3 className="font-bold text-xl text-white flex items-center gap-2">
-                <SlidersHorizontal className="w-5 h-5 text-amber-400" /> Facilities &amp; Options
+                <SlidersHorizontal className="w-5 h-5 text-amber-400" /> {facilitiesSectionLabel(myVendor?.category)}
               </h3>
               <p className="text-xs text-slate-400 mt-1">
                 Tick what you offer. These become the filter chips customers see on your marketplace listing.
