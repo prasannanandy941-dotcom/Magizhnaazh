@@ -48,7 +48,25 @@ export interface VendorPackage {
   venue?: VenuePackageDetails;
   // Decoration-only structured details. Only set/shown for Decoration vendors.
   decoration?: DecorationPackageDetails;
+  // Makeup & Beauty-only structured details.
+  makeup?: MakeupPackageDetails;
 }
+
+// Structured details for a Makeup & Beauty vendor's package (per look / function).
+export interface MakeupPackageDetails {
+  makeupTypes?: string[]; // Bridal / Engagement / Reception / Groom / Party guest
+  finish?: string; // Regular / HD / Airbrush (also the tier)
+  hairstyling?: boolean; // hairstyling included
+  draping?: boolean; // saree / dupatta draping included
+  looksCount?: number; // number of looks / functions
+  trialSession?: boolean; // trial session included
+  travelToVenue?: boolean;
+  extraFamilyMembers?: number; // extra family members covered
+}
+
+// Option sets for the Makeup & Beauty package form.
+export const MAKEUP_TYPES = ['Bridal', 'Engagement', 'Reception', 'Groom', 'Party guest'] as const;
+export const MAKEUP_FINISHES = ['Regular', 'HD', 'Airbrush'] as const;
 
 // Structured details for a Decoration vendor's package (priced per function).
 export interface DecorationPackageDetails {

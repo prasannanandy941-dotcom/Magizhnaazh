@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Store, Star, Upload, Check, LogOut, Loader2, Plus, SlidersHorizontal, ChevronDown, Receipt, X, Bell, ShieldCheck, Clock as ClockIcon, AlertCircle, FileText } from 'lucide-react';
-import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, VendorDeal, OfferedOptionItem, VENDOR_CATEGORIES, CATEGORY_OPTIONS, CATERING_OPTION_STYLE, MEDIA_QUALITY_OPTIONS, MEDIA_EQUIPMENT_OPTIONS, mediaExtraField, isDealLive, CATERING_MENU_TIERS, CATERING_FOOD_TYPES, CATERING_CUISINES, CATERING_LIVE_COUNTERS, CATERING_SERVICE_STYLES, slotLabelWithTime, AVAILABILITY_SLOTS, offeredSlotIds, VENUE_SESSIONS, VENUE_HALL_TYPES, VENUE_HALL_CLASSES, VENUE_CATERING_POLICIES, DECORATION_TIERS, DECORATION_THEMES, DECORATION_AREAS, DECORATION_FLOWER_TYPES } from '../../../packages/shared-types';
+import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, VendorDeal, OfferedOptionItem, VENDOR_CATEGORIES, CATEGORY_OPTIONS, CATERING_OPTION_STYLE, MEDIA_QUALITY_OPTIONS, MEDIA_EQUIPMENT_OPTIONS, mediaExtraField, isDealLive, CATERING_MENU_TIERS, CATERING_FOOD_TYPES, CATERING_CUISINES, CATERING_LIVE_COUNTERS, CATERING_SERVICE_STYLES, slotLabelWithTime, AVAILABILITY_SLOTS, offeredSlotIds, VENUE_SESSIONS, VENUE_HALL_TYPES, VENUE_HALL_CLASSES, VENUE_CATERING_POLICIES, DECORATION_TIERS, DECORATION_THEMES, DECORATION_AREAS, DECORATION_FLOWER_TYPES, MAKEUP_TYPES, MAKEUP_FINISHES } from '../../../packages/shared-types';
 import { STATIC_CITY_GROUPS } from '../../../packages/shared-utils';
 import { AuthGate } from './components/AuthGate';
 import { FloralGoldBackground } from './components/FloralGoldBackground';
@@ -1011,6 +1011,17 @@ export function App() {
       const current: string[] = ((p.decoration as any)?.[field]) || [];
       const next = current.includes(item) ? current.filter((x) => x !== item) : [...current, item];
       return { ...p, decoration: { ...(p.decoration || {}), [field]: next } };
+    }));
+
+  // Makeup & Beauty packages carry structured details.
+  const updatePackageMakeup = (pkgId: string, field: string, value: any) =>
+    setPackages((prev) => prev.map((p) => (p.id === pkgId ? { ...p, makeup: { ...(p.makeup || {}), [field]: value } } : p)));
+  const toggleMakeupType = (pkgId: string, item: string) =>
+    setPackages((prev) => prev.map((p) => {
+      if (p.id !== pkgId) return p;
+      const current: string[] = (p.makeup?.makeupTypes) || [];
+      const next = current.includes(item) ? current.filter((x) => x !== item) : [...current, item];
+      return { ...p, makeup: { ...(p.makeup || {}), makeupTypes: next } };
     }));
 
   // Photos of a package / hall — uploaded to the shared storage endpoint and
@@ -2370,7 +2381,7 @@ export function App() {
                   <div className={`grid grid-cols-1 ${myVendor?.category === 'Catering' ? 'sm:grid-cols-1' : myVendor?.category === 'Pujari/Priest' || myVendor?.category === 'Security' ? 'sm:grid-cols-2' : 'sm:grid-cols-3'} gap-3`}>
                     <div>
                       <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
-                        {myVendor?.category === 'Catering' ? 'Price per plate (₹)' : myVendor?.category === 'Security' ? 'Cost per person (₹)' : myVendor?.category === 'Venue' ? 'Price per session (₹)' : myVendor?.category === 'Decoration' ? 'Price per function (₹)' : 'Price (₹)'}
+                        {myVendor?.category === 'Catering' ? 'Price per plate (₹)' : myVendor?.category === 'Security' ? 'Cost per person (₹)' : myVendor?.category === 'Venue' ? 'Price per session (₹)' : myVendor?.category === 'Decoration' ? 'Price per function (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Price per look / function (₹)' : 'Price (₹)'}
                       </label>
                       <input
                         type="number"
@@ -2688,8 +2699,58 @@ export function App() {
                         </div>
                       )}
 
+                      {/* Makeup & Beauty: structured spec (replaces the generic price tiers). */}
+                      {myVendor?.category === 'Makeup & Beauty' && (
+                        <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/40 p-3">
+                          <p className="text-[10px] text-amber-400 uppercase font-bold">Makeup details</p>
+
+                          <div>
+                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Makeup Type</label>
+                            <div className="flex flex-wrap gap-2">
+                              {MAKEUP_TYPES.map((t) => (
+                                <button type="button" key={t} onClick={() => toggleMakeupType(p.id, t)} className={catChip((p.makeup?.makeupTypes || []).includes(t))}>{t}</button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Finish / Tier</label>
+                            <div className="flex flex-wrap gap-2">
+                              {MAKEUP_FINISHES.map((f) => (
+                                <button type="button" key={f} onClick={() => updatePackageMakeup(p.id, 'finish', f)} className={catChip(p.makeup?.finish === f)}>{f}</button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Looks / functions</label>
+                              <input type="number" min={0} value={p.makeup?.looksCount ?? ''} onChange={(e) => updatePackageMakeup(p.id, 'looksCount', e.target.value === '' ? undefined : Number(e.target.value))}
+                                placeholder="e.g. 3" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Extra family members covered</label>
+                              <input type="number" min={0} value={p.makeup?.extraFamilyMembers ?? ''} onChange={(e) => updatePackageMakeup(p.id, 'extraFamilyMembers', e.target.value === '' ? undefined : Number(e.target.value))}
+                                placeholder="e.g. 2" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {([['hairstyling', 'Hairstyling included'], ['draping', 'Saree / dupatta draping'], ['trialSession', 'Trial session included'], ['travelToVenue', 'Travel to venue']] as const).map(([field, label]) => (
+                              <div key={field}>
+                                <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">{label}</label>
+                                <div className="flex gap-1.5">
+                                  <button type="button" onClick={() => updatePackageMakeup(p.id, field, true)} className={catChip((p.makeup as any)?.[field] === true)}>Yes</button>
+                                  <button type="button" onClick={() => updatePackageMakeup(p.id, field, false)} className={catChip((p.makeup as any)?.[field] === false)}>No</button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       {/* Price tiers — categories with no structured spec above. */}
-                      {myVendor?.category !== 'Catering' && myVendor?.category !== 'Venue' && myVendor?.category !== 'Decoration' && (
+                      {myVendor?.category !== 'Catering' && myVendor?.category !== 'Venue' && myVendor?.category !== 'Decoration' && myVendor?.category !== 'Makeup & Beauty' && (
                       <div>
                         <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1.5">
                           Price tiers (optional — e.g. Normal / HD / Premium)

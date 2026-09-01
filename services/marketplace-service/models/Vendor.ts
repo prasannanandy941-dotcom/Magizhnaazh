@@ -63,6 +63,21 @@ const vendorPackageSchema = new Schema(
       default: undefined,
       _id: false,
     },
+    // Makeup & Beauty-only structured details.
+    makeup: {
+      type: {
+        makeupTypes: [String],
+        finish: String,
+        hairstyling: Boolean,
+        draping: Boolean,
+        looksCount: Number,
+        trialSession: Boolean,
+        travelToVenue: Boolean,
+        extraFamilyMembers: Number,
+      },
+      default: undefined,
+      _id: false,
+    },
   },
   { _id: false }
 );
