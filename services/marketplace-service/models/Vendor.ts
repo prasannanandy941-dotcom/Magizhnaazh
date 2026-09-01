@@ -211,6 +211,16 @@ const vendorPackageSchema = new Schema(
       durationHours: Number,
       travelIncluded: Boolean,
     },
+    // Event Host/Anchor-only structured details.
+    eventHost: {
+      eventType: String,
+      languages: [String],
+      hours: Number,
+      numEvents: Number,
+      gamesScripting: Boolean,
+      hostMode: String,
+      travelIncluded: Boolean,
+    },
   },
   { _id: false }
 );

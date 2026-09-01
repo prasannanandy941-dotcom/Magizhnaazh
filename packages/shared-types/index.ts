@@ -73,7 +73,25 @@ export interface VendorPackage {
   flowers?: FlowersPackageDetails;
   // Mehendi-only structured details.
   mehendi?: MehendiPackageDetails;
+  // Event Host/Anchor-only structured details.
+  eventHost?: EventHostPackageDetails;
 }
+
+// Structured details for an Event Host/Anchor vendor's package (per event).
+export interface EventHostPackageDetails {
+  eventType?: string; // Wedding / Sangeet / Reception / Corporate
+  languages?: string[]; // Tamil / Hindi / English / Telugu
+  hours?: number;
+  numEvents?: number;
+  gamesScripting?: boolean; // games / scripting included
+  hostMode?: string; // Solo / Co-host
+  travelIncluded?: boolean;
+}
+
+// Option sets for the Event Host/Anchor package form.
+export const EVENT_HOST_EVENT_TYPES = ['Wedding', 'Sangeet', 'Reception', 'Corporate'] as const;
+export const EVENT_HOST_LANGUAGES = ['Tamil', 'Hindi', 'English', 'Telugu'] as const;
+export const EVENT_HOST_MODES = ['Solo', 'Co-host'] as const;
 
 // Structured details for a Mehendi vendor's package (per bride / per hand).
 export interface MehendiPackageDetails {

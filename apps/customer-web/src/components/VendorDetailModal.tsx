@@ -1333,6 +1333,35 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                         );
                       })()}
 
+                      {pkg.eventHost && (() => {
+                        const eh = pkg.eventHost;
+                        const chip = 'text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200';
+                        const incl: [string, boolean | undefined][] = [
+                          ['Games / scripting', eh.gamesScripting], ['Travel', eh.travelIncluded],
+                        ];
+                        return (
+                          <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2" onClick={(e) => e.stopPropagation()}>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase block">Host / Anchor details</span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {eh.eventType && <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-200 font-bold">{eh.eventType}</span>}
+                              {eh.hostMode && <span className={chip}>{eh.hostMode}</span>}
+                              {(eh.languages || []).map((l) => <span key={`eh-${l}`} className={chip}>{l}</span>)}
+                            </div>
+                            <div className="space-y-1 text-[11px] text-slate-300">
+                              {eh.hours ? <div>Hours: <span className="text-white font-semibold">{eh.hours}</span></div> : null}
+                              {eh.numEvents ? <div>Events: <span className="text-white font-semibold">{eh.numEvents}</span></div> : null}
+                            </div>
+                            {incl.some(([, v]) => v !== undefined) && (
+                              <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px]">
+                                {incl.filter(([, v]) => v !== undefined).map(([label, v]) => (
+                                  <span key={label} className="text-slate-400">{label}: <b className={v ? 'text-emerald-400' : 'text-slate-500'}>{v ? 'Yes' : 'No'}</b></span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+
                       {/* Hall / Package Photos */}
                       {pkg.images && pkg.images.length > 0 && (
                         <div className="space-y-1.5 mt-3 mb-3">
