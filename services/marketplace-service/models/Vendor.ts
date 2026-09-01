@@ -191,6 +191,15 @@ const vendorPackageSchema = new Schema(
       setupTeardown: Boolean,
       numFunctions: Number,
     },
+    // Flowers-only structured details.
+    flowers: {
+      variety: String,
+      items: [String],
+      flowerKind: String,
+      quantity: Number,
+      deliveryTiming: String,
+      whichFunction: String,
+    },
   },
   { _id: false }
 );

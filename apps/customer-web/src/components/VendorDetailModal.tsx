@@ -1283,6 +1283,26 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                         );
                       })()}
 
+                      {pkg.flowers && (() => {
+                        const fl = pkg.flowers;
+                        const chip = 'text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200';
+                        return (
+                          <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2" onClick={(e) => e.stopPropagation()}>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase block">Flower details</span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {fl.variety && <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-200 font-bold">{fl.variety}</span>}
+                              {fl.flowerKind && <span className={chip}>{fl.flowerKind}</span>}
+                              {(fl.items || []).map((it) => <span key={`fi-${it}`} className={chip}>{it}</span>)}
+                            </div>
+                            <div className="space-y-1 text-[11px] text-slate-300">
+                              {fl.quantity ? <div>Quantity: <span className="text-white font-semibold">{fl.quantity}</span></div> : null}
+                              {fl.deliveryTiming ? <div>Delivery timing: <span className="text-white font-semibold">{fl.deliveryTiming}</span></div> : null}
+                              {fl.whichFunction ? <div>Function: <span className="text-white font-semibold">{fl.whichFunction}</span></div> : null}
+                            </div>
+                          </div>
+                        );
+                      })()}
+
                       {/* Hall / Package Photos */}
                       {pkg.images && pkg.images.length > 0 && (
                         <div className="space-y-1.5 mt-3 mb-3">

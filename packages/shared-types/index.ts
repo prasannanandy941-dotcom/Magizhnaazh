@@ -69,7 +69,24 @@ export interface VendorPackage {
   musicDj?: MusicDjPackageDetails;
   // Lighting-only structured details.
   lighting?: LightingPackageDetails;
+  // Flowers-only structured details.
+  flowers?: FlowersPackageDetails;
 }
+
+// Structured details for a Flowers vendor's package (per item / per function).
+export interface FlowersPackageDetails {
+  variety?: string; // Marigold / Rose / Imported (also the tier)
+  items?: string[]; // Garlands (maalai) / Car decor / Mandap / Bouquet / Jaimala / Hair flowers / Rangoli
+  flowerKind?: string; // Fresh / Artificial
+  quantity?: number;
+  deliveryTiming?: string; // free text
+  whichFunction?: string; // free text
+}
+
+// Option sets for the Flowers package form.
+export const FLOWERS_VARIETIES = ['Marigold', 'Rose', 'Imported'] as const;
+export const FLOWERS_ITEMS = ['Garlands (maalai)', 'Car decor', 'Mandap', 'Bouquet', 'Jaimala', 'Hair flowers', 'Rangoli'] as const;
+export const FLOWERS_KINDS = ['Fresh', 'Artificial'] as const;
 
 // Structured details for a Lighting vendor's package (per function).
 export interface LightingPackageDetails {
