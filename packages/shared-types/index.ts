@@ -77,7 +77,21 @@ export interface VendorPackage {
   eventHost?: EventHostPackageDetails;
   // Security-only structured details.
   security?: SecurityPackageDetails;
+  // Rental Equipment-only structured details.
+  rental?: RentalPackageDetails;
 }
+
+// Structured details for a Rental Equipment vendor's package (per item, per day).
+export interface RentalPackageDetails {
+  items?: string[]; // Chairs / Tables / Tents / Stage / Sofas / Carpets / Coolers / Fans / Generators
+  quantity?: number;
+  setupTeardown?: boolean; // setup + teardown included
+  delivery?: boolean;
+  securityDeposit?: number; // ₹
+}
+
+// Option set for the Rental Equipment package form.
+export const RENTAL_ITEMS = ['Chairs', 'Tables', 'Tents', 'Stage', 'Sofas', 'Carpets', 'Coolers', 'Fans', 'Generators'] as const;
 
 // Structured details for a Security vendor's package (per guard / per shift).
 export interface SecurityPackageDetails {

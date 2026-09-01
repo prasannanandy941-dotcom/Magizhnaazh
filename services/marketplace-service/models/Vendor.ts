@@ -232,6 +232,14 @@ const vendorPackageSchema = new Schema(
       vipProtection: Boolean,
       crowdManagement: Boolean,
     },
+    // Rental Equipment-only structured details.
+    rental: {
+      items: [String],
+      quantity: Number,
+      setupTeardown: Boolean,
+      delivery: Boolean,
+      securityDeposit: Number,
+    },
   },
   { _id: false }
 );
