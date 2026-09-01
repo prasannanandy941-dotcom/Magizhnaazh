@@ -2796,25 +2796,6 @@ export function App() {
               >
                 <Plus className="w-4 h-4" /> {myVendor?.category === 'Venue' ? 'Add hall' : 'Add package'}
               </button>
-              {myVendor?.category !== 'Pujari/Priest' &&
-                myVendor?.category !== 'Printing' &&
-                myVendor?.category !== 'Flowers' &&
-                myVendor?.category !== 'Security' &&
-                myVendor?.category !== 'Cleaning' &&
-                myVendor?.category !== 'Rental Equipment' &&
-                myVendor?.category !== 'Utensils for Rent' &&
-                myVendor?.category !== 'Wedding Planner' &&
-                myVendor?.category !== 'Corporate Event Services' &&
-                myVendor?.category !== 'Venue' &&
-                myVendor?.category !== 'Catering' && (
-                <button
-                  type="button"
-                  onClick={addTierPackages}
-                  className="flex items-center gap-1.5 text-xs font-bold text-indigo-400 hover:text-indigo-300"
-                >
-                  <Plus className="w-4 h-4" /> Quick-add tiers ({tierNamesForCategory(myVendor.category).join(' / ')})
-                </button>
-              )}
             </div>
 
             <div className="flex items-center gap-3 pt-2">
