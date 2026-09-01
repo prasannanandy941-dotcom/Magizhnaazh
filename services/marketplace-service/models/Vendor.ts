@@ -221,6 +221,17 @@ const vendorPackageSchema = new Schema(
       hostMode: String,
       travelIncluded: Boolean,
     },
+    // Security-only structured details. Plain nested (has a `type` field).
+    security: {
+      numGuards: Number,
+      type: { type: String },
+      gender: String,
+      hoursShifts: Number,
+      metalDetectors: Boolean,
+      cctv: Boolean,
+      vipProtection: Boolean,
+      crowdManagement: Boolean,
+    },
   },
   { _id: false }
 );

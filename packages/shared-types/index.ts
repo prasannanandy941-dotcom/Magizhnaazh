@@ -75,7 +75,25 @@ export interface VendorPackage {
   mehendi?: MehendiPackageDetails;
   // Event Host/Anchor-only structured details.
   eventHost?: EventHostPackageDetails;
+  // Security-only structured details.
+  security?: SecurityPackageDetails;
 }
+
+// Structured details for a Security vendor's package (per guard / per shift).
+export interface SecurityPackageDetails {
+  numGuards?: number;
+  type?: string; // Guards / Bouncers
+  gender?: string; // Male / Female / Mixed
+  hoursShifts?: number;
+  metalDetectors?: boolean;
+  cctv?: boolean;
+  vipProtection?: boolean;
+  crowdManagement?: boolean; // gate / crowd management
+}
+
+// Option sets for the Security package form.
+export const SECURITY_TYPES = ['Guards', 'Bouncers'] as const;
+export const SECURITY_GENDERS = ['Male', 'Female', 'Mixed'] as const;
 
 // Structured details for an Event Host/Anchor vendor's package (per event).
 export interface EventHostPackageDetails {

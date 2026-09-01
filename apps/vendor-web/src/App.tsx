@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Store, Star, Upload, Check, LogOut, Loader2, Plus, SlidersHorizontal, ChevronDown, Receipt, X, Bell, ShieldCheck, Clock as ClockIcon, AlertCircle, FileText } from 'lucide-react';
-import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, VendorDeal, OfferedOptionItem, VENDOR_CATEGORIES, CATEGORY_OPTIONS, CATERING_OPTION_STYLE, MEDIA_QUALITY_OPTIONS, MEDIA_EQUIPMENT_OPTIONS, mediaExtraField, isDealLive, CATERING_MENU_TIERS, CATERING_FOOD_TYPES, CATERING_CUISINES, CATERING_LIVE_COUNTERS, CATERING_SERVICE_STYLES, slotLabelWithTime, AVAILABILITY_SLOTS, offeredSlotIds, VENUE_SESSIONS, VENUE_HALL_TYPES, VENUE_HALL_CLASSES, VENUE_CATERING_POLICIES, DECORATION_TIERS, DECORATION_THEMES, DECORATION_AREAS, DECORATION_FLOWER_TYPES, MAKEUP_TYPES, MAKEUP_FINISHES, MEDIA_TIERS, MEDIA_COVERAGE, MEDIA_STYLES, TRANSPORT_TIERS, TRANSPORT_VEHICLE_TYPES, TRANSPORT_PRICING_BASIS, TRANSPORT_USES, PRIEST_CEREMONY_TYPES, PRIEST_LANGUAGES, INVITATION_TIERS, INVITATION_TYPES, INVITATION_DESIGNS, INVITATION_ADDONS, INVITATION_LANGUAGES, PRINTING_PRODUCTS, PRINTING_FINISHES, RETURN_GIFTS_TIERS, RETURN_GIFT_TYPES, ENTERTAINMENT_ACT_TYPES, MUSIC_DJ_TIERS, MUSIC_DJ_TYPES, MUSIC_DJ_VENUE_TYPES, LIGHTING_TIERS, LIGHTING_TYPES, FLOWERS_VARIETIES, FLOWERS_ITEMS, FLOWERS_KINDS, MEHENDI_TIERS, MEHENDI_TYPES, MEHENDI_INTRICACY, EVENT_HOST_EVENT_TYPES, EVENT_HOST_LANGUAGES, EVENT_HOST_MODES } from '../../../packages/shared-types';
+import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, VendorDeal, OfferedOptionItem, VENDOR_CATEGORIES, CATEGORY_OPTIONS, CATERING_OPTION_STYLE, MEDIA_QUALITY_OPTIONS, MEDIA_EQUIPMENT_OPTIONS, mediaExtraField, isDealLive, CATERING_MENU_TIERS, CATERING_FOOD_TYPES, CATERING_CUISINES, CATERING_LIVE_COUNTERS, CATERING_SERVICE_STYLES, slotLabelWithTime, AVAILABILITY_SLOTS, offeredSlotIds, VENUE_SESSIONS, VENUE_HALL_TYPES, VENUE_HALL_CLASSES, VENUE_CATERING_POLICIES, DECORATION_TIERS, DECORATION_THEMES, DECORATION_AREAS, DECORATION_FLOWER_TYPES, MAKEUP_TYPES, MAKEUP_FINISHES, MEDIA_TIERS, MEDIA_COVERAGE, MEDIA_STYLES, TRANSPORT_TIERS, TRANSPORT_VEHICLE_TYPES, TRANSPORT_PRICING_BASIS, TRANSPORT_USES, PRIEST_CEREMONY_TYPES, PRIEST_LANGUAGES, INVITATION_TIERS, INVITATION_TYPES, INVITATION_DESIGNS, INVITATION_ADDONS, INVITATION_LANGUAGES, PRINTING_PRODUCTS, PRINTING_FINISHES, RETURN_GIFTS_TIERS, RETURN_GIFT_TYPES, ENTERTAINMENT_ACT_TYPES, MUSIC_DJ_TIERS, MUSIC_DJ_TYPES, MUSIC_DJ_VENUE_TYPES, LIGHTING_TIERS, LIGHTING_TYPES, FLOWERS_VARIETIES, FLOWERS_ITEMS, FLOWERS_KINDS, MEHENDI_TIERS, MEHENDI_TYPES, MEHENDI_INTRICACY, EVENT_HOST_EVENT_TYPES, EVENT_HOST_LANGUAGES, EVENT_HOST_MODES, SECURITY_TYPES, SECURITY_GENDERS } from '../../../packages/shared-types';
 import { STATIC_CITY_GROUPS } from '../../../packages/shared-utils';
 import { AuthGate } from './components/AuthGate';
 import { FloralGoldBackground } from './components/FloralGoldBackground';
@@ -1106,6 +1106,10 @@ export function App() {
   // Event Host/Anchor packages carry structured details.
   const updatePackageEventHost = (pkgId: string, field: string, value: any) =>
     setPackages((prev) => prev.map((p) => (p.id === pkgId ? { ...p, eventHost: { ...(p.eventHost || {}), [field]: value } } : p)));
+
+  // Security packages carry structured details.
+  const updatePackageSecurity = (pkgId: string, field: string, value: any) =>
+    setPackages((prev) => prev.map((p) => (p.id === pkgId ? { ...p, security: { ...(p.security || {}), [field]: value } } : p)));
   const toggleEventHostLanguage = (pkgId: string, lang: string) =>
     setPackages((prev) => prev.map((p) => {
       if (p.id !== pkgId) return p;
@@ -2478,7 +2482,7 @@ export function App() {
                   <div className={`grid grid-cols-1 ${myVendor?.category === 'Catering' ? 'sm:grid-cols-1' : myVendor?.category === 'Security' ? 'sm:grid-cols-2' : 'sm:grid-cols-3'} gap-3`}>
                     <div>
                       <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
-                        {myVendor?.category === 'Catering' ? 'Price per plate (₹)' : myVendor?.category === 'Security' ? 'Cost per person (₹)' : myVendor?.category === 'Venue' ? 'Price per session (₹)' : myVendor?.category === 'Decoration' ? 'Price per function (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Price per look / function (₹)' : myVendor?.category === 'Media' ? 'Price per event / day (₹)' : myVendor?.category === 'Transport' ? 'Price per vehicle (₹)' : myVendor?.category === 'Pujari/Priest' ? 'Price per ceremony (₹)' : myVendor?.category === 'Invitation' ? 'Price per design / quantity (₹)' : myVendor?.category === 'Printing' ? 'Price per quantity (₹)' : myVendor?.category === 'Return Gifts' ? 'Price per piece (₹)' : myVendor?.category === 'Entertainment' ? 'Price per act / hour (₹)' : myVendor?.category === 'Music/DJ' ? 'Price per event / hour (₹)' : myVendor?.category === 'Lighting' ? 'Price per function (₹)' : myVendor?.category === 'Flowers' ? 'Price per item / function (₹)' : myVendor?.category === 'Mehendi' ? 'Price per bride (₹)' : myVendor?.category === 'Event Host/Anchor' ? 'Price per event (₹)' : 'Price (₹)'}
+                        {myVendor?.category === 'Catering' ? 'Price per plate (₹)' : myVendor?.category === 'Security' ? 'Price per guard / shift (₹)' : myVendor?.category === 'Venue' ? 'Price per session (₹)' : myVendor?.category === 'Decoration' ? 'Price per function (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Price per look / function (₹)' : myVendor?.category === 'Media' ? 'Price per event / day (₹)' : myVendor?.category === 'Transport' ? 'Price per vehicle (₹)' : myVendor?.category === 'Pujari/Priest' ? 'Price per ceremony (₹)' : myVendor?.category === 'Invitation' ? 'Price per design / quantity (₹)' : myVendor?.category === 'Printing' ? 'Price per quantity (₹)' : myVendor?.category === 'Return Gifts' ? 'Price per piece (₹)' : myVendor?.category === 'Entertainment' ? 'Price per act / hour (₹)' : myVendor?.category === 'Music/DJ' ? 'Price per event / hour (₹)' : myVendor?.category === 'Lighting' ? 'Price per function (₹)' : myVendor?.category === 'Flowers' ? 'Price per item / function (₹)' : myVendor?.category === 'Mehendi' ? 'Price per bride (₹)' : myVendor?.category === 'Event Host/Anchor' ? 'Price per event (₹)' : 'Price (₹)'}
                       </label>
                       <input
                         type="number"
@@ -2517,6 +2521,56 @@ export function App() {
                       </div>
                     )}
                   </div>
+
+                  {myVendor?.category === 'Security' && (
+                    <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/40 p-3">
+                      <p className="text-[10px] text-amber-400 uppercase font-bold">Security details</p>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Type</label>
+                          <div className="flex flex-wrap gap-2">
+                            {SECURITY_TYPES.map((t) => (
+                              <button type="button" key={t} onClick={() => updatePackageSecurity(p.id, 'type', t)} className={catChip(p.security?.type === t)}>{t}</button>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Gender</label>
+                          <div className="flex flex-wrap gap-2">
+                            {SECURITY_GENDERS.map((g) => (
+                              <button type="button" key={g} onClick={() => updatePackageSecurity(p.id, 'gender', g)} className={catChip(p.security?.gender === g)}>{g}</button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-[10px] text-slate-500 mb-1">Number of guards</label>
+                          <input type="number" min={0} value={p.security?.numGuards ?? ''} onChange={(e) => updatePackageSecurity(p.id, 'numGuards', e.target.value === '' ? undefined : Number(e.target.value))}
+                            placeholder="e.g. 5" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] text-slate-500 mb-1">Hours / shifts</label>
+                          <input type="number" min={0} value={p.security?.hoursShifts ?? ''} onChange={(e) => updatePackageSecurity(p.id, 'hoursShifts', e.target.value === '' ? undefined : Number(e.target.value))}
+                            placeholder="e.g. 8" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {([['metalDetectors', 'Metal detectors'], ['cctv', 'CCTV'], ['vipProtection', 'VIP protection'], ['crowdManagement', 'Gate / crowd mgmt']] as const).map(([field, label]) => (
+                          <div key={field}>
+                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">{label}</label>
+                            <div className="flex gap-1.5">
+                              <button type="button" onClick={() => updatePackageSecurity(p.id, field, true)} className={catChip((p.security as any)?.[field] === true)}>Yes</button>
+                              <button type="button" onClick={() => updatePackageSecurity(p.id, field, false)} className={catChip((p.security as any)?.[field] === false)}>No</button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {myVendor?.category !== 'Security' && (
                     <>
