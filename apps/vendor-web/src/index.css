@@ -110,18 +110,33 @@ input[type="datetime-local"],
 input[type="month"] {
   color-scheme: dark;
 }
-/* Highlight the native calendar picker icon on date inputs so it's obvious
-   the field opens a date picker (amber to match the portal accent). */
+/* On Android WebView the native calendar glyph renders black-on-dark (invisible)
+   and is a tiny tap target. Instead we hide the native glyph and overlay our own
+   amber CalendarDays icon in the markup. To keep the field openable, stretch the
+   (now invisible) native picker indicator across the WHOLE input so a tap anywhere
+   opens the date picker. */
 .date-input-amber::-webkit-calendar-picker-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
   cursor: pointer;
-  opacity: 1;
-  padding: 4px;
-  margin-left: 4px;
-  border-radius: 6px;
-  background-color: rgba(245, 158, 11, 0.28);
-  transition: background-color 0.15s ease, transform 0.15s ease;
 }
-.date-input-amber::-webkit-calendar-picker-indicator:hover {
-  background-color: rgba(245, 158, 11, 0.35);
-  transform: scale(1.08);
+/* Guarantee the typed/selected date and placeholder stay visible on the dark
+   field even when the WebView ignores color-scheme. */
+.date-input-amber,
+.date-input-amber::-webkit-datetime-edit,
+.date-input-amber::-webkit-datetime-edit-fields-wrapper,
+.date-input-amber::-webkit-datetime-edit-text,
+.date-input-amber::-webkit-datetime-edit-month-field,
+.date-input-amber::-webkit-datetime-edit-day-field,
+.date-input-amber::-webkit-datetime-edit-year-field {
+  color: #f8fafc;
+  -webkit-text-fill-color: #f8fafc;
 }
