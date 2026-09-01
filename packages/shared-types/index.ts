@@ -50,7 +50,30 @@ export interface VendorPackage {
   decoration?: DecorationPackageDetails;
   // Makeup & Beauty-only structured details.
   makeup?: MakeupPackageDetails;
+  // Media (Photo/Video)-only structured details.
+  media?: MediaPackageDetails;
 }
+
+// Structured details for a Media vendor's package (per event / per day).
+export interface MediaPackageDetails {
+  tier?: string; // Silver / Gold / Platinum
+  coverage?: string; // Photo only / Photo + Video / Cinematic
+  styles?: string[]; // Candid / Traditional
+  daysOrEvents?: number; // number of days or events
+  preWedding?: boolean; // pre-wedding shoot
+  drone?: boolean;
+  crewCount?: number; // photographers / cinematographers
+  editedPhotos?: number; // deliverable: edited photos count
+  albumPages?: number; // deliverable: album pages
+  teaser?: boolean; // deliverable: teaser
+  film4k?: boolean; // deliverable: 4K film
+  hoursCoverage?: number; // total hours of coverage
+}
+
+// Option sets for the Media package form.
+export const MEDIA_TIERS = ['Silver', 'Gold', 'Platinum'] as const;
+export const MEDIA_COVERAGE = ['Photo only', 'Photo + Video', 'Cinematic'] as const;
+export const MEDIA_STYLES = ['Candid', 'Traditional'] as const;
 
 // Structured details for a Makeup & Beauty vendor's package (per look / function).
 export interface MakeupPackageDetails {

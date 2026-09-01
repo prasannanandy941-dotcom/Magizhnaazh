@@ -78,6 +78,25 @@ const vendorPackageSchema = new Schema(
       default: undefined,
       _id: false,
     },
+    // Media (Photo/Video)-only structured details.
+    media: {
+      type: {
+        tier: String,
+        coverage: String,
+        styles: [String],
+        daysOrEvents: Number,
+        preWedding: Boolean,
+        drone: Boolean,
+        crewCount: Number,
+        editedPhotos: Number,
+        albumPages: Number,
+        teaser: Boolean,
+        film4k: Boolean,
+        hoursCoverage: Number,
+      },
+      default: undefined,
+      _id: false,
+    },
   },
   { _id: false }
 );
