@@ -65,7 +65,27 @@ export interface VendorPackage {
   // Entertainment-only structured details. (Number of performers reuses
   // capacityPersons; Duration reuses durationHours.)
   entertainment?: EntertainmentPackageDetails;
+  // Music/DJ-only structured details.
+  musicDj?: MusicDjPackageDetails;
 }
+
+// Structured details for a Music/DJ vendor's package (per event / per hour).
+export interface MusicDjPackageDetails {
+  tier?: string; // Basic / Premium
+  type?: string; // DJ / Live band / Nadhaswaram / Sangeet setup
+  hours?: number; // number of hours
+  soundSystem?: boolean; // sound system + speakers included
+  lighting?: boolean; // lighting included
+  numArtists?: number;
+  mcHost?: boolean; // MC / host included
+  venueType?: string; // Indoor / Outdoor
+  generator?: boolean;
+}
+
+// Option sets for the Music/DJ package form.
+export const MUSIC_DJ_TIERS = ['Basic', 'Premium'] as const;
+export const MUSIC_DJ_TYPES = ['DJ', 'Live band', 'Nadhaswaram', 'Sangeet setup'] as const;
+export const MUSIC_DJ_VENUE_TYPES = ['Indoor', 'Outdoor'] as const;
 
 // Structured details for an Entertainment vendor's package (per act / per hour).
 export interface EntertainmentPackageDetails {

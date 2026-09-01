@@ -168,6 +168,19 @@ const vendorPackageSchema = new Schema(
       equipmentIncluded: Boolean,
       travelIncluded: Boolean,
     },
+    // Music/DJ-only structured details. Plain nested (has a `type` field, which
+    // must be declared as `type: { type: String }` — see invitation above).
+    musicDj: {
+      tier: String,
+      type: { type: String },
+      hours: Number,
+      soundSystem: Boolean,
+      lighting: Boolean,
+      numArtists: Number,
+      mcHost: Boolean,
+      venueType: String,
+      generator: Boolean,
+    },
   },
   { _id: false }
 );
