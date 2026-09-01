@@ -79,7 +79,23 @@ export interface VendorPackage {
   security?: SecurityPackageDetails;
   // Rental Equipment-only structured details.
   rental?: RentalPackageDetails;
+  // Utensils for Rent-only structured details.
+  utensils?: UtensilsPackageDetails;
 }
+
+// Structured details for a Utensils for Rent vendor's package (per guest / set).
+export interface UtensilsPackageDetails {
+  material?: string; // Steel / Brass / Premium
+  vesselTypes?: string[]; // Cooking vessels / Serving / Plates & tumblers / Banana-leaf holders
+  guestCount?: number; // guest count served
+  deliveryPickup?: boolean; // delivery + pickup
+  cleaningIncluded?: boolean;
+  securityDeposit?: number; // ₹
+}
+
+// Option sets for the Utensils for Rent package form.
+export const UTENSILS_MATERIALS = ['Steel', 'Brass', 'Premium'] as const;
+export const UTENSILS_VESSEL_TYPES = ['Cooking vessels', 'Serving', 'Plates & tumblers', 'Banana-leaf holders'] as const;
 
 // Structured details for a Rental Equipment vendor's package (per item, per day).
 export interface RentalPackageDetails {

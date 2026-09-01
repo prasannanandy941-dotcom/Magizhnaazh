@@ -240,6 +240,15 @@ const vendorPackageSchema = new Schema(
       delivery: Boolean,
       securityDeposit: Number,
     },
+    // Utensils for Rent-only structured details.
+    utensils: {
+      material: String,
+      vesselTypes: [String],
+      guestCount: Number,
+      deliveryPickup: Boolean,
+      cleaningIncluded: Boolean,
+      securityDeposit: Number,
+    },
   },
   { _id: false }
 );
