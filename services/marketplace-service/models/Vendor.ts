@@ -249,6 +249,16 @@ const vendorPackageSchema = new Schema(
       cleaningIncluded: Boolean,
       securityDeposit: Number,
     },
+    // Wedding Planner-only structured details.
+    weddingPlanner: {
+      scope: String,
+      numFunctions: Number,
+      vendorCoordination: Boolean,
+      budgetManagement: Boolean,
+      teamSize: Number,
+      guestManagement: Boolean,
+      planningMeetings: Number,
+    },
   },
   { _id: false }
 );

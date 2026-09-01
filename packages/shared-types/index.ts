@@ -81,7 +81,23 @@ export interface VendorPackage {
   rental?: RentalPackageDetails;
   // Utensils for Rent-only structured details.
   utensils?: UtensilsPackageDetails;
+  // Wedding Planner-only structured details.
+  weddingPlanner?: WeddingPlannerPackageDetails;
 }
+
+// Structured details for a Wedding Planner vendor's package (per package / function).
+export interface WeddingPlannerPackageDetails {
+  scope?: string; // Day coordination / Partial / Full / Destination (also the tier)
+  numFunctions?: number;
+  vendorCoordination?: boolean;
+  budgetManagement?: boolean;
+  teamSize?: number; // on-ground team size
+  guestManagement?: boolean; // guest management / hospitality
+  planningMeetings?: number;
+}
+
+// Option set for the Wedding Planner package form.
+export const WEDDING_PLANNER_SCOPES = ['Day coordination', 'Partial', 'Full', 'Destination'] as const;
 
 // Structured details for a Utensils for Rent vendor's package (per guest / set).
 export interface UtensilsPackageDetails {

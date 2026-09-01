@@ -1438,6 +1438,33 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                         );
                       })()}
 
+                      {pkg.weddingPlanner && (() => {
+                        const w = pkg.weddingPlanner;
+                        const incl: [string, boolean | undefined][] = [
+                          ['Vendor coordination', w.vendorCoordination], ['Budget management', w.budgetManagement], ['Guest management', w.guestManagement],
+                        ];
+                        return (
+                          <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2" onClick={(e) => e.stopPropagation()}>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase block">Planning details</span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {w.scope && <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-200 font-bold">{w.scope}</span>}
+                            </div>
+                            <div className="space-y-1 text-[11px] text-slate-300">
+                              {w.numFunctions ? <div>Functions: <span className="text-white font-semibold">{w.numFunctions}</span></div> : null}
+                              {w.teamSize ? <div>On-ground team: <span className="text-white font-semibold">{w.teamSize}</span></div> : null}
+                              {w.planningMeetings ? <div>Planning meetings: <span className="text-white font-semibold">{w.planningMeetings}</span></div> : null}
+                            </div>
+                            {incl.some(([, v]) => v !== undefined) && (
+                              <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px]">
+                                {incl.filter(([, v]) => v !== undefined).map(([label, v]) => (
+                                  <span key={label} className="text-slate-400">{label}: <b className={v ? 'text-emerald-400' : 'text-slate-500'}>{v ? 'Yes' : 'No'}</b></span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+
                       {/* Hall / Package Photos */}
                       {pkg.images && pkg.images.length > 0 && (
                         <div className="space-y-1.5 mt-3 mb-3">
