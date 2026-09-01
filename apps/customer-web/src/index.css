@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Dark-themed app: declaring the color scheme stops Android WebView's "force
+   dark" from re-inverting our light-on-dark UI (tabs/labels turned near-black
+   in the mobile app). The admin light theme opts back into a light scheme. */
+:root { color-scheme: dark; }
+html[data-theme="light"] { color-scheme: light; }
+
 /* Native date/time controls sit on dark fields — tell the browser so it paints
    the calendar glyph, placeholder and picker popup for a dark background.
    Without this the icon/text render near-black and vanish on mobile WebView.

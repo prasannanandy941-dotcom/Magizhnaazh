@@ -1778,7 +1778,7 @@ export function App() {
               className={`py-3 font-semibold text-xs border-b-2 transition-colors ${
                 activeTab === tab.key
                   ? 'border-amber-500 text-amber-400'
-                  : 'border-transparent text-slate-400 hover:text-white'
+                  : 'border-transparent text-slate-100 hover:text-white'
               }`}
             >
               {tab.label}

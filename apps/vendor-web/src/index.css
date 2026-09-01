@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* The portal is a dark-themed app. Declaring the color scheme stops Android
+   WebView's "force dark" from re-inverting our light-on-dark UI (which turned
+   tab text and labels near-black in the mobile app). The Sign In / Register
+   screen is the one light surface, so it opts back into a light scheme. */
+:root { color-scheme: dark; }
+.auth-light { color-scheme: light; }
+
 /* ---------------------------------------------------------------------------
    Light theme scoped to the vendor Sign In / Register screen (AuthGate root
    carries `.auth-light`). The screen is otherwise built from dark slate
