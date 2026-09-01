@@ -181,6 +181,16 @@ const vendorPackageSchema = new Schema(
       venueType: String,
       generator: Boolean,
     },
+    // Lighting-only structured details.
+    lighting: {
+      tier: String,
+      lightingTypes: [String],
+      areaCovered: String,
+      numFixtures: Number,
+      powerBackup: Boolean,
+      setupTeardown: Boolean,
+      numFunctions: Number,
+    },
   },
   { _id: false }
 );

@@ -67,7 +67,24 @@ export interface VendorPackage {
   entertainment?: EntertainmentPackageDetails;
   // Music/DJ-only structured details.
   musicDj?: MusicDjPackageDetails;
+  // Lighting-only structured details.
+  lighting?: LightingPackageDetails;
 }
+
+// Structured details for a Lighting vendor's package (per function).
+export interface LightingPackageDetails {
+  tier?: string; // Basic / Premium / Grand
+  lightingTypes?: string[]; // Ambient / Laser / LED walls / Up-lighting / Fairy lights / Gobo monogram / Pathway
+  areaCovered?: string; // free text
+  numFixtures?: number;
+  powerBackup?: boolean;
+  setupTeardown?: boolean; // setup + teardown included
+  numFunctions?: number;
+}
+
+// Option sets for the Lighting package form.
+export const LIGHTING_TIERS = ['Basic', 'Premium', 'Grand'] as const;
+export const LIGHTING_TYPES = ['Ambient', 'Laser', 'LED walls', 'Up-lighting', 'Fairy lights', 'Gobo monogram', 'Pathway'] as const;
 
 // Structured details for a Music/DJ vendor's package (per event / per hour).
 export interface MusicDjPackageDetails {

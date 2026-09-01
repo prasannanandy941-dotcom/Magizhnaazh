@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Store, Star, Upload, Check, LogOut, Loader2, Plus, SlidersHorizontal, ChevronDown, Receipt, X, Bell, ShieldCheck, Clock as ClockIcon, AlertCircle, FileText } from 'lucide-react';
-import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, VendorDeal, OfferedOptionItem, VENDOR_CATEGORIES, CATEGORY_OPTIONS, CATERING_OPTION_STYLE, MEDIA_QUALITY_OPTIONS, MEDIA_EQUIPMENT_OPTIONS, mediaExtraField, isDealLive, CATERING_MENU_TIERS, CATERING_FOOD_TYPES, CATERING_CUISINES, CATERING_LIVE_COUNTERS, CATERING_SERVICE_STYLES, slotLabelWithTime, AVAILABILITY_SLOTS, offeredSlotIds, VENUE_SESSIONS, VENUE_HALL_TYPES, VENUE_HALL_CLASSES, VENUE_CATERING_POLICIES, DECORATION_TIERS, DECORATION_THEMES, DECORATION_AREAS, DECORATION_FLOWER_TYPES, MAKEUP_TYPES, MAKEUP_FINISHES, MEDIA_TIERS, MEDIA_COVERAGE, MEDIA_STYLES, TRANSPORT_TIERS, TRANSPORT_VEHICLE_TYPES, TRANSPORT_PRICING_BASIS, TRANSPORT_USES, PRIEST_CEREMONY_TYPES, PRIEST_LANGUAGES, INVITATION_TIERS, INVITATION_TYPES, INVITATION_DESIGNS, INVITATION_ADDONS, INVITATION_LANGUAGES, PRINTING_PRODUCTS, PRINTING_FINISHES, RETURN_GIFTS_TIERS, RETURN_GIFT_TYPES, ENTERTAINMENT_ACT_TYPES, MUSIC_DJ_TIERS, MUSIC_DJ_TYPES, MUSIC_DJ_VENUE_TYPES } from '../../../packages/shared-types';
+import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, VendorDeal, OfferedOptionItem, VENDOR_CATEGORIES, CATEGORY_OPTIONS, CATERING_OPTION_STYLE, MEDIA_QUALITY_OPTIONS, MEDIA_EQUIPMENT_OPTIONS, mediaExtraField, isDealLive, CATERING_MENU_TIERS, CATERING_FOOD_TYPES, CATERING_CUISINES, CATERING_LIVE_COUNTERS, CATERING_SERVICE_STYLES, slotLabelWithTime, AVAILABILITY_SLOTS, offeredSlotIds, VENUE_SESSIONS, VENUE_HALL_TYPES, VENUE_HALL_CLASSES, VENUE_CATERING_POLICIES, DECORATION_TIERS, DECORATION_THEMES, DECORATION_AREAS, DECORATION_FLOWER_TYPES, MAKEUP_TYPES, MAKEUP_FINISHES, MEDIA_TIERS, MEDIA_COVERAGE, MEDIA_STYLES, TRANSPORT_TIERS, TRANSPORT_VEHICLE_TYPES, TRANSPORT_PRICING_BASIS, TRANSPORT_USES, PRIEST_CEREMONY_TYPES, PRIEST_LANGUAGES, INVITATION_TIERS, INVITATION_TYPES, INVITATION_DESIGNS, INVITATION_ADDONS, INVITATION_LANGUAGES, PRINTING_PRODUCTS, PRINTING_FINISHES, RETURN_GIFTS_TIERS, RETURN_GIFT_TYPES, ENTERTAINMENT_ACT_TYPES, MUSIC_DJ_TIERS, MUSIC_DJ_TYPES, MUSIC_DJ_VENUE_TYPES, LIGHTING_TIERS, LIGHTING_TYPES } from '../../../packages/shared-types';
 import { STATIC_CITY_GROUPS } from '../../../packages/shared-utils';
 import { AuthGate } from './components/AuthGate';
 import { FloralGoldBackground } from './components/FloralGoldBackground';
@@ -1083,6 +1083,17 @@ export function App() {
   // Music/DJ packages carry structured details.
   const updatePackageMusicDj = (pkgId: string, field: string, value: any) =>
     setPackages((prev) => prev.map((p) => (p.id === pkgId ? { ...p, musicDj: { ...(p.musicDj || {}), [field]: value } } : p)));
+
+  // Lighting packages carry structured details.
+  const updatePackageLighting = (pkgId: string, field: string, value: any) =>
+    setPackages((prev) => prev.map((p) => (p.id === pkgId ? { ...p, lighting: { ...(p.lighting || {}), [field]: value } } : p)));
+  const toggleLightingType = (pkgId: string, item: string) =>
+    setPackages((prev) => prev.map((p) => {
+      if (p.id !== pkgId) return p;
+      const current: string[] = (p.lighting?.lightingTypes) || [];
+      const next = current.includes(item) ? current.filter((x) => x !== item) : [...current, item];
+      return { ...p, lighting: { ...(p.lighting || {}), lightingTypes: next } };
+    }));
 
   // Photos of a package / hall — uploaded to the shared storage endpoint and
   // attached to that package so customers see them on the package card.
@@ -2441,7 +2452,7 @@ export function App() {
                   <div className={`grid grid-cols-1 ${myVendor?.category === 'Catering' ? 'sm:grid-cols-1' : myVendor?.category === 'Security' ? 'sm:grid-cols-2' : 'sm:grid-cols-3'} gap-3`}>
                     <div>
                       <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
-                        {myVendor?.category === 'Catering' ? 'Price per plate (₹)' : myVendor?.category === 'Security' ? 'Cost per person (₹)' : myVendor?.category === 'Venue' ? 'Price per session (₹)' : myVendor?.category === 'Decoration' ? 'Price per function (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Price per look / function (₹)' : myVendor?.category === 'Media' ? 'Price per event / day (₹)' : myVendor?.category === 'Transport' ? 'Price per vehicle (₹)' : myVendor?.category === 'Pujari/Priest' ? 'Price per ceremony (₹)' : myVendor?.category === 'Invitation' ? 'Price per design / quantity (₹)' : myVendor?.category === 'Printing' ? 'Price per quantity (₹)' : myVendor?.category === 'Return Gifts' ? 'Price per piece (₹)' : myVendor?.category === 'Entertainment' ? 'Price per act / hour (₹)' : myVendor?.category === 'Music/DJ' ? 'Price per event / hour (₹)' : 'Price (₹)'}
+                        {myVendor?.category === 'Catering' ? 'Price per plate (₹)' : myVendor?.category === 'Security' ? 'Cost per person (₹)' : myVendor?.category === 'Venue' ? 'Price per session (₹)' : myVendor?.category === 'Decoration' ? 'Price per function (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Price per look / function (₹)' : myVendor?.category === 'Media' ? 'Price per event / day (₹)' : myVendor?.category === 'Transport' ? 'Price per vehicle (₹)' : myVendor?.category === 'Pujari/Priest' ? 'Price per ceremony (₹)' : myVendor?.category === 'Invitation' ? 'Price per design / quantity (₹)' : myVendor?.category === 'Printing' ? 'Price per quantity (₹)' : myVendor?.category === 'Return Gifts' ? 'Price per piece (₹)' : myVendor?.category === 'Entertainment' ? 'Price per act / hour (₹)' : myVendor?.category === 'Music/DJ' ? 'Price per event / hour (₹)' : myVendor?.category === 'Lighting' ? 'Price per function (₹)' : 'Price (₹)'}
                       </label>
                       <input
                         type="number"
@@ -2451,7 +2462,7 @@ export function App() {
                         className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
                       />
                     </div>
-                    {myVendor?.category !== 'Security' && myVendor?.category !== 'Catering' && myVendor?.category !== 'Media' && myVendor?.category !== 'Transport' && myVendor?.category !== 'Invitation' && myVendor?.category !== 'Printing' && myVendor?.category !== 'Return Gifts' && myVendor?.category !== 'Music/DJ' && (
+                    {myVendor?.category !== 'Security' && myVendor?.category !== 'Catering' && myVendor?.category !== 'Media' && myVendor?.category !== 'Transport' && myVendor?.category !== 'Invitation' && myVendor?.category !== 'Printing' && myVendor?.category !== 'Return Gifts' && myVendor?.category !== 'Music/DJ' && myVendor?.category !== 'Lighting' && (
                       <div>
                         <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
                           {myVendor?.category === 'Pujari/Priest' ? 'No. of persons' : myVendor?.category === 'Entertainment' ? 'Number of performers' : 'Capacity (persons)'}
@@ -2465,7 +2476,7 @@ export function App() {
                         />
                       </div>
                     )}
-                    {myVendor?.category !== 'Security' && myVendor?.category !== 'Catering' && myVendor?.category !== 'Media' && myVendor?.category !== 'Transport' && myVendor?.category !== 'Invitation' && myVendor?.category !== 'Printing' && myVendor?.category !== 'Return Gifts' && myVendor?.category !== 'Music/DJ' && (
+                    {myVendor?.category !== 'Security' && myVendor?.category !== 'Catering' && myVendor?.category !== 'Media' && myVendor?.category !== 'Transport' && myVendor?.category !== 'Invitation' && myVendor?.category !== 'Printing' && myVendor?.category !== 'Return Gifts' && myVendor?.category !== 'Music/DJ' && myVendor?.category !== 'Lighting' && (
                       <div>
                         <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
                           Duration (hours)
@@ -3270,8 +3281,63 @@ export function App() {
                         </div>
                       )}
 
+                      {/* Lighting: structured spec (replaces capacity + generic price tiers). */}
+                      {myVendor?.category === 'Lighting' && (
+                        <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/40 p-3">
+                          <p className="text-[10px] text-amber-400 uppercase font-bold">Lighting details</p>
+
+                          <div>
+                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Tier</label>
+                            <div className="flex flex-wrap gap-2">
+                              {LIGHTING_TIERS.map((t) => (
+                                <button type="button" key={t} onClick={() => updatePackageLighting(p.id, 'tier', t)} className={catChip(p.lighting?.tier === t)}>{t}</button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Lighting Type</label>
+                            <div className="flex flex-wrap gap-2">
+                              {LIGHTING_TYPES.map((l) => (
+                                <button type="button" key={l} onClick={() => toggleLightingType(p.id, l)} className={catChip((p.lighting?.lightingTypes || []).includes(l))}>{l}</button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-2">
+                            <div>
+                              <label className="block text-[10px] text-slate-500 mb-1">Area covered</label>
+                              <input type="text" value={p.lighting?.areaCovered ?? ''} onChange={(e) => updatePackageLighting(p.id, 'areaCovered', e.target.value)}
+                                placeholder="e.g. Stage + entrance" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] text-slate-500 mb-1">Number of fixtures</label>
+                              <input type="number" min={0} value={p.lighting?.numFixtures ?? ''} onChange={(e) => updatePackageLighting(p.id, 'numFixtures', e.target.value === '' ? undefined : Number(e.target.value))}
+                                placeholder="e.g. 20" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] text-slate-500 mb-1">Number of functions</label>
+                              <input type="number" min={0} value={p.lighting?.numFunctions ?? ''} onChange={(e) => updatePackageLighting(p.id, 'numFunctions', e.target.value === '' ? undefined : Number(e.target.value))}
+                                placeholder="e.g. 2" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2">
+                            {([['powerBackup', 'Power backup'], ['setupTeardown', 'Setup + teardown included']] as const).map(([field, label]) => (
+                              <div key={field}>
+                                <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">{label}</label>
+                                <div className="flex gap-1.5">
+                                  <button type="button" onClick={() => updatePackageLighting(p.id, field, true)} className={catChip((p.lighting as any)?.[field] === true)}>Yes</button>
+                                  <button type="button" onClick={() => updatePackageLighting(p.id, field, false)} className={catChip((p.lighting as any)?.[field] === false)}>No</button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       {/* Price tiers — categories with no structured spec above. */}
-                      {myVendor?.category !== 'Catering' && myVendor?.category !== 'Venue' && myVendor?.category !== 'Decoration' && myVendor?.category !== 'Makeup & Beauty' && myVendor?.category !== 'Media' && myVendor?.category !== 'Transport' && myVendor?.category !== 'Pujari/Priest' && myVendor?.category !== 'Invitation' && myVendor?.category !== 'Printing' && myVendor?.category !== 'Return Gifts' && myVendor?.category !== 'Entertainment' && myVendor?.category !== 'Music/DJ' && (
+                      {myVendor?.category !== 'Catering' && myVendor?.category !== 'Venue' && myVendor?.category !== 'Decoration' && myVendor?.category !== 'Makeup & Beauty' && myVendor?.category !== 'Media' && myVendor?.category !== 'Transport' && myVendor?.category !== 'Pujari/Priest' && myVendor?.category !== 'Invitation' && myVendor?.category !== 'Printing' && myVendor?.category !== 'Return Gifts' && myVendor?.category !== 'Entertainment' && myVendor?.category !== 'Music/DJ' && myVendor?.category !== 'Lighting' && (
                       <div>
                         <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1.5">
                           Price tiers (optional — e.g. Normal / HD / Premium)
