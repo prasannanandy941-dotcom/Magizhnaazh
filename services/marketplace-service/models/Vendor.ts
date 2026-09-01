@@ -48,6 +48,21 @@ const vendorPackageSchema = new Schema(
       default: undefined,
       _id: false,
     },
+    // Decoration-only structured details.
+    decoration: {
+      type: {
+        tier: String,
+        themes: [String],
+        areas: [String],
+        flowers: String,
+        coupleSofa: Boolean,
+        mandapType: String,
+        lighting: Boolean,
+        functionsCovered: Number,
+      },
+      default: undefined,
+      _id: false,
+    },
   },
   { _id: false }
 );

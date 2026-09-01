@@ -46,7 +46,27 @@ export interface VendorPackage {
   catering?: CateringPackageDetails;
   // Venue-only structured hall details. Only set/shown for Venue vendors.
   venue?: VenuePackageDetails;
+  // Decoration-only structured details. Only set/shown for Decoration vendors.
+  decoration?: DecorationPackageDetails;
 }
+
+// Structured details for a Decoration vendor's package (priced per function).
+export interface DecorationPackageDetails {
+  tier?: string; // Basic / Premium / Luxury
+  themes?: string[]; // Floral / Royal / Minimal / Traditional / Destination
+  areas?: string[]; // Stage, Entrance, Mandap, Walkway, Reception backdrop
+  flowers?: string; // Fresh / Artificial
+  coupleSofa?: boolean; // couple sofa / seating included
+  mandapType?: string; // free text, e.g. "Traditional wooden mandap"
+  lighting?: boolean; // lighting included
+  functionsCovered?: number; // number of functions covered
+}
+
+// Option sets for the Decoration package form.
+export const DECORATION_TIERS = ['Basic', 'Premium', 'Luxury'] as const;
+export const DECORATION_THEMES = ['Floral', 'Royal', 'Minimal', 'Traditional', 'Destination'] as const;
+export const DECORATION_AREAS = ['Stage', 'Entrance', 'Mandap', 'Walkway', 'Reception backdrop'] as const;
+export const DECORATION_FLOWER_TYPES = ['Fresh', 'Artificial'] as const;
 
 // Structured hall details for a Venue vendor's package (priced per session).
 // Hall name = packageName, seating capacity = capacityPersons (reused).

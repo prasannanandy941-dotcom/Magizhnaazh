@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Store, Star, Upload, Check, LogOut, Loader2, Plus, SlidersHorizontal, ChevronDown, Receipt, X, Bell, ShieldCheck, Clock as ClockIcon, AlertCircle, FileText } from 'lucide-react';
-import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, VendorDeal, OfferedOptionItem, VENDOR_CATEGORIES, CATEGORY_OPTIONS, CATERING_OPTION_STYLE, MEDIA_QUALITY_OPTIONS, MEDIA_EQUIPMENT_OPTIONS, mediaExtraField, isDealLive, CATERING_MENU_TIERS, CATERING_FOOD_TYPES, CATERING_CUISINES, CATERING_LIVE_COUNTERS, CATERING_SERVICE_STYLES, slotLabelWithTime, AVAILABILITY_SLOTS, offeredSlotIds, VENUE_SESSIONS, VENUE_HALL_TYPES, VENUE_HALL_CLASSES, VENUE_CATERING_POLICIES } from '../../../packages/shared-types';
+import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, VendorDeal, OfferedOptionItem, VENDOR_CATEGORIES, CATEGORY_OPTIONS, CATERING_OPTION_STYLE, MEDIA_QUALITY_OPTIONS, MEDIA_EQUIPMENT_OPTIONS, mediaExtraField, isDealLive, CATERING_MENU_TIERS, CATERING_FOOD_TYPES, CATERING_CUISINES, CATERING_LIVE_COUNTERS, CATERING_SERVICE_STYLES, slotLabelWithTime, AVAILABILITY_SLOTS, offeredSlotIds, VENUE_SESSIONS, VENUE_HALL_TYPES, VENUE_HALL_CLASSES, VENUE_CATERING_POLICIES, DECORATION_TIERS, DECORATION_THEMES, DECORATION_AREAS, DECORATION_FLOWER_TYPES } from '../../../packages/shared-types';
 import { STATIC_CITY_GROUPS } from '../../../packages/shared-utils';
 import { AuthGate } from './components/AuthGate';
 import { FloralGoldBackground } from './components/FloralGoldBackground';
@@ -1000,6 +1000,17 @@ export function App() {
       const current: string[] = (p.venue?.sessions) || [];
       const next = current.includes(session) ? current.filter((x) => x !== session) : [...current, session];
       return { ...p, venue: { ...(p.venue || {}), sessions: next } };
+    }));
+
+  // Decoration packages carry structured details (theme, areas, flowers, etc.).
+  const updatePackageDecoration = (pkgId: string, field: string, value: any) =>
+    setPackages((prev) => prev.map((p) => (p.id === pkgId ? { ...p, decoration: { ...(p.decoration || {}), [field]: value } } : p)));
+  const toggleDecorationOption = (pkgId: string, field: 'themes' | 'areas', item: string) =>
+    setPackages((prev) => prev.map((p) => {
+      if (p.id !== pkgId) return p;
+      const current: string[] = ((p.decoration as any)?.[field]) || [];
+      const next = current.includes(item) ? current.filter((x) => x !== item) : [...current, item];
+      return { ...p, decoration: { ...(p.decoration || {}), [field]: next } };
     }));
 
   // Photos of a package / hall — uploaded to the shared storage endpoint and
@@ -2359,7 +2370,7 @@ export function App() {
                   <div className={`grid grid-cols-1 ${myVendor?.category === 'Catering' ? 'sm:grid-cols-1' : myVendor?.category === 'Pujari/Priest' || myVendor?.category === 'Security' ? 'sm:grid-cols-2' : 'sm:grid-cols-3'} gap-3`}>
                     <div>
                       <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
-                        {myVendor?.category === 'Catering' ? 'Price per plate (₹)' : myVendor?.category === 'Security' ? 'Cost per person (₹)' : myVendor?.category === 'Venue' ? 'Price per session (₹)' : 'Price (₹)'}
+                        {myVendor?.category === 'Catering' ? 'Price per plate (₹)' : myVendor?.category === 'Security' ? 'Cost per person (₹)' : myVendor?.category === 'Venue' ? 'Price per session (₹)' : myVendor?.category === 'Decoration' ? 'Price per function (₹)' : 'Price (₹)'}
                       </label>
                       <input
                         type="number"
@@ -2609,8 +2620,76 @@ export function App() {
                         </div>
                       )}
 
-                      {/* Price tiers — non-catering/venue only (they use the structured spec above). */}
-                      {myVendor?.category !== 'Catering' && myVendor?.category !== 'Venue' && (
+                      {/* Decoration: structured decor spec (replaces the generic price tiers). */}
+                      {myVendor?.category === 'Decoration' && (
+                        <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/40 p-3">
+                          <p className="text-[10px] text-amber-400 uppercase font-bold">Decoration details</p>
+
+                          <div>
+                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Package Tier</label>
+                            <div className="flex flex-wrap gap-2">
+                              {DECORATION_TIERS.map((t) => (
+                                <button type="button" key={t} onClick={() => updatePackageDecoration(p.id, 'tier', t)} className={catChip(p.decoration?.tier === t)}>{t}</button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Theme</label>
+                            <div className="flex flex-wrap gap-2">
+                              {DECORATION_THEMES.map((t) => (
+                                <button type="button" key={t} onClick={() => toggleDecorationOption(p.id, 'themes', t)} className={catChip((p.decoration?.themes || []).includes(t))}>{t}</button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Areas covered</label>
+                            <div className="flex flex-wrap gap-2">
+                              {DECORATION_AREAS.map((a) => (
+                                <button type="button" key={a} onClick={() => toggleDecorationOption(p.id, 'areas', a)} className={catChip((p.decoration?.areas || []).includes(a))}>{a}</button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Flowers</label>
+                            <div className="flex flex-wrap gap-2">
+                              {DECORATION_FLOWER_TYPES.map((f) => (
+                                <button type="button" key={f} onClick={() => updatePackageDecoration(p.id, 'flowers', f)} className={catChip(p.decoration?.flowers === f)}>{f}</button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Mandap type</label>
+                              <input type="text" value={p.decoration?.mandapType ?? ''} onChange={(e) => updatePackageDecoration(p.id, 'mandapType', e.target.value)}
+                                placeholder="e.g. Traditional wooden" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Functions covered</label>
+                              <input type="number" min={0} value={p.decoration?.functionsCovered ?? ''} onChange={(e) => updatePackageDecoration(p.id, 'functionsCovered', e.target.value === '' ? undefined : Number(e.target.value))}
+                                placeholder="e.g. 2" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2">
+                            {([['coupleSofa', 'Couple sofa / seating'], ['lighting', 'Lighting included']] as const).map(([field, label]) => (
+                              <div key={field}>
+                                <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">{label}</label>
+                                <div className="flex gap-1.5">
+                                  <button type="button" onClick={() => updatePackageDecoration(p.id, field, true)} className={catChip((p.decoration as any)?.[field] === true)}>Yes</button>
+                                  <button type="button" onClick={() => updatePackageDecoration(p.id, field, false)} className={catChip((p.decoration as any)?.[field] === false)}>No</button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Price tiers — categories with no structured spec above. */}
+                      {myVendor?.category !== 'Catering' && myVendor?.category !== 'Venue' && myVendor?.category !== 'Decoration' && (
                       <div>
                         <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1.5">
                           Price tiers (optional — e.g. Normal / HD / Premium)
