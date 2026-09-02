@@ -1811,22 +1811,46 @@ export function App() {
         {activeTab === 'dashboard' && (
           <div className="space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="glass-card p-5 rounded-2xl border border-slate-800">
-                <span className="text-xs font-bold text-slate-400 uppercase">Confirmed Bookings</span>
-                <div className="font-display font-extrabold text-2xl text-white mt-1">{confirmedBookings.length}</div>
-              </div>
-
-              <div className="glass-card p-5 rounded-2xl border border-slate-800">
-                <span className="text-xs font-bold text-amber-400 uppercase">Pending Quotes</span>
-                <div className="font-display font-extrabold text-2xl text-amber-400 mt-1">
-                  {bookings.filter((b) => b.status === 'quote_requested' || b.status === 'enquiry').length}
+              <div className="relative overflow-hidden rounded-2xl border border-amber-500/25 bg-gradient-to-br from-amber-500/10 via-slate-900/70 to-slate-950/90 p-5 shadow-[0_0_35px_-14px_rgba(245,158,11,0.45)]">
+                <div className="pointer-events-none absolute -top-8 -right-8 w-24 h-24 rounded-full bg-amber-500/10 blur-2xl"></div>
+                <div className="relative flex items-center justify-between gap-3">
+                  <div>
+                    <span className="text-xs font-bold text-amber-200/70 uppercase tracking-wide">Confirmed Bookings</span>
+                    <div className="font-display font-extrabold text-3xl text-white mt-1">{confirmedBookings.length}</div>
+                  </div>
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-300 to-amber-600 flex items-center justify-center shadow-md shadow-amber-500/30 shrink-0">
+                    <Check className="w-5 h-5 text-slate-950" />
+                  </div>
                 </div>
               </div>
 
-              <div className="glass-card p-5 rounded-2xl border border-slate-800">
-                <span className="text-xs font-bold text-slate-400 uppercase">Partner Rating</span>
-                <div className="font-display font-extrabold text-2xl text-amber-400 mt-1 flex items-center gap-1">
-                  <Star className="w-5 h-5 fill-amber-400" /> {myVendor.ratingAverage} ({myVendor.reviewCount} Reviews)
+              <div className="relative overflow-hidden rounded-2xl border border-amber-500/25 bg-gradient-to-br from-amber-500/10 via-slate-900/70 to-slate-950/90 p-5 shadow-[0_0_35px_-14px_rgba(245,158,11,0.45)]">
+                <div className="pointer-events-none absolute -top-8 -right-8 w-24 h-24 rounded-full bg-amber-500/10 blur-2xl"></div>
+                <div className="relative flex items-center justify-between gap-3">
+                  <div>
+                    <span className="text-xs font-bold text-amber-200/70 uppercase tracking-wide">Pending Quotes</span>
+                    <div className="font-display font-extrabold text-3xl text-amber-400 mt-1">
+                      {bookings.filter((b) => b.status === 'quote_requested' || b.status === 'enquiry').length}
+                    </div>
+                  </div>
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-300 to-amber-600 flex items-center justify-center shadow-md shadow-amber-500/30 shrink-0">
+                    <ClockIcon className="w-5 h-5 text-slate-950" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="relative overflow-hidden rounded-2xl border border-amber-500/25 bg-gradient-to-br from-amber-500/10 via-slate-900/70 to-slate-950/90 p-5 shadow-[0_0_35px_-14px_rgba(245,158,11,0.45)]">
+                <div className="pointer-events-none absolute -top-8 -right-8 w-24 h-24 rounded-full bg-amber-500/10 blur-2xl"></div>
+                <div className="relative flex items-center justify-between gap-3">
+                  <div>
+                    <span className="text-xs font-bold text-amber-200/70 uppercase tracking-wide">Partner Rating</span>
+                    <div className="font-display font-extrabold text-3xl text-amber-400 mt-1 flex items-center gap-1.5">
+                      <Star className="w-6 h-6 fill-amber-400" /> {myVendor.ratingAverage} <span className="text-base text-slate-300 font-bold">({myVendor.reviewCount} Reviews)</span>
+                    </div>
+                  </div>
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-300 to-amber-600 flex items-center justify-center shadow-md shadow-amber-500/30 shrink-0">
+                    <Star className="w-5 h-5 fill-slate-950 text-slate-950" />
+                  </div>
                 </div>
               </div>
             </div>
@@ -1874,8 +1898,11 @@ export function App() {
               </div>
             )}
 
-            <div className="glass-card rounded-3xl border border-slate-800 overflow-hidden">
-              <div className="p-6 border-b border-slate-800">
+            <div className="relative rounded-3xl border border-amber-500/25 bg-gradient-to-b from-amber-500/[0.06] via-slate-900/60 to-slate-950/80 shadow-[0_0_45px_-18px_rgba(245,158,11,0.4)] overflow-hidden">
+              <div className="p-6 border-b border-amber-500/15 flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-300 to-amber-600 flex items-center justify-center shadow-md shadow-amber-500/30 shrink-0">
+                  <Receipt className="w-4 h-4 text-slate-950" />
+                </div>
                 <h3 className="font-bold text-lg text-white">Client Bookings & Quote Requests</h3>
               </div>
 
