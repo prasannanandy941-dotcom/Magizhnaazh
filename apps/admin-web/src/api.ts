@@ -1,6 +1,7 @@
 import {
   User,
   Vendor,
+  VendorDeal,
   Event,
   Booking,
   Review,
@@ -61,75 +62,63 @@ async function fetchJson(
       throw err;
     }
 
-    if ([502, 503, 504].includes(res.status) && attempt < COLD_START_RETRIES) {
+    const contentType = res.headers.get('content-type') || '';
+    const isJson = contentType.includes('application/json');
+
+    // 502/503/504 usually mean the upstream service is booting up on Render.
+    // Retry so the user doesn't see a momentary failure.
+    if (!res.ok && (res.status === 502 || res.status === 503 || res.status === 504) && attempt < COLD_START_RETRIES) {
       await sleep(COLD_START_DELAY_MS);
       continue;
     }
 
-    const text = await res.text();
-    if (text.trimStart().startsWith('<') && attempt < COLD_START_RETRIES) {
-      await sleep(COLD_START_DELAY_MS);
-      continue;
-    }
-
-    try {
-      return { res, json: text ? JSON.parse(text) : {} };
-    } catch {
-      if (!res.ok) {
-        throw new Error(`Server returned error ${res.status}: ${res.statusText || 'Unavailable'}. Please check if the services are running.`);
+    if (!isJson) {
+      const text = await res.text().catch(() => '');
+      // If the body is HTML (e.g. Render 502 page), retry instead of crashing JSON.parse.
+      if (text.trim().startsWith('<') && attempt < COLD_START_RETRIES) {
+        await sleep(COLD_START_DELAY_MS);
+        continue;
       }
-      throw new Error('Server is starting up. Please try again in a moment.');
+      throw new Error(text || `Server returned ${res.status} ${res.statusText}`);
     }
+
+    const json = await res.json();
+    return { res, json };
   }
-  throw lastError instanceof Error ? lastError : new Error('Request failed.');
+  throw lastError || new Error('Request timed out while waiting for server to start.');
 }
 
+async function authedFetch(
+  path: string,
+  token: string,
+  options: RequestInit = {}
+): Promise<any> {
+  const headers = new Headers(options.headers || {});
+  headers.set('Authorization', `Bearer ${token}`);
+  if (options.body && !(options.body instanceof FormData)) {
+    headers.set('Content-Type', 'application/json');
+  }
+  const { json } = await fetchJson(path, { ...options, headers });
+  return json;
+}
+
+// --- Auth ---
+
 export async function login(email: string, password: string): Promise<AuthResponse> {
-  const { res, json } = await fetchJson('/api/v1/auth/login', {
+  const { json } = await fetchJson('/api/v1/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
   });
-  if (!res.ok) {
-    throw new Error(json.message || 'Request failed.');
-  }
   return json;
 }
 
-// Google Sign-In for admins. `loginOnly` tells the backend to authenticate an
-// EXISTING account only and never create one — a Google account with no admin
-// user gets rejected rather than silently provisioned. The caller still checks
-// role === 'admin' before granting access.
 export async function googleLogin(credential: string): Promise<AuthResponse> {
-  const { res, json } = await fetchJson('/api/v1/auth/google', {
+  const { json } = await fetchJson('/api/v1/auth/google', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ credential, loginOnly: true }),
   });
-  if (!res.ok) {
-    throw new Error(json.message || 'Google sign-in failed.');
-  }
-  return json;
-}
-
-async function authedFetch(path: string, token: string, options: RequestInit = {}) {
-  const { res, json } = await fetchJson(path, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-      ...(options.headers || {}),
-    },
-  });
-  if (res.status === 401) {
-    localStorage.removeItem('magizhnaazh_admin_user');
-    localStorage.removeItem('magizhnaazh_admin_token');
-    window.location.reload();
-    throw new Error('Session expired — please sign in again.');
-  }
-  if (!res.ok) {
-    throw new Error(json.message || 'Request failed.');
-  }
   return json;
 }
 
@@ -154,6 +143,13 @@ export function decideVendorVerification(token: string, vendorId: string, decisi
 
 export function toggleVendorSuspension(token: string, vendorId: string) {
   return authedFetch(`/api/v1/vendors/${vendorId}/suspend`, token, { method: 'PUT' });
+}
+
+export function updateVendorDeals(token: string, vendorId: string, deals: VendorDeal[]) {
+  return authedFetch(`/api/v1/vendors/${vendorId}`, token, {
+    method: 'PUT',
+    body: JSON.stringify({ deals }),
+  });
 }
 
 export interface AdminMetrics {

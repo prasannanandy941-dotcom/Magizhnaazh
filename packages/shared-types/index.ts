@@ -91,7 +91,8 @@ export interface VendorPackage {
 // The add-on options each carry their OWN price (₹) so the vendor prices them
 // separately; a blank/0 price means the add-on is not offered.
 export interface CorporatePackageDetails {
-  eventType?: string; // legacy single-select (kept for back-compat)
+  eventType?: string; // Event type chosen (Conference / Product launch / Awards / Team outing)
+  basePrice?: number; // Base event package price (₹)
   eventTypePrices?: Record<string, number>; // price (₹) per event type offered
   numAttendees?: number;
   numDays?: number;

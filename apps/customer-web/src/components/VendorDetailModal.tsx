@@ -1478,6 +1478,18 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                         return (
                           <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2" onClick={(e) => e.stopPropagation()}>
                             <span className="text-[10px] font-bold text-slate-400 uppercase block">Event details</span>
+                            {c.eventType && (
+                              <div className="flex items-center justify-between text-[11px]">
+                                <span className="text-slate-400">Event Type</span>
+                                <span className="text-amber-300 font-semibold">{c.eventType}</span>
+                              </div>
+                            )}
+                            {typeof c.basePrice === 'number' && c.basePrice > 0 && (
+                              <div className="flex items-center justify-between text-[11px]">
+                                <span className="text-slate-400">Base Setup</span>
+                                <span className="text-amber-300 font-semibold">₹{c.basePrice.toLocaleString('en-IN')}</span>
+                              </div>
+                            )}
                             {c.eventTypePrices && Object.keys(c.eventTypePrices).length > 0 && (
                               <div className="space-y-1">
                                 <span className="text-[10px] font-bold text-slate-500 uppercase block">Event types</span>

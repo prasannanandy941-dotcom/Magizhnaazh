@@ -26,7 +26,11 @@
     },
     "android": {
       "package": "com.porulontech.magizhnaazhvendor",
-      "permissions": ["CAMERA", "READ_EXTERNAL_STORAGE", "READ_MEDIA_IMAGES"],
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "READ_MEDIA_IMAGES"
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#1a0a14"
@@ -39,6 +43,11 @@
       "expo-web-browser",
       "@react-native-google-signin/google-signin",
       "expo-font"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "4c661b54-4b4f-49da-9d27-2f62b4612920"
+      }
+    }
   }
 }

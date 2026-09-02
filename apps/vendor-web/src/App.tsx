@@ -977,7 +977,17 @@ export function App() {
     setPackages((prev) =>
       prev.map((p) => {
         if (p.id !== id) return p;
-        if (field === 'price') return { ...p, price: raw === '' ? 0 : Number(raw) };
+        if (field === 'price') {
+          const val = raw === '' ? 0 : Number(raw);
+          if (myVendor?.category === 'Corporate Event Services') {
+            const addons = [p.corporate?.avStageBranding, p.corporate?.registrationDesk, p.corporate?.cateringCoordination, p.corporate?.mcHost]
+              .reduce((a: number, b: any) => a + (Number(b) || 0), 0);
+            const base = Math.max(0, val - addons);
+            const corporate = { ...(p.corporate || {}), basePrice: base };
+            return { ...p, corporate, price: val };
+          }
+          return { ...p, price: val };
+        }
         if (field === 'durationHours') return { ...p, durationHours: raw === '' ? undefined : Number(raw) };
         if (field === 'capacityPersons') return { ...p, capacityPersons: raw === '' ? undefined : Number(raw) };
         if (field === 'includedServices') return { ...p, includedServices: raw.split(',').map((s) => s.trim()).filter(Boolean) };
@@ -1160,14 +1170,30 @@ export function App() {
   const updatePackageWeddingPlanner = (pkgId: string, field: string, value: any) =>
     setPackages((prev) => prev.map((p) => (p.id === pkgId ? { ...p, weddingPlanner: { ...(p.weddingPlanner || {}), [field]: value } } : p)));
   // Corporate Event Services packages carry structured details.
+  // Total for a Corporate package = base price / event-type price + all add-on prices.
+  const corporateTotal = (c?: any): number => {
+    if (!c) return 0;
+    const base = Number(c.basePrice) || 0;
+    const eventTypes = Object.values(c.eventTypePrices || {}).reduce((a: number, b: any) => a + (Number(b) || 0), 0);
+    const addons = [c.avStageBranding, c.registrationDesk, c.cateringCoordination, c.mcHost]
+      .reduce((a: number, b: any) => a + (Number(b) || 0), 0);
+    return (base || eventTypes) + addons;
+  };
   const updatePackageCorporate = (pkgId: string, field: string, value: any) =>
-    setPackages((prev) => prev.map((p) => (p.id === pkgId ? { ...p, corporate: { ...(p.corporate || {}), [field]: value } } : p)));
+    setPackages((prev) => prev.map((p) => {
+      if (p.id !== pkgId) return p;
+      const corporate = { ...(p.corporate || {}), [field]: value };
+      const calcTotal = corporateTotal(corporate);
+      return { ...p, corporate, price: calcTotal > 0 ? calcTotal : (p.price || 0) };
+    }));
   const updateCorporateEventPrice = (pkgId: string, type: string, value: number | undefined) =>
     setPackages((prev) => prev.map((p) => {
       if (p.id !== pkgId) return p;
       const prices: Record<string, number> = { ...(p.corporate?.eventTypePrices || {}) };
       if (value === undefined) delete prices[type]; else prices[type] = value;
-      return { ...p, corporate: { ...(p.corporate || {}), eventTypePrices: prices } };
+      const corporate = { ...(p.corporate || {}), eventTypePrices: prices };
+      const calcTotal = corporateTotal(corporate);
+      return { ...p, corporate, price: calcTotal > 0 ? calcTotal : (p.price || 0) };
     }));
   const toggleUtensilsVessel = (pkgId: string, item: string) =>
     setPackages((prev) => prev.map((p) => {
@@ -1271,8 +1297,16 @@ export function App() {
 
   const handleSavePackages = async () => {
     if (!token || !myVendor) return;
-    // Drop empty rows (no name and no price) so blank cards aren't persisted.
-    const cleaned = packages.filter((p) => p.packageName.trim() || p.price > 0);
+    // Ensure all Corporate Event Services packages have their total price calculated
+    const cleaned = packages
+      .map((p) => {
+        if (myVendor.category === 'Corporate Event Services') {
+          const calc = corporateTotal(p.corporate);
+          return { ...p, price: calc > 0 ? calc : (p.price || 0) };
+        }
+        return p;
+      })
+      .filter((p) => p.packageName.trim() || p.price > 0);
     setSavingPackages(true);
     setPackagesNotice('');
     try {
@@ -2598,7 +2632,7 @@ export function App() {
                   <div className={`grid grid-cols-1 ${myVendor?.category === 'Catering' ? 'sm:grid-cols-1' : myVendor?.category === 'Security' ? 'sm:grid-cols-2' : 'sm:grid-cols-3'} gap-3`}>
                     <div>
                       <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
-                        {myVendor?.category === 'Catering' ? 'Price per plate (₹)' : myVendor?.category === 'Security' ? 'Price per guard / shift (₹)' : myVendor?.category === 'Venue' ? 'Price per session (₹)' : myVendor?.category === 'Decoration' ? 'Price per function (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Price per look / function (₹)' : myVendor?.category === 'Media' ? 'Price per event / day (₹)' : myVendor?.category === 'Transport' ? 'Price per vehicle (₹)' : myVendor?.category === 'Pujari/Priest' ? 'Price per ceremony (₹)' : myVendor?.category === 'Invitation' ? 'Price per design / quantity (₹)' : myVendor?.category === 'Printing' ? 'Price per quantity (₹)' : myVendor?.category === 'Return Gifts' ? 'Price per piece (₹)' : myVendor?.category === 'Entertainment' ? 'Price per act / hour (₹)' : myVendor?.category === 'Music/DJ' ? 'Price per event / hour (₹)' : myVendor?.category === 'Lighting' ? 'Price per function (₹)' : myVendor?.category === 'Flowers' ? 'Price per item / function (₹)' : myVendor?.category === 'Mehendi' ? 'Price per bride (₹)' : myVendor?.category === 'Event Host/Anchor' ? 'Price per event (₹)' : myVendor?.category === 'Rental Equipment' ? 'Per-day rate (₹)' : myVendor?.category === 'Utensils for Rent' ? 'Per-set price (₹)' : myVendor?.category === 'Wedding Planner' ? 'Price per package / function (₹)' : myVendor?.category === 'Corporate Event Services' ? 'Price per event / head (₹)' : 'Price (₹)'}
+                        {myVendor?.category === 'Catering' ? 'Price per plate (₹)' : myVendor?.category === 'Security' ? 'Price per guard / shift (₹)' : myVendor?.category === 'Venue' ? 'Price per session (₹)' : myVendor?.category === 'Decoration' ? 'Price per function (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Price per look / function (₹)' : myVendor?.category === 'Media' ? 'Price per event / day (₹)' : myVendor?.category === 'Transport' ? 'Price per vehicle (₹)' : myVendor?.category === 'Pujari/Priest' ? 'Price per ceremony (₹)' : myVendor?.category === 'Invitation' ? 'Price per design / quantity (₹)' : myVendor?.category === 'Printing' ? 'Price per quantity (₹)' : myVendor?.category === 'Return Gifts' ? 'Price per piece (₹)' : myVendor?.category === 'Entertainment' ? 'Price per act / hour (₹)' : myVendor?.category === 'Music/DJ' ? 'Price per event / hour (₹)' : myVendor?.category === 'Lighting' ? 'Price per function (₹)' : myVendor?.category === 'Flowers' ? 'Price per item / function (₹)' : myVendor?.category === 'Mehendi' ? 'Price per bride (₹)' : myVendor?.category === 'Event Host/Anchor' ? 'Price per event (₹)' : myVendor?.category === 'Rental Equipment' ? 'Per-day rate (₹)' : myVendor?.category === 'Utensils for Rent' ? 'Per-set price (₹)' : myVendor?.category === 'Wedding Planner' ? 'Price per package / function (₹)' : myVendor?.category === 'Corporate Event Services' ? 'Price per total event (₹)' : 'Price (₹)'}
                       </label>
                       <input
                         type="number"
@@ -3841,34 +3875,72 @@ export function App() {
 
                       {/* Corporate Event Services: structured spec (replaces capacity/duration + generic price tiers). */}
                       {myVendor?.category === 'Corporate Event Services' && (
-                        <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/40 p-3">
-                          <p className="text-[10px] text-amber-400 uppercase font-bold">Event details</p>
+                        <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/40 p-3.5">
+                          <div className="flex items-center justify-between">
+                            <p className="text-[10px] text-amber-400 uppercase font-bold">Event Details</p>
+                            <div className="text-[11px] font-bold text-slate-300">
+                              Total: <span className="text-amber-400 font-mono">₹{(p.price || corporateTotal(p.corporate) || 0).toLocaleString('en-IN')}</span>
+                            </div>
+                          </div>
 
                           <div>
-                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-2">Event type — price for each (leave blank if not offered)</label>
-                            <div className="grid grid-cols-2 gap-2">
+                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1.5">Event Type</label>
+                            <div className="flex flex-wrap gap-2 mb-2.5">
                               {CORPORATE_EVENT_TYPES.map((s) => (
-                                <div key={s}>
-                                  <label className="block text-[10px] text-slate-500 mb-1">{s}</label>
-                                  <div className="relative">
-                                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 text-sm">₹</span>
-                                    <input type="number" min={0} value={p.corporate?.eventTypePrices?.[s] ?? ''}
-                                      onChange={(e) => updateCorporateEventPrice(p.id, s, e.target.value === '' ? undefined : Number(e.target.value))}
-                                      placeholder="Price" className="w-full pl-6 pr-2 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
-                                  </div>
-                                </div>
+                                <button
+                                  type="button"
+                                  key={s}
+                                  onClick={() => {
+                                    updatePackageCorporate(p.id, 'eventType', s);
+                                    if (!p.packageName) {
+                                      updatePackageField(p.id, 'packageName', `${s} Package`);
+                                    }
+                                  }}
+                                  className={catChip(p.corporate?.eventType === s)}
+                                >
+                                  {s}
+                                </button>
                               ))}
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-2 gap-2">
-                            {([['numAttendees', 'No. of attendees'], ['numDays', 'No. of days']] as const).map(([field, label]) => (
-                              <div key={field}>
-                                <label className="block text-[10px] text-slate-500 mb-1">{label}</label>
-                                <input type="number" min={0} value={(p.corporate as any)?.[field] ?? ''} onChange={(e) => updatePackageCorporate(p.id, field, e.target.value === '' ? undefined : Number(e.target.value))}
-                                  placeholder="0" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <div>
+                              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Base Event Price (₹)</label>
+                              <div className="relative">
+                                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 text-sm">₹</span>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={p.corporate?.basePrice ?? ''}
+                                  onChange={(e) => updatePackageCorporate(p.id, 'basePrice', e.target.value === '' ? undefined : Number(e.target.value))}
+                                  placeholder="e.g. 100000"
+                                  className="w-full pl-6 pr-2 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm font-mono"
+                                />
                               </div>
-                            ))}
+                            </div>
+                            <div>
+                              <label className="block text-[10px] text-slate-500 mb-1">No. of attendees</label>
+                              <input
+                                type="number"
+                                min={0}
+                                value={p.corporate?.numAttendees ?? ''}
+                                onChange={(e) => updatePackageCorporate(p.id, 'numAttendees', e.target.value === '' ? undefined : Number(e.target.value))}
+                                placeholder="0"
+                                className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] text-slate-500 mb-1">No. of days</label>
+                              <input
+                                type="number"
+                                min={0}
+                                value={p.corporate?.numDays ?? ''}
+                                onChange={(e) => updatePackageCorporate(p.id, 'numDays', e.target.value === '' ? undefined : Number(e.target.value))}
+                                placeholder="0"
+                                className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                              />
+                            </div>
                           </div>
 
                           <div>
@@ -3879,12 +3951,33 @@ export function App() {
                                   <label className="block text-[10px] text-slate-500 mb-1">{label}</label>
                                   <div className="relative">
                                     <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 text-sm">₹</span>
-                                    <input type="number" min={0} value={(p.corporate as any)?.[key] ?? ''}
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      value={(p.corporate as any)?.[key] ?? ''}
                                       onChange={(e) => updatePackageCorporate(p.id, key, e.target.value === '' ? undefined : Number(e.target.value))}
-                                      placeholder="Price" className="w-full pl-6 pr-2 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                                      placeholder="Price"
+                                      className="w-full pl-6 pr-2 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm font-mono"
+                                    />
                                   </div>
                                 </div>
                               ))}
+                            </div>
+                          </div>
+
+                          {/* Calculation Summary Box */}
+                          <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between text-xs flex-wrap gap-2">
+                            <div className="text-slate-400">
+                              <span>Base: </span>
+                              <span className="text-slate-200 font-semibold font-mono">₹{(Number(p.corporate?.basePrice) || 0).toLocaleString('en-IN')}</span>
+                              <span> + Add-ons: </span>
+                              <span className="text-slate-200 font-semibold font-mono">
+                                ₹{[p.corporate?.avStageBranding, p.corporate?.registrationDesk, p.corporate?.cateringCoordination, p.corporate?.mcHost]
+                                  .reduce((a: number, b: any) => a + (Number(b) || 0), 0).toLocaleString('en-IN')}
+                              </span>
+                            </div>
+                            <div className="text-amber-400 font-bold font-mono text-sm">
+                              = Total Amount: ₹{(p.price || corporateTotal(p.corporate) || 0).toLocaleString('en-IN')}
                             </div>
                           </div>
                         </div>

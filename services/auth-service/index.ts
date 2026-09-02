@@ -174,15 +174,29 @@ async function verifyGoogleIdToken(credential: string): Promise<GoogleProfile | 
 
 async function seedIfEmpty() {
   const count = await UserModel.countDocuments();
-  if (count > 0) return;
-
   const demoPasswordHash = await bcrypt.hash('Passw0rd!', 10);
-  await UserModel.create([
-    { id: 'usr-customer-1', name: 'Felix Kumar', email: 'customer@magizhnaazh.com', phone: '+91 9840112233', role: 'customer', isVerified: true, passwordHash: demoPasswordHash },
-    { id: 'usr-vendor-1', name: 'Leela Management', email: 'vendor@magizhnaazh.com', phone: '+91 44 33661234', role: 'vendor', businessName: 'The Leela Palace Grand Ballroom', isVerified: true, passwordHash: demoPasswordHash },
-    { id: 'usr-admin-1', name: 'Super Admin', email: 'admin@magizhnaazh.com', phone: '+91 9999900000', role: 'admin', isVerified: true, passwordHash: demoPasswordHash },
-  ]);
-  console.log('[auth-service] Seeded demo users (password: Passw0rd!).');
+  if (count === 0) {
+    await UserModel.create([
+      { id: 'usr-customer-1', name: 'Felix Kumar', email: 'customer@magizhnaazh.com', phone: '+91 9840112233', role: 'customer', isVerified: true, passwordHash: demoPasswordHash },
+      { id: 'usr-vendor-1', name: 'Leela Management', email: 'vendor@magizhnaazh.com', phone: '+91 44 33661234', role: 'vendor', businessName: 'The Leela Palace Grand Ballroom', isVerified: true, passwordHash: demoPasswordHash },
+      { id: 'usr-admin-1', name: 'Super Admin', email: 'admin@magizhnaazh.com', phone: '+91 9999900000', role: 'admin', isVerified: true, passwordHash: demoPasswordHash },
+    ]);
+    console.log('[auth-service] Seeded demo users (password: Passw0rd!).');
+  } else {
+    const adminUser = await UserModel.findOne({ email: 'admin@magizhnaazh.com' });
+    if (!adminUser) {
+      await UserModel.create({
+        id: `usr-admin-1`,
+        name: 'Super Admin',
+        email: 'admin@magizhnaazh.com',
+        phone: '+91 9999900000',
+        role: 'admin',
+        isVerified: true,
+        passwordHash: demoPasswordHash,
+      });
+      console.log('[auth-service] Seeded missing super admin account (admin@magizhnaazh.com).');
+    }
+  }
 }
 
 // 0. Send OTP Verification Code

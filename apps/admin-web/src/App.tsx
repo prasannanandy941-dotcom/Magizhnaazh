@@ -65,7 +65,7 @@ const NAV: { key: TabKey; label: string; icon: React.ElementType }[] = [
   { key: 'complaints', label: 'Complaints', icon: AlertCircle },
   { key: 'templates', label: 'Invitation Templates', icon: ImageIcon },
   { key: 'banners', label: 'Banners', icon: Megaphone },
-  { key: 'coupons', label: 'Coupons', icon: Ticket },
+  { key: 'coupons', label: 'Offers & Coupons', icon: Ticket },
   { key: 'settlements', label: 'Settlements', icon: Wallet },
   { key: 'settings', label: 'Settings', icon: SettingsIcon },
   { key: 'analytics', label: 'Analytics', icon: BarChart3 },

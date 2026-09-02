@@ -125,11 +125,23 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
 
           <GoogleSignInButton onCredential={handleGoogleCredential} text="signin_with" />
 
-          <p className="text-center text-[11px] text-slate-500">
-            Demo login: admin@magizhnaazh.com / Passw0rd!
-          </p>
+          <div className="pt-1">
+            <button
+              type="button"
+              onClick={() => {
+                setEmail('admin@magizhnaazh.com');
+                setPassword('Passw0rd!');
+                setError('');
+              }}
+              className="w-full py-2 px-3 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium border border-slate-300 transition-colors flex items-center justify-center gap-1.5"
+            >
+              <span>Auto-fill Demo Admin</span>
+              <code className="bg-white px-1.5 py-0.5 rounded border text-[11px] text-slate-800 font-mono">admin@magizhnaazh.com / Passw0rd!</code>
+            </button>
+          </div>
+
           <p className="text-center text-[10px] text-slate-500">
-            Admin accounts are provisioned by the platform team — there's no self-registration here.
+            Note: Password uses the number zero <code className="font-mono font-bold text-slate-700">0</code> (<code className="font-mono">Passw0rd!</code>).
           </p>
         </form>
       </div>

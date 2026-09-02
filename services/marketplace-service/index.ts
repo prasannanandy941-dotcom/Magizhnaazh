@@ -392,6 +392,20 @@ const getDefaultImageForCategory = (category: string): string => {
 app.post('/api/v1/vendors', authMiddleware(), requireRole('vendor', 'admin'), async (req: Request, res: Response) => {
   const { businessName, category, city, startingPrice, description, contactEmail, contactPhone } = req.body;
 
+  // Prevent duplicate vendor listings for the same vendor user account
+  const existing = await VendorModel.findOne({ userId: req.user!.sub });
+  if (existing) {
+    if (businessName) existing.businessName = businessName;
+    if (category) existing.category = category;
+    if (city) existing.location.city = city;
+    if (startingPrice) existing.startingPrice = Number(startingPrice);
+    if (description) existing.description = description;
+    if (contactEmail) existing.contactEmail = contactEmail;
+    if (contactPhone) existing.contactPhone = contactPhone;
+    await existing.save();
+    return res.json({ success: true, message: 'Existing vendor profile updated.', data: { vendor: existing } });
+  }
+
   const vendor = await VendorModel.create({
     id: `vnd-${Date.now()}`,
     userId: req.user!.sub,

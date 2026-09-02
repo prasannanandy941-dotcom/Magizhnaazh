@@ -486,9 +486,27 @@ const INITIAL_FEEDBACK: EventFeedback[] = [
   { id: 'fb-1', eventId: 'evt-101', feedbackToken: 'wed-felix-2026', guestName: 'Kavitha S.', overallRating: 5, venueRating: 5, cateringRating: 5, decorationRating: 5, comments: 'The banana leaf feast and ocean deck venue were truly magnificent!', createdAt: new Date().toISOString() },
 ];
 
+function deduplicateVendors(list: Vendor[]): Vendor[] {
+  const seenIds = new Set<string>();
+  const seenNameCats = new Set<string>();
+  const result: Vendor[] = [];
+
+  for (const v of list) {
+    if (!v || !v.id) continue;
+    if (seenIds.has(v.id)) continue;
+    const nameCatKey = `${(v.businessName || '').toLowerCase().trim()}||${(v.category || '').toLowerCase().trim()}||${(v.location?.city || '').toLowerCase().trim()}`;
+    if (seenNameCats.has(nameCatKey)) continue;
+
+    seenIds.add(v.id);
+    seenNameCats.add(nameCatKey);
+    result.push(v);
+  }
+  return result;
+}
+
 export function App() {
   const [activeTab, setActiveTab] = useState<string>('marketplace');
-  const [vendors, setVendors] = useState<Vendor[]>(INITIAL_VENDORS);
+  const [vendors, setVendors] = useState<Vendor[]>(() => deduplicateVendors(INITIAL_VENDORS));
   const [vendorsLoading, setVendorsLoading] = useState(false);
   const [events, setEvents] = useState<Event[]>([]);
   const [eventsLoading, setEventsLoading] = useState(false);
@@ -546,7 +564,7 @@ export function App() {
         if (cancelled) return;
         const serverVendors = res.data?.vendors || [];
         if (serverVendors.length > 0) {
-          setVendors(serverVendors);
+          setVendors(deduplicateVendors(serverVendors));
         }
       })
       .catch((err) => {

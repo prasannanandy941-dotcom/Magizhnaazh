@@ -1,11 +1,7 @@
 {
   "version": "0.0.1",
   "configurations": [
-    {
-      "name": "vendor-web",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "--prefix", "apps/vendor-web"],
-      "port": 3001
-    }
+    { "name": "vendor-web", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev", "--workspace", "apps/vendor-web"], "port": 3001 },
+    { "name": "change-preview", "runtimeExecutable": "python", "runtimeArgs": ["-m", "http.server", "4623", "--directory", "C:/Users/prasa/AppData/Local/Temp/claude/C--Magizhnaazh/a3ca8ff6-d8c9-486f-8664-387051f7c784/scratchpad/preview"], "port": 4623 }
   ]
 }
