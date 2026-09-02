@@ -88,15 +88,25 @@ export interface VendorPackage {
 }
 
 // Structured details for a Corporate Event Services vendor's package (per event / head).
+// The add-on options each carry their OWN price (₹) so the vendor prices them
+// separately; a blank/0 price means the add-on is not offered.
 export interface CorporatePackageDetails {
   eventType?: string; // Conference / Product launch / Awards / Team outing
   numAttendees?: number;
-  avStageBranding?: boolean; // AV + stage + branding
-  registrationDesk?: boolean;
-  cateringCoordination?: boolean;
-  mcHost?: boolean; // MC / host
   numDays?: number;
+  avStageBranding?: number; // price (₹) for AV + stage + branding
+  registrationDesk?: number; // price (₹) for the registration desk
+  cateringCoordination?: number; // price (₹) for catering coordination
+  mcHost?: number; // price (₹) for MC / host
 }
+
+// The Corporate add-on options that each take their own price, in display order.
+export const CORPORATE_ADDONS = [
+  { key: 'avStageBranding', label: 'AV + stage + branding' },
+  { key: 'registrationDesk', label: 'Registration desk' },
+  { key: 'cateringCoordination', label: 'Catering coordination' },
+  { key: 'mcHost', label: 'MC / host' },
+] as const;
 
 // Option set for the Corporate Event Services package form.
 export const CORPORATE_EVENT_TYPES = ['Conference', 'Product launch', 'Awards', 'Team outing'] as const;

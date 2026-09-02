@@ -259,15 +259,16 @@ const vendorPackageSchema = new Schema(
       guestManagement: Boolean,
       planningMeetings: Number,
     },
-    // Corporate Event Services-only structured details.
+    // Corporate Event Services-only structured details. Each add-on carries its
+    // own price (₹) so they're priced separately.
     corporate: {
       eventType: String,
       numAttendees: Number,
-      avStageBranding: Boolean,
-      registrationDesk: Boolean,
-      cateringCoordination: Boolean,
-      mcHost: Boolean,
       numDays: Number,
+      avStageBranding: Number,
+      registrationDesk: Number,
+      cateringCoordination: Number,
+      mcHost: Number,
     },
   },
   { _id: false }

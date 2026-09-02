@@ -1471,9 +1471,10 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
 
                       {pkg.corporate && (() => {
                         const c = pkg.corporate;
-                        const incl: [string, boolean | undefined][] = [
+                        const addons: [string, number | undefined][] = [
                           ['AV + stage + branding', c.avStageBranding], ['Registration desk', c.registrationDesk], ['Catering coordination', c.cateringCoordination], ['MC / host', c.mcHost],
                         ];
+                        const offered = addons.filter(([, v]) => typeof v === 'number');
                         return (
                           <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2" onClick={(e) => e.stopPropagation()}>
                             <span className="text-[10px] font-bold text-slate-400 uppercase block">Event details</span>
@@ -1484,10 +1485,14 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                               {c.numAttendees ? <div>Attendees: <span className="text-white font-semibold">{c.numAttendees}</span></div> : null}
                               {c.numDays ? <div>Days: <span className="text-white font-semibold">{c.numDays}</span></div> : null}
                             </div>
-                            {incl.some(([, v]) => v !== undefined) && (
-                              <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px]">
-                                {incl.filter(([, v]) => v !== undefined).map(([label, v]) => (
-                                  <span key={label} className="text-slate-400">{label}: <b className={v ? 'text-emerald-400' : 'text-slate-500'}>{v ? 'Yes' : 'No'}</b></span>
+                            {offered.length > 0 && (
+                              <div className="space-y-1">
+                                <span className="text-[10px] font-bold text-slate-500 uppercase block">Add-ons</span>
+                                {offered.map(([label, v]) => (
+                                  <div key={label} className="flex items-center justify-between text-[11px]">
+                                    <span className="text-slate-400">{label}</span>
+                                    <span className="text-amber-300 font-semibold">{v === 0 ? 'Included' : `₹${(v as number).toLocaleString('en-IN')}`}</span>
+                                  </div>
                                 ))}
                               </div>
                             )}
