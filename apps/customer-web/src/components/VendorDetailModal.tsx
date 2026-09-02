@@ -343,26 +343,27 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto">
-      <div className="glass-card max-w-4xl w-full rounded-3xl border border-amber-500/30 shadow-2xl shadow-[0_0_60px_-15px_rgba(245,158,11,0.4)] overflow-hidden my-8 max-h-[90vh] flex flex-col">
-        <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/60">
+      <div className="glass-card max-w-4xl w-full rounded-3xl border border-amber-500/30 shadow-2xl shadow-[0_0_60px_-15px_rgba(245,158,11,0.4)] overflow-hidden my-8 max-h-[90vh] flex flex-col bg-gradient-to-b from-[#1b1030] via-[#140b22] to-[#0d0716]">
+        <div className="relative px-6 py-4 border-b border-amber-500/20 flex items-center justify-between bg-gradient-to-r from-[#241541] via-[#1a1030] to-[#241541]">
+          <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-400/60 to-transparent"></div>
           <div>
-            <span className="text-xs font-semibold text-indigo-400 uppercase tracking-wider">{vendor.category}</span>
-            <h2 className="font-display font-bold text-2xl text-white">{vendor.businessName}</h2>
+            <span className="text-xs font-semibold text-amber-400 uppercase tracking-wider">{vendor.category}</span>
+            <h2 className="font-display font-bold text-2xl bg-gradient-to-r from-amber-100 via-white to-amber-200 bg-clip-text text-transparent">{vendor.businessName}</h2>
           </div>
 
           <button
             onClick={onClose}
-            className="w-9 h-9 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition-colors"
+            className="w-9 h-9 rounded-full bg-slate-800/80 border border-amber-500/20 text-slate-300 hover:text-white hover:border-amber-400/50 flex items-center justify-center transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="flex items-center gap-4 px-6 border-b border-slate-800 bg-slate-950/50">
+        <div className="flex items-center gap-4 px-6 border-b border-amber-500/15 bg-[#120a1e]/70">
           <button
             onClick={() => setActiveTab('overview')}
             className={`py-3 font-semibold text-xs border-b-2 transition-colors ${
-              activeTab === 'overview' ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-slate-400 hover:text-white'
+              activeTab === 'overview' ? 'border-amber-500 text-amber-400' : 'border-transparent text-slate-400 hover:text-white'
             }`}
           >
             Overview
@@ -427,7 +428,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
             <button
               onClick={() => setActiveTab('options')}
               className={`py-3 font-semibold text-xs border-b-2 transition-colors flex items-center gap-1 ${
-                activeTab === 'options' ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-slate-400 hover:text-white'
+                activeTab === 'options' ? 'border-amber-500 text-amber-400' : 'border-transparent text-slate-400 hover:text-white'
               }`}
             >
               <Sparkles className="w-3.5 h-3.5" /> {servicesTabLabel(vendor.category)}
@@ -438,7 +439,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
             <button
               onClick={() => setActiveTab('services')}
               className={`py-3 font-semibold text-xs border-b-2 transition-colors flex items-center gap-1 ${
-                activeTab === 'services' ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-slate-400 hover:text-white'
+                activeTab === 'services' ? 'border-amber-500 text-amber-400' : 'border-transparent text-slate-400 hover:text-white'
               }`}
             >
               <ListChecks className="w-3.5 h-3.5" /> {servicesTabLabel(vendor.category)}
@@ -459,7 +460,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
           <button
             onClick={() => setActiveTab('packages')}
             className={`py-3 font-semibold text-xs border-b-2 transition-colors ${
-              activeTab === 'packages' ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-slate-400 hover:text-white'
+              activeTab === 'packages' ? 'border-amber-500 text-amber-400' : 'border-transparent text-slate-400 hover:text-white'
             }`}
           >
             {vendor.category === 'Venue' ? 'Halls' : 'Packages'} ({vendor.packages.length})
@@ -468,7 +469,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
           <button
             onClick={() => setActiveTab('gallery')}
             className={`py-3 font-semibold text-xs border-b-2 transition-colors ${
-              activeTab === 'gallery' ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-slate-400 hover:text-white'
+              activeTab === 'gallery' ? 'border-amber-500 text-amber-400' : 'border-transparent text-slate-400 hover:text-white'
             }`}
           >
             Gallery ({vendor.galleryImages.length + (vendor.galleryVideos?.length ?? 0)})
@@ -1867,12 +1868,13 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
           </div>
         )}
 
-        <div className="px-6 py-4 border-t border-slate-800 bg-slate-900/80 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="relative px-6 py-4 border-t border-amber-500/20 bg-gradient-to-r from-[#241541] via-[#1a1030] to-[#241541] flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="pointer-events-none absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-400/60 to-transparent"></div>
           <div>
             {/* The advance-and-pay footer shows only the advance amount + the
                 Book button. The selected package/hall summary now lives inside
                 the Packages tab itself. */}
-            <span className="text-[11px] font-bold text-slate-400 uppercase">{advanceLabel}</span>
+            <span className="text-[11px] font-bold text-amber-300/80 uppercase">{advanceLabel}</span>
             <div className="text-white font-bold text-lg">
               ₹{advanceAmountDue.toLocaleString('en-IN')}
             </div>
