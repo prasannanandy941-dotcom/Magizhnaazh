@@ -227,7 +227,7 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
           return (
             <div
               key={vendor.id}
-              className="glass-card glass-card-hover rounded-3xl overflow-hidden border border-slate-800 flex flex-col group"
+              className="glass-card glass-card-hover rounded-3xl overflow-hidden border border-amber-500/25 shadow-[0_0_40px_-20px_rgba(245,158,11,0.5)] hover:border-amber-400/50 hover:shadow-[0_0_45px_-14px_rgba(245,158,11,0.55)] transition-all flex flex-col group"
             >
               <div className="relative h-56 w-full overflow-hidden bg-slate-900">
                 <img

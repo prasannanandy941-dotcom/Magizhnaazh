@@ -343,7 +343,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto">
-      <div className="glass-card max-w-4xl w-full rounded-3xl border border-slate-800 shadow-2xl overflow-hidden my-8 max-h-[90vh] flex flex-col">
+      <div className="glass-card max-w-4xl w-full rounded-3xl border border-amber-500/30 shadow-2xl shadow-[0_0_60px_-15px_rgba(245,158,11,0.4)] overflow-hidden my-8 max-h-[90vh] flex flex-col">
         <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/60">
           <div>
             <span className="text-xs font-semibold text-indigo-400 uppercase tracking-wider">{vendor.category}</span>
