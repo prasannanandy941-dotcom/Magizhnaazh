@@ -4257,10 +4257,17 @@ export function App() {
                         {AVAILABILITY_SLOTS.map((s) => {
                           const on = offered.includes(s.id);
                           return (
-                            <button key={s.id} type="button" onClick={() => toggleDateSlot(d, s.id)}
-                              className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold border text-left transition-colors ${on ? 'bg-emerald-500 text-slate-950 border-emerald-500' : 'bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-600'}`}>
-                              <span className="block">{s.label}</span>
-                              <span className={`block text-[10px] font-normal ${on ? 'text-emerald-900' : 'text-slate-500'}`}>{s.time}</span>
+                            <button
+                              key={s.id}
+                              type="button"
+                              onClick={() => toggleDateSlot(d, s.id)}
+                              className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+                                on
+                                  ? 'bg-emerald-500 text-slate-950 border-emerald-500 font-bold'
+                                  : 'bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-600'
+                              }`}
+                            >
+                              {s.label}
                             </button>
                           );
                         })}

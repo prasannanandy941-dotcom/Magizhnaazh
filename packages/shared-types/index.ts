@@ -692,12 +692,14 @@ export interface BookedSlot {
 }
 
 // The time-of-day slots a date can be booked in. Booking one leaves the others
+// The time-of-day slots a date can be booked in. Booking one leaves the others
 // on that day open. Single source of truth for the customer picker, the vendor
 // availability view, and the booking service's blocking logic.
 export const AVAILABILITY_SLOTS = [
-  { id: 'morning', label: 'Morning', time: '6:00 AM – 1:00 PM' },
-  { id: 'afternoon', label: 'Afternoon', time: '1:00 PM – 5:00 PM' },
-  { id: 'evening', label: 'Evening', time: '5:00 PM – 11:00 PM' },
+  { id: 'morning', label: 'Morning' },
+  { id: 'afternoon', label: 'Afternoon' },
+  { id: 'evening', label: 'Evening' },
+  { id: 'fullday', label: 'Full Day' },
 ] as const;
 
 export type AvailabilitySlotId = (typeof AVAILABILITY_SLOTS)[number]['id'];
@@ -710,7 +712,10 @@ export function isSlotBooked(
   slot: string,
 ): boolean {
   if ((vendor.bookedDates || []).includes(date)) return true;
-  return (vendor.bookedSlots || []).some((b) => b.date === date && b.slot === slot);
+  const booked = (vendor.bookedSlots || []).filter((b) => b.date === date).map((b) => b.slot);
+  if (booked.includes('fullday')) return true;
+  if (slot === 'fullday' && booked.length > 0) return true;
+  return booked.includes(slot);
 }
 
 // The slot ids the vendor OFFERS on a date (defaults to all slots when the
@@ -731,10 +736,10 @@ export function slotLabel(id?: string): string {
   return AVAILABILITY_SLOTS.find((s) => s.id === id)?.label || '';
 }
 
-// Label + time for a slot id (e.g. 'Morning (6:00 AM – 1:00 PM)'); '' if unknown.
+// Label for a slot id (e.g. 'Morning', 'Full Day'); '' if unknown.
 export function slotLabelWithTime(id?: string): string {
   const s = AVAILABILITY_SLOTS.find((x) => x.id === id);
-  return s ? `${s.label} (${s.time})` : '';
+  return s ? s.label : '';
 }
 
 // A single priced item a vendor lists under one of their offered options —

@@ -1848,16 +1848,15 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                         type="button"
                         disabled={booked}
                         onClick={() => setSelectedSlot(s.id)}
-                        className={`px-3 py-2 rounded-xl text-xs font-semibold border text-left transition-colors ${
+                        className={`px-3.5 py-2 rounded-xl text-xs font-semibold border text-center transition-colors ${
                           booked
                             ? 'bg-slate-950 border-slate-800 text-slate-600 line-through cursor-not-allowed'
                             : active
-                              ? 'bg-indigo-600 border-indigo-600 text-white'
+                              ? 'bg-indigo-600 border-indigo-600 text-white font-bold'
                               : 'bg-slate-900 border-slate-800 text-slate-300 hover:border-indigo-500/50'
                         }`}
                       >
-                        <span className="block">{s.label}{booked ? ' — Booked' : ''}</span>
-                        <span className={`block text-[10px] font-normal ${booked ? 'text-slate-700' : active ? 'text-indigo-100' : 'text-slate-500'}`}>{s.time}</span>
+                        {s.label}{booked ? ' — Booked' : ''}
                       </button>
                     );
                   })}
