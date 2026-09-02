@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Store, Star, Upload, Check, LogOut, Loader2, Plus, SlidersHorizontal, ChevronDown, Receipt, X, Bell, ShieldCheck, Clock as ClockIcon, AlertCircle, FileText, CalendarDays } from 'lucide-react';
+import { Store, Star, Upload, Check, LogOut, Loader2, Plus, SlidersHorizontal, ChevronDown, Receipt, X, Bell, ShieldCheck, Clock as ClockIcon, AlertCircle, FileText, CalendarDays, Sparkles } from 'lucide-react';
 import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, VendorDeal, OfferedOptionItem, VENDOR_CATEGORIES, CATEGORY_OPTIONS, CATERING_OPTION_STYLE, MEDIA_QUALITY_OPTIONS, MEDIA_EQUIPMENT_OPTIONS, mediaExtraField, isDealLive, CATERING_MENU_TIERS, CATERING_FOOD_TYPES, CATERING_CUISINES, CATERING_LIVE_COUNTERS, CATERING_SERVICE_STYLES, slotLabelWithTime, AVAILABILITY_SLOTS, offeredSlotIds, VENUE_SESSIONS, VENUE_HALL_TYPES, VENUE_HALL_CLASSES, VENUE_CATERING_POLICIES, DECORATION_TIERS, DECORATION_THEMES, DECORATION_AREAS, DECORATION_FLOWER_TYPES, MAKEUP_TYPES, MAKEUP_FINISHES, MEDIA_TIERS, MEDIA_COVERAGE, MEDIA_STYLES, TRANSPORT_TIERS, TRANSPORT_VEHICLE_TYPES, TRANSPORT_PRICING_BASIS, TRANSPORT_USES, PRIEST_CEREMONY_TYPES, PRIEST_LANGUAGES, INVITATION_TIERS, INVITATION_TYPES, INVITATION_DESIGNS, INVITATION_ADDONS, INVITATION_LANGUAGES, PRINTING_PRODUCTS, PRINTING_FINISHES, RETURN_GIFTS_TIERS, RETURN_GIFT_TYPES, ENTERTAINMENT_ACT_TYPES, MUSIC_DJ_TIERS, MUSIC_DJ_TYPES, MUSIC_DJ_VENUE_TYPES, LIGHTING_TIERS, LIGHTING_TYPES, FLOWERS_VARIETIES, FLOWERS_ITEMS, FLOWERS_KINDS, MEHENDI_TIERS, MEHENDI_TYPES, MEHENDI_INTRICACY, EVENT_HOST_EVENT_TYPES, EVENT_HOST_LANGUAGES, EVENT_HOST_MODES, SECURITY_TYPES, SECURITY_GENDERS, RENTAL_ITEMS, UTENSILS_MATERIALS, UTENSILS_VESSEL_TYPES, WEDDING_PLANNER_SCOPES, CORPORATE_EVENT_TYPES } from '../../../packages/shared-types';
 import { STATIC_CITY_GROUPS } from '../../../packages/shared-utils';
 import { AuthGate } from './components/AuthGate';
@@ -1631,83 +1631,104 @@ export function App() {
 
       {!vendorLoading && !loadError && vendorNotFound && (
         <main className="flex-1 max-w-xl mx-auto px-4 py-16 w-full">
-          <div className="glass-card p-8 rounded-3xl border border-slate-800 space-y-4">
-            <div className="text-center space-y-1">
-              <h2 className="font-display font-bold text-xl text-white">Set Up Your Business Listing</h2>
-              <p className="text-xs text-slate-400">
-                Welcome{user?.name ? `, ${user.name}` : ''}! Your account doesn't have a
-                marketplace listing yet. Add a few details to create it and open your dashboard.
+          {/* Auspicious gold-framed onboarding card — warm, celebratory welcome. */}
+          <div className="relative rounded-[28px] p-[1.5px] bg-gradient-to-br from-amber-300/80 via-amber-500/25 to-rose-500/50 shadow-[0_0_70px_-18px_rgba(245,158,11,0.55)]">
+            <div className="relative overflow-hidden rounded-[26px] bg-gradient-to-b from-[#1c1030] via-[#160c24] to-[#0a0611] p-8 space-y-5">
+              {/* soft festive glow blobs */}
+              <div className="pointer-events-none absolute -top-20 -right-12 w-52 h-52 rounded-full bg-amber-500/20 blur-3xl"></div>
+              <div className="pointer-events-none absolute -bottom-20 -left-12 w-52 h-52 rounded-full bg-rose-500/15 blur-3xl"></div>
+              {/* faint corner flourishes */}
+              <Sparkles className="pointer-events-none absolute top-5 left-5 w-4 h-4 text-amber-400/30" />
+              <Sparkles className="pointer-events-none absolute bottom-5 right-5 w-4 h-4 text-amber-400/30" />
+
+              <div className="relative text-center space-y-3">
+                <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-amber-200 via-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/40 ring-4 ring-amber-400/10">
+                  <Store className="w-8 h-8 text-slate-950" />
+                </div>
+                {/* decorative divider — a small auspicious motif */}
+                <div className="flex items-center justify-center gap-2 text-amber-400/80">
+                  <span className="h-px w-10 bg-gradient-to-r from-transparent to-amber-400/70"></span>
+                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                  <span className="h-px w-10 bg-gradient-to-l from-transparent to-amber-400/70"></span>
+                </div>
+                <h2 className="font-display font-extrabold text-2xl bg-gradient-to-r from-amber-200 via-amber-400 to-amber-200 bg-clip-text text-transparent">
+                  Set Up Your Business Listing
+                </h2>
+                <p className="text-xs text-slate-300/85 leading-relaxed max-w-sm mx-auto">
+                  Welcome{user?.name ? `, ${user.name}` : ''}! Your account doesn't have a
+                  marketplace listing yet. Add a few details to create it and open your dashboard.
+                </p>
+              </div>
+
+              <div className="relative">
+                <label className="block text-xs font-semibold text-amber-200/70 mb-1">Business Name</label>
+                <input
+                  type="text"
+                  value={businessName}
+                  onChange={(e) => setBusinessName(e.target.value)}
+                  placeholder="e.g. Rohini Caterers"
+                  className="w-full p-3 rounded-xl bg-slate-950/60 border border-amber-500/20 text-white font-bold text-sm placeholder:text-slate-500 focus:outline-none focus:border-amber-400/70 focus:ring-2 focus:ring-amber-500/25 transition-colors"
+                />
+              </div>
+
+              <div className="relative grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-amber-200/70 mb-1">Category</label>
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full p-3 rounded-xl bg-slate-950/60 border border-amber-500/20 text-white font-semibold text-xs focus:outline-none focus:border-amber-400/70 focus:ring-2 focus:ring-amber-500/25 transition-colors"
+                  >
+                    {VENDOR_CATEGORIES.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-amber-200/70 mb-1">City / Locality</label>
+                  <select
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    className="w-full p-3 rounded-xl bg-slate-950/60 border border-amber-500/20 text-white font-semibold text-xs focus:outline-none focus:border-amber-400/70 focus:ring-2 focus:ring-amber-500/25 transition-colors"
+                  >
+                    {STATIC_CITY_GROUPS.map(([state, cities]) => (
+                      <optgroup key={state} label={state} className="bg-slate-900">
+                        {cities.map((c) => (
+                          <option key={`${state}-${c}`} value={c} className="bg-slate-900">{c}</option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="relative">
+                <label className="block text-xs font-semibold text-amber-200/70 mb-1">Short Description <span className="text-slate-500 font-normal">(optional)</span></label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={3}
+                  placeholder="Tell customers what your business offers."
+                  className="w-full p-3 rounded-xl bg-slate-950/60 border border-amber-500/20 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-amber-400/70 focus:ring-2 focus:ring-amber-500/25 transition-colors"
+                />
+              </div>
+
+              {createNotice && (
+                <p className="relative text-xs text-rose-400 text-center">{createNotice}</p>
+              )}
+
+              <button
+                onClick={handleCreateListing}
+                disabled={creatingListing}
+                className="shine-sweep relative w-full flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 text-slate-950 font-extrabold text-sm shadow-lg shadow-amber-500/30 hover:brightness-105 disabled:opacity-60 transition"
+              >
+                {creatingListing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                {creatingListing ? 'Creating your listing…' : 'Create Listing & Continue'}
+              </button>
+              <p className="relative text-[11px] text-slate-500 text-center">
+                You can edit all of this later in Business Profile.
               </p>
             </div>
-
-            <div>
-              <label className="block text-xs text-slate-400 mb-1">Business Name</label>
-              <input
-                type="text"
-                value={businessName}
-                onChange={(e) => setBusinessName(e.target.value)}
-                placeholder="e.g. Rohini Caterers"
-                className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white font-bold text-sm"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs text-slate-400 mb-1">Category</label>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white font-semibold text-xs"
-                >
-                  {VENDOR_CATEGORIES.map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs text-slate-400 mb-1">City / Locality</label>
-                <select
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white font-semibold text-xs"
-                >
-                  {STATIC_CITY_GROUPS.map(([state, cities]) => (
-                    <optgroup key={state} label={state} className="bg-slate-900">
-                      {cities.map((c) => (
-                        <option key={`${state}-${c}`} value={c} className="bg-slate-900">{c}</option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs text-slate-400 mb-1">Short Description <span className="text-slate-600">(optional)</span></label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={3}
-                placeholder="Tell customers what your business offers."
-                className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs"
-              />
-            </div>
-
-            {createNotice && (
-              <p className="text-xs text-rose-400 text-center">{createNotice}</p>
-            )}
-
-            <button
-              onClick={handleCreateListing}
-              disabled={creatingListing}
-              className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-amber-500 text-slate-950 font-bold text-sm shadow-md hover:brightness-110 disabled:opacity-60"
-            >
-              {creatingListing && <Loader2 className="w-4 h-4 animate-spin" />}
-              {creatingListing ? 'Creating your listing…' : 'Create Listing & Continue'}
-            </button>
-            <p className="text-[11px] text-slate-600 text-center">
-              You can edit all of this later in Business Profile.
-            </p>
           </div>
         </main>
       )}
