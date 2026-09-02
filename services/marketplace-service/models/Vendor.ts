@@ -263,6 +263,7 @@ const vendorPackageSchema = new Schema(
     // own price (₹) so they're priced separately.
     corporate: {
       eventType: String,
+      eventTypePrices: Schema.Types.Mixed,
       numAttendees: Number,
       numDays: Number,
       avStageBranding: Number,

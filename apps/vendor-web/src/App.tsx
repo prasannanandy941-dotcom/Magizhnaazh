@@ -1162,6 +1162,13 @@ export function App() {
   // Corporate Event Services packages carry structured details.
   const updatePackageCorporate = (pkgId: string, field: string, value: any) =>
     setPackages((prev) => prev.map((p) => (p.id === pkgId ? { ...p, corporate: { ...(p.corporate || {}), [field]: value } } : p)));
+  const updateCorporateEventPrice = (pkgId: string, type: string, value: number | undefined) =>
+    setPackages((prev) => prev.map((p) => {
+      if (p.id !== pkgId) return p;
+      const prices: Record<string, number> = { ...(p.corporate?.eventTypePrices || {}) };
+      if (value === undefined) delete prices[type]; else prices[type] = value;
+      return { ...p, corporate: { ...(p.corporate || {}), eventTypePrices: prices } };
+    }));
   const toggleUtensilsVessel = (pkgId: string, item: string) =>
     setPackages((prev) => prev.map((p) => {
       if (p.id !== pkgId) return p;
@@ -3838,10 +3845,18 @@ export function App() {
                           <p className="text-[10px] text-amber-400 uppercase font-bold">Event details</p>
 
                           <div>
-                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Event type</label>
-                            <div className="flex flex-wrap gap-2">
+                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-2">Event type — price for each (leave blank if not offered)</label>
+                            <div className="grid grid-cols-2 gap-2">
                               {CORPORATE_EVENT_TYPES.map((s) => (
-                                <button type="button" key={s} onClick={() => updatePackageCorporate(p.id, 'eventType', s)} className={catChip(p.corporate?.eventType === s)}>{s}</button>
+                                <div key={s}>
+                                  <label className="block text-[10px] text-slate-500 mb-1">{s}</label>
+                                  <div className="relative">
+                                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 text-sm">₹</span>
+                                    <input type="number" min={0} value={p.corporate?.eventTypePrices?.[s] ?? ''}
+                                      onChange={(e) => updateCorporateEventPrice(p.id, s, e.target.value === '' ? undefined : Number(e.target.value))}
+                                      placeholder="Price" className="w-full pl-6 pr-2 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                                  </div>
+                                </div>
                               ))}
                             </div>
                           </div>
