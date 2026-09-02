@@ -1816,11 +1816,10 @@ export function App() {
         {activeTab === 'dashboard' && (
           <div className="space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="relative overflow-hidden rounded-2xl border border-amber-500/15 bg-gradient-to-br from-amber-500/[0.06] via-slate-900/70 to-slate-950/90 p-5 shadow-[0_0_22px_-16px_rgba(245,158,11,0.3)]">
-                <div className="pointer-events-none absolute -top-8 -right-8 w-24 h-24 rounded-full bg-amber-500/10 blur-2xl"></div>
+              <div className="glass-card relative overflow-hidden rounded-2xl p-5">
                 <div className="relative flex items-center justify-between gap-3">
                   <div>
-                    <span className="text-xs font-bold text-amber-200/70 uppercase tracking-wide">Confirmed Bookings</span>
+                    <span className="text-xs font-bold text-[#cbb06a] uppercase tracking-wide">Confirmed Bookings</span>
                     <div className="font-display font-extrabold text-3xl text-white mt-1">{confirmedBookings.length}</div>
                   </div>
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-300 to-amber-600 flex items-center justify-center shadow-md shadow-amber-500/30 shrink-0">
@@ -1829,11 +1828,10 @@ export function App() {
                 </div>
               </div>
 
-              <div className="relative overflow-hidden rounded-2xl border border-amber-500/15 bg-gradient-to-br from-amber-500/[0.06] via-slate-900/70 to-slate-950/90 p-5 shadow-[0_0_22px_-16px_rgba(245,158,11,0.3)]">
-                <div className="pointer-events-none absolute -top-8 -right-8 w-24 h-24 rounded-full bg-amber-500/10 blur-2xl"></div>
+              <div className="glass-card relative overflow-hidden rounded-2xl p-5">
                 <div className="relative flex items-center justify-between gap-3">
                   <div>
-                    <span className="text-xs font-bold text-amber-200/70 uppercase tracking-wide">Pending Quotes</span>
+                    <span className="text-xs font-bold text-[#cbb06a] uppercase tracking-wide">Pending Quotes</span>
                     <div className="font-display font-extrabold text-3xl text-amber-400 mt-1">
                       {bookings.filter((b) => b.status === 'quote_requested' || b.status === 'enquiry').length}
                     </div>
@@ -1844,11 +1842,10 @@ export function App() {
                 </div>
               </div>
 
-              <div className="relative overflow-hidden rounded-2xl border border-amber-500/15 bg-gradient-to-br from-amber-500/[0.06] via-slate-900/70 to-slate-950/90 p-5 shadow-[0_0_22px_-16px_rgba(245,158,11,0.3)]">
-                <div className="pointer-events-none absolute -top-8 -right-8 w-24 h-24 rounded-full bg-amber-500/10 blur-2xl"></div>
+              <div className="glass-card relative overflow-hidden rounded-2xl p-5">
                 <div className="relative flex items-center justify-between gap-3">
                   <div>
-                    <span className="text-xs font-bold text-amber-200/70 uppercase tracking-wide">Partner Rating</span>
+                    <span className="text-xs font-bold text-[#cbb06a] uppercase tracking-wide">Partner Rating</span>
                     <div className="font-display font-extrabold text-3xl text-amber-400 mt-1 flex items-center gap-1.5">
                       <Star className="w-6 h-6 fill-amber-400" /> {myVendor.ratingAverage} <span className="text-base text-slate-300 font-bold">({myVendor.reviewCount} Reviews)</span>
                     </div>
@@ -1903,7 +1900,7 @@ export function App() {
               </div>
             )}
 
-            <div className="relative rounded-3xl border border-amber-500/15 bg-gradient-to-b from-amber-500/[0.04] via-slate-900/60 to-slate-950/80 shadow-[0_0_26px_-20px_rgba(245,158,11,0.25)] overflow-hidden">
+            <div className="glass-card relative rounded-3xl overflow-hidden">
               <div className="p-6 border-b border-amber-500/15 flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-300 to-amber-600 flex items-center justify-center shadow-md shadow-amber-500/30 shrink-0">
                   <Receipt className="w-4 h-4 text-slate-950" />
