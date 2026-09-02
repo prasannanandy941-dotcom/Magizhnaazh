@@ -1529,7 +1529,7 @@ export function App() {
       </div>
 
       {/* Header — auspicious gold banner */}
-      <header className="sticky top-0 z-50 relative overflow-hidden border-b border-amber-500/30 bg-gradient-to-r from-[#1a1030] via-[#140b22] to-[#1a1030] backdrop-blur-xl shadow-[0_6px_30px_-12px_rgba(245,158,11,0.4)]">
+      <header className="sticky top-0 z-50 relative overflow-hidden border-b border-amber-500/30 bg-gradient-to-r from-[#1a1030] via-[#140b22] to-[#1a1030] backdrop-blur-xl shadow-[0_4px_22px_-14px_rgba(245,158,11,0.28)]">
         {/* soft gold glow + decorative bottom accent line */}
         <div className="pointer-events-none absolute -top-16 left-1/2 -translate-x-1/2 w-[36rem] h-32 rounded-full bg-amber-500/10 blur-3xl"></div>
         <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-400/70 to-transparent"></div>
@@ -1637,7 +1637,7 @@ export function App() {
       {!vendorLoading && !loadError && vendorNotFound && (
         <main className="flex-1 max-w-xl mx-auto px-4 py-16 w-full">
           {/* Auspicious gold-framed onboarding card — warm, celebratory welcome. */}
-          <div className="relative rounded-[28px] p-[1.5px] bg-gradient-to-br from-amber-300/80 via-amber-500/25 to-rose-500/50 shadow-[0_0_70px_-18px_rgba(245,158,11,0.55)]">
+          <div className="relative rounded-[28px] p-[1.5px] bg-gradient-to-br from-amber-300/80 via-amber-500/25 to-rose-500/50 shadow-[0_0_40px_-20px_rgba(245,158,11,0.35)]">
             <div className="relative overflow-hidden rounded-[26px] bg-gradient-to-b from-[#1c1030] via-[#160c24] to-[#0a0611] p-8 space-y-5">
               {/* soft festive glow blobs */}
               <div className="pointer-events-none absolute -top-20 -right-12 w-52 h-52 rounded-full bg-amber-500/20 blur-3xl"></div>
@@ -1816,7 +1816,7 @@ export function App() {
         {activeTab === 'dashboard' && (
           <div className="space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="relative overflow-hidden rounded-2xl border border-amber-500/25 bg-gradient-to-br from-amber-500/10 via-slate-900/70 to-slate-950/90 p-5 shadow-[0_0_35px_-14px_rgba(245,158,11,0.45)]">
+              <div className="relative overflow-hidden rounded-2xl border border-amber-500/15 bg-gradient-to-br from-amber-500/[0.06] via-slate-900/70 to-slate-950/90 p-5 shadow-[0_0_22px_-16px_rgba(245,158,11,0.3)]">
                 <div className="pointer-events-none absolute -top-8 -right-8 w-24 h-24 rounded-full bg-amber-500/10 blur-2xl"></div>
                 <div className="relative flex items-center justify-between gap-3">
                   <div>
@@ -1829,7 +1829,7 @@ export function App() {
                 </div>
               </div>
 
-              <div className="relative overflow-hidden rounded-2xl border border-amber-500/25 bg-gradient-to-br from-amber-500/10 via-slate-900/70 to-slate-950/90 p-5 shadow-[0_0_35px_-14px_rgba(245,158,11,0.45)]">
+              <div className="relative overflow-hidden rounded-2xl border border-amber-500/15 bg-gradient-to-br from-amber-500/[0.06] via-slate-900/70 to-slate-950/90 p-5 shadow-[0_0_22px_-16px_rgba(245,158,11,0.3)]">
                 <div className="pointer-events-none absolute -top-8 -right-8 w-24 h-24 rounded-full bg-amber-500/10 blur-2xl"></div>
                 <div className="relative flex items-center justify-between gap-3">
                   <div>
@@ -1844,7 +1844,7 @@ export function App() {
                 </div>
               </div>
 
-              <div className="relative overflow-hidden rounded-2xl border border-amber-500/25 bg-gradient-to-br from-amber-500/10 via-slate-900/70 to-slate-950/90 p-5 shadow-[0_0_35px_-14px_rgba(245,158,11,0.45)]">
+              <div className="relative overflow-hidden rounded-2xl border border-amber-500/15 bg-gradient-to-br from-amber-500/[0.06] via-slate-900/70 to-slate-950/90 p-5 shadow-[0_0_22px_-16px_rgba(245,158,11,0.3)]">
                 <div className="pointer-events-none absolute -top-8 -right-8 w-24 h-24 rounded-full bg-amber-500/10 blur-2xl"></div>
                 <div className="relative flex items-center justify-between gap-3">
                   <div>
@@ -1903,7 +1903,7 @@ export function App() {
               </div>
             )}
 
-            <div className="relative rounded-3xl border border-amber-500/25 bg-gradient-to-b from-amber-500/[0.06] via-slate-900/60 to-slate-950/80 shadow-[0_0_45px_-18px_rgba(245,158,11,0.4)] overflow-hidden">
+            <div className="relative rounded-3xl border border-amber-500/15 bg-gradient-to-b from-amber-500/[0.04] via-slate-900/60 to-slate-950/80 shadow-[0_0_26px_-20px_rgba(245,158,11,0.25)] overflow-hidden">
               <div className="p-6 border-b border-amber-500/15 flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-300 to-amber-600 flex items-center justify-center shadow-md shadow-amber-500/30 shrink-0">
                   <Receipt className="w-4 h-4 text-slate-950" />
