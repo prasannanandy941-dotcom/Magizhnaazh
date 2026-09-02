@@ -1419,25 +1419,40 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                       {pkg.utensils && (() => {
                         const u = pkg.utensils;
                         const chip = 'text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200';
-                        const incl: [string, boolean | undefined][] = [
-                          ['Delivery + pickup', u.deliveryPickup], ['Cleaning included', u.cleaningIncluded],
-                        ];
                         return (
                           <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2" onClick={(e) => e.stopPropagation()}>
                             <span className="text-[10px] font-bold text-slate-400 uppercase block">Utensils details</span>
                             <div className="flex flex-wrap gap-1.5">
                               {u.material && <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-200 font-bold">{u.material}</span>}
-                              {(u.vesselTypes || []).map((v) => <span key={`u-${v}`} className={chip}>{v}</span>)}
+                              {!u.vesselTypePrices && (u.vesselTypes || []).map((v) => <span key={`u-${v}`} className={chip}>{v}</span>)}
                             </div>
+
+                            {u.vesselTypePrices && Object.keys(u.vesselTypePrices).length > 0 && (
+                              <div className="space-y-1">
+                                <span className="text-[10px] font-bold text-slate-500 uppercase block">Vessel types</span>
+                                {Object.entries(u.vesselTypePrices).map(([type, price]) => (
+                                  <div key={type} className="flex items-center justify-between text-[11px]">
+                                    <span className="text-slate-400">{type}</span>
+                                    <span className="text-amber-300 font-semibold">{price === 0 ? 'Included' : `₹${Number(price).toLocaleString('en-IN')}`}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
                             <div className="space-y-1 text-[11px] text-slate-300">
+                              {u.basePrice ? <div>Base rental: <span className="text-white font-semibold">₹{u.basePrice.toLocaleString('en-IN')}</span></div> : null}
                               {u.guestCount ? <div>Guest count served: <span className="text-white font-semibold">{u.guestCount}</span></div> : null}
                               {u.securityDeposit ? <div>Security deposit: <span className="text-white font-semibold">₹{u.securityDeposit.toLocaleString('en-IN')}</span></div> : null}
+                              {u.deliveryPickupPrice != null && (
+                                <div className="flex items-center justify-between">
+                                  <span className="text-slate-400">Delivery + pickup:</span>
+                                  <span className="text-emerald-400 font-semibold">{u.deliveryPickupPrice === 0 ? 'Free' : `₹${Number(u.deliveryPickupPrice).toLocaleString('en-IN')}`}</span>
+                                </div>
+                              )}
                             </div>
-                            {incl.some(([, v]) => v !== undefined) && (
-                              <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px]">
-                                {incl.filter(([, v]) => v !== undefined).map(([label, v]) => (
-                                  <span key={label} className="text-slate-400">{label}: <b className={v ? 'text-emerald-400' : 'text-slate-500'}>{v ? 'Yes' : 'No'}</b></span>
-                                ))}
+                            {u.cleaningIncluded !== undefined && (
+                              <div className="text-[11px] text-slate-400">
+                                Cleaning included: <b className={u.cleaningIncluded ? 'text-emerald-400' : 'text-slate-500'}>{u.cleaningIncluded ? 'Yes' : 'No'}</b>
                               </div>
                             )}
                           </div>

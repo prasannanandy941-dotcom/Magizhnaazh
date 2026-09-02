@@ -131,8 +131,11 @@ export const WEDDING_PLANNER_SCOPES = ['Day coordination', 'Partial', 'Full', 'D
 export interface UtensilsPackageDetails {
   material?: string; // Steel / Brass / Premium
   vesselTypes?: string[]; // Cooking vessels / Serving / Plates & tumblers / Banana-leaf holders
+  vesselTypePrices?: Record<string, number>; // price (₹) per vessel type offered
+  basePrice?: number; // Base rental price
   guestCount?: number; // guest count served
-  deliveryPickup?: boolean; // delivery + pickup
+  deliveryPickup?: boolean; // legacy boolean
+  deliveryPickupPrice?: number; // price (₹) for delivery + pickup
   cleaningIncluded?: boolean;
   securityDeposit?: number; // ₹
 }

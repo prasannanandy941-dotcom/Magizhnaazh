@@ -986,6 +986,13 @@ export function App() {
             const corporate = { ...(p.corporate || {}), basePrice: base };
             return { ...p, corporate, price: val };
           }
+          if (myVendor?.category === 'Utensils for Rent') {
+            const vesselPrices = Object.values(p.utensils?.vesselTypePrices || {}).reduce((a: number, b: any) => a + (Number(b) || 0), 0);
+            const delivery = Number(p.utensils?.deliveryPickupPrice) || 0;
+            const base = Math.max(0, val - (vesselPrices + delivery));
+            const utensils = { ...(p.utensils || {}), basePrice: base };
+            return { ...p, utensils, price: val };
+          }
           return { ...p, price: val };
         }
         if (field === 'durationHours') return { ...p, durationHours: raw === '' ? undefined : Number(raw) };
@@ -1163,8 +1170,31 @@ export function App() {
     }));
 
   // Utensils for Rent packages carry structured details.
+  // Total for a Utensils package = base price + sum of vessel type prices + delivery pickup price.
+  const utensilsTotal = (u?: any): number => {
+    if (!u) return 0;
+    const base = Number(u.basePrice) || 0;
+    const vesselPrices: number = Object.values(u.vesselTypePrices || {}).reduce<number>((a, b: any) => a + (Number(b) || 0), 0);
+    const delivery = Number(u.deliveryPickupPrice) || 0;
+    return base + vesselPrices + delivery;
+  };
   const updatePackageUtensils = (pkgId: string, field: string, value: any) =>
-    setPackages((prev) => prev.map((p) => (p.id === pkgId ? { ...p, utensils: { ...(p.utensils || {}), [field]: value } } : p)));
+    setPackages((prev) => prev.map((p) => {
+      if (p.id !== pkgId) return p;
+      const utensils = { ...(p.utensils || {}), [field]: value };
+      const calcTotal = utensilsTotal(utensils);
+      return { ...p, utensils, price: calcTotal > 0 ? calcTotal : (p.price || 0) };
+    }));
+  const updateUtensilsVesselPrice = (pkgId: string, type: string, value: number | undefined) =>
+    setPackages((prev) => prev.map((p) => {
+      if (p.id !== pkgId) return p;
+      const prices: Record<string, number> = { ...(p.utensils?.vesselTypePrices || {}) };
+      if (value === undefined) delete prices[type]; else prices[type] = value;
+      const vesselTypes = Object.keys(prices);
+      const utensils = { ...(p.utensils || {}), vesselTypePrices: prices, vesselTypes };
+      const calcTotal = utensilsTotal(utensils);
+      return { ...p, utensils, price: calcTotal > 0 ? calcTotal : (p.price || 0) };
+    }));
 
   // Wedding Planner packages carry structured details.
   const updatePackageWeddingPlanner = (pkgId: string, field: string, value: any) =>
@@ -1302,6 +1332,10 @@ export function App() {
       .map((p) => {
         if (myVendor.category === 'Corporate Event Services') {
           const calc = corporateTotal(p.corporate);
+          return { ...p, price: calc > 0 ? calc : (p.price || 0) };
+        }
+        if (myVendor.category === 'Utensils for Rent') {
+          const calc = utensilsTotal(p.utensils);
           return { ...p, price: calc > 0 ? calc : (p.price || 0) };
         }
         return p;
@@ -3785,10 +3819,15 @@ export function App() {
                         </div>
                       )}
 
-                      {/* Utensils for Rent: structured spec (replaces capacity + generic price tiers). */}
+                      {/* Utensils for Rent: structured spec (material, vessel type prices, guest count, delivery + pickup price, deposit, cleaning). */}
                       {myVendor?.category === 'Utensils for Rent' && (
-                        <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/40 p-3">
-                          <p className="text-[10px] text-amber-400 uppercase font-bold">Utensils details</p>
+                        <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/40 p-3.5">
+                          <div className="flex items-center justify-between">
+                            <p className="text-[10px] text-amber-400 uppercase font-bold">Utensils Details</p>
+                            <div className="text-[11px] font-bold text-slate-300">
+                              Total: <span className="text-amber-400 font-mono">₹{(p.price || utensilsTotal(p.utensils) || 0).toLocaleString('en-IN')}</span>
+                            </div>
+                          </div>
 
                           <div>
                             <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Material / Tier</label>
@@ -3800,75 +3839,116 @@ export function App() {
                           </div>
 
                           <div>
-                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Vessel Type</label>
-                            <div className="flex flex-wrap gap-2">
+                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-2">Vessel Types — price for each (leave blank if not offered)</label>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                               {UTENSILS_VESSEL_TYPES.map((v) => (
-                                <button type="button" key={v} onClick={() => toggleUtensilsVessel(p.id, v)} className={catChip((p.utensils?.vesselTypes || []).includes(v))}>{v}</button>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <label className="block text-[10px] text-slate-500 mb-1">Guest count served</label>
-                              <input type="number" min={0} value={p.utensils?.guestCount ?? ''} onChange={(e) => updatePackageUtensils(p.id, 'guestCount', e.target.value === '' ? undefined : Number(e.target.value))}
-                                placeholder="e.g. 100" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
-                            </div>
-                            <div>
-                              <label className="block text-[10px] text-slate-500 mb-1">Security deposit (₹)</label>
-                              <input type="number" min={0} value={p.utensils?.securityDeposit ?? ''} onChange={(e) => updatePackageUtensils(p.id, 'securityDeposit', e.target.value === '' ? undefined : Number(e.target.value))}
-                                placeholder="e.g. 3000" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-2">
-                            {([['deliveryPickup', 'Delivery + pickup'], ['cleaningIncluded', 'Cleaning included']] as const).map(([field, label]) => (
-                              <div key={field}>
-                                <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">{label}</label>
-                                <div className="flex gap-1.5">
-                                  <button type="button" onClick={() => updatePackageUtensils(p.id, field, true)} className={catChip((p.utensils as any)?.[field] === true)}>Yes</button>
-                                  <button type="button" onClick={() => updatePackageUtensils(p.id, field, false)} className={catChip((p.utensils as any)?.[field] === false)}>No</button>
+                                <div key={v}>
+                                  <label className="block text-[10px] text-slate-500 mb-1">{v}</label>
+                                  <div className="relative">
+                                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 text-sm">₹</span>
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      value={p.utensils?.vesselTypePrices?.[v] ?? ''}
+                                      onChange={(e) => updateUtensilsVesselPrice(p.id, v, e.target.value === '' ? undefined : Number(e.target.value))}
+                                      placeholder="Price"
+                                      className="w-full pl-6 pr-2 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm font-mono"
+                                    />
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Wedding Planner: structured spec (replaces capacity/duration + generic price tiers). */}
-                      {myVendor?.category === 'Wedding Planner' && (
-                        <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/40 p-3">
-                          <p className="text-[10px] text-amber-400 uppercase font-bold">Planning details</p>
-
-                          <div>
-                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Scope / Tier</label>
-                            <div className="flex flex-wrap gap-2">
-                              {WEDDING_PLANNER_SCOPES.map((s) => (
-                                <button type="button" key={s} onClick={() => updatePackageWeddingPlanner(p.id, 'scope', s)} className={catChip(p.weddingPlanner?.scope === s)}>{s}</button>
                               ))}
                             </div>
-                          </div>
-
-                          <div className="grid grid-cols-3 gap-2">
-                            {([['numFunctions', 'No. of functions'], ['teamSize', 'On-ground team size'], ['planningMeetings', 'Planning meetings']] as const).map(([field, label]) => (
-                              <div key={field}>
-                                <label className="block text-[10px] text-slate-500 mb-1">{label}</label>
-                                <input type="number" min={0} value={(p.weddingPlanner as any)?.[field] ?? ''} onChange={(e) => updatePackageWeddingPlanner(p.id, field, e.target.value === '' ? undefined : Number(e.target.value))}
-                                  placeholder="0" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
-                              </div>
-                            ))}
                           </div>
 
                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                            {([['vendorCoordination', 'Vendor coordination'], ['budgetManagement', 'Budget management'], ['guestManagement', 'Guest management / hospitality']] as const).map(([field, label]) => (
-                              <div key={field}>
-                                <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">{label}</label>
-                                <div className="flex gap-1.5">
-                                  <button type="button" onClick={() => updatePackageWeddingPlanner(p.id, field, true)} className={catChip((p.weddingPlanner as any)?.[field] === true)}>Yes</button>
-                                  <button type="button" onClick={() => updatePackageWeddingPlanner(p.id, field, false)} className={catChip((p.weddingPlanner as any)?.[field] === false)}>No</button>
-                                </div>
+                            <div>
+                              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Base Rental Price (₹)</label>
+                              <div className="relative">
+                                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 text-sm">₹</span>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={p.utensils?.basePrice ?? ''}
+                                  onChange={(e) => updatePackageUtensils(p.id, 'basePrice', e.target.value === '' ? undefined : Number(e.target.value))}
+                                  placeholder="e.g. 5000"
+                                  className="w-full pl-6 pr-2 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm font-mono"
+                                />
                               </div>
-                            ))}
+                            </div>
+                            <div>
+                              <label className="block text-[10px] text-slate-500 mb-1">Guest count served</label>
+                              <input
+                                type="number"
+                                min={0}
+                                value={p.utensils?.guestCount ?? ''}
+                                onChange={(e) => updatePackageUtensils(p.id, 'guestCount', e.target.value === '' ? undefined : Number(e.target.value))}
+                                placeholder="e.g. 100"
+                                className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] text-slate-500 mb-1">Security deposit (₹)</label>
+                              <input
+                                type="number"
+                                min={0}
+                                value={p.utensils?.securityDeposit ?? ''}
+                                onChange={(e) => updatePackageUtensils(p.id, 'securityDeposit', e.target.value === '' ? undefined : Number(e.target.value))}
+                                placeholder="e.g. 3000"
+                                className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm font-mono"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Delivery + Pickup Price (₹)</label>
+                              <div className="relative">
+                                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 text-sm">₹</span>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={p.utensils?.deliveryPickupPrice ?? ''}
+                                  onChange={(e) => {
+                                    const val = e.target.value === '' ? undefined : Number(e.target.value);
+                                    updatePackageUtensils(p.id, 'deliveryPickupPrice', val);
+                                    updatePackageUtensils(p.id, 'deliveryPickup', val !== undefined ? val >= 0 : false);
+                                  }}
+                                  placeholder="e.g. 1000 (0 for Free)"
+                                  className="w-full pl-6 pr-2 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm font-mono"
+                                />
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Cleaning Included</label>
+                              <div className="flex gap-1.5 pt-1">
+                                <button type="button" onClick={() => updatePackageUtensils(p.id, 'cleaningIncluded', true)} className={catChip((p.utensils as any)?.cleaningIncluded === true)}>Yes</button>
+                                <button type="button" onClick={() => updatePackageUtensils(p.id, 'cleaningIncluded', false)} className={catChip((p.utensils as any)?.cleaningIncluded === false)}>No</button>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Calculation Summary Box */}
+                          <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between text-xs flex-wrap gap-2">
+                            <div className="text-slate-400">
+                              <span>Vessels: </span>
+                              <span className="text-slate-200 font-semibold font-mono">
+                                ₹{Object.values(p.utensils?.vesselTypePrices || {}).reduce((a: number, b: any) => a + (Number(b) || 0), 0).toLocaleString('en-IN')}
+                              </span>
+                              {p.utensils?.basePrice ? (
+                                <>
+                                  <span> + Base: </span>
+                                  <span className="text-slate-200 font-semibold font-mono">₹{Number(p.utensils?.basePrice).toLocaleString('en-IN')}</span>
+                                </>
+                              ) : null}
+                              <span> + Delivery: </span>
+                              <span className="text-slate-200 font-semibold font-mono">
+                                ₹{(Number(p.utensils?.deliveryPickupPrice) || 0).toLocaleString('en-IN')}
+                              </span>
+                            </div>
+                            <div className="text-amber-400 font-bold font-mono text-sm">
+                              = Total: ₹{(p.price || utensilsTotal(p.utensils) || 0).toLocaleString('en-IN')}
+                            </div>
                           </div>
                         </div>
                       )}

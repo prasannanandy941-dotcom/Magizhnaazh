@@ -244,8 +244,11 @@ const vendorPackageSchema = new Schema(
     utensils: {
       material: String,
       vesselTypes: [String],
+      vesselTypePrices: Schema.Types.Mixed,
+      basePrice: Number,
       guestCount: Number,
       deliveryPickup: Boolean,
+      deliveryPickupPrice: Number,
       cleaningIncluded: Boolean,
       securityDeposit: Number,
     },
