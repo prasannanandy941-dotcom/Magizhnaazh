@@ -4105,8 +4105,6 @@ export function App() {
 
                       {myVendor?.category !== 'Catering' && (
                         <div>
-                          <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1.5">Hall / Function Photos</label>
-                          
                           {p.images && p.images.length > 0 && (
                             <div className="grid grid-cols-4 gap-2 mb-3">
                               {p.images.map((url) => (
