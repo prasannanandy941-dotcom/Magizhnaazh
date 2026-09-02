@@ -10,7 +10,7 @@ export function GoldSparkles({ count = 26 }: { count?: number }) {
   const particles = useMemo(
     () =>
       Array.from({ length: count }, (_, i) => {
-        const size = 2 + Math.random() * 4; // 2–6px
+        const size = 1 + Math.random() * 2; // 1–3px (tiny)
         return {
           id: i,
           left: Math.random() * 100, // %
@@ -38,7 +38,7 @@ export function GoldSparkles({ count = 26 }: { count?: number }) {
             background: p.bright
               ? 'radial-gradient(circle, #fff7e0 0%, #fbbf24 55%, rgba(251,191,36,0) 100%)'
               : 'radial-gradient(circle, #fde68a 0%, rgba(245,158,11,0.55) 60%, rgba(245,158,11,0) 100%)',
-            boxShadow: p.bright ? '0 0 6px 1px rgba(251,191,36,0.6)' : '0 0 4px 0 rgba(245,158,11,0.4)',
+            boxShadow: p.bright ? '0 0 3px 0.5px rgba(251,191,36,0.6)' : '0 0 2px 0 rgba(245,158,11,0.4)',
             animationDuration: `${p.duration}s`,
             animationDelay: `${p.delay}s`,
           }}
