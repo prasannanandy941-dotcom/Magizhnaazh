@@ -1656,7 +1656,7 @@ export function App() {
                   <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                   <span className="h-px w-10 bg-gradient-to-l from-transparent to-amber-400/70"></span>
                 </div>
-                <h2 className="font-display font-extrabold text-2xl bg-gradient-to-r from-amber-200 via-amber-400 to-amber-200 bg-clip-text text-transparent">
+                <h2 className="font-display font-extrabold text-2xl bg-gradient-to-r from-[#e9d5a0] via-[#f2e3ba] to-[#e9d5a0] bg-clip-text text-transparent">
                   Set Up Your Business Listing
                 </h2>
                 <p className="text-xs text-slate-300/85 leading-relaxed max-w-sm mx-auto">
@@ -1725,7 +1725,7 @@ export function App() {
               <button
                 onClick={handleCreateListing}
                 disabled={creatingListing}
-                className="shine-sweep relative w-full flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 text-slate-950 font-extrabold text-sm shadow-lg shadow-amber-500/30 hover:brightness-105 disabled:opacity-60 transition"
+                className="shine-sweep relative w-full flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-gradient-to-r from-[#e6c66e] to-[#d29f3c] text-slate-950 font-bold text-sm shadow-md shadow-amber-900/20 hover:brightness-105 disabled:opacity-60 transition"
               >
                 {creatingListing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                 {creatingListing ? 'Creating your listing…' : 'Create Listing & Continue'}
