@@ -459,14 +459,16 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
             </button>
           )}
 
-          <button
-            onClick={() => setActiveTab('packages')}
-            className={`py-3 font-semibold text-xs border-b-2 transition-colors ${
-              activeTab === 'packages' ? 'border-amber-500 text-amber-400' : 'border-transparent text-slate-400 hover:text-white'
-            }`}
-          >
-            {vendor.category === 'Venue' ? 'Halls' : 'Packages'} ({vendor.packages.length})
-          </button>
+          {vendor.category !== 'Wedding Planner' && (
+            <button
+              onClick={() => setActiveTab('packages')}
+              className={`py-3 font-semibold text-xs border-b-2 transition-colors ${
+                activeTab === 'packages' ? 'border-amber-500 text-amber-400' : 'border-transparent text-slate-400 hover:text-white'
+              }`}
+            >
+              {vendor.category === 'Venue' ? 'Halls' : 'Packages'} ({vendor.packages.length})
+            </button>
+          )}
 
           <button
             onClick={() => setActiveTab('gallery')}

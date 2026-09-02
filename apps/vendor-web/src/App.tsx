@@ -1833,7 +1833,7 @@ export function App() {
             { key: 'dashboard', label: 'Bookings & Quotes' },
             { key: 'reviews', label: `Reviews${reviews.length ? ` (${reviews.length})` : ''}` },
             { key: 'facilities', label: facilitiesSectionLabel(myVendor?.category) },
-            { key: 'packages', label: `${myVendor?.category === 'Venue' ? 'Halls' : 'Packages'}${packages.length ? ` (${packages.length})` : ''}` },
+            ...(myVendor?.category !== 'Wedding Planner' ? [{ key: 'packages', label: `${myVendor?.category === 'Venue' ? 'Halls' : 'Packages'}${packages.length ? ` (${packages.length})` : ''}` }] : []),
             ...(myVendor?.category !== 'Security' ? [{ key: 'offers', label: `Offers${deals.length ? ` (${deals.length})` : ''}` }] : []),
             { key: 'availability', label: 'Availability' },
             { key: 'portfolio', label: 'Local Disk Portfolio' },
@@ -2589,7 +2589,7 @@ export function App() {
         )}
 
         {/* Packages Tab */}
-        {activeTab === 'packages' && (
+        {activeTab === 'packages' && myVendor?.category !== 'Wedding Planner' && (
           <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-800 max-w-3xl space-y-5">
             <div>
               <h3 className="font-bold text-xl text-white flex items-center gap-2">
