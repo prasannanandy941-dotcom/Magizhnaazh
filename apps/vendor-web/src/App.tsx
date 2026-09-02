@@ -1535,7 +1535,7 @@ export function App() {
         <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-400/70 to-transparent"></div>
         <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between relative">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-200 via-amber-400 to-orange-600 flex items-center justify-center font-bold text-slate-950 shadow-lg shadow-amber-500/40 ring-2 ring-amber-300/20">
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#dcc589] to-[#b6893a] flex items-center justify-center font-bold text-slate-950 shadow-sm shadow-amber-900/20 ring-1 ring-amber-300/15">
               <Store className="w-5 h-5" />
             </div>
             <div>
@@ -1647,7 +1647,7 @@ export function App() {
               <Sparkles className="pointer-events-none absolute bottom-5 right-5 w-4 h-4 text-amber-400/30" />
 
               <div className="relative text-center space-y-3">
-                <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-amber-200 via-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/40 ring-4 ring-amber-400/10">
+                <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-[#dcc589] to-[#b6893a] flex items-center justify-center shadow-md shadow-amber-900/20 ring-2 ring-amber-400/10">
                   <Store className="w-8 h-8 text-slate-950" />
                 </div>
                 {/* decorative divider — a small auspicious motif */}
