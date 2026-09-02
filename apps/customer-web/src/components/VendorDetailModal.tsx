@@ -906,25 +906,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                           </div>
                         );
                       })()}
-                      {pkg.images && pkg.images.length > 0 && (
-                        <div className="mt-3 pt-3 border-t border-slate-800/80" onClick={(e) => e.stopPropagation()}>
-                          <span className="text-[10px] font-bold text-slate-400 uppercase block mb-2">Menu Card / Photos</span>
-                          <div className="flex gap-2 overflow-x-auto pb-1">
-                            {pkg.images.map((img, idx) => (
-                              <div
-                                key={idx}
-                                onClick={() => setLightboxImage(img)}
-                                className="relative group w-20 h-24 rounded-lg overflow-hidden border border-slate-800 hover:border-indigo-400 cursor-pointer shrink-0 bg-slate-950"
-                              >
-                                <img src={img} alt={`Menu Page ${idx + 1}`} className="w-full h-full object-cover" />
-                                <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                  <span className="text-[10px] font-bold text-white uppercase bg-slate-900/90 px-1.5 py-0.5 rounded">Zoom</span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+
                       {pkg.tiers && pkg.tiers.length > 0 && (
                         <div className="mt-3 pt-3 border-t border-slate-800/80" onClick={(e) => e.stopPropagation()}>
                           <span className="text-[10px] font-bold text-slate-400 uppercase block mb-2">Choose serving option</span>
@@ -1553,30 +1535,6 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                         );
                       })()}
 
-                      {/* Hall / Package Photos */}
-                      {pkg.images && pkg.images.length > 0 && (
-                        <div className="space-y-1.5 mt-3 mb-3">
-                          <div className="h-36 w-full rounded-xl overflow-hidden bg-slate-950 relative">
-                            <img src={pkg.images[0]} alt={pkg.packageName} className="w-full h-full object-cover" />
-                          </div>
-                          {pkg.images.length > 1 && (
-                            <div className="flex gap-1.5 overflow-x-auto pb-1">
-                              {pkg.images.map((img, idx) => (
-                                <img
-                                  key={idx}
-                                  src={img}
-                                  alt={`pkg-${idx}`}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setLightboxImage(img);
-                                  }}
-                                  className="h-10 w-14 object-cover rounded border border-slate-800 hover:border-indigo-400 cursor-pointer shrink-0"
-                                />
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )}
 
                       <ul className="mt-4 space-y-2">
                         {pkg.includedServices.map((svc, i) => (
