@@ -977,7 +977,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
 
                       <p className="text-xs text-slate-400 mt-2">{pkg.description}</p>
 
-                      {pkg.venue && (() => {
+                      {vendor.category === 'Venue' && pkg.venue && (() => {
                         const v = pkg.venue;
                         const chip = 'text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200';
                         const amenities: [string, boolean | undefined][] = [
@@ -1008,7 +1008,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                         );
                       })()}
 
-                      {pkg.decoration && (() => {
+                      {vendor.category === 'Decoration' && pkg.decoration && (() => {
                         const d = pkg.decoration;
                         const chip = 'text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200';
                         const incl: [string, boolean | undefined][] = [
@@ -1038,7 +1038,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                         );
                       })()}
 
-                      {pkg.makeup && (() => {
+                      {vendor.category === 'Makeup & Beauty' && pkg.makeup && (() => {
                         const m = pkg.makeup;
                         const chip = 'text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200';
                         const incl: [string, boolean | undefined][] = [
@@ -1066,7 +1066,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                         );
                       })()}
 
-                      {pkg.media && (() => {
+                      {vendor.category === 'Media' && pkg.media && (() => {
                         const m = pkg.media;
                         const chip = 'text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200';
                         const incl: [string, boolean | undefined][] = [
@@ -1097,7 +1097,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                         );
                       })()}
 
-                      {pkg.transport && (() => {
+                      {vendor.category === 'Transport' && pkg.transport && (() => {
                         const t = pkg.transport;
                         const chip = 'text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200';
                         const incl: [string, boolean | undefined][] = [
@@ -1128,7 +1128,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                         );
                       })()}
 
-                      {pkg.priest && (() => {
+                      {vendor.category === 'Pujari/Priest' && pkg.priest && (() => {
                         const pr = pkg.priest;
                         const chip = 'text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200';
                         const incl: [string, boolean | undefined][] = [
@@ -1158,7 +1158,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                         );
                       })()}
 
-                      {pkg.invitation && (() => {
+                      {vendor.category === 'Invitation' && pkg.invitation && (() => {
                         const iv = pkg.invitation;
                         const chip = 'text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200';
                         return (
@@ -1180,7 +1180,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                         );
                       })()}
 
-                      {pkg.printing && (() => {
+                      {vendor.category === 'Printing' && pkg.printing && (() => {
                         const pr = pkg.printing;
                         const chip = 'text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200';
                         return (
@@ -1202,7 +1202,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                         );
                       })()}
 
-                      {pkg.returnGifts && (() => {
+                      {vendor.category === 'Return Gifts' && pkg.returnGifts && (() => {
                         const rg = pkg.returnGifts;
                         const chip = 'text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200';
                         return (
@@ -1226,7 +1226,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                         );
                       })()}
 
-                      {pkg.entertainment && (() => {
+                      {vendor.category === 'Entertainment' && pkg.entertainment && (() => {
                         const en = pkg.entertainment;
                         const incl: [string, boolean | undefined][] = [
                           ['Equipment', en.equipmentIncluded], ['Travel', en.travelIncluded],
@@ -1252,7 +1252,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                         );
                       })()}
 
-                      {pkg.musicDj && (() => {
+                      {vendor.category === 'Music/DJ' && pkg.musicDj && (() => {
                         const md = pkg.musicDj;
                         const chip = 'text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200';
                         const incl: [string, boolean | undefined][] = [
@@ -1281,7 +1281,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                         );
                       })()}
 
-                      {pkg.lighting && (() => {
+                      {vendor.category === 'Lighting' && pkg.lighting && (() => {
                         const lt = pkg.lighting;
                         const chip = 'text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200';
                         const incl: [string, boolean | undefined][] = [
@@ -1310,7 +1310,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                         );
                       })()}
 
-                      {pkg.flowers && (() => {
+                      {vendor.category === 'Flowers' && pkg.flowers && (() => {
                         const fl = pkg.flowers;
                         const chip = 'text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200';
                         return (
@@ -1330,7 +1330,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                         );
                       })()}
 
-                      {pkg.mehendi && (() => {
+                      {vendor.category === 'Mehendi' && pkg.mehendi && (() => {
                         const mh = pkg.mehendi;
                         const chip = 'text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200';
                         const incl: [string, boolean | undefined][] = [
@@ -1360,7 +1360,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                         );
                       })()}
 
-                      {pkg.eventHost && (() => {
+                      {vendor.category === 'Event Host/Anchor' && pkg.eventHost && (() => {
                         const eh = pkg.eventHost;
                         const chip = 'text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200';
                         const incl: [string, boolean | undefined][] = [
@@ -1389,7 +1389,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                         );
                       })()}
 
-                      {pkg.rental && (() => {
+                      {vendor.category === 'Rental Equipment' && pkg.rental && (() => {
                         const rt = pkg.rental;
                         const chip = 'text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200';
                         const incl: [string, boolean | undefined][] = [
@@ -1416,7 +1416,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                         );
                       })()}
 
-                      {pkg.utensils && (() => {
+                      {vendor.category === 'Utensils for Rent' && pkg.utensils && (() => {
                         const u = pkg.utensils;
                         const chip = 'text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200';
                         return (
@@ -1459,7 +1459,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                         );
                       })()}
 
-                      {pkg.weddingPlanner && (() => {
+                      {vendor.category === 'Wedding Planner' && pkg.weddingPlanner && (() => {
                         const w = pkg.weddingPlanner;
                         const incl: [string, boolean | undefined][] = [
                           ['Vendor coordination', w.vendorCoordination], ['Budget management', w.budgetManagement], ['Guest management', w.guestManagement],
@@ -1486,7 +1486,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                         );
                       })()}
 
-                      {pkg.corporate && (() => {
+                      {vendor.category === 'Corporate Event Services' && pkg.corporate && (() => {
                         const c = pkg.corporate;
                         const addons: [string, number | undefined][] = [
                           ['AV + stage + branding', c.avStageBranding], ['Registration desk', c.registrationDesk], ['Catering coordination', c.cateringCoordination], ['MC / host', c.mcHost],
