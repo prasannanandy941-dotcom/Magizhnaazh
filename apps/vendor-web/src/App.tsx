@@ -3822,11 +3822,8 @@ export function App() {
                       {/* Utensils for Rent: structured spec (material, vessel type prices, guest count, delivery + pickup price, deposit, cleaning). */}
                       {myVendor?.category === 'Utensils for Rent' && (
                         <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/40 p-3.5">
-                          <div className="flex items-center justify-between">
+                          <div>
                             <p className="text-[10px] text-amber-400 uppercase font-bold">Utensils Details</p>
-                            <div className="text-[11px] font-bold text-slate-300">
-                              Total: <span className="text-amber-400 font-mono">₹{(p.price || utensilsTotal(p.utensils) || 0).toLocaleString('en-IN')}</span>
-                            </div>
                           </div>
 
                           <div>
@@ -3956,11 +3953,8 @@ export function App() {
                       {/* Corporate Event Services: structured spec (replaces capacity/duration + generic price tiers). */}
                       {myVendor?.category === 'Corporate Event Services' && (
                         <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/40 p-3.5">
-                          <div className="flex items-center justify-between">
+                          <div>
                             <p className="text-[10px] text-amber-400 uppercase font-bold">Event Details</p>
-                            <div className="text-[11px] font-bold text-slate-300">
-                              Total: <span className="text-amber-400 font-mono">₹{(p.price || corporateTotal(p.corporate) || 0).toLocaleString('en-IN')}</span>
-                            </div>
                           </div>
 
                           <div>
