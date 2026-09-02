@@ -1439,22 +1439,38 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                               </div>
                             )}
 
-                            <div className="space-y-1 text-[11px] text-slate-300">
-                              {u.basePrice ? <div>Base rental: <span className="text-white font-semibold">₹{u.basePrice.toLocaleString('en-IN')}</span></div> : null}
-                              {u.guestCount ? <div>Guest count served: <span className="text-white font-semibold">{u.guestCount}</span></div> : null}
-                              {u.securityDeposit ? <div>Security deposit: <span className="text-white font-semibold">₹{u.securityDeposit.toLocaleString('en-IN')}</span></div> : null}
+                            <div className="space-y-1 text-[11px]">
+                              {u.basePrice != null && u.basePrice > 0 ? (
+                                <div className="flex items-center justify-between">
+                                  <span className="text-slate-400">Base rental:</span>
+                                  <span className="text-amber-300 font-semibold">₹{u.basePrice.toLocaleString('en-IN')}</span>
+                                </div>
+                              ) : null}
+                              {u.guestCount ? (
+                                <div className="flex items-center justify-between">
+                                  <span className="text-slate-400">Guest count served:</span>
+                                  <span className="text-white font-semibold">{u.guestCount}</span>
+                                </div>
+                              ) : null}
+                              {u.securityDeposit ? (
+                                <div className="flex items-center justify-between">
+                                  <span className="text-slate-400">Security deposit:</span>
+                                  <span className="text-white font-semibold">₹{u.securityDeposit.toLocaleString('en-IN')}</span>
+                                </div>
+                              ) : null}
                               {u.deliveryPickupPrice != null && (
                                 <div className="flex items-center justify-between">
                                   <span className="text-slate-400">Delivery + pickup:</span>
                                   <span className="text-emerald-400 font-semibold">{u.deliveryPickupPrice === 0 ? 'Free' : `₹${Number(u.deliveryPickupPrice).toLocaleString('en-IN')}`}</span>
                                 </div>
                               )}
+                              {u.cleaningIncluded !== undefined && (
+                                <div className="flex items-center justify-between">
+                                  <span className="text-slate-400">Cleaning included:</span>
+                                  <span className={`font-semibold ${u.cleaningIncluded ? 'text-emerald-400' : 'text-slate-500'}`}>{u.cleaningIncluded ? 'Yes' : 'No'}</span>
+                                </div>
+                              )}
                             </div>
-                            {u.cleaningIncluded !== undefined && (
-                              <div className="text-[11px] text-slate-400">
-                                Cleaning included: <b className={u.cleaningIncluded ? 'text-emerald-400' : 'text-slate-500'}>{u.cleaningIncluded ? 'Yes' : 'No'}</b>
-                              </div>
-                            )}
                           </div>
                         );
                       })()}
