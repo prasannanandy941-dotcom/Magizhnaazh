@@ -1672,7 +1672,7 @@ export function App() {
                   value={businessName}
                   onChange={(e) => setBusinessName(e.target.value)}
                   placeholder="e.g. Rohini Caterers"
-                  className="w-full p-3 rounded-xl bg-slate-950/60 border border-amber-500/20 text-white font-bold text-sm placeholder:text-slate-500 focus:outline-none focus:border-amber-400/70 focus:ring-2 focus:ring-amber-500/25 transition-colors"
+                  className="w-full p-3 rounded-xl bg-slate-950/60 border-2 border-amber-500/50 text-white font-bold text-sm placeholder:text-slate-500 focus:outline-none focus:border-amber-400/70 focus:ring-2 focus:ring-amber-500/25 transition-colors"
                 />
               </div>
 
@@ -1682,7 +1682,7 @@ export function App() {
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                    className="w-full p-3 rounded-xl bg-slate-950/60 border border-amber-500/20 text-white font-semibold text-xs focus:outline-none focus:border-amber-400/70 focus:ring-2 focus:ring-amber-500/25 transition-colors"
+                    className="w-full p-3 rounded-xl bg-slate-950/60 border-2 border-amber-500/50 text-white font-semibold text-xs focus:outline-none focus:border-amber-400/70 focus:ring-2 focus:ring-amber-500/25 transition-colors"
                   >
                     {VENDOR_CATEGORIES.map((c) => (
                       <option key={c} value={c}>{c}</option>
@@ -1694,7 +1694,7 @@ export function App() {
                   <select
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
-                    className="w-full p-3 rounded-xl bg-slate-950/60 border border-amber-500/20 text-white font-semibold text-xs focus:outline-none focus:border-amber-400/70 focus:ring-2 focus:ring-amber-500/25 transition-colors"
+                    className="w-full p-3 rounded-xl bg-slate-950/60 border-2 border-amber-500/50 text-white font-semibold text-xs focus:outline-none focus:border-amber-400/70 focus:ring-2 focus:ring-amber-500/25 transition-colors"
                   >
                     {STATIC_CITY_GROUPS.map(([state, cities]) => (
                       <optgroup key={state} label={state} className="bg-slate-900">
@@ -1714,7 +1714,7 @@ export function App() {
                   onChange={(e) => setDescription(e.target.value)}
                   rows={3}
                   placeholder="Tell customers what your business offers."
-                  className="w-full p-3 rounded-xl bg-slate-950/60 border border-amber-500/20 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-amber-400/70 focus:ring-2 focus:ring-amber-500/25 transition-colors"
+                  className="w-full p-3 rounded-xl bg-slate-950/60 border-2 border-amber-500/50 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-amber-400/70 focus:ring-2 focus:ring-amber-500/25 transition-colors"
                 />
               </div>
 
