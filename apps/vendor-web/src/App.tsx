@@ -1528,26 +1528,31 @@ export function App() {
         <FloralGoldBackground />
       </div>
 
-      {/* Header */}
-      <header className="sticky top-0 z-50 glass-card border-b border-slate-800 bg-slate-950/70 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
+      {/* Header — auspicious gold banner */}
+      <header className="sticky top-0 z-50 relative overflow-hidden border-b border-amber-500/30 bg-gradient-to-r from-[#1a1030] via-[#140b22] to-[#1a1030] backdrop-blur-xl shadow-[0_6px_30px_-12px_rgba(245,158,11,0.4)]">
+        {/* soft gold glow + decorative bottom accent line */}
+        <div className="pointer-events-none absolute -top-16 left-1/2 -translate-x-1/2 w-[36rem] h-32 rounded-full bg-amber-500/10 blur-3xl"></div>
+        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-400/70 to-transparent"></div>
+        <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between relative">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-600 flex items-center justify-center font-bold text-slate-950">
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-200 via-amber-400 to-orange-600 flex items-center justify-center font-bold text-slate-950 shadow-lg shadow-amber-500/40 ring-2 ring-amber-300/20">
               <Store className="w-5 h-5" />
             </div>
             <div>
-              <span className="font-display font-extrabold text-xl text-white">Magizhnaazh Vendor Portal</span>
-              <span className="block text-[10px] text-amber-400 font-bold uppercase tracking-wider">Business Partner Workspace</span>
+              <span className="font-display font-extrabold text-xl bg-gradient-to-r from-amber-100 via-white to-amber-200 bg-clip-text text-transparent">Magizhnaazh Vendor Portal</span>
+              <span className="flex items-center gap-1.5 text-[10px] text-amber-400 font-bold uppercase tracking-wider">
+                <Sparkles className="w-3 h-3" /> Business Partner Workspace
+              </span>
             </div>
           </div>
 
           <div className="flex items-center gap-4 text-xs font-semibold">
             <span className="hidden sm:block text-slate-400">
-              Signed in as <strong className="text-slate-200">{user.name}</strong>
+              Signed in as <strong className="text-amber-300">{user.name}</strong>
             </span>
             <button
               onClick={handleLogout}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-rose-500/40 text-rose-400 font-bold text-xs transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-950/60 border border-rose-500/30 hover:border-rose-500/60 hover:bg-rose-500/10 text-rose-400 font-bold text-xs transition-colors"
             >
               <LogOut className="w-3.5 h-3.5" /> Sign Out
             </button>
