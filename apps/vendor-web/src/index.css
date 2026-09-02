@@ -15,7 +15,7 @@
    utilities; these remap just that screen's surfaces/text/borders to light.
    Gradient CTAs use dark (text-slate-950) text, so nothing here fights them.
 --------------------------------------------------------------------------- */
-.auth-light .glass-card { background: #ffffff !important; border-color: #e2e8f0 !important; }
+.auth-light .glass-card { background: #ffffff !important; border-color: #e2e8f0 !important; box-shadow: 0 10px 30px -12px rgba(2, 6, 23, 0.15) !important; }
 .auth-light .text-white,
 .auth-light .text-slate-100 { color: #0f172a !important; }
 .auth-light .text-slate-400 { color: #334155 !important; }
@@ -29,10 +29,17 @@
 .auth-light .border-slate-700 { border-color: #334155 !important; border-width: 2px !important; }
 
 @layer utilities {
+  /* Auspicious card surface used across the whole vendor portal: a warm
+     wine→slate→near-black gradient with a soft gold top-corner glow, an amber
+     hairline border and a gentle outer glow. The border color uses !important
+     so it wins over the `border-slate-800` utility many cards also carry. */
   .glass-card {
-    background: rgba(15, 23, 42, 0.75);
+    background:
+      radial-gradient(135% 135% at 100% 0%, rgba(245, 158, 11, 0.09), rgba(245, 158, 11, 0) 55%),
+      linear-gradient(to bottom, rgba(28, 18, 42, 0.78), rgba(15, 20, 34, 0.82) 50%, rgba(6, 8, 20, 0.9));
     backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.22) !important;
+    box-shadow: 0 0 42px -22px rgba(245, 158, 11, 0.4);
   }
 
   /* Crisp twinkling star sparkles for the celebration background layer */
