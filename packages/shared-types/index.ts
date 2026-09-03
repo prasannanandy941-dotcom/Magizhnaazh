@@ -370,14 +370,22 @@ export const MEDIA_STYLES = ['Candid', 'Traditional'] as const;
 
 // Structured details for a Makeup & Beauty vendor's package (per look / function).
 export interface MakeupPackageDetails {
-  makeupTypes?: string[]; // Bridal / Engagement / Reception / Groom / Party guest
+  makeupTypes?: string[]; // Function type: Bridal / Engagement / Reception / Groom / Party guest
+  makeupTypePrices?: Record<string, number>; // price per selected function type
+  makeupTypeImages?: Record<string, string>; // image per selected function type
   finish?: string; // Regular / HD / Airbrush (also the tier)
-  hairstyling?: boolean; // hairstyling included
+  finishPrice?: number; // price for the chosen finish / tier
+  hairstyleName?: string; // name of the hairstyle offered
+  hairstylePrice?: number; // price of the hairstyle
+  hairstyling?: boolean; // legacy: hairstyling included (superseded by hairstyleName/Price)
   draping?: boolean; // saree / dupatta draping included
-  looksCount?: number; // number of looks / functions
+  drapingPrice?: number; // price when draping is offered
+  looksCount?: number; // number of looks / functions (legacy, no longer edited)
   trialSession?: boolean; // trial session included
   travelToVenue?: boolean;
+  travelPrice?: number; // price when travel to venue is offered
   extraFamilyMembers?: number; // extra family members covered
+  extraFamilyPrice?: number; // price for extra family members
 }
 
 // Option sets for the Makeup & Beauty package form.

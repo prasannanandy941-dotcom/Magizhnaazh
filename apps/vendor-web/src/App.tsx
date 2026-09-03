@@ -1822,6 +1822,51 @@ export function App() {
       const next = current.includes(item) ? current.filter((x) => x !== item) : [...current, item];
       return { ...p, makeup: { ...(p.makeup || {}), makeupTypes: next } };
     }));
+  const setMakeupTypePrice = (pkgId: string, key: string, value: number | undefined) =>
+    setPackages((prev) => prev.map((p) => {
+      if (p.id !== pkgId) return p;
+      const prices = { ...(p.makeup?.makeupTypePrices || {}) };
+      if (value === undefined) delete prices[key]; else prices[key] = value;
+      return { ...p, makeup: { ...(p.makeup || {}), makeupTypePrices: prices } };
+    }));
+  const [uploadingMakeupImg, setUploadingMakeupImg] = useState<string | null>(null);
+  const uploadMakeupTypeImage = async (pkgId: string, key: string, file: File) => {
+    if (!token) return;
+    setUploadingMakeupImg(`${pkgId}:${key}`);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch(`${GATEWAY_URL}/api/v1/uploads`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd });
+      const json = await res.json().catch(() => ({}));
+      if (json?.data?.fileUrl) {
+        setPackages((prev) => prev.map((p) => (p.id === pkgId
+          ? { ...p, makeup: { ...(p.makeup || {}), makeupTypeImages: { ...(p.makeup?.makeupTypeImages || {}), [key]: json.data.fileUrl } } }
+          : p)));
+      }
+    } catch {
+      /* upload is best-effort; vendor can retry */
+    } finally {
+      setUploadingMakeupImg(null);
+    }
+  };
+  const removeMakeupTypeImage = (pkgId: string, key: string) =>
+    setPackages((prev) => prev.map((p) => {
+      if (p.id !== pkgId) return p;
+      const imgs = { ...(p.makeup?.makeupTypeImages || {}) };
+      delete imgs[key];
+      return { ...p, makeup: { ...(p.makeup || {}), makeupTypeImages: imgs } };
+    }));
+  // Auto-total for a Makeup package: finish + hairstyle + draping + travel +
+  // extra-family prices, plus every selected function-type price.
+  const makeupTotal = (m?: any): number => {
+    if (!m) return 0;
+    let sum = (Number(m.finishPrice) || 0) + (Number(m.hairstylePrice) || 0)
+      + (Number(m.drapingPrice) || 0) + (Number(m.travelPrice) || 0) + (Number(m.extraFamilyPrice) || 0);
+    if (m.makeupTypePrices && typeof m.makeupTypePrices === 'object') {
+      for (const val of Object.values(m.makeupTypePrices)) sum += Number(val) || 0;
+    }
+    return sum;
+  };
 
   // Media packages carry structured details (coverage, style, deliverables).
   const updatePackageMedia = (pkgId: string, field: string, value: any) =>
@@ -2100,6 +2145,12 @@ export function App() {
           // Total amount = auto-sum of theme/area/flower/mandap prices, unless
           // the vendor typed their own figure in the Total amount box.
           const calc = decorationTotal(p.decoration);
+          return { ...p, price: p.price > 0 ? p.price : calc };
+        }
+        if (myVendor.category === 'Makeup & Beauty') {
+          // Total amount = auto-sum of function-type + finish + hair style +
+          // draping + travel + family prices, unless the vendor overrides it.
+          const calc = makeupTotal(p.makeup);
           return { ...p, price: p.price > 0 ? p.price : calc };
         }
         if (myVendor.category === 'Catering') {
@@ -3486,7 +3537,7 @@ export function App() {
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <label className="block text-[10px] text-slate-400 uppercase font-bold">
-                          {myVendor?.category === 'Catering' ? 'Total amount (₹)' : myVendor?.category === 'Security' ? 'Price per guard / shift (₹)' : myVendor?.category === 'Venue' ? 'Total amount (₹)' : myVendor?.category === 'Decoration' ? 'Total amount (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Price per look / function (₹)' : myVendor?.category === 'Media' ? 'Price per event / day (₹)' : myVendor?.category === 'Transport' ? 'Price per vehicle (₹)' : myVendor?.category === 'Pujari/Priest' ? 'Price per ceremony (₹)' : myVendor?.category === 'Invitation' ? 'Price per design / quantity (₹)' : myVendor?.category === 'Printing' ? 'Price per quantity (₹)' : myVendor?.category === 'Return Gifts' ? 'Price per piece (₹)' : myVendor?.category === 'Entertainment' ? 'Price per act / hour (₹)' : myVendor?.category === 'Music/DJ' ? 'Price per event / hour (₹)' : myVendor?.category === 'Lighting' ? 'Price per function (₹)' : myVendor?.category === 'Flowers' ? 'Price per item / function (₹)' : myVendor?.category === 'Mehendi' ? 'Price per bride (₹)' : myVendor?.category === 'Event Host/Anchor' ? 'Price per event (₹)' : myVendor?.category === 'Rental Equipment' ? 'Per-day rate (₹)' : myVendor?.category === 'Utensils for Rent' ? 'Total price (₹)' : myVendor?.category === 'Wedding Planner' ? 'Price per package / function (₹)' : myVendor?.category === 'Corporate Event Services' ? 'Price per total event (₹)' : 'Price (₹)'}
+                          {myVendor?.category === 'Catering' ? 'Total amount (₹)' : myVendor?.category === 'Security' ? 'Price per guard / shift (₹)' : myVendor?.category === 'Venue' ? 'Total amount (₹)' : myVendor?.category === 'Decoration' ? 'Total amount (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Total amount (₹)' : myVendor?.category === 'Media' ? 'Price per event / day (₹)' : myVendor?.category === 'Transport' ? 'Price per vehicle (₹)' : myVendor?.category === 'Pujari/Priest' ? 'Price per ceremony (₹)' : myVendor?.category === 'Invitation' ? 'Price per design / quantity (₹)' : myVendor?.category === 'Printing' ? 'Price per quantity (₹)' : myVendor?.category === 'Return Gifts' ? 'Price per piece (₹)' : myVendor?.category === 'Entertainment' ? 'Price per act / hour (₹)' : myVendor?.category === 'Music/DJ' ? 'Price per event / hour (₹)' : myVendor?.category === 'Lighting' ? 'Price per function (₹)' : myVendor?.category === 'Flowers' ? 'Price per item / function (₹)' : myVendor?.category === 'Mehendi' ? 'Price per bride (₹)' : myVendor?.category === 'Event Host/Anchor' ? 'Price per event (₹)' : myVendor?.category === 'Rental Equipment' ? 'Per-day rate (₹)' : myVendor?.category === 'Utensils for Rent' ? 'Total price (₹)' : myVendor?.category === 'Wedding Planner' ? 'Price per package / function (₹)' : myVendor?.category === 'Corporate Event Services' ? 'Price per total event (₹)' : 'Price (₹)'}
                         </label>
                         {myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 && (
                           <span className="text-[10px] text-amber-400 font-bold">
@@ -3503,10 +3554,15 @@ export function App() {
                             Sum: ₹{decorationTotal(p.decoration).toLocaleString('en-IN')}
                           </span>
                         )}
+                        {myVendor?.category === 'Makeup & Beauty' && makeupTotal(p.makeup) > 0 && (
+                          <span className="text-[10px] text-amber-400 font-bold">
+                            Sum: ₹{makeupTotal(p.makeup).toLocaleString('en-IN')}
+                          </span>
+                        )}
                       </div>
                       <input
                         type="number"
-                        value={p.price || (myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 ? cateringTotal(p.catering) : myVendor?.category === 'Venue' && venueTotal(p.venue) > 0 ? venueTotal(p.venue) : myVendor?.category === 'Decoration' && decorationTotal(p.decoration) > 0 ? decorationTotal(p.decoration) : '')}
+                        value={p.price || (myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 ? cateringTotal(p.catering) : myVendor?.category === 'Venue' && venueTotal(p.venue) > 0 ? venueTotal(p.venue) : myVendor?.category === 'Decoration' && decorationTotal(p.decoration) > 0 ? decorationTotal(p.decoration) : myVendor?.category === 'Makeup & Beauty' && makeupTotal(p.makeup) > 0 ? makeupTotal(p.makeup) : '')}
                         onChange={(e) => updatePackageField(p.id, 'price', e.target.value)}
                         placeholder={myVendor?.category === 'Catering' ? (cateringTotal(p.catering) ? String(cateringTotal(p.catering)) : 'e.g. 35000') : myVendor?.category === 'Security' ? '2000' : '150000'}
                         className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
@@ -3519,6 +3575,11 @@ export function App() {
                       {myVendor?.category === 'Decoration' && decorationTotal(p.decoration) > 0 && (
                         <div className="mt-1.5 text-[10px] text-slate-400">
                           <span>Auto-added from themes, areas, flowers &amp; mandap: <b className="text-amber-300">₹{decorationTotal(p.decoration).toLocaleString('en-IN')}</b>. Edit the box to override.</span>
+                        </div>
+                      )}
+                      {myVendor?.category === 'Makeup & Beauty' && makeupTotal(p.makeup) > 0 && (
+                        <div className="mt-1.5 text-[10px] text-slate-400">
+                          <span>Auto-added from function types, finish, hair style, draping, travel &amp; family: <b className="text-amber-300">₹{makeupTotal(p.makeup).toLocaleString('en-IN')}</b>. Edit the box to override.</span>
                         </div>
                       )}
                       {myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 && (
@@ -4656,12 +4717,45 @@ export function App() {
                           <p className="text-[10px] text-amber-400 uppercase font-bold">Makeup details</p>
 
                           <div>
-                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Makeup Type</label>
+                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Function type <span className="text-slate-500 normal-case font-normal">— select, then set price / image</span></label>
                             <div className="flex flex-wrap gap-2">
                               {MAKEUP_TYPES.map((t) => (
                                 <button type="button" key={t} onClick={() => toggleMakeupType(p.id, t)} className={catChip((p.makeup?.makeupTypes || []).includes(t))}>{t}</button>
                               ))}
                             </div>
+                            {(p.makeup?.makeupTypes || []).length > 0 && (
+                              <div className="mt-2 space-y-2">
+                                {(p.makeup?.makeupTypes || []).map((t) => {
+                                  const price = p.makeup?.makeupTypePrices?.[t];
+                                  const img = p.makeup?.makeupTypeImages?.[t];
+                                  return (
+                                    <div key={t} className="flex items-center gap-2 flex-wrap rounded-lg border border-slate-800/70 bg-slate-950/30 p-2">
+                                      <span className="text-[11px] font-bold text-amber-300 min-w-[80px]">{t}</span>
+                                      <div className="flex items-center gap-1 px-2 rounded-lg bg-slate-950 border border-slate-800">
+                                        <span className="text-slate-500 text-xs">₹</span>
+                                        <input type="number" min={0} value={price ?? ''} onChange={(e) => setMakeupTypePrice(p.id, t, e.target.value === '' ? undefined : Number(e.target.value))}
+                                          placeholder="Price" className="w-20 py-1.5 bg-transparent text-white text-xs focus:outline-none" />
+                                      </div>
+                                      {img && (
+                                        <div className="relative">
+                                          <img src={img} alt={t} className="w-10 h-10 rounded-lg object-cover border border-slate-800" />
+                                          <button type="button" onClick={() => removeMakeupTypeImage(p.id, t)}
+                                            className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-slate-800 text-slate-300 hover:text-rose-400 flex items-center justify-center" aria-label="Remove image">
+                                            <X className="w-2.5 h-2.5" />
+                                          </button>
+                                        </div>
+                                      )}
+                                      <label className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:border-slate-700 text-[11px] font-bold cursor-pointer transition-colors">
+                                        {uploadingMakeupImg === `${p.id}:${t}` ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
+                                        {img ? 'Replace' : 'Upload'}
+                                        <input type="file" accept="image/*" className="hidden" disabled={!!uploadingMakeupImg}
+                                          onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadMakeupTypeImage(p.id, t, f); e.target.value = ''; }} />
+                                      </label>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
                           </div>
 
                           <div>
@@ -4671,29 +4765,62 @@ export function App() {
                                 <button type="button" key={f} onClick={() => updatePackageMakeup(p.id, 'finish', f)} className={catChip(p.makeup?.finish === f)}>{f}</button>
                               ))}
                             </div>
+                            {p.makeup?.finish && (
+                              <div className="mt-2 flex items-center gap-1 px-2 rounded-lg bg-slate-950 border border-slate-800 max-w-[240px]">
+                                <span className="text-slate-500 text-xs">₹</span>
+                                <input type="number" min={0} value={p.makeup?.finishPrice ?? ''} onChange={(e) => updatePackageMakeup(p.id, 'finishPrice', e.target.value === '' ? undefined : Number(e.target.value))}
+                                  placeholder={`Price for ${p.makeup.finish}`} className="flex-1 py-2 bg-transparent text-white text-xs focus:outline-none" />
+                              </div>
+                            )}
                           </div>
 
                           <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Looks / functions</label>
-                              <input type="number" min={0} value={p.makeup?.looksCount ?? ''} onChange={(e) => updatePackageMakeup(p.id, 'looksCount', e.target.value === '' ? undefined : Number(e.target.value))}
-                                placeholder="e.g. 3" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
-                            </div>
                             <div>
                               <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Extra family members covered</label>
                               <input type="number" min={0} value={p.makeup?.extraFamilyMembers ?? ''} onChange={(e) => updatePackageMakeup(p.id, 'extraFamilyMembers', e.target.value === '' ? undefined : Number(e.target.value))}
                                 placeholder="e.g. 2" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
                             </div>
+                            <div>
+                              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Extra family members price</label>
+                              <div className="flex items-center gap-1 px-2 rounded-lg bg-slate-950 border border-slate-800">
+                                <span className="text-slate-500 text-xs">₹</span>
+                                <input type="number" min={0} value={p.makeup?.extraFamilyPrice ?? ''} onChange={(e) => updatePackageMakeup(p.id, 'extraFamilyPrice', e.target.value === '' ? undefined : Number(e.target.value))}
+                                  placeholder="Price" className="flex-1 py-2 bg-transparent text-white text-xs focus:outline-none" />
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Hair style name</label>
+                              <input type="text" value={p.makeup?.hairstyleName ?? ''} onChange={(e) => updatePackageMakeup(p.id, 'hairstyleName', e.target.value)}
+                                placeholder="e.g. Bridal bun" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Hair style price</label>
+                              <div className="flex items-center gap-1 px-2 rounded-lg bg-slate-950 border border-slate-800">
+                                <span className="text-slate-500 text-xs">₹</span>
+                                <input type="number" min={0} value={p.makeup?.hairstylePrice ?? ''} onChange={(e) => updatePackageMakeup(p.id, 'hairstylePrice', e.target.value === '' ? undefined : Number(e.target.value))}
+                                  placeholder="Price" className="flex-1 py-2 bg-transparent text-white text-xs focus:outline-none" />
+                              </div>
+                            </div>
                           </div>
 
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            {([['hairstyling', 'Hairstyling included'], ['draping', 'Saree / dupatta draping'], ['trialSession', 'Trial session included'], ['travelToVenue', 'Travel to venue']] as const).map(([field, label]) => (
-                              <div key={field}>
+                            {([['draping', 'Saree / dupatta draping', 'drapingPrice'], ['trialSession', 'Trial session included', ''], ['travelToVenue', 'Travel to venue', 'travelPrice']] as const).map(([field, label, priceField]) => (
+                              <div key={field} className="rounded-lg border border-slate-800/70 bg-slate-950/30 p-2">
                                 <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">{label}</label>
                                 <div className="flex gap-1.5">
                                   <button type="button" onClick={() => updatePackageMakeup(p.id, field, true)} className={catChip((p.makeup as any)?.[field] === true)}>Yes</button>
                                   <button type="button" onClick={() => updatePackageMakeup(p.id, field, false)} className={catChip((p.makeup as any)?.[field] === false)}>No</button>
                                 </div>
+                                {priceField && (p.makeup as any)?.[field] === true && (
+                                  <div className="mt-2 flex items-center gap-1 px-2 rounded-lg bg-slate-950 border border-slate-800">
+                                    <span className="text-slate-500 text-xs">₹</span>
+                                    <input type="number" min={0} value={(p.makeup as any)?.[priceField] ?? ''} onChange={(e) => updatePackageMakeup(p.id, priceField, e.target.value === '' ? undefined : Number(e.target.value))}
+                                      placeholder="Price" className="flex-1 py-1.5 bg-transparent text-white text-xs focus:outline-none" />
+                                  </div>
+                                )}
                               </div>
                             ))}
                           </div>
