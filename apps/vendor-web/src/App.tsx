@@ -1878,6 +1878,68 @@ export function App() {
       const next = current.includes(item) ? current.filter((x) => x !== item) : [...current, item];
       return { ...p, media: { ...(p.media || {}), styles: next } };
     }));
+  // Set a keyed value inside one of media's map fields (stylePrices,
+  // featurePrices, featureQuality).
+  const setMediaMapValue = (pkgId: string, mapField: 'stylePrices' | 'featurePrices' | 'featureQuality', key: string, value: number | string | undefined) =>
+    setPackages((prev) => prev.map((p) => {
+      if (p.id !== pkgId) return p;
+      const map = { ...((p.media as any)?.[mapField] || {}) };
+      if (value === undefined || value === '') delete map[key]; else map[key] = value;
+      return { ...p, media: { ...(p.media || {}), [mapField]: map } };
+    }));
+  // Upload a media image. slot: "style:Candid", "coverage", or "feature:drone".
+  const [uploadingMediaImg, setUploadingMediaImg] = useState<string | null>(null);
+  const uploadMediaImage = async (pkgId: string, slot: string, file: File) => {
+    if (!token) return;
+    setUploadingMediaImg(`${pkgId}:${slot}`);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch(`${GATEWAY_URL}/api/v1/uploads`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd });
+      const json = await res.json().catch(() => ({}));
+      if (json?.data?.fileUrl) {
+        const url = json.data.fileUrl as string;
+        const [group, key] = slot.split(':');
+        setPackages((prev) => prev.map((p) => {
+          if (p.id !== pkgId) return p;
+          if (group === 'coverage') return { ...p, media: { ...(p.media || {}), coverageImage: url } };
+          const mapField = group === 'style' ? 'styleImages' : 'featureImages';
+          const imgs = { ...((p.media as any)?.[mapField] || {}) };
+          imgs[key] = url;
+          return { ...p, media: { ...(p.media || {}), [mapField]: imgs } };
+        }));
+      }
+    } catch {
+      /* upload is best-effort; vendor can retry */
+    } finally {
+      setUploadingMediaImg(null);
+    }
+  };
+  const removeMediaImage = (pkgId: string, slot: string) =>
+    setPackages((prev) => prev.map((p) => {
+      if (p.id !== pkgId) return p;
+      const [group, key] = slot.split(':');
+      if (group === 'coverage') return { ...p, media: { ...(p.media || {}), coverageImage: undefined } };
+      const mapField = group === 'style' ? 'styleImages' : 'featureImages';
+      const imgs = { ...((p.media as any)?.[mapField] || {}) };
+      delete imgs[key];
+      return { ...p, media: { ...(p.media || {}), [mapField]: imgs } };
+    }));
+  // Auto-total for a Media package: coverage + days/crew/hours + album type +
+  // photo frame + album pages prices, every style price, and every "Yes"
+  // deliverable price.
+  const mediaTotal = (m?: any): number => {
+    if (!m) return 0;
+    let sum = (Number(m.coveragePrice) || 0) + (Number(m.daysPrice) || 0) + (Number(m.crewPrice) || 0)
+      + (Number(m.hoursPrice) || 0) + (Number(m.albumTypePrice) || 0) + (Number(m.photoFramePrice) || 0)
+      + (Number(m.albumPagesPrice) || 0);
+    for (const map of [m.stylePrices, m.featurePrices]) {
+      if (map && typeof map === 'object') {
+        for (const val of Object.values(map)) sum += Number(val) || 0;
+      }
+    }
+    return sum;
+  };
 
   // Transport packages carry structured details (vehicle, capacity, inclusions).
   const updatePackageTransport = (pkgId: string, field: string, value: any) =>
@@ -2151,6 +2213,12 @@ export function App() {
           // Total amount = auto-sum of function-type + finish + hair style +
           // draping + travel + family prices, unless the vendor overrides it.
           const calc = makeupTotal(p.makeup);
+          return { ...p, price: p.price > 0 ? p.price : calc };
+        }
+        if (myVendor.category === 'Media') {
+          // Total amount = auto-sum of style + coverage + crew + album +
+          // deliverable prices, unless the vendor overrides it.
+          const calc = mediaTotal(p.media);
           return { ...p, price: p.price > 0 ? p.price : calc };
         }
         if (myVendor.category === 'Catering') {
@@ -3537,7 +3605,7 @@ export function App() {
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <label className="block text-[10px] text-slate-400 uppercase font-bold">
-                          {myVendor?.category === 'Catering' ? 'Total amount (₹)' : myVendor?.category === 'Security' ? 'Price per guard / shift (₹)' : myVendor?.category === 'Venue' ? 'Total amount (₹)' : myVendor?.category === 'Decoration' ? 'Total amount (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Total amount (₹)' : myVendor?.category === 'Media' ? 'Price per event / day (₹)' : myVendor?.category === 'Transport' ? 'Price per vehicle (₹)' : myVendor?.category === 'Pujari/Priest' ? 'Price per ceremony (₹)' : myVendor?.category === 'Invitation' ? 'Price per design / quantity (₹)' : myVendor?.category === 'Printing' ? 'Price per quantity (₹)' : myVendor?.category === 'Return Gifts' ? 'Price per piece (₹)' : myVendor?.category === 'Entertainment' ? 'Price per act / hour (₹)' : myVendor?.category === 'Music/DJ' ? 'Price per event / hour (₹)' : myVendor?.category === 'Lighting' ? 'Price per function (₹)' : myVendor?.category === 'Flowers' ? 'Price per item / function (₹)' : myVendor?.category === 'Mehendi' ? 'Price per bride (₹)' : myVendor?.category === 'Event Host/Anchor' ? 'Price per event (₹)' : myVendor?.category === 'Rental Equipment' ? 'Per-day rate (₹)' : myVendor?.category === 'Utensils for Rent' ? 'Total price (₹)' : myVendor?.category === 'Wedding Planner' ? 'Price per package / function (₹)' : myVendor?.category === 'Corporate Event Services' ? 'Price per total event (₹)' : 'Price (₹)'}
+                          {myVendor?.category === 'Catering' ? 'Total amount (₹)' : myVendor?.category === 'Security' ? 'Price per guard / shift (₹)' : myVendor?.category === 'Venue' ? 'Total amount (₹)' : myVendor?.category === 'Decoration' ? 'Total amount (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Total amount (₹)' : myVendor?.category === 'Media' ? 'Total amount (₹)' : myVendor?.category === 'Transport' ? 'Price per vehicle (₹)' : myVendor?.category === 'Pujari/Priest' ? 'Price per ceremony (₹)' : myVendor?.category === 'Invitation' ? 'Price per design / quantity (₹)' : myVendor?.category === 'Printing' ? 'Price per quantity (₹)' : myVendor?.category === 'Return Gifts' ? 'Price per piece (₹)' : myVendor?.category === 'Entertainment' ? 'Price per act / hour (₹)' : myVendor?.category === 'Music/DJ' ? 'Price per event / hour (₹)' : myVendor?.category === 'Lighting' ? 'Price per function (₹)' : myVendor?.category === 'Flowers' ? 'Price per item / function (₹)' : myVendor?.category === 'Mehendi' ? 'Price per bride (₹)' : myVendor?.category === 'Event Host/Anchor' ? 'Price per event (₹)' : myVendor?.category === 'Rental Equipment' ? 'Per-day rate (₹)' : myVendor?.category === 'Utensils for Rent' ? 'Total price (₹)' : myVendor?.category === 'Wedding Planner' ? 'Price per package / function (₹)' : myVendor?.category === 'Corporate Event Services' ? 'Price per total event (₹)' : 'Price (₹)'}
                         </label>
                         {myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 && (
                           <span className="text-[10px] text-amber-400 font-bold">
@@ -3559,10 +3627,15 @@ export function App() {
                             Sum: ₹{makeupTotal(p.makeup).toLocaleString('en-IN')}
                           </span>
                         )}
+                        {myVendor?.category === 'Media' && mediaTotal(p.media) > 0 && (
+                          <span className="text-[10px] text-amber-400 font-bold">
+                            Sum: ₹{mediaTotal(p.media).toLocaleString('en-IN')}
+                          </span>
+                        )}
                       </div>
                       <input
                         type="number"
-                        value={p.price || (myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 ? cateringTotal(p.catering) : myVendor?.category === 'Venue' && venueTotal(p.venue) > 0 ? venueTotal(p.venue) : myVendor?.category === 'Decoration' && decorationTotal(p.decoration) > 0 ? decorationTotal(p.decoration) : myVendor?.category === 'Makeup & Beauty' && makeupTotal(p.makeup) > 0 ? makeupTotal(p.makeup) : '')}
+                        value={p.price || (myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 ? cateringTotal(p.catering) : myVendor?.category === 'Venue' && venueTotal(p.venue) > 0 ? venueTotal(p.venue) : myVendor?.category === 'Decoration' && decorationTotal(p.decoration) > 0 ? decorationTotal(p.decoration) : myVendor?.category === 'Makeup & Beauty' && makeupTotal(p.makeup) > 0 ? makeupTotal(p.makeup) : myVendor?.category === 'Media' && mediaTotal(p.media) > 0 ? mediaTotal(p.media) : '')}
                         onChange={(e) => updatePackageField(p.id, 'price', e.target.value)}
                         placeholder={myVendor?.category === 'Catering' ? (cateringTotal(p.catering) ? String(cateringTotal(p.catering)) : 'e.g. 35000') : myVendor?.category === 'Security' ? '2000' : '150000'}
                         className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
@@ -3580,6 +3653,11 @@ export function App() {
                       {myVendor?.category === 'Makeup & Beauty' && makeupTotal(p.makeup) > 0 && (
                         <div className="mt-1.5 text-[10px] text-slate-400">
                           <span>Auto-added from function types, finish, hair style, draping, travel &amp; family: <b className="text-amber-300">₹{makeupTotal(p.makeup).toLocaleString('en-IN')}</b>. Edit the box to override.</span>
+                        </div>
+                      )}
+                      {myVendor?.category === 'Media' && mediaTotal(p.media) > 0 && (
+                        <div className="mt-1.5 text-[10px] text-slate-400">
+                          <span>Auto-added from styles, coverage, crew, album &amp; add-ons: <b className="text-amber-300">₹{mediaTotal(p.media).toLocaleString('en-IN')}</b>. Edit the box to override.</span>
                         </div>
                       )}
                       {myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 && (
@@ -4832,23 +4910,55 @@ export function App() {
                         <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/40 p-3">
                           <p className="text-[10px] text-amber-400 uppercase font-bold">Media details</p>
 
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Tier</label>
-                              <div className="flex flex-wrap gap-2">
-                                {MEDIA_TIERS.map((t) => (
-                                  <button type="button" key={t} onClick={() => updatePackageMedia(p.id, 'tier', t)} className={catChip(p.media?.tier === t)}>{t}</button>
-                                ))}
-                              </div>
+                          <div>
+                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Tier</label>
+                            <div className="flex flex-wrap gap-2">
+                              {MEDIA_TIERS.map((t) => (
+                                <button type="button" key={t} onClick={() => updatePackageMedia(p.id, 'tier', t)} className={catChip(p.media?.tier === t)}>{t}</button>
+                              ))}
                             </div>
-                            <div>
-                              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Style</label>
-                              <div className="flex flex-wrap gap-2">
-                                {MEDIA_STYLES.map((s) => (
-                                  <button type="button" key={s} onClick={() => toggleMediaStyle(p.id, s)} className={catChip((p.media?.styles || []).includes(s))}>{s}</button>
-                                ))}
-                              </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Style <span className="text-slate-500 normal-case font-normal">— select, then set price / image</span></label>
+                            <div className="flex flex-wrap gap-2">
+                              {MEDIA_STYLES.map((s) => (
+                                <button type="button" key={s} onClick={() => toggleMediaStyle(p.id, s)} className={catChip((p.media?.styles || []).includes(s))}>{s}</button>
+                              ))}
                             </div>
+                            {(p.media?.styles || []).length > 0 && (
+                              <div className="mt-2 space-y-2">
+                                {(p.media?.styles || []).map((s) => {
+                                  const price = p.media?.stylePrices?.[s];
+                                  const img = p.media?.styleImages?.[s];
+                                  return (
+                                    <div key={s} className="flex items-center gap-2 flex-wrap rounded-lg border border-slate-800/70 bg-slate-950/30 p-2">
+                                      <span className="text-[11px] font-bold text-amber-300 min-w-[80px]">{s}</span>
+                                      <div className="flex items-center gap-1 px-2 rounded-lg bg-slate-950 border border-slate-800">
+                                        <span className="text-slate-500 text-xs">₹</span>
+                                        <input type="number" min={0} value={price ?? ''} onChange={(e) => setMediaMapValue(p.id, 'stylePrices', s, e.target.value === '' ? undefined : Number(e.target.value))}
+                                          placeholder="Price" className="w-20 py-1.5 bg-transparent text-white text-xs focus:outline-none" />
+                                      </div>
+                                      {img && (
+                                        <div className="relative">
+                                          <img src={img} alt={s} className="w-10 h-10 rounded-lg object-cover border border-slate-800" />
+                                          <button type="button" onClick={() => removeMediaImage(p.id, `style:${s}`)}
+                                            className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-slate-800 text-slate-300 hover:text-rose-400 flex items-center justify-center" aria-label="Remove image">
+                                            <X className="w-2.5 h-2.5" />
+                                          </button>
+                                        </div>
+                                      )}
+                                      <label className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:border-slate-700 text-[11px] font-bold cursor-pointer transition-colors">
+                                        {uploadingMediaImg === `${p.id}:style:${s}` ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
+                                        {img ? 'Replace' : 'Upload'}
+                                        <input type="file" accept="image/*" className="hidden" disabled={!!uploadingMediaImg}
+                                          onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadMediaImage(p.id, `style:${s}`, f); e.target.value = ''; }} />
+                                      </label>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
                           </div>
 
                           <div>
@@ -4858,42 +4968,132 @@ export function App() {
                                 <button type="button" key={c} onClick={() => updatePackageMedia(p.id, 'coverage', c)} className={catChip(p.media?.coverage === c)}>{c}</button>
                               ))}
                             </div>
+                            {p.media?.coverage && (
+                              <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <div className="flex items-center gap-1 px-2 rounded-lg bg-slate-950 border border-slate-800">
+                                  <span className="text-slate-500 text-xs">₹</span>
+                                  <input type="number" min={0} value={p.media?.coveragePrice ?? ''} onChange={(e) => updatePackageMedia(p.id, 'coveragePrice', e.target.value === '' ? undefined : Number(e.target.value))}
+                                    placeholder="Price" className="flex-1 py-2 bg-transparent text-white text-xs focus:outline-none" />
+                                </div>
+                                <input type="text" value={p.media?.coverageSize ?? ''} onChange={(e) => updatePackageMedia(p.id, 'coverageSize', e.target.value)}
+                                  placeholder="Size — e.g. 1080p / A4" className="p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-xs" />
+                                <input type="text" value={p.media?.coverageQuality ?? ''} onChange={(e) => updatePackageMedia(p.id, 'coverageQuality', e.target.value)}
+                                  placeholder="Quality — e.g. HD / 4K" className="p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-xs" />
+                                <div className="flex items-center gap-2">
+                                  {p.media?.coverageImage && (
+                                    <div className="relative">
+                                      <img src={p.media.coverageImage} alt="Coverage" className="w-10 h-10 rounded-lg object-cover border border-slate-800" />
+                                      <button type="button" onClick={() => removeMediaImage(p.id, 'coverage')}
+                                        className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-slate-800 text-slate-300 hover:text-rose-400 flex items-center justify-center" aria-label="Remove image">
+                                        <X className="w-2.5 h-2.5" />
+                                      </button>
+                                    </div>
+                                  )}
+                                  <label className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:border-slate-700 text-[11px] font-bold cursor-pointer transition-colors">
+                                    {uploadingMediaImg === `${p.id}:coverage` ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
+                                    {p.media?.coverageImage ? 'Replace' : 'Upload'}
+                                    <input type="file" accept="image/*" className="hidden" disabled={!!uploadingMediaImg}
+                                      onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadMediaImage(p.id, 'coverage', f); e.target.value = ''; }} />
+                                  </label>
+                                </div>
+                              </div>
+                            )}
                           </div>
 
-                          <div className="grid grid-cols-3 gap-2">
-                            {([['daysOrEvents', 'Days / events'], ['crewCount', 'Crew (photographers / cinematographers)'], ['hoursCoverage', 'Total hours of coverage']] as const).map(([field, label]) => (
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            {([['daysOrEvents', 'Days / events', 'daysPrice'], ['crewCount', 'Crew (photographers / cinematographers)', 'crewPrice'], ['hoursCoverage', 'Total hours of coverage', 'hoursPrice']] as const).map(([field, label, priceField]) => (
                               <div key={field}>
                                 <label className="block text-[10px] text-slate-500 mb-1">{label}</label>
                                 <input type="number" min={0} value={(p.media as any)?.[field] ?? ''} onChange={(e) => updatePackageMedia(p.id, field, e.target.value === '' ? undefined : Number(e.target.value))}
                                   placeholder="0" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                                <div className="mt-1 flex items-center gap-1 px-2 rounded-lg bg-slate-950 border border-slate-800">
+                                  <span className="text-slate-500 text-xs">₹</span>
+                                  <input type="number" min={0} value={(p.media as any)?.[priceField] ?? ''} onChange={(e) => updatePackageMedia(p.id, priceField, e.target.value === '' ? undefined : Number(e.target.value))}
+                                    placeholder="Price" className="flex-1 py-1.5 bg-transparent text-white text-xs focus:outline-none" />
+                                </div>
                               </div>
                             ))}
                           </div>
 
                           <div>
                             <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Deliverables</label>
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                               <div>
-                                <label className="block text-[10px] text-slate-500 mb-1">Edited photos count</label>
-                                <input type="number" min={0} value={p.media?.editedPhotos ?? ''} onChange={(e) => updatePackageMedia(p.id, 'editedPhotos', e.target.value === '' ? undefined : Number(e.target.value))}
-                                  placeholder="e.g. 300" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                                <label className="block text-[10px] text-slate-500 mb-1">Album type</label>
+                                <input type="text" value={p.media?.albumType ?? ''} onChange={(e) => updatePackageMedia(p.id, 'albumType', e.target.value)}
+                                  placeholder="e.g. Leather hardcover" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                                <div className="mt-1 flex items-center gap-1 px-2 rounded-lg bg-slate-950 border border-slate-800">
+                                  <span className="text-slate-500 text-xs">₹</span>
+                                  <input type="number" min={0} value={p.media?.albumTypePrice ?? ''} onChange={(e) => updatePackageMedia(p.id, 'albumTypePrice', e.target.value === '' ? undefined : Number(e.target.value))}
+                                    placeholder="Album type price" className="flex-1 py-1.5 bg-transparent text-white text-xs focus:outline-none" />
+                                </div>
+                              </div>
+                              <div>
+                                <label className="block text-[10px] text-slate-500 mb-1">Photo frame</label>
+                                <input type="text" value={p.media?.photoFrameSize ?? ''} onChange={(e) => updatePackageMedia(p.id, 'photoFrameSize', e.target.value)}
+                                  placeholder="Size — e.g. 12x18 in" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                                <div className="mt-1 flex items-center gap-1 px-2 rounded-lg bg-slate-950 border border-slate-800">
+                                  <span className="text-slate-500 text-xs">₹</span>
+                                  <input type="number" min={0} value={p.media?.photoFramePrice ?? ''} onChange={(e) => updatePackageMedia(p.id, 'photoFramePrice', e.target.value === '' ? undefined : Number(e.target.value))}
+                                    placeholder="Photo frame price" className="flex-1 py-1.5 bg-transparent text-white text-xs focus:outline-none" />
+                                </div>
                               </div>
                               <div>
                                 <label className="block text-[10px] text-slate-500 mb-1">Album pages</label>
                                 <input type="number" min={0} value={p.media?.albumPages ?? ''} onChange={(e) => updatePackageMedia(p.id, 'albumPages', e.target.value === '' ? undefined : Number(e.target.value))}
                                   placeholder="e.g. 30" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                                <div className="mt-1 flex items-center gap-1 px-2 rounded-lg bg-slate-950 border border-slate-800">
+                                  <span className="text-slate-500 text-xs">₹</span>
+                                  <input type="number" min={0} value={p.media?.albumPagesPrice ?? ''} onChange={(e) => updatePackageMedia(p.id, 'albumPagesPrice', e.target.value === '' ? undefined : Number(e.target.value))}
+                                    placeholder="Album pages price" className="flex-1 py-1.5 bg-transparent text-white text-xs focus:outline-none" />
+                                </div>
+                              </div>
+                              <div>
+                                <label className="block text-[10px] text-slate-500 mb-1">Edited photos count</label>
+                                <input type="number" min={0} value={p.media?.editedPhotos ?? ''} onChange={(e) => updatePackageMedia(p.id, 'editedPhotos', e.target.value === '' ? undefined : Number(e.target.value))}
+                                  placeholder="e.g. 300" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
                               </div>
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             {([['preWedding', 'Pre-wedding shoot'], ['drone', 'Drone'], ['teaser', 'Teaser'], ['film4k', '4K film']] as const).map(([field, label]) => (
-                              <div key={field}>
+                              <div key={field} className="rounded-lg border border-slate-800/70 bg-slate-950/30 p-2">
                                 <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">{label}</label>
                                 <div className="flex gap-1.5">
                                   <button type="button" onClick={() => updatePackageMedia(p.id, field, true)} className={catChip((p.media as any)?.[field] === true)}>Yes</button>
                                   <button type="button" onClick={() => updatePackageMedia(p.id, field, false)} className={catChip((p.media as any)?.[field] === false)}>No</button>
                                 </div>
+                                {(p.media as any)?.[field] === true && (
+                                  <div className="mt-2 space-y-2">
+                                    <div className="flex items-center gap-2">
+                                      <div className="flex items-center gap-1 px-2 rounded-lg bg-slate-950 border border-slate-800">
+                                        <span className="text-slate-500 text-xs">₹</span>
+                                        <input type="number" min={0} value={p.media?.featurePrices?.[field] ?? ''} onChange={(e) => setMediaMapValue(p.id, 'featurePrices', field, e.target.value === '' ? undefined : Number(e.target.value))}
+                                          placeholder="Price" className="w-20 py-1.5 bg-transparent text-white text-xs focus:outline-none" />
+                                      </div>
+                                      <input type="text" value={p.media?.featureQuality?.[field] ?? ''} onChange={(e) => setMediaMapValue(p.id, 'featureQuality', field, e.target.value)}
+                                        placeholder="Quality" className="flex-1 min-w-[90px] p-1.5 rounded-lg bg-slate-950 border border-slate-800 text-white text-xs" />
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      {p.media?.featureImages?.[field] && (
+                                        <div className="relative">
+                                          <img src={p.media.featureImages[field]} alt={label} className="w-10 h-10 rounded-lg object-cover border border-slate-800" />
+                                          <button type="button" onClick={() => removeMediaImage(p.id, `feature:${field}`)}
+                                            className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-slate-800 text-slate-300 hover:text-rose-400 flex items-center justify-center" aria-label="Remove image">
+                                            <X className="w-2.5 h-2.5" />
+                                          </button>
+                                        </div>
+                                      )}
+                                      <label className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:border-slate-700 text-[11px] font-bold cursor-pointer transition-colors">
+                                        {uploadingMediaImg === `${p.id}:feature:${field}` ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
+                                        {p.media?.featureImages?.[field] ? 'Replace' : 'Upload image'}
+                                        <input type="file" accept="image/*" className="hidden" disabled={!!uploadingMediaImg}
+                                          onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadMediaImage(p.id, `feature:${field}`, f); e.target.value = ''; }} />
+                                      </label>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             ))}
                           </div>

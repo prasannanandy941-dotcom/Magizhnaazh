@@ -1224,27 +1224,42 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                       {vendor.category === 'Media' && pkg.media && (() => {
                         const m = pkg.media;
                         const chip = 'text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200';
-                        const incl: [string, boolean | undefined][] = [
-                          ['Pre-wedding', m.preWedding], ['Drone', m.drone], ['Teaser', m.teaser], ['4K film', m.film4k],
+                        const inr = (n?: number) => (n ? ` — ₹${n.toLocaleString('en-IN')}` : '');
+                        const featureLabels: [string, boolean | undefined, string][] = [
+                          ['Pre-wedding', m.preWedding, 'preWedding'], ['Drone', m.drone, 'drone'], ['Teaser', m.teaser, 'teaser'], ['4K film', m.film4k, 'film4k'],
+                        ];
+                        const imgs: [string, string][] = [
+                          ...(m.styles || []).filter((s) => m.styleImages?.[s]).map((s) => [s, m.styleImages![s]] as [string, string]),
+                          ...(m.coverageImage ? [['Coverage', m.coverageImage] as [string, string]] : []),
+                          ...featureLabels.filter(([, v, key]) => v && m.featureImages?.[key]).map(([label, , key]) => [label, m.featureImages![key]] as [string, string]),
                         ];
                         return (
                           <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2" onClick={(e) => e.stopPropagation()}>
                             <span className="text-[10px] font-bold text-slate-400 uppercase block">Media details</span>
                             <div className="flex flex-wrap gap-1.5">
                               {m.tier && <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-200 font-bold">{m.tier}</span>}
-                              {m.coverage && <span className={chip}>{m.coverage}</span>}
-                              {(m.styles || []).map((s) => <span key={`s-${s}`} className={chip}>{s}</span>)}
+                              {m.coverage && <span className={chip}>{m.coverage}{inr(m.coveragePrice)}</span>}
+                              {(m.styles || []).map((s) => <span key={`s-${s}`} className={chip}>{s}{inr(m.stylePrices?.[s])}</span>)}
                             </div>
                             <div className="space-y-1 text-[11px] text-slate-300">
-                              {m.daysOrEvents ? <div>Days / events: <span className="text-white font-semibold">{m.daysOrEvents}</span></div> : null}
-                              {m.hoursCoverage ? <div>Hours of coverage: <span className="text-white font-semibold">{m.hoursCoverage}</span></div> : null}
-                              {m.crewCount ? <div>Crew: <span className="text-white font-semibold">{m.crewCount}</span></div> : null}
-                              {(m.editedPhotos || m.albumPages) ? <div>Deliverables: {m.editedPhotos ? `${m.editedPhotos} edited photos` : ''}{m.editedPhotos && m.albumPages ? ' · ' : ''}{m.albumPages ? `${m.albumPages} album pages` : ''}</div> : null}
+                              {(m.coverageSize || m.coverageQuality) ? <div>{m.coverageSize ? `Size ${m.coverageSize}` : ''}{m.coverageSize && m.coverageQuality ? ' · ' : ''}{m.coverageQuality ? `Quality ${m.coverageQuality}` : ''}</div> : null}
+                              {m.daysOrEvents ? <div>Days / events: <span className="text-white font-semibold">{m.daysOrEvents}</span>{inr(m.daysPrice)}</div> : null}
+                              {m.hoursCoverage ? <div>Hours of coverage: <span className="text-white font-semibold">{m.hoursCoverage}</span>{inr(m.hoursPrice)}</div> : null}
+                              {m.crewCount ? <div>Crew: <span className="text-white font-semibold">{m.crewCount}</span>{inr(m.crewPrice)}</div> : null}
+                              {m.albumType ? <div>Album: <span className="text-white font-semibold">{m.albumType}</span>{inr(m.albumTypePrice)}</div> : null}
+                              {m.photoFrameSize ? <div>Photo frame: <span className="text-white font-semibold">{m.photoFrameSize}</span>{inr(m.photoFramePrice)}</div> : null}
+                              {m.albumPages ? <div>Album pages: <span className="text-white font-semibold">{m.albumPages}</span>{inr(m.albumPagesPrice)}</div> : null}
+                              {m.editedPhotos ? <div>Edited photos: <span className="text-white font-semibold">{m.editedPhotos}</span></div> : null}
                             </div>
-                            {incl.some(([, v]) => v !== undefined) && (
+                            {imgs.length > 0 && (
+                              <div className="flex flex-wrap gap-2">
+                                {imgs.map(([label, url]) => <img key={label} src={url} alt={label} title={label} className="w-16 h-16 rounded-lg object-cover border border-slate-800" />)}
+                              </div>
+                            )}
+                            {featureLabels.some(([, v]) => v !== undefined) && (
                               <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px]">
-                                {incl.filter(([, v]) => v !== undefined).map(([label, v]) => (
-                                  <span key={label} className="text-slate-400">{label}: <b className={v ? 'text-emerald-400' : 'text-slate-500'}>{v ? 'Yes' : 'No'}</b></span>
+                                {featureLabels.filter(([, v]) => v !== undefined).map(([label, v, key]) => (
+                                  <span key={label} className="text-slate-400">{label}: <b className={v ? 'text-emerald-400' : 'text-slate-500'}>{v ? 'Yes' : 'No'}</b>{v ? inr(m.featurePrices?.[key]) : ''}{v && m.featureQuality?.[key] ? ` (${m.featureQuality[key]})` : ''}</span>
                                 ))}
                               </div>
                             )}

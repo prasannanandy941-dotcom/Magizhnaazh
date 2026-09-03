@@ -351,16 +351,35 @@ export const TRANSPORT_USES = ['Baraat', 'Guests', 'Couple'] as const;
 export interface MediaPackageDetails {
   tier?: string; // Silver / Gold / Platinum
   coverage?: string; // Photo only / Photo + Video / Cinematic
+  coveragePrice?: number; // price for the chosen coverage
+  coverageImage?: string; // sample image for the coverage
+  coverageSize?: string; // size of the video / photo
+  coverageQuality?: string; // quality of the video / photo
   styles?: string[]; // Candid / Traditional
+  stylePrices?: Record<string, number>; // price per selected style
+  styleImages?: Record<string, string>; // image per selected style
   daysOrEvents?: number; // number of days or events
+  daysPrice?: number; // price for days / events
   preWedding?: boolean; // pre-wedding shoot
   drone?: boolean;
   crewCount?: number; // photographers / cinematographers
+  crewPrice?: number; // price for the crew
   editedPhotos?: number; // deliverable: edited photos count
+  albumType?: string; // album type
+  albumTypePrice?: number; // price for the album type
+  photoFrameSize?: string; // photo frame size
+  photoFramePrice?: number; // price for the photo frame
   albumPages?: number; // deliverable: album pages
+  albumPagesPrice?: number; // price for the album pages
   teaser?: boolean; // deliverable: teaser
   film4k?: boolean; // deliverable: 4K film
   hoursCoverage?: number; // total hours of coverage
+  hoursPrice?: number; // price for hours of coverage
+  // For each "Yes" deliverable (preWedding, drone, teaser, film4k): an optional
+  // price, quality note, and uploaded image, keyed by the field name.
+  featurePrices?: Record<string, number>;
+  featureQuality?: Record<string, string>;
+  featureImages?: Record<string, string>;
 }
 
 // Option sets for the Media package form.
