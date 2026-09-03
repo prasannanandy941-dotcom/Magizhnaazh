@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Store, Star, Upload, Check, LogOut, Loader2, Plus, SlidersHorizontal, ChevronDown, Receipt, X, Bell, ShieldCheck, Clock as ClockIcon, AlertCircle, FileText, CalendarDays, Sparkles } from 'lucide-react';
+import { Store, Star, Upload, Check, LogOut, Loader2, Plus, SlidersHorizontal, ChevronDown, Receipt, X, Bell, ShieldCheck, Clock as ClockIcon, AlertCircle, FileText, CalendarDays, Sparkles, Car } from 'lucide-react';
 import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, VendorDeal, OfferedOptionItem, CateringFoodItem, CateringCourseItem, VENDOR_CATEGORIES, CATEGORY_OPTIONS, CATERING_OPTION_STYLE, MEDIA_QUALITY_OPTIONS, MEDIA_EQUIPMENT_OPTIONS, mediaExtraField, isDealLive, CATERING_MENU_TIERS, CATERING_FOOD_TYPES, CATERING_CUISINES, CATERING_COURSES, CATERING_LIVE_COUNTERS, CATERING_SERVICE_STYLES, BUFFET_PLATE_TYPES, BANANA_LEAF_TYPES, slotLabelWithTime, AVAILABILITY_SLOTS, offeredSlotIds, VENUE_SESSIONS, VENUE_HALL_TYPES, VENUE_HALL_CLASSES, VENUE_CATERING_POLICIES, VENUE_FEATURES, DECORATION_TIERS, DECORATION_THEMES, DECORATION_AREAS, DECORATION_FLOWER_TYPES, MAKEUP_TYPES, MAKEUP_FINISHES, MEDIA_TIERS, MEDIA_COVERAGE, MEDIA_STYLES, TRANSPORT_TIERS, TRANSPORT_VEHICLE_TYPES, TRANSPORT_PRICING_BASIS, TRANSPORT_USES, PRIEST_CEREMONY_TYPES, PRIEST_LANGUAGES, INVITATION_TIERS, INVITATION_TYPES, INVITATION_DESIGNS, INVITATION_ADDONS, INVITATION_LANGUAGES, PRINTING_PRODUCTS, PRINTING_FINISHES, RETURN_GIFTS_TIERS, RETURN_GIFT_TYPES, ENTERTAINMENT_ACT_TYPES, MUSIC_DJ_TIERS, MUSIC_DJ_TYPES, MUSIC_DJ_VENUE_TYPES, LIGHTING_TIERS, LIGHTING_TYPES, FLOWERS_VARIETIES, FLOWERS_ITEMS, FLOWERS_KINDS, MEHENDI_TIERS, MEHENDI_TYPES, MEHENDI_INTRICACY, EVENT_HOST_EVENT_TYPES, EVENT_HOST_LANGUAGES, EVENT_HOST_MODES, SECURITY_TYPES, SECURITY_GENDERS, RENTAL_ITEMS, UTENSILS_MATERIALS, UTENSILS_VESSEL_TYPES, WEDDING_PLANNER_SCOPES, CORPORATE_EVENT_TYPES, CORPORATE_ADDONS } from '../../../packages/shared-types';
 import { STATIC_CITY_GROUPS } from '../../../packages/shared-utils';
 import { AuthGate } from './components/AuthGate';
@@ -1941,9 +1941,224 @@ export function App() {
     return sum;
   };
 
-  // Transport packages carry structured details (vehicle, capacity, inclusions).
+  // Auto-total for a Transport package:
+  // - Per day / Per km rate
+  // - Selected vehicle prices (sum for all selected vehicleTypes)
+  // - Use prices (Baraat, Guests, Couple)
+  // - Package / inclusions price (kmHoursPrice)
+  // - Driver + fuel price (if driverFuel is true)
+  // - Car decoration price (if carDecoration is true)
+  const transportTotal = (t?: any): number => {
+    if (!t) return 0;
+    let sum = 0;
+    if (t.perDayPrice) sum += Number(t.perDayPrice) || 0;
+    if (t.perKmPrice) sum += Number(t.perKmPrice) || 0;
+
+    const selectedVehicles: string[] = Array.isArray(t.vehicleTypes) && t.vehicleTypes.length > 0
+      ? t.vehicleTypes
+      : (t.vehicleType ? [t.vehicleType] : []);
+    if (t.vehicleTypePrices && typeof t.vehicleTypePrices === 'object') {
+      for (const v of selectedVehicles) {
+        sum += Number(t.vehicleTypePrices[v]) || 0;
+      }
+    }
+
+    const selectedUses: string[] = Array.isArray(t.uses) && t.uses.length > 0
+      ? t.uses
+      : (t.use ? [t.use] : []);
+    if (t.usePrices && typeof t.usePrices === 'object') {
+      for (const u of selectedUses) {
+        sum += Number(t.usePrices[u]) || 0;
+      }
+    }
+
+    sum += Number(t.kmHoursPrice) || 0;
+
+    if (t.driverFuel) {
+      sum += Number(t.driverFuelPrice) || 0;
+    }
+
+    if (t.carDecoration) {
+      sum += Number(t.carDecorationPrice) || 0;
+    }
+
+    return sum;
+  };
+
+  const [uploadingTransportImg, setUploadingTransportImg] = useState<string | null>(null);
+  const uploadTransportImage = async (pkgId: string, slot: string, file: File) => {
+    if (!token) return;
+    setUploadingTransportImg(`${pkgId}:${slot}`);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch(`${GATEWAY_URL}/api/v1/uploads`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+      const json = await res.json().catch(() => ({}));
+      if (json?.data?.fileUrl) {
+        const url = json.data.fileUrl as string;
+        setPackages((prev) =>
+          prev.map((p) => {
+            if (p.id !== pkgId) return p;
+            if (slot === 'decoration') {
+              return {
+                ...p,
+                transport: { ...(p.transport || {}), carDecorationImage: url },
+              };
+            }
+            if (slot.startsWith('vehicle:')) {
+              const vType = slot.replace('vehicle:', '');
+              const imgs = { ...(p.transport?.vehicleTypeImages || {}) };
+              imgs[vType] = url;
+              return {
+                ...p,
+                transport: { ...(p.transport || {}), vehicleTypeImages: imgs },
+              };
+            }
+            return p;
+          })
+        );
+      }
+    } catch {
+      /* upload is best-effort */
+    } finally {
+      setUploadingTransportImg(null);
+    }
+  };
+
+  const removeTransportImage = (pkgId: string, slot: string) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        if (slot === 'decoration') {
+          return {
+            ...p,
+            transport: { ...(p.transport || {}), carDecorationImage: undefined },
+          };
+        }
+        if (slot.startsWith('vehicle:')) {
+          const vType = slot.replace('vehicle:', '');
+          const imgs = { ...(p.transport?.vehicleTypeImages || {}) };
+          delete imgs[vType];
+          return {
+            ...p,
+            transport: { ...(p.transport || {}), vehicleTypeImages: imgs },
+          };
+        }
+        return p;
+      })
+    );
+
   const updatePackageTransport = (pkgId: string, field: string, value: any) =>
-    setPackages((prev) => prev.map((p) => (p.id === pkgId ? { ...p, transport: { ...(p.transport || {}), [field]: value } } : p)));
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const nextTransport = { ...(p.transport || {}), [field]: value };
+        const calc = transportTotal(nextTransport);
+        return {
+          ...p,
+          transport: nextTransport,
+          price: calc > 0 ? calc : (p.price || 0),
+        };
+      })
+    );
+
+  const toggleTransportVehicleType = (pkgId: string, vType: string) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const current: string[] = p.transport?.vehicleTypes || (p.transport?.vehicleType ? [p.transport.vehicleType] : []);
+        const next = current.includes(vType) ? current.filter((x) => x !== vType) : [...current, vType];
+        const nextTransport = {
+          ...(p.transport || {}),
+          vehicleType: next[0] || undefined,
+          vehicleTypes: next,
+        };
+        const calc = transportTotal(nextTransport);
+        return {
+          ...p,
+          transport: nextTransport,
+          price: calc > 0 ? calc : (p.price || 0),
+        };
+      })
+    );
+
+  const updateTransportVehicleSeat = (pkgId: string, vType: string, seats: number | undefined) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const currentSeats = { ...(p.transport?.vehicleTypeSeats || {}) };
+        if (seats === undefined) delete currentSeats[vType];
+        else currentSeats[vType] = seats;
+        return {
+          ...p,
+          transport: { ...(p.transport || {}), vehicleTypeSeats: currentSeats },
+        };
+      })
+    );
+
+  const updateTransportVehiclePrice = (pkgId: string, vType: string, price: number | undefined) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const currentPrices = { ...(p.transport?.vehicleTypePrices || {}) };
+        if (price === undefined) delete currentPrices[vType];
+        else currentPrices[vType] = price;
+        const nextTransport = {
+          ...(p.transport || {}),
+          vehicleTypePrices: currentPrices,
+        };
+        const calc = transportTotal(nextTransport);
+        return {
+          ...p,
+          transport: nextTransport,
+          price: calc > 0 ? calc : (p.price || 0),
+        };
+      })
+    );
+
+  const toggleTransportUse = (pkgId: string, useVal: string) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const current: string[] = p.transport?.uses || (p.transport?.use ? [p.transport.use] : []);
+        const next = current.includes(useVal) ? current.filter((x) => x !== useVal) : [...current, useVal];
+        const nextTransport = {
+          ...(p.transport || {}),
+          use: next[0] || undefined,
+          uses: next,
+        };
+        const calc = transportTotal(nextTransport);
+        return {
+          ...p,
+          transport: nextTransport,
+          price: calc > 0 ? calc : (p.price || 0),
+        };
+      })
+    );
+
+  const updateTransportUsePrice = (pkgId: string, useVal: string, price: number | undefined) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const currentPrices = { ...(p.transport?.usePrices || {}) };
+        if (price === undefined) delete currentPrices[useVal];
+        else currentPrices[useVal] = price;
+        const nextTransport = {
+          ...(p.transport || {}),
+          usePrices: currentPrices,
+        };
+        const calc = transportTotal(nextTransport);
+        return {
+          ...p,
+          transport: nextTransport,
+          price: calc > 0 ? calc : (p.price || 0),
+        };
+      })
+    );
 
   // Pujari/Priest packages carry structured ceremony details.
   const updatePackagePriest = (pkgId: string, field: string, value: any) =>
@@ -2219,6 +2434,10 @@ export function App() {
           // Total amount = auto-sum of style + coverage + crew + album +
           // deliverable prices, unless the vendor overrides it.
           const calc = mediaTotal(p.media);
+          return { ...p, price: p.price > 0 ? p.price : calc };
+        }
+        if (myVendor.category === 'Transport') {
+          const calc = transportTotal(p.transport);
           return { ...p, price: p.price > 0 ? p.price : calc };
         }
         if (myVendor.category === 'Catering') {
@@ -3601,11 +3820,11 @@ export function App() {
                     </button>
                   </div>
 
-                  <div className={`grid grid-cols-1 ${myVendor?.category === 'Catering' || myVendor?.category === 'Decoration' ? 'sm:grid-cols-1' : myVendor?.category === 'Security' ? 'sm:grid-cols-2' : 'sm:grid-cols-3'} gap-3`}>
+                  <div className={`grid grid-cols-1 ${myVendor?.category === 'Catering' || myVendor?.category === 'Decoration' || myVendor?.category === 'Transport' ? 'sm:grid-cols-1' : myVendor?.category === 'Security' ? 'sm:grid-cols-2' : 'sm:grid-cols-3'} gap-3`}>
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <label className="block text-[10px] text-slate-400 uppercase font-bold">
-                          {myVendor?.category === 'Catering' ? 'Total amount (₹)' : myVendor?.category === 'Security' ? 'Price per guard / shift (₹)' : myVendor?.category === 'Venue' ? 'Total amount (₹)' : myVendor?.category === 'Decoration' ? 'Total amount (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Total amount (₹)' : myVendor?.category === 'Media' ? 'Total amount (₹)' : myVendor?.category === 'Transport' ? 'Price per vehicle (₹)' : myVendor?.category === 'Pujari/Priest' ? 'Price per ceremony (₹)' : myVendor?.category === 'Invitation' ? 'Price per design / quantity (₹)' : myVendor?.category === 'Printing' ? 'Price per quantity (₹)' : myVendor?.category === 'Return Gifts' ? 'Price per piece (₹)' : myVendor?.category === 'Entertainment' ? 'Price per act / hour (₹)' : myVendor?.category === 'Music/DJ' ? 'Price per event / hour (₹)' : myVendor?.category === 'Lighting' ? 'Price per function (₹)' : myVendor?.category === 'Flowers' ? 'Price per item / function (₹)' : myVendor?.category === 'Mehendi' ? 'Price per bride (₹)' : myVendor?.category === 'Event Host/Anchor' ? 'Price per event (₹)' : myVendor?.category === 'Rental Equipment' ? 'Per-day rate (₹)' : myVendor?.category === 'Utensils for Rent' ? 'Total price (₹)' : myVendor?.category === 'Wedding Planner' ? 'Price per package / function (₹)' : myVendor?.category === 'Corporate Event Services' ? 'Price per total event (₹)' : 'Price (₹)'}
+                          {myVendor?.category === 'Catering' ? 'Total amount (₹)' : myVendor?.category === 'Security' ? 'Price per guard / shift (₹)' : myVendor?.category === 'Venue' ? 'Total amount (₹)' : myVendor?.category === 'Decoration' ? 'Total amount (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Total amount (₹)' : myVendor?.category === 'Media' ? 'Total amount (₹)' : myVendor?.category === 'Transport' ? 'Total amount (₹)' : myVendor?.category === 'Pujari/Priest' ? 'Price per ceremony (₹)' : myVendor?.category === 'Invitation' ? 'Price per design / quantity (₹)' : myVendor?.category === 'Printing' ? 'Price per quantity (₹)' : myVendor?.category === 'Return Gifts' ? 'Price per piece (₹)' : myVendor?.category === 'Entertainment' ? 'Price per act / hour (₹)' : myVendor?.category === 'Music/DJ' ? 'Price per event / hour (₹)' : myVendor?.category === 'Lighting' ? 'Price per function (₹)' : myVendor?.category === 'Flowers' ? 'Price per item / function (₹)' : myVendor?.category === 'Mehendi' ? 'Price per bride (₹)' : myVendor?.category === 'Event Host/Anchor' ? 'Price per event (₹)' : myVendor?.category === 'Rental Equipment' ? 'Per-day rate (₹)' : myVendor?.category === 'Utensils for Rent' ? 'Total price (₹)' : myVendor?.category === 'Wedding Planner' ? 'Price per package / function (₹)' : myVendor?.category === 'Corporate Event Services' ? 'Price per total event (₹)' : 'Price (₹)'}
                         </label>
                         {myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 && (
                           <span className="text-[10px] text-amber-400 font-bold">
@@ -3632,12 +3851,17 @@ export function App() {
                             Sum: ₹{mediaTotal(p.media).toLocaleString('en-IN')}
                           </span>
                         )}
+                        {myVendor?.category === 'Transport' && transportTotal(p.transport) > 0 && (
+                          <span className="text-[10px] text-amber-400 font-bold">
+                            Sum: ₹{transportTotal(p.transport).toLocaleString('en-IN')}
+                          </span>
+                        )}
                       </div>
                       <input
                         type="number"
-                        value={p.price || (myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 ? cateringTotal(p.catering) : myVendor?.category === 'Venue' && venueTotal(p.venue) > 0 ? venueTotal(p.venue) : myVendor?.category === 'Decoration' && decorationTotal(p.decoration) > 0 ? decorationTotal(p.decoration) : myVendor?.category === 'Makeup & Beauty' && makeupTotal(p.makeup) > 0 ? makeupTotal(p.makeup) : myVendor?.category === 'Media' && mediaTotal(p.media) > 0 ? mediaTotal(p.media) : '')}
+                        value={p.price || (myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 ? cateringTotal(p.catering) : myVendor?.category === 'Venue' && venueTotal(p.venue) > 0 ? venueTotal(p.venue) : myVendor?.category === 'Decoration' && decorationTotal(p.decoration) > 0 ? decorationTotal(p.decoration) : myVendor?.category === 'Makeup & Beauty' && makeupTotal(p.makeup) > 0 ? makeupTotal(p.makeup) : myVendor?.category === 'Media' && mediaTotal(p.media) > 0 ? mediaTotal(p.media) : myVendor?.category === 'Transport' && transportTotal(p.transport) > 0 ? transportTotal(p.transport) : '')}
                         onChange={(e) => updatePackageField(p.id, 'price', e.target.value)}
-                        placeholder={myVendor?.category === 'Catering' ? (cateringTotal(p.catering) ? String(cateringTotal(p.catering)) : 'e.g. 35000') : myVendor?.category === 'Security' ? '2000' : '150000'}
+                        placeholder={myVendor?.category === 'Catering' ? (cateringTotal(p.catering) ? String(cateringTotal(p.catering)) : 'e.g. 35000') : myVendor?.category === 'Transport' ? (transportTotal(p.transport) ? String(transportTotal(p.transport)) : 'e.g. 15000') : myVendor?.category === 'Security' ? '2000' : '150000'}
                         className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
                       />
                       {myVendor?.category === 'Venue' && venueTotal(p.venue) > 0 && (
@@ -3658,6 +3882,11 @@ export function App() {
                       {myVendor?.category === 'Media' && mediaTotal(p.media) > 0 && (
                         <div className="mt-1.5 text-[10px] text-slate-400">
                           <span>Auto-added from styles, coverage, crew, album &amp; add-ons: <b className="text-amber-300">₹{mediaTotal(p.media).toLocaleString('en-IN')}</b>. Edit the box to override.</span>
+                        </div>
+                      )}
+                      {myVendor?.category === 'Transport' && transportTotal(p.transport) > 0 && (
+                        <div className="mt-1.5 text-[10px] text-slate-400">
+                          <span>Auto-added from vehicles, use, driver/fuel &amp; decoration: <b className="text-amber-300">₹{transportTotal(p.transport).toLocaleString('en-IN')}</b>. Edit the box to override.</span>
                         </div>
                       )}
                       {myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 && (
@@ -5102,15 +5331,32 @@ export function App() {
 
                       {/* Transport: structured spec (replaces capacity + generic price tiers). */}
                       {myVendor?.category === 'Transport' && (
-                        <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/40 p-3">
-                          <p className="text-[10px] text-amber-400 uppercase font-bold">Vehicle details</p>
+                        <div className="space-y-4 rounded-xl border border-slate-800 bg-slate-950/40 p-3.5">
+                          <div className="flex items-center justify-between">
+                            <p className="text-[10px] text-amber-400 uppercase font-bold flex items-center gap-1.5">
+                              <Car className="w-3.5 h-3.5" /> Vehicle &amp; Trip Details
+                            </p>
+                            {transportTotal(p.transport) > 0 && (
+                              <span className="text-[10px] text-amber-400 font-bold bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-full">
+                                Total: ₹{transportTotal(p.transport).toLocaleString('en-IN')}
+                              </span>
+                            )}
+                          </div>
 
-                          <div className="grid grid-cols-2 gap-3">
+                          {/* 1. Tier and Pricing Basis (Per day / Per km) with price options */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
                               <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Tier</label>
                               <div className="flex flex-wrap gap-2">
                                 {TRANSPORT_TIERS.map((t) => (
-                                  <button type="button" key={t} onClick={() => updatePackageTransport(p.id, 'tier', t)} className={catChip(p.transport?.tier === t)}>{t}</button>
+                                  <button
+                                    type="button"
+                                    key={t}
+                                    onClick={() => updatePackageTransport(p.id, 'tier', t)}
+                                    className={catChip(p.transport?.tier === t)}
+                                  >
+                                    {t}
+                                  </button>
                                 ))}
                               </div>
                             </div>
@@ -5118,50 +5364,433 @@ export function App() {
                               <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Priced</label>
                               <div className="flex flex-wrap gap-2">
                                 {TRANSPORT_PRICING_BASIS.map((b) => (
-                                  <button type="button" key={b} onClick={() => updatePackageTransport(p.id, 'pricingBasis', b)} className={catChip(p.transport?.pricingBasis === b)}>{b}</button>
+                                  <button
+                                    type="button"
+                                    key={b}
+                                    onClick={() => updatePackageTransport(p.id, 'pricingBasis', p.transport?.pricingBasis === b ? undefined : b)}
+                                    className={catChip(p.transport?.pricingBasis === b)}
+                                  >
+                                    {b}
+                                  </button>
                                 ))}
                               </div>
-                            </div>
-                          </div>
-
-                          <div>
-                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Vehicle Type</label>
-                            <div className="flex flex-wrap gap-2">
-                              {TRANSPORT_VEHICLE_TYPES.map((v) => (
-                                <button type="button" key={v} onClick={() => updatePackageTransport(p.id, 'vehicleType', v)} className={catChip(p.transport?.vehicleType === v)}>{v}</button>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div>
-                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Use</label>
-                            <div className="flex flex-wrap gap-2">
-                              {TRANSPORT_USES.map((u) => (
-                                <button type="button" key={u} onClick={() => updatePackageTransport(p.id, 'use', u)} className={catChip(p.transport?.use === u)}>{u}</button>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-3 gap-2">
-                            {([['numVehicles', 'No. of vehicles'], ['seatsPerVehicle', 'Seats / vehicle'], ['kmHoursIncluded', 'Km / hours included']] as const).map(([field, label]) => (
-                              <div key={field}>
-                                <label className="block text-[10px] text-slate-500 mb-1">{label}</label>
-                                <input type="number" min={0} value={(p.transport as any)?.[field] ?? ''} onChange={(e) => updatePackageTransport(p.id, field, e.target.value === '' ? undefined : Number(e.target.value))}
-                                  placeholder="0" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                                {(p.transport?.pricingBasis === 'Per day' || p.transport?.perDayPrice) && (
+                                  <div>
+                                    <label className="block text-[10px] text-slate-400 mb-1 font-semibold">Per day rate (₹)</label>
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      value={p.transport?.perDayPrice ?? ''}
+                                      onChange={(e) => updatePackageTransport(p.id, 'perDayPrice', e.target.value === '' ? undefined : Number(e.target.value))}
+                                      placeholder="e.g. 5000"
+                                      className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                    />
+                                  </div>
+                                )}
+                                {(p.transport?.pricingBasis === 'Per km' || p.transport?.perKmPrice) && (
+                                  <div>
+                                    <label className="block text-[10px] text-slate-400 mb-1 font-semibold">Per km rate (₹)</label>
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      value={p.transport?.perKmPrice ?? ''}
+                                      onChange={(e) => updatePackageTransport(p.id, 'perKmPrice', e.target.value === '' ? undefined : Number(e.target.value))}
+                                      placeholder="e.g. 18"
+                                      className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                    />
+                                  </div>
+                                )}
                               </div>
-                            ))}
+                            </div>
                           </div>
 
-                          <div className="grid grid-cols-2 gap-2">
-                            {([['driverFuel', 'Driver + fuel included'], ['carDecoration', 'Car decoration']] as const).map(([field, label]) => (
-                              <div key={field}>
-                                <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">{label}</label>
-                                <div className="flex gap-1.5">
-                                  <button type="button" onClick={() => updatePackageTransport(p.id, field, true)} className={catChip((p.transport as any)?.[field] === true)}>Yes</button>
-                                  <button type="button" onClick={() => updatePackageTransport(p.id, field, false)} className={catChip((p.transport as any)?.[field] === false)}>No</button>
+                          {/* 2. Vehicle Types (Car, SUV, Tempo Traveller, Bus, Decorated car) with seats, price, and image */}
+                          <div className="space-y-2.5 pt-2 border-t border-slate-800/80">
+                            <div>
+                              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
+                                Vehicle Type (Select cars to configure seats, price &amp; photos)
+                              </label>
+                              <div className="flex flex-wrap gap-2">
+                                {TRANSPORT_VEHICLE_TYPES.map((v) => {
+                                  const isSelected = (p.transport?.vehicleTypes || (p.transport?.vehicleType ? [p.transport.vehicleType] : [])).includes(v);
+                                  return (
+                                    <button
+                                      type="button"
+                                      key={v}
+                                      onClick={() => toggleTransportVehicleType(p.id, v)}
+                                      className={catChip(isSelected)}
+                                    >
+                                      {v}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+
+                            {/* Individual Vehicle Type Configurations */}
+                            {((p.transport?.vehicleTypes && p.transport.vehicleTypes.length > 0)
+                              ? p.transport.vehicleTypes
+                              : (p.transport?.vehicleType ? [p.transport.vehicleType] : [])
+                            ).map((v) => {
+                              const seats = p.transport?.vehicleTypeSeats?.[v];
+                              const price = p.transport?.vehicleTypePrices?.[v];
+                              const imgUrl = p.transport?.vehicleTypeImages?.[v];
+                              const uploadKey = `${p.id}:vehicle:${v}`;
+                              const isUploading = uploadingTransportImg === uploadKey;
+
+                              return (
+                                <div key={v} className="p-3 rounded-xl border border-amber-500/30 bg-amber-950/10 space-y-2.5">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                                      <Car className="w-3.5 h-3.5" /> {v}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleTransportVehicleType(p.id, v)}
+                                      className="text-slate-400 hover:text-rose-400 text-xs flex items-center gap-1"
+                                    >
+                                      ✕ Remove
+                                    </button>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                    <div>
+                                      <label className="block text-[10px] text-slate-400 mb-1">
+                                        How many seats in {v}
+                                      </label>
+                                      <input
+                                        type="number"
+                                        min={1}
+                                        value={seats ?? ''}
+                                        onChange={(e) => updateTransportVehicleSeat(p.id, v, e.target.value === '' ? undefined : Number(e.target.value))}
+                                        placeholder={v === 'Bus' ? 'e.g. 40' : v === 'Tempo Traveller' ? 'e.g. 14' : v === 'SUV' ? 'e.g. 7' : 'e.g. 4'}
+                                        className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-[10px] text-slate-400 mb-1 font-semibold">
+                                        Price for {v} (₹)
+                                      </label>
+                                      <input
+                                        type="number"
+                                        min={0}
+                                        value={price ?? ''}
+                                        onChange={(e) => updateTransportVehiclePrice(p.id, v, e.target.value === '' ? undefined : Number(e.target.value))}
+                                        placeholder="e.g. 3500"
+                                        className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <div>
+                                    <label className="block text-[10px] text-slate-400 mb-1">Image of {v}</label>
+                                    <div className="flex items-center gap-2.5">
+                                      {imgUrl ? (
+                                        <div className="relative group">
+                                          <img src={imgUrl} alt={v} className="w-16 h-12 rounded-lg object-cover border border-slate-700" />
+                                          <button
+                                            type="button"
+                                            onClick={() => removeTransportImage(p.id, `vehicle:${v}`)}
+                                            className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px] shadow"
+                                          >
+                                            ✕
+                                          </button>
+                                        </div>
+                                      ) : null}
+                                      <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold cursor-pointer border border-slate-700 transition-colors">
+                                        {isUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                                        {imgUrl ? 'Change photo' : `Upload ${v} photo`}
+                                        <input
+                                          type="file"
+                                          accept="image/*"
+                                          className="hidden"
+                                          disabled={isUploading}
+                                          onChange={(e) => {
+                                            const f = e.target.files?.[0];
+                                            if (f) uploadTransportImage(p.id, `vehicle:${v}`, f);
+                                            e.target.value = '';
+                                          }}
+                                        />
+                                      </label>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {/* 3. Use (Baraat, Guests, Couple) with hours, persons, and price options */}
+                          <div className="space-y-2.5 pt-2 border-t border-slate-800/80">
+                            <div>
+                              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Use</label>
+                              <div className="flex flex-wrap gap-2">
+                                {TRANSPORT_USES.map((u) => {
+                                  const isSelected = (p.transport?.uses || (p.transport?.use ? [p.transport.use] : [])).includes(u);
+                                  return (
+                                    <button
+                                      type="button"
+                                      key={u}
+                                      onClick={() => toggleTransportUse(p.id, u)}
+                                      className={catChip(isSelected)}
+                                    >
+                                      {u}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+
+                            {/* Baraat: Hours + Price */}
+                            {((p.transport?.uses || (p.transport?.use ? [p.transport.use] : [])).includes('Baraat')) && (
+                              <div className="p-3 rounded-xl border border-slate-800 bg-slate-900/50 space-y-2">
+                                <span className="text-[11px] font-bold text-amber-300">Baraat Options</span>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                  <div>
+                                    <label className="block text-[10px] text-slate-400 mb-1">Hours for Baraat</label>
+                                    <input
+                                      type="number"
+                                      min={1}
+                                      value={p.transport?.baraatHours ?? ''}
+                                      onChange={(e) => updatePackageTransport(p.id, 'baraatHours', e.target.value === '' ? undefined : Number(e.target.value))}
+                                      placeholder="e.g. 4 hours"
+                                      className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-[10px] text-slate-400 mb-1 font-semibold">Price for Baraat (₹)</label>
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      value={p.transport?.usePrices?.Baraat ?? ''}
+                                      onChange={(e) => updateTransportUsePrice(p.id, 'Baraat', e.target.value === '' ? undefined : Number(e.target.value))}
+                                      placeholder="e.g. 5000"
+                                      className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                    />
+                                  </div>
                                 </div>
                               </div>
-                            ))}
+                            )}
+
+                            {/* Guests: How many persons + Price */}
+                            {((p.transport?.uses || (p.transport?.use ? [p.transport.use] : [])).includes('Guests')) && (
+                              <div className="p-3 rounded-xl border border-slate-800 bg-slate-900/50 space-y-2">
+                                <span className="text-[11px] font-bold text-amber-300">Guests Transport Options</span>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                  <div>
+                                    <label className="block text-[10px] text-slate-400 mb-1">How many persons (guests)</label>
+                                    <input
+                                      type="number"
+                                      min={1}
+                                      value={p.transport?.guestsPersons ?? ''}
+                                      onChange={(e) => updatePackageTransport(p.id, 'guestsPersons', e.target.value === '' ? undefined : Number(e.target.value))}
+                                      placeholder="e.g. 50 persons"
+                                      className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-[10px] text-slate-400 mb-1 font-semibold">Price for Guests (₹)</label>
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      value={p.transport?.usePrices?.Guests ?? ''}
+                                      onChange={(e) => updateTransportUsePrice(p.id, 'Guests', e.target.value === '' ? undefined : Number(e.target.value))}
+                                      placeholder="e.g. 10000"
+                                      className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Couple: Price option alone */}
+                            {((p.transport?.uses || (p.transport?.use ? [p.transport.use] : [])).includes('Couple')) && (
+                              <div className="p-3 rounded-xl border border-slate-800 bg-slate-900/50 space-y-2">
+                                <span className="text-[11px] font-bold text-amber-300">Couple Transport</span>
+                                <div>
+                                  <label className="block text-[10px] text-slate-400 mb-1 font-semibold">Price for Couple (₹)</label>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    value={p.transport?.usePrices?.Couple ?? ''}
+                                    onChange={(e) => updateTransportUsePrice(p.id, 'Couple', e.target.value === '' ? undefined : Number(e.target.value))}
+                                    placeholder="e.g. 6000"
+                                    className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                  />
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* 4. No. of vehicles, Seats/vehicle, Km/hours included + Package Price */}
+                          <div className="pt-2 border-t border-slate-800/80">
+                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
+                              Fleet Specifications &amp; Package Price
+                            </label>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                              <div>
+                                <label className="block text-[10px] text-slate-500 mb-1">No. of vehicles</label>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={p.transport?.numVehicles ?? ''}
+                                  onChange={(e) => updatePackageTransport(p.id, 'numVehicles', e.target.value === '' ? undefined : Number(e.target.value))}
+                                  placeholder="0"
+                                  className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] text-slate-500 mb-1">Seats / vehicle</label>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={p.transport?.seatsPerVehicle ?? ''}
+                                  onChange={(e) => updatePackageTransport(p.id, 'seatsPerVehicle', e.target.value === '' ? undefined : Number(e.target.value))}
+                                  placeholder="0"
+                                  className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] text-slate-500 mb-1">Km / hours included</label>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={p.transport?.kmHoursIncluded ?? ''}
+                                  onChange={(e) => updatePackageTransport(p.id, 'kmHoursIncluded', e.target.value === '' ? undefined : Number(e.target.value))}
+                                  placeholder="0"
+                                  className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] text-slate-400 font-semibold mb-1">Package price (₹)</label>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={p.transport?.kmHoursPrice ?? ''}
+                                  onChange={(e) => updatePackageTransport(p.id, 'kmHoursPrice', e.target.value === '' ? undefined : Number(e.target.value))}
+                                  placeholder="e.g. 8000"
+                                  className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* 5. Driver + Fuel Included with Price Option */}
+                          <div className="p-3 rounded-xl border border-slate-800 bg-slate-900/50 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <label className="block text-[10px] text-slate-400 uppercase font-bold">Driver + fuel included</label>
+                              <div className="flex gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => updatePackageTransport(p.id, 'driverFuel', true)}
+                                  className={catChip(p.transport?.driverFuel === true)}
+                                >
+                                  Yes
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => updatePackageTransport(p.id, 'driverFuel', false)}
+                                  className={catChip(p.transport?.driverFuel === false)}
+                                >
+                                  No
+                                </button>
+                              </div>
+                            </div>
+                            {p.transport?.driverFuel && (
+                              <div>
+                                <label className="block text-[10px] text-slate-400 mb-1 font-semibold">Driver + fuel price (₹)</label>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={p.transport?.driverFuelPrice ?? ''}
+                                  onChange={(e) => updatePackageTransport(p.id, 'driverFuelPrice', e.target.value === '' ? undefined : Number(e.target.value))}
+                                  placeholder="e.g. 2000"
+                                  className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                />
+                              </div>
+                            )}
+                          </div>
+
+                          {/* 6. Car Decoration with Type of decoration, Upload image, and Price */}
+                          <div className="p-3 rounded-xl border border-slate-800 bg-slate-900/50 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <label className="block text-[10px] text-slate-400 uppercase font-bold">Car decoration</label>
+                              <div className="flex gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => updatePackageTransport(p.id, 'carDecoration', true)}
+                                  className={catChip(p.transport?.carDecoration === true)}
+                                >
+                                  Yes
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => updatePackageTransport(p.id, 'carDecoration', false)}
+                                  className={catChip(p.transport?.carDecoration === false)}
+                                >
+                                  No
+                                </button>
+                              </div>
+                            </div>
+                            {p.transport?.carDecoration && (
+                              <div className="space-y-2.5 pt-1.5 border-t border-slate-800">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                  <div>
+                                    <label className="block text-[10px] text-slate-400 mb-1">Type of decoration</label>
+                                    <input
+                                      type="text"
+                                      value={p.transport?.carDecorationType ?? ''}
+                                      onChange={(e) => updatePackageTransport(p.id, 'carDecorationType', e.target.value)}
+                                      placeholder="e.g. Fresh Flower Hood &amp; Ribbon Garlands"
+                                      className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-[10px] text-slate-400 mb-1 font-semibold">Decoration price (₹)</label>
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      value={p.transport?.carDecorationPrice ?? ''}
+                                      onChange={(e) => updatePackageTransport(p.id, 'carDecorationPrice', e.target.value === '' ? undefined : Number(e.target.value))}
+                                      placeholder="e.g. 2500"
+                                      className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                    />
+                                  </div>
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] text-slate-400 mb-1">Upload decoration image</label>
+                                  <div className="flex items-center gap-2.5">
+                                    {p.transport?.carDecorationImage ? (
+                                      <div className="relative group">
+                                        <img src={p.transport.carDecorationImage} alt="Car decoration" className="w-16 h-12 rounded-lg object-cover border border-slate-700" />
+                                        <button
+                                          type="button"
+                                          onClick={() => removeTransportImage(p.id, 'decoration')}
+                                          className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px] shadow"
+                                        >
+                                          ✕
+                                        </button>
+                                      </div>
+                                    ) : null}
+                                    <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold cursor-pointer border border-slate-700 transition-colors">
+                                      {uploadingTransportImg === `${p.id}:decoration` ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                                      {p.transport?.carDecorationImage ? 'Change photo' : 'Upload decoration photo'}
+                                      <input
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        disabled={uploadingTransportImg === `${p.id}:decoration`}
+                                        onChange={(e) => {
+                                          const f = e.target.files?.[0];
+                                          if (f) uploadTransportImage(p.id, 'decoration', f);
+                                          e.target.value = '';
+                                        }}
+                                      />
+                                    </label>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
                       )}

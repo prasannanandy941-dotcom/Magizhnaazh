@@ -331,14 +331,31 @@ export const PRIEST_LANGUAGES = ['Tamil', 'Sanskrit', 'Hindi'] as const;
 // Structured details for a Transport vendor's package (per vehicle).
 export interface TransportPackageDetails {
   tier?: string; // Economy / Sedan / Luxury / Vintage-decorated
-  vehicleType?: string; // Car / SUV / Tempo Traveller / Bus / Decorated car
-  pricingBasis?: string; // Per day / Per km
+  vehicleType?: string; // legacy single vehicle type
+  vehicleTypes?: string[]; // Car / SUV / Tempo Traveller / Bus / Decorated car (multi)
+  vehicleTypeSeats?: Record<string, number>; // seats per vehicle type
+  vehicleTypePrices?: Record<string, number>; // price per vehicle type
+  vehicleTypeImages?: Record<string, string>; // image per vehicle type
+  pricingBasis?: string; // legacy Per day / Per km selector
+  perDayPrice?: number; // price when hired per day
+  perKmPrice?: number; // price when hired per km
   numVehicles?: number;
+  numVehiclesPrice?: number;
   seatsPerVehicle?: number;
+  seatsPrice?: number;
   kmHoursIncluded?: number; // kilometres / hours included
+  kmHoursPrice?: number;
   driverFuel?: boolean; // driver + fuel included
+  driverFuelPrice?: number;
   carDecoration?: boolean;
-  use?: string; // Baraat / Guests / Couple
+  carDecorationType?: string; // type of decoration
+  carDecorationPrice?: number;
+  carDecorationImage?: string;
+  use?: string; // legacy single use
+  uses?: string[]; // Baraat / Guests / Couple (multi)
+  usePrices?: Record<string, number>; // price per use
+  baraatHours?: number; // hours for Baraat use
+  guestsPersons?: number; // persons for Guests use
 }
 
 // Option sets for the Transport package form.

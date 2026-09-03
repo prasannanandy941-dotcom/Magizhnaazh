@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Star, MapPin, Check, ShieldCheck, Upload, Calendar as CalendarIcon, MessageSquare, Send, CreditCard, Sparkles, Camera, Bus, Flame, Gift, ListChecks, Phone, Clock, Plus, Maximize2 } from 'lucide-react';
+import { X, Star, MapPin, Check, ShieldCheck, Upload, Calendar as CalendarIcon, MessageSquare, Send, CreditCard, Sparkles, Camera, Bus, Flame, Gift, ListChecks, Phone, Clock, Plus, Maximize2, Car } from 'lucide-react';
 import { Vendor, Review, getVendorTrustBadges, getLiveDeals, bestDealForAmount, AVAILABILITY_SLOTS, isSlotBooked, openSlots, offeredSlotIds } from '../../../../packages/shared-types';
 import { fetchVendorById, uploadReferenceImage, fetchVendorReviews } from '../api';
 import { PortfolioGrid } from './Portfolio';
@@ -1270,28 +1270,116 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                       {vendor.category === 'Transport' && pkg.transport && (() => {
                         const t = pkg.transport;
                         const chip = 'text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200';
-                        const incl: [string, boolean | undefined][] = [
-                          ['Driver + fuel', t.driverFuel], ['Car decoration', t.carDecoration],
-                        ];
+                        const vehicleList = Array.isArray(t.vehicleTypes) && t.vehicleTypes.length > 0
+                          ? t.vehicleTypes
+                          : (t.vehicleType ? [t.vehicleType] : []);
+                        const useList = Array.isArray(t.uses) && t.uses.length > 0
+                          ? t.uses
+                          : (t.use ? [t.use] : []);
+
                         return (
-                          <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2" onClick={(e) => e.stopPropagation()}>
-                            <span className="text-[10px] font-bold text-slate-400 uppercase block">Vehicle details</span>
+                          <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2.5" onClick={(e) => e.stopPropagation()}>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase block">Vehicle &amp; Trip Details</span>
                             <div className="flex flex-wrap gap-1.5">
                               {t.tier && <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-200 font-bold">{t.tier}</span>}
-                              {t.vehicleType && <span className={chip}>{t.vehicleType}</span>}
-                              {t.use && <span className={chip}>For {t.use}</span>}
                               {t.pricingBasis && <span className={chip}>{t.pricingBasis}</span>}
+                              {t.perDayPrice && <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-amber-300">₹{t.perDayPrice.toLocaleString('en-IN')}/day</span>}
+                              {t.perKmPrice && <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-amber-300">₹{t.perKmPrice.toLocaleString('en-IN')}/km</span>}
+                              {useList.map((u) => <span key={u} className={chip}>For {u}</span>)}
                             </div>
+
+                            {/* Vehicles with images, seats and prices */}
+                            {vehicleList.length > 0 && (
+                              <div className="space-y-1.5 pt-1">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase block">Configured Fleet</span>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                  {vehicleList.map((v) => {
+                                    const seats = t.vehicleTypeSeats?.[v];
+                                    const price = t.vehicleTypePrices?.[v];
+                                    const img = t.vehicleTypeImages?.[v];
+                                    return (
+                                      <div key={v} className="flex items-center gap-2 p-2 rounded-xl bg-slate-950/60 border border-slate-800">
+                                        {img ? (
+                                          <img src={img} alt={v} className="w-12 h-10 rounded-lg object-cover border border-slate-700 shrink-0" />
+                                        ) : (
+                                          <div className="w-12 h-10 rounded-lg bg-slate-800 flex items-center justify-center text-slate-500 shrink-0">
+                                            <Car className="w-5 h-5" />
+                                          </div>
+                                        )}
+                                        <div className="flex-1 min-w-0">
+                                          <div className="text-xs font-bold text-white truncate">{v}</div>
+                                          <div className="text-[10px] text-slate-400">
+                                            {seats ? `${seats} seats` : ''}
+                                            {seats && price ? ' · ' : ''}
+                                            {price ? <span className="text-amber-400 font-semibold">₹{price.toLocaleString('en-IN')}</span> : null}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Trip specifications */}
                             <div className="space-y-1 text-[11px] text-slate-300">
-                              {t.numVehicles ? <div>Vehicles: <span className="text-white font-semibold">{t.numVehicles}</span></div> : null}
+                              {t.numVehicles ? <div>No. of vehicles: <span className="text-white font-semibold">{t.numVehicles}</span></div> : null}
                               {t.seatsPerVehicle ? <div>Seats / vehicle: <span className="text-white font-semibold">{t.seatsPerVehicle}</span></div> : null}
                               {t.kmHoursIncluded ? <div>Km / hours included: <span className="text-white font-semibold">{t.kmHoursIncluded}</span></div> : null}
+                              {t.kmHoursPrice ? <div>Package price: <span className="text-amber-400 font-bold">₹{t.kmHoursPrice.toLocaleString('en-IN')}</span></div> : null}
                             </div>
-                            {incl.some(([, v]) => v !== undefined) && (
-                              <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px]">
-                                {incl.filter(([, v]) => v !== undefined).map(([label, v]) => (
-                                  <span key={label} className="text-slate-400">{label}: <b className={v ? 'text-emerald-400' : 'text-slate-500'}>{v ? 'Yes' : 'No'}</b></span>
-                                ))}
+
+                            {/* Use options breakdown */}
+                            {(t.baraatHours || t.usePrices?.Baraat || t.guestsPersons || t.usePrices?.Guests || t.usePrices?.Couple) && (
+                              <div className="p-2 rounded-xl bg-slate-950/40 border border-slate-800 space-y-1 text-[11px]">
+                                {t.baraatHours || t.usePrices?.Baraat ? (
+                                  <div className="flex justify-between">
+                                    <span className="text-slate-400">Baraat ({t.baraatHours ? `${t.baraatHours} hrs` : 'Standard'}):</span>
+                                    {t.usePrices?.Baraat ? <span className="text-amber-300 font-semibold">₹{t.usePrices.Baraat.toLocaleString('en-IN')}</span> : null}
+                                  </div>
+                                ) : null}
+                                {t.guestsPersons || t.usePrices?.Guests ? (
+                                  <div className="flex justify-between">
+                                    <span className="text-slate-400">Guests ({t.guestsPersons ? `${t.guestsPersons} persons` : 'All'}):</span>
+                                    {t.usePrices?.Guests ? <span className="text-amber-300 font-semibold">₹{t.usePrices.Guests.toLocaleString('en-IN')}</span> : null}
+                                  </div>
+                                ) : null}
+                                {t.usePrices?.Couple ? (
+                                  <div className="flex justify-between">
+                                    <span className="text-slate-400">Couple Transport:</span>
+                                    <span className="text-amber-300 font-semibold">₹{t.usePrices.Couple.toLocaleString('en-IN')}</span>
+                                  </div>
+                                ) : null}
+                              </div>
+                            )}
+
+                            {/* Inclusions */}
+                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] pt-1">
+                              {t.driverFuel !== undefined && (
+                                <span className="text-slate-400">
+                                  Driver + fuel: <b className={t.driverFuel ? 'text-emerald-400' : 'text-slate-500'}>{t.driverFuel ? 'Yes' : 'No'}</b>
+                                  {t.driverFuel && t.driverFuelPrice ? <span className="text-amber-300 ml-1">(+₹{t.driverFuelPrice.toLocaleString('en-IN')})</span> : null}
+                                </span>
+                              )}
+                              {t.carDecoration !== undefined && (
+                                <span className="text-slate-400">
+                                  Car decoration: <b className={t.carDecoration ? 'text-emerald-400' : 'text-slate-500'}>{t.carDecoration ? 'Yes' : 'No'}</b>
+                                  {t.carDecoration && t.carDecorationPrice ? <span className="text-amber-300 ml-1">(+₹{t.carDecorationPrice.toLocaleString('en-IN')})</span> : null}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Car Decoration details & preview */}
+                            {t.carDecoration && (t.carDecorationType || t.carDecorationImage) && (
+                              <div className="p-2 rounded-xl bg-slate-950/40 border border-slate-800 flex items-center gap-2.5">
+                                {t.carDecorationImage && (
+                                  <img src={t.carDecorationImage} alt="Car decoration" className="w-14 h-11 rounded-lg object-cover border border-slate-700 shrink-0" />
+                                )}
+                                <div className="text-[11px]">
+                                  <span className="text-slate-400 block font-semibold">Decoration style:</span>
+                                  <span className="text-slate-200">{t.carDecorationType || 'Custom floral'}</span>
+                                  {t.carDecorationPrice ? <span className="text-amber-300 font-semibold block">₹{t.carDecorationPrice.toLocaleString('en-IN')}</span> : null}
+                                </div>
                               </div>
                             )}
                           </div>
