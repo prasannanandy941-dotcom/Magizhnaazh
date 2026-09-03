@@ -1118,9 +1118,9 @@ export function App() {
                   notes,
                   selectedOptions,
                   referenceImages,
-                  // They've just seen the vendor's UPI ID/QR and clicked Confirm
-                  // Order — that's a payment claim, not a verified payment, so
-                  // this lands as 'pending_payment' rather than auto-confirming.
+                  // They've clicked Confirm Order — that's a payment claim, not
+                  // a verified payment, so this lands as 'pending_payment'
+                  // rather than auto-confirming.
                   // The vendor has to verify and confirm it on their end (My Orders
                   // reflects that as "Awaiting Vendor Confirmation").
                   advancePaymentClaimed: true,

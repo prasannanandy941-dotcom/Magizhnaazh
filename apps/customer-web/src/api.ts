@@ -368,9 +368,9 @@ export function createBookingQuote(input: {
   notes?: string;
   selectedOptions?: string[];
   referenceImages?: string[];
-  // True once the customer has seen the vendor's UPI ID/QR and clicked
-  // Confirm Order — lands the booking in 'pending_payment' so the vendor
-  // has to verify and confirm it themselves, instead of it auto-confirming.
+  // True once the customer has clicked Confirm Order — lands the booking in
+  // 'pending_payment' so the vendor has to verify and confirm it themselves,
+  // instead of it auto-confirming.
   advancePaymentClaimed?: boolean;
 }): Promise<BookingResponse> {
   return authedFetch<BookingResponse>('/api/v1/bookings/quote', {

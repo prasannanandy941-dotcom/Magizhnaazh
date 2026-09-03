@@ -248,8 +248,6 @@ export function App() {
   const [advancePercentage, setAdvancePercentage] = useState(20);
   const [advanceAmount, setAdvanceAmount] = useState(0);
   const [contactPhone, setContactPhone] = useState('');
-  const [upiId, setUpiId] = useState('');
-  const [qrCodeImage, setQrCodeImage] = useState('');
   const [description, setDescription] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileNotice, setProfileNotice] = useState('');
@@ -262,8 +260,6 @@ export function App() {
 
   const [uploading, setUploading] = useState(false);
   const [uploadNotice, setUploadNotice] = useState('');
-  const [uploadingQr, setUploadingQr] = useState(false);
-  const [uploadQrNotice, setUploadQrNotice] = useState('');
 
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [bookingsLoading, setBookingsLoading] = useState(false);
@@ -324,8 +320,6 @@ export function App() {
         } else {
           setContactPhone(v.contactPhone || '');
         }
-        setUpiId(v.upiId || '');
-        setQrCodeImage(v.qrCodeImage || '');
         setDescription(v.description);
         setFacilities(v.facilities || {});
         setGiftCount(v.giftCount != null ? String(v.giftCount) : '');
@@ -522,7 +516,6 @@ export function App() {
         city,
         startingPrice,
         contactPhone,
-        upiId,
         policies: { ...(myVendor.policies || {}), advancePercentage, advanceAmount: advanceAmount || null },
       } as any);
       if (res.data?.vendor) {
@@ -530,7 +523,6 @@ export function App() {
         setAdvancePercentage(res.data.vendor.policies?.advancePercentage ?? advancePercentage);
         setAdvanceAmount(res.data.vendor.policies?.advanceAmount ?? 0);
         setContactPhone(res.data.vendor.contactPhone || '');
-        setUpiId(res.data.vendor.upiId || '');
       }
       setProfileNotice('Profile changes saved.');
     } catch (err: any) {
@@ -2099,37 +2091,6 @@ export function App() {
       setUploadNotice('Upload failed — is the gateway running?');
     } finally {
       setUploading(false);
-    }
-  };
-
-  const handleQrUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !myVendor || !token) return;
-
-    setUploadingQr(true);
-    setUploadQrNotice('');
-
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const res = await fetch(`${GATEWAY_URL}/api/v1/vendors/${myVendor.id}/upload-qr`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      });
-      const json = await res.json();
-      if (json.success && json.data?.fileUrl) {
-        setQrCodeImage(json.data.fileUrl);
-        setMyVendor((prev) => (prev ? { ...prev, qrCodeImage: json.data.fileUrl } : prev));
-        setUploadQrNotice('UPI QR code saved!');
-      } else {
-        setUploadQrNotice(json.message || 'Upload failed.');
-      }
-    } catch (err) {
-      setUploadQrNotice('Upload failed — is the gateway running?');
-    } finally {
-      setUploadingQr(false);
     }
   };
 
@@ -5952,34 +5913,6 @@ export function App() {
                   className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white font-semibold text-xs"
                 />
                 <p className="text-[10px] text-slate-500 mt-1">Shown to customers so they can call you directly.</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs text-slate-400 mb-1">UPI ID</label>
-                <input
-                  type="text"
-                  value={upiId}
-                  onChange={(e) => setUpiId(e.target.value)}
-                  placeholder="yourbusiness@upi"
-                  className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white font-semibold text-xs"
-                />
-                <p className="text-[10px] text-slate-500 mt-1">Customers see this when paying your advance.</p>
-              </div>
-              <div>
-                <label className="block text-xs text-slate-400 mb-1">Payment QR Code</label>
-                <div className="flex items-center gap-3">
-                  {qrCodeImage && (
-                    <img src={qrCodeImage} alt="UPI QR code" className="w-12 h-12 rounded-lg object-cover border border-slate-800" />
-                  )}
-                  <label className="flex-1 flex items-center justify-center gap-1.5 px-3 py-3 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:border-slate-700 text-xs font-bold cursor-pointer transition-colors">
-                    {uploadingQr ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-                    {qrCodeImage ? 'Replace' : 'Upload'}
-                    <input type="file" accept="image/*" onChange={handleQrUpload} className="hidden" disabled={uploadingQr} />
-                  </label>
-                </div>
-                {uploadQrNotice && <p className="text-[10px] text-emerald-400 mt-1">{uploadQrNotice}</p>}
               </div>
             </div>
 

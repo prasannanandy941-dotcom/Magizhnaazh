@@ -216,14 +216,6 @@ function BookModal({ visible, onClose, vendor, token, selectedPkg, price, advanc
               ))
             )}
 
-            {!!vendor.upiId && (
-              <View style={styles.payBox}>
-                <Text style={styles.payLabel}>Pay the advance to the vendor's UPI</Text>
-                <Text style={styles.upi}>{vendor.upiId}</Text>
-                <Text style={styles.payHint}>Pay ₹{advance.toLocaleString('en-IN')} using any UPI app, then confirm below.</Text>
-              </View>
-            )}
-
             <Text style={styles.modalLabel}>Note to vendor (optional)</Text>
             <TextInput
               style={styles.noteInput}
@@ -296,10 +288,6 @@ const styles = StyleSheet.create({
   eventRowSel: { borderColor: colors.primary, borderWidth: 2 },
   eventName: { fontSize: 14, fontWeight: '700', color: colors.text, flex: 1 },
   eventDate: { fontSize: 12, color: colors.textMuted, marginLeft: space.sm },
-  payBox: { backgroundColor: colors.chipBg, borderRadius: radius.md, padding: space.md, marginTop: space.lg },
-  payLabel: { fontSize: 12, fontWeight: '700', color: colors.text },
-  upi: { fontSize: 18, fontWeight: '800', color: colors.primary, marginTop: 4 },
-  payHint: { fontSize: 11, color: colors.textMuted, marginTop: 4 },
   noteInput: {
     borderWidth: 2, borderColor: colors.borderStrong, borderRadius: radius.md,
     paddingHorizontal: 14, paddingVertical: 11, fontSize: 15, color: colors.text,

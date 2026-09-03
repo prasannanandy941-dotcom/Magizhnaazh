@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Star, MapPin, Check, ShieldCheck, Upload, Calendar as CalendarIcon, MessageSquare, Send, CreditCard, Sparkles, Camera, Bus, Flame, Gift, ListChecks, Phone, Copy, Clock, RefreshCw, Plus, Maximize2 } from 'lucide-react';
+import { X, Star, MapPin, Check, ShieldCheck, Upload, Calendar as CalendarIcon, MessageSquare, Send, CreditCard, Sparkles, Camera, Bus, Flame, Gift, ListChecks, Phone, Clock, Plus, Maximize2 } from 'lucide-react';
 import { Vendor, Review, getVendorTrustBadges, getLiveDeals, bestDealForAmount, AVAILABILITY_SLOTS, isSlotBooked, openSlots, offeredSlotIds } from '../../../../packages/shared-types';
 import { fetchVendorById, uploadReferenceImage, fetchVendorReviews } from '../api';
 import { PortfolioGrid } from './Portfolio';
@@ -215,54 +215,6 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
   // vendor's advance requirement comes to in rupees, a way to call the
   // vendor directly, and an explicit Confirm Order action.
   const [advancePanelOpen, setAdvancePanelOpen] = useState(false);
-  const [upiCopied, setUpiCopied] = useState(false);
-  const copyUpiId = () => {
-    if (!vendor.upiId) return;
-    navigator.clipboard.writeText(vendor.upiId).then(() => {
-      setUpiCopied(true);
-      setTimeout(() => setUpiCopied(false), 2000);
-    });
-  };
-
-  // The vendor's uploaded QR is a static image, but we present each customer
-  // with a fresh, time-limited "payment session": a unique reference code and
-  // a 5-minute countdown. When the window runs out, a new session (new ref +
-  // reset timer) is generated automatically so a stale QR is never left on
-  // screen; the same happens once an order is confirmed, retiring the QR the
-  // customer just paid against.
-  const QR_VALIDITY_MS = 5 * 60 * 1000;
-  const [qrRef, setQrRef] = useState('');
-  const [qrExpiresAt, setQrExpiresAt] = useState(0);
-  const [secondsLeft, setSecondsLeft] = useState(0);
-
-  const generateQrRef = () =>
-    `PAY-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
-
-  const startNewQrSession = () => {
-    setQrRef(generateQrRef());
-    setQrExpiresAt(Date.now() + QR_VALIDITY_MS);
-  };
-
-  // Start a fresh QR session whenever the pay panel is opened.
-  useEffect(() => {
-    if (advancePanelOpen) startNewQrSession();
-  }, [advancePanelOpen]);
-
-  // Tick the countdown once per second while the panel is open; when it hits
-  // zero, roll straight into a new session (auto-regenerate).
-  useEffect(() => {
-    if (!advancePanelOpen || !qrExpiresAt) return;
-    const tick = () => {
-      const remaining = Math.max(0, Math.round((qrExpiresAt - Date.now()) / 1000));
-      setSecondsLeft(remaining);
-      if (remaining <= 0) startNewQrSession();
-    };
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, [advancePanelOpen, qrExpiresAt]);
-
-  const countdownLabel = `${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, '0')}`;
 
   const [selectedImage, setSelectedImage] = useState(getVendorCoverImage(vendor));
   useEffect(() => {
@@ -2152,66 +2104,6 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                 </div>
               </div>
 
-              {(vendor.qrCodeImage || vendor.upiId) && (
-                <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col items-center gap-3">
-                  {vendor.qrCodeImage && (
-                    <div className="relative">
-                      <img
-                        src={vendor.qrCodeImage}
-                        alt={`${vendor.businessName} UPI QR code`}
-                        className={`w-40 h-40 rounded-xl object-cover border border-slate-800 transition-opacity ${secondsLeft <= 0 ? 'opacity-30' : ''}`}
-                      />
-                      {secondsLeft <= 0 && (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <span className="text-[11px] font-semibold text-amber-400 bg-slate-950/80 px-2 py-1 rounded-lg">
-                            Generating new QR…
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Live payment session: countdown + unique reference.
-                      Only meaningful when there's an actual QR to scan, so it
-                      is hidden for vendors that provide a UPI ID alone. */}
-                  {vendor.qrCodeImage && (
-                    <>
-                      <div className="w-full flex items-center justify-between text-[11px]">
-                        <span className={`flex items-center gap-1.5 font-semibold ${secondsLeft <= 30 ? 'text-red-400' : 'text-emerald-400'}`}>
-                          <Clock className="w-3.5 h-3.5" />
-                          Valid for {countdownLabel}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={startNewQrSession}
-                          className="flex items-center gap-1 text-slate-400 hover:text-white transition-colors"
-                        >
-                          <RefreshCw className="w-3 h-3" /> New QR
-                        </button>
-                      </div>
-                      {qrRef && (
-                        <span className="text-[10px] text-slate-500 font-mono tracking-wide">Ref: {qrRef}</span>
-                      )}
-                    </>
-                  )}
-
-                  {vendor.upiId && (
-                    <button
-                      type="button"
-                      onClick={copyUpiId}
-                      className="w-full py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white text-xs font-semibold flex items-center justify-between gap-2 transition-colors"
-                    >
-                      <span className="text-slate-400">UPI ID</span>
-                      <span className="flex items-center gap-1.5">
-                        {vendor.upiId}
-                        {upiCopied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-slate-400" />}
-                      </span>
-                    </button>
-                  )}
-                  <p className="text-[11px] text-slate-500 text-center">Scan or pay via UPI, then confirm your order below.</p>
-                </div>
-              )}
-
               {vendor.contactPhone && (
                 <a
                   href={`tel:${vendor.contactPhone}`}
@@ -2245,9 +2137,6 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                     })(),
                     selectedSlot || undefined
                   );
-                  // Retire the QR the customer just paid against and roll a
-                  // fresh session so the same code can't be reused.
-                  startNewQrSession();
                   setAdvancePanelOpen(false);
                 }}
                 className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold text-sm shadow-md flex items-center justify-center gap-2"
