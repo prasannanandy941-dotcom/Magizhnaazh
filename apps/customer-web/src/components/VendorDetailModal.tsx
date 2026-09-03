@@ -789,7 +789,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                 <div className="sm:col-span-2 p-4 rounded-2xl bg-indigo-950/40 border border-indigo-500/60 shadow-lg shadow-indigo-500/10">
                   <span className="text-[11px] font-bold text-slate-400 uppercase">Selected {vendor.category === 'Venue' ? 'Hall' : 'Package'}</span>
                   <div className="text-white font-bold text-sm">
-                    {selectedPkg.packageName}{chosenTier ? ` — ${chosenTier.name}` : ''} — <span className="text-amber-400">₹{(effectivePkgPrice ?? 0).toLocaleString('en-IN')}{vendor.category === 'Security' ? ' per person' : vendor.category === 'Catering' && !chosenTier ? ' per plate' : ''}</span>
+                    {selectedPkg.packageName}{chosenTier ? ` — ${chosenTier.name}` : ''} — <span className="text-amber-400">₹{(effectivePkgPrice ?? 0).toLocaleString('en-IN')}{vendor.category === 'Security' ? ' per person' : ''}</span>
                   </div>
                 </div>
               )}
@@ -865,7 +865,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                           {pkg.packageName}
                         </h4>
                         <span className="font-display font-extrabold text-amber-400 text-base shrink-0">
-                          ₹{pkg.price.toLocaleString('en-IN')} / plate
+                          ₹{pkg.price.toLocaleString('en-IN')}
                         </span>
                       </div>
                       {selectedPkgId === pkg.id && (
