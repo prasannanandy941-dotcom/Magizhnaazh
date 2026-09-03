@@ -280,18 +280,28 @@ export interface ReturnGiftsPackageDetails {
 export const RETURN_GIFTS_TIERS = ['Economy', 'Standard', 'Premium'] as const;
 export const RETURN_GIFT_TYPES = ['Dry fruits', 'Silver items', 'Potli bags', 'Plants', 'Hampers', 'Sweets'] as const;
 
-// Structured details for a Printing vendor's package (per quantity).
+// Structured details for a Printing vendor's package.
 export interface PrintingPackageDetails {
-  product?: string; // Banners / Flex / Albums / Standees / Photo frames / Thank-you cards
-  size?: string; // free text
-  quantity?: number;
+  product?: string;
+  products?: string[]; // Banners / Albums / Standees / Photo frames / Thank-you cards
+  productTypes?: Record<string, string>;
+  productSizes?: Record<string, string>;
+  productPrices?: Record<string, number>;
+  productImages?: Record<string, string>;
   finishes?: string[]; // Matte / Glossy / Lamination
+  finishPrices?: Record<string, number>;
+  finishImages?: Record<string, string>;
+  size?: string;
+  quantity?: number;
   designIncluded?: boolean; // design included
+  designPrice?: number;
+  designDescription?: string;
+  designImage?: string;
   deliveryTime?: string; // free text, e.g. "2 days"
 }
 
 // Option sets for the Printing package form.
-export const PRINTING_PRODUCTS = ['Banners', 'Flex', 'Albums', 'Standees', 'Photo frames', 'Thank-you cards'] as const;
+export const PRINTING_PRODUCTS = ['Banners', 'Albums', 'Standees', 'Photo frames', 'Thank-you cards'] as const;
 export const PRINTING_FINISHES = ['Matte', 'Glossy', 'Lamination'] as const;
 
 // Structured details for an Invitation vendor's package (per design / quantity).

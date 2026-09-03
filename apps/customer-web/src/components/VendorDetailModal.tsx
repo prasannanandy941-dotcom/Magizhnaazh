@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Star, MapPin, Check, ShieldCheck, Upload, Calendar as CalendarIcon, MessageSquare, Send, CreditCard, Sparkles, Camera, Bus, Flame, Gift, ListChecks, Phone, Clock, Plus, Maximize2, Car, Mail } from 'lucide-react';
+import { X, Star, MapPin, Check, ShieldCheck, Upload, Calendar as CalendarIcon, MessageSquare, Send, CreditCard, Sparkles, Camera, Bus, Flame, Gift, ListChecks, Phone, Clock, Plus, Maximize2, Car, Mail, Printer } from 'lucide-react';
 import { Vendor, Review, getVendorTrustBadges, getLiveDeals, bestDealForAmount, AVAILABILITY_SLOTS, isSlotBooked, openSlots, offeredSlotIds } from '../../../../packages/shared-types';
 import { fetchVendorById, uploadReferenceImage, fetchVendorReviews } from '../api';
 import { PortfolioGrid } from './Portfolio';
@@ -1509,22 +1509,100 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
 
                       {vendor.category === 'Printing' && pkg.printing && (() => {
                         const pr = pkg.printing;
-                        const chip = 'text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200';
+                        const productList = Array.isArray(pr.products) && pr.products.length > 0
+                          ? pr.products
+                          : (pr.product ? [pr.product] : []);
+
                         return (
-                          <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2" onClick={(e) => e.stopPropagation()}>
+                          <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2.5" onClick={(e) => e.stopPropagation()}>
                             <span className="text-[10px] font-bold text-slate-400 uppercase block">Printing details</span>
-                            <div className="flex flex-wrap gap-1.5">
-                              {pr.product && <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-200 font-bold">{pr.product}</span>}
-                              {(pr.finishes || []).map((f) => <span key={`pf-${f}`} className={chip}>{f}</span>)}
-                            </div>
-                            <div className="space-y-1 text-[11px] text-slate-300">
-                              {pr.size ? <div>Size: <span className="text-white font-semibold">{pr.size}</span></div> : null}
-                              {pr.quantity ? <div>Quantity: <span className="text-white font-semibold">{pr.quantity}</span></div> : null}
-                              {pr.deliveryTime ? <div>Delivery: <span className="text-white font-semibold">{pr.deliveryTime}</span></div> : null}
-                            </div>
-                            {pr.designIncluded !== undefined && (
-                              <div className="text-[11px]"><span className="text-slate-400">Design included: <b className={pr.designIncluded ? 'text-emerald-400' : 'text-slate-500'}>{pr.designIncluded ? 'Yes' : 'No'}</b></span></div>
+
+                            {/* Products with type, size, price, and photos */}
+                            {productList.length > 0 && (
+                              <div className="space-y-1.5">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase block">Products</span>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                  {productList.map((pName) => {
+                                    const pType = pr.productTypes?.[pName];
+                                    const pSize = pr.productSizes?.[pName];
+                                    const pPrice = pr.productPrices?.[pName];
+                                    const pImg = pr.productImages?.[pName];
+
+                                    return (
+                                      <div key={pName} className="flex items-start gap-2.5 p-2 rounded-xl bg-slate-950/60 border border-slate-800">
+                                        {pImg ? (
+                                          <img src={pImg} alt={pName} className="w-12 h-12 rounded-lg object-cover border border-slate-700 shrink-0" />
+                                        ) : (
+                                          <div className="w-12 h-12 rounded-lg bg-slate-800 flex items-center justify-center text-slate-500 shrink-0">
+                                            <Printer className="w-5 h-5" />
+                                          </div>
+                                        )}
+                                        <div className="flex-1 min-w-0 text-[11px]">
+                                          <div className="font-bold text-white truncate">{pName}</div>
+                                          {pType && <div className="text-slate-400 text-[10px] truncate">Type: {pType}</div>}
+                                          {pSize && <div className="text-slate-400 text-[10px] truncate">Size: {pSize}</div>}
+                                          {pPrice ? <div className="text-amber-400 font-semibold text-[11px]">₹{pPrice.toLocaleString('en-IN')}</div> : null}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
                             )}
+
+                            {/* Materials / Finishes with price and image */}
+                            {(pr.finishes || []).length > 0 && (
+                              <div className="space-y-1.5 pt-1">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase block">Material / Finish</span>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                  {pr.finishes!.map((f) => {
+                                    const fPrice = pr.finishPrices?.[f];
+                                    const fImg = pr.finishImages?.[f];
+
+                                    return (
+                                      <div key={f} className="flex items-center gap-2.5 p-2 rounded-xl bg-slate-950/60 border border-slate-800">
+                                        {fImg ? (
+                                          <img src={fImg} alt={f} className="w-10 h-10 rounded-lg object-cover border border-slate-700 shrink-0" />
+                                        ) : (
+                                          <div className="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center text-slate-500 shrink-0">
+                                            <Sparkles className="w-4 h-4" />
+                                          </div>
+                                        )}
+                                        <div className="flex-1 min-w-0 text-[11px]">
+                                          <div className="font-semibold text-slate-200 truncate">{f}</div>
+                                          {fPrice ? <div className="text-amber-400 font-semibold text-[10px]">₹{fPrice.toLocaleString('en-IN')}</div> : null}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Design Included with description, price, and preview */}
+                            {pr.designIncluded !== undefined && (
+                              <div className="pt-1 text-[11px]">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-slate-400">Design included: <b className={pr.designIncluded ? 'text-emerald-400' : 'text-slate-500'}>{pr.designIncluded ? 'Yes' : 'No'}</b></span>
+                                  {pr.designIncluded && pr.designPrice ? (
+                                    <span className="text-amber-300 font-semibold">(₹{pr.designPrice.toLocaleString('en-IN')})</span>
+                                  ) : null}
+                                </div>
+                                {pr.designIncluded && pr.designDescription ? (
+                                  <div className="text-slate-300 text-[10px] mt-0.5">{pr.designDescription}</div>
+                                ) : null}
+                                {pr.designIncluded && pr.designImage ? (
+                                  <img src={pr.designImage} alt="Design sample" className="mt-1.5 w-16 h-12 rounded-lg object-cover border border-slate-700" />
+                                ) : null}
+                              </div>
+                            )}
+
+                            {/* Delivery time */}
+                            {pr.deliveryTime ? (
+                              <div className="text-[11px] text-slate-300 pt-0.5">
+                                Delivery time: <span className="text-white font-semibold">{pr.deliveryTime}</span>
+                              </div>
+                            ) : null}
                           </div>
                         );
                       })()}

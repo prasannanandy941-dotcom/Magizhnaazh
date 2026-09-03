@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Store, Star, Upload, Check, LogOut, Loader2, Plus, SlidersHorizontal, ChevronDown, Receipt, X, Bell, ShieldCheck, Clock as ClockIcon, AlertCircle, FileText, CalendarDays, Sparkles, Car, Mail } from 'lucide-react';
+import { Store, Star, Upload, Check, LogOut, Loader2, Plus, SlidersHorizontal, ChevronDown, Receipt, X, Bell, ShieldCheck, Clock as ClockIcon, AlertCircle, FileText, CalendarDays, Sparkles, Car, Mail, Printer } from 'lucide-react';
 import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, VendorDeal, OfferedOptionItem, CateringFoodItem, CateringCourseItem, VENDOR_CATEGORIES, CATEGORY_OPTIONS, CATERING_OPTION_STYLE, MEDIA_QUALITY_OPTIONS, MEDIA_EQUIPMENT_OPTIONS, mediaExtraField, isDealLive, CATERING_MENU_TIERS, CATERING_FOOD_TYPES, CATERING_CUISINES, CATERING_COURSES, CATERING_LIVE_COUNTERS, CATERING_SERVICE_STYLES, BUFFET_PLATE_TYPES, BANANA_LEAF_TYPES, slotLabelWithTime, AVAILABILITY_SLOTS, offeredSlotIds, VENUE_SESSIONS, VENUE_HALL_TYPES, VENUE_HALL_CLASSES, VENUE_CATERING_POLICIES, VENUE_FEATURES, DECORATION_TIERS, DECORATION_THEMES, DECORATION_AREAS, DECORATION_FLOWER_TYPES, MAKEUP_TYPES, MAKEUP_FINISHES, MEDIA_TIERS, MEDIA_COVERAGE, MEDIA_STYLES, TRANSPORT_TIERS, TRANSPORT_VEHICLE_TYPES, TRANSPORT_PRICING_BASIS, TRANSPORT_USES, PRIEST_CEREMONY_TYPES, PRIEST_LANGUAGES, INVITATION_TIERS, INVITATION_TYPES, INVITATION_DESIGNS, INVITATION_ADDONS, INVITATION_LANGUAGES, PRINTING_PRODUCTS, PRINTING_FINISHES, RETURN_GIFTS_TIERS, RETURN_GIFT_TYPES, ENTERTAINMENT_ACT_TYPES, MUSIC_DJ_TIERS, MUSIC_DJ_TYPES, MUSIC_DJ_VENUE_TYPES, LIGHTING_TIERS, LIGHTING_TYPES, FLOWERS_VARIETIES, FLOWERS_ITEMS, FLOWERS_KINDS, MEHENDI_TIERS, MEHENDI_TYPES, MEHENDI_INTRICACY, EVENT_HOST_EVENT_TYPES, EVENT_HOST_LANGUAGES, EVENT_HOST_MODES, SECURITY_TYPES, SECURITY_GENDERS, RENTAL_ITEMS, UTENSILS_MATERIALS, UTENSILS_VESSEL_TYPES, WEDDING_PLANNER_SCOPES, CORPORATE_EVENT_TYPES, CORPORATE_ADDONS } from '../../../packages/shared-types';
 import { STATIC_CITY_GROUPS } from '../../../packages/shared-utils';
 import { AuthGate } from './components/AuthGate';
@@ -2394,16 +2394,206 @@ export function App() {
       })
     );
 
-  // Printing packages carry structured product details.
+  // Auto-total for a Printing package:
+  // - Product prices (sum of productPrices for all selected products: Banners, Albums, Standees, Photo frames, Thank-you cards)
+  // - Material / finish prices (sum of finishPrices for all selected finishes: Matte, Glossy, Lamination)
+  // - Design price (if designIncluded is true)
+  const printingTotal = (pr?: any): number => {
+    if (!pr) return 0;
+    let sum = 0;
+
+    // Product prices
+    const selectedProducts: string[] = Array.isArray(pr.products) && pr.products.length > 0
+      ? pr.products
+      : (pr.product ? [pr.product] : []);
+    if (pr.productPrices && typeof pr.productPrices === 'object') {
+      for (const prod of selectedProducts) {
+        sum += Number(pr.productPrices[prod]) || 0;
+      }
+    }
+
+    // Material / finish prices
+    const selectedFinishes: string[] = Array.isArray(pr.finishes) ? pr.finishes : [];
+    if (pr.finishPrices && typeof pr.finishPrices === 'object') {
+      for (const f of selectedFinishes) {
+        sum += Number(pr.finishPrices[f]) || 0;
+      }
+    }
+
+    // Design price
+    if (pr.designIncluded) {
+      sum += Number(pr.designPrice) || 0;
+    }
+
+    return sum;
+  };
+
+  const [uploadingPrintingImg, setUploadingPrintingImg] = useState<string | null>(null);
+  const uploadPrintingImage = async (pkgId: string, slot: string, file: File) => {
+    if (!token) return;
+    setUploadingPrintingImg(`${pkgId}:${slot}`);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch(`${GATEWAY_URL}/api/v1/uploads`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+      const json = await res.json().catch(() => ({}));
+      if (json?.data?.fileUrl) {
+        const url = json.data.fileUrl as string;
+        setPackages((prev) =>
+          prev.map((p) => {
+            if (p.id !== pkgId) return p;
+            if (slot === 'design') {
+              const nextPr = { ...(p.printing || {}), designImage: url };
+              return { ...p, printing: nextPr };
+            }
+            if (slot.startsWith('product:')) {
+              const prod = slot.replace('product:', '');
+              const imgs = { ...(p.printing?.productImages || {}) };
+              imgs[prod] = url;
+              const nextPr = { ...(p.printing || {}), productImages: imgs };
+              return { ...p, printing: nextPr };
+            }
+            if (slot.startsWith('finish:')) {
+              const finish = slot.replace('finish:', '');
+              const imgs = { ...(p.printing?.finishImages || {}) };
+              imgs[finish] = url;
+              const nextPr = { ...(p.printing || {}), finishImages: imgs };
+              return { ...p, printing: nextPr };
+            }
+            return p;
+          })
+        );
+      }
+    } catch {
+      /* best-effort */
+    } finally {
+      setUploadingPrintingImg(null);
+    }
+  };
+
+  const removePrintingImage = (pkgId: string, slot: string) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        if (slot === 'design') {
+          const nextPr = { ...(p.printing || {}), designImage: undefined };
+          return { ...p, printing: nextPr };
+        }
+        if (slot.startsWith('product:')) {
+          const prod = slot.replace('product:', '');
+          const imgs = { ...(p.printing?.productImages || {}) };
+          delete imgs[prod];
+          const nextPr = { ...(p.printing || {}), productImages: imgs };
+          return { ...p, printing: nextPr };
+        }
+        if (slot.startsWith('finish:')) {
+          const finish = slot.replace('finish:', '');
+          const imgs = { ...(p.printing?.finishImages || {}) };
+          delete imgs[finish];
+          const nextPr = { ...(p.printing || {}), finishImages: imgs };
+          return { ...p, printing: nextPr };
+        }
+        return p;
+      })
+    );
+
   const updatePackagePrinting = (pkgId: string, field: string, value: any) =>
-    setPackages((prev) => prev.map((p) => (p.id === pkgId ? { ...p, printing: { ...(p.printing || {}), [field]: value } } : p)));
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const nextPrinting = { ...(p.printing || {}), [field]: value };
+        const calc = printingTotal(nextPrinting);
+        return {
+          ...p,
+          printing: nextPrinting,
+          price: calc > 0 ? calc : (p.price || 0),
+        };
+      })
+    );
+
+  const togglePrintingProduct = (pkgId: string, prod: string) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const current: string[] = p.printing?.products || (p.printing?.product ? [p.printing.product] : []);
+        const next = current.includes(prod) ? current.filter((x) => x !== prod) : [...current, prod];
+        const nextPrinting = {
+          ...(p.printing || {}),
+          product: next[0] || undefined,
+          products: next,
+        };
+        const calc = printingTotal(nextPrinting);
+        return {
+          ...p,
+          printing: nextPrinting,
+          price: calc > 0 ? calc : (p.price || 0),
+        };
+      })
+    );
+
+  const updatePrintingProductField = (pkgId: string, prod: string, field: 'types' | 'sizes' | 'prices', value: any) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const targetMapField = field === 'types' ? 'productTypes' : field === 'sizes' ? 'productSizes' : 'productPrices';
+        const currentMap = { ...((p.printing as any)?.[targetMapField] || {}) };
+        if (value === undefined || value === '') delete currentMap[prod];
+        else currentMap[prod] = value;
+        const nextPrinting = {
+          ...(p.printing || {}),
+          [targetMapField]: currentMap,
+        };
+        const calc = printingTotal(nextPrinting);
+        return {
+          ...p,
+          printing: nextPrinting,
+          price: calc > 0 ? calc : (p.price || 0),
+        };
+      })
+    );
+
   const togglePrintingFinish = (pkgId: string, finish: string) =>
-    setPackages((prev) => prev.map((p) => {
-      if (p.id !== pkgId) return p;
-      const current: string[] = (p.printing?.finishes) || [];
-      const next = current.includes(finish) ? current.filter((x) => x !== finish) : [...current, finish];
-      return { ...p, printing: { ...(p.printing || {}), finishes: next } };
-    }));
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const current: string[] = p.printing?.finishes || [];
+        const next = current.includes(finish) ? current.filter((x) => x !== finish) : [...current, finish];
+        const nextPrinting = {
+          ...(p.printing || {}),
+          finishes: next,
+        };
+        const calc = printingTotal(nextPrinting);
+        return {
+          ...p,
+          printing: nextPrinting,
+          price: calc > 0 ? calc : (p.price || 0),
+        };
+      })
+    );
+
+  const updatePrintingFinishPrice = (pkgId: string, finish: string, price: number | undefined) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const prices = { ...(p.printing?.finishPrices || {}) };
+        if (price === undefined) delete prices[finish];
+        else prices[finish] = price;
+        const nextPrinting = {
+          ...(p.printing || {}),
+          finishPrices: prices,
+        };
+        const calc = printingTotal(nextPrinting);
+        return {
+          ...p,
+          printing: nextPrinting,
+          price: calc > 0 ? calc : (p.price || 0),
+        };
+      })
+    );
 
   // Return Gifts packages carry structured gift details.
   const updatePackageReturnGifts = (pkgId: string, field: string, value: any) =>
@@ -2654,6 +2844,10 @@ export function App() {
         }
         if (myVendor.category === 'Invitation') {
           const calc = invitationTotal(p.invitation);
+          return { ...p, price: p.price > 0 ? p.price : calc };
+        }
+        if (myVendor.category === 'Printing') {
+          const calc = printingTotal(p.printing);
           return { ...p, price: p.price > 0 ? p.price : calc };
         }
         if (myVendor.category === 'Catering') {
@@ -4036,11 +4230,11 @@ export function App() {
                     </button>
                   </div>
 
-                  <div className={`grid grid-cols-1 ${myVendor?.category === 'Catering' || myVendor?.category === 'Decoration' || myVendor?.category === 'Transport' || myVendor?.category === 'Invitation' ? 'sm:grid-cols-1' : myVendor?.category === 'Security' ? 'sm:grid-cols-2' : 'sm:grid-cols-3'} gap-3`}>
+                  <div className={`grid grid-cols-1 ${myVendor?.category === 'Catering' || myVendor?.category === 'Decoration' || myVendor?.category === 'Transport' || myVendor?.category === 'Invitation' || myVendor?.category === 'Printing' ? 'sm:grid-cols-1' : myVendor?.category === 'Security' ? 'sm:grid-cols-2' : 'sm:grid-cols-3'} gap-3`}>
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <label className="block text-[10px] text-slate-400 uppercase font-bold">
-                          {myVendor?.category === 'Catering' ? 'Total amount (₹)' : myVendor?.category === 'Security' ? 'Price per guard / shift (₹)' : myVendor?.category === 'Venue' ? 'Total amount (₹)' : myVendor?.category === 'Decoration' ? 'Total amount (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Total amount (₹)' : myVendor?.category === 'Media' ? 'Total amount (₹)' : myVendor?.category === 'Transport' ? 'Total amount (₹)' : myVendor?.category === 'Invitation' ? 'Total amount (₹)' : myVendor?.category === 'Pujari/Priest' ? 'Price per ceremony (₹)' : myVendor?.category === 'Printing' ? 'Price per quantity (₹)' : myVendor?.category === 'Return Gifts' ? 'Price per piece (₹)' : myVendor?.category === 'Entertainment' ? 'Price per act / hour (₹)' : myVendor?.category === 'Music/DJ' ? 'Price per event / hour (₹)' : myVendor?.category === 'Lighting' ? 'Price per function (₹)' : myVendor?.category === 'Flowers' ? 'Price per item / function (₹)' : myVendor?.category === 'Mehendi' ? 'Price per bride (₹)' : myVendor?.category === 'Event Host/Anchor' ? 'Price per event (₹)' : myVendor?.category === 'Rental Equipment' ? 'Per-day rate (₹)' : myVendor?.category === 'Utensils for Rent' ? 'Total price (₹)' : myVendor?.category === 'Wedding Planner' ? 'Price per package / function (₹)' : myVendor?.category === 'Corporate Event Services' ? 'Price per total event (₹)' : 'Price (₹)'}
+                          {myVendor?.category === 'Catering' ? 'Total amount (₹)' : myVendor?.category === 'Security' ? 'Price per guard / shift (₹)' : myVendor?.category === 'Venue' ? 'Total amount (₹)' : myVendor?.category === 'Decoration' ? 'Total amount (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Total amount (₹)' : myVendor?.category === 'Media' ? 'Total amount (₹)' : myVendor?.category === 'Transport' ? 'Total amount (₹)' : myVendor?.category === 'Invitation' ? 'Total amount (₹)' : myVendor?.category === 'Printing' ? 'Total amount (₹)' : myVendor?.category === 'Pujari/Priest' ? 'Price per ceremony (₹)' : myVendor?.category === 'Return Gifts' ? 'Price per piece (₹)' : myVendor?.category === 'Entertainment' ? 'Price per act / hour (₹)' : myVendor?.category === 'Music/DJ' ? 'Price per event / hour (₹)' : myVendor?.category === 'Lighting' ? 'Price per function (₹)' : myVendor?.category === 'Flowers' ? 'Price per item / function (₹)' : myVendor?.category === 'Mehendi' ? 'Price per bride (₹)' : myVendor?.category === 'Event Host/Anchor' ? 'Price per event (₹)' : myVendor?.category === 'Rental Equipment' ? 'Per-day rate (₹)' : myVendor?.category === 'Utensils for Rent' ? 'Total price (₹)' : myVendor?.category === 'Wedding Planner' ? 'Price per package / function (₹)' : myVendor?.category === 'Corporate Event Services' ? 'Price per total event (₹)' : 'Price (₹)'}
                         </label>
                         {myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 && (
                           <span className="text-[10px] text-amber-400 font-bold">
@@ -4077,12 +4271,17 @@ export function App() {
                             Sum: ₹{invitationTotal(p.invitation).toLocaleString('en-IN')}
                           </span>
                         )}
+                        {myVendor?.category === 'Printing' && printingTotal(p.printing) > 0 && (
+                          <span className="text-[10px] text-amber-400 font-bold">
+                            Sum: ₹{printingTotal(p.printing).toLocaleString('en-IN')}
+                          </span>
+                        )}
                       </div>
                       <input
                         type="number"
-                        value={p.price || (myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 ? cateringTotal(p.catering) : myVendor?.category === 'Venue' && venueTotal(p.venue) > 0 ? venueTotal(p.venue) : myVendor?.category === 'Decoration' && decorationTotal(p.decoration) > 0 ? decorationTotal(p.decoration) : myVendor?.category === 'Makeup & Beauty' && makeupTotal(p.makeup) > 0 ? makeupTotal(p.makeup) : myVendor?.category === 'Media' && mediaTotal(p.media) > 0 ? mediaTotal(p.media) : myVendor?.category === 'Transport' && transportTotal(p.transport) > 0 ? transportTotal(p.transport) : myVendor?.category === 'Invitation' && invitationTotal(p.invitation) > 0 ? invitationTotal(p.invitation) : '')}
+                        value={p.price || (myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 ? cateringTotal(p.catering) : myVendor?.category === 'Venue' && venueTotal(p.venue) > 0 ? venueTotal(p.venue) : myVendor?.category === 'Decoration' && decorationTotal(p.decoration) > 0 ? decorationTotal(p.decoration) : myVendor?.category === 'Makeup & Beauty' && makeupTotal(p.makeup) > 0 ? makeupTotal(p.makeup) : myVendor?.category === 'Media' && mediaTotal(p.media) > 0 ? mediaTotal(p.media) : myVendor?.category === 'Transport' && transportTotal(p.transport) > 0 ? transportTotal(p.transport) : myVendor?.category === 'Invitation' && invitationTotal(p.invitation) > 0 ? invitationTotal(p.invitation) : myVendor?.category === 'Printing' && printingTotal(p.printing) > 0 ? printingTotal(p.printing) : '')}
                         onChange={(e) => updatePackageField(p.id, 'price', e.target.value)}
-                        placeholder={myVendor?.category === 'Catering' ? (cateringTotal(p.catering) ? String(cateringTotal(p.catering)) : 'e.g. 35000') : myVendor?.category === 'Transport' ? (transportTotal(p.transport) ? String(transportTotal(p.transport)) : 'e.g. 15000') : myVendor?.category === 'Invitation' ? (invitationTotal(p.invitation) ? String(invitationTotal(p.invitation)) : 'e.g. 12000') : myVendor?.category === 'Security' ? '2000' : '150000'}
+                        placeholder={myVendor?.category === 'Catering' ? (cateringTotal(p.catering) ? String(cateringTotal(p.catering)) : 'e.g. 35000') : myVendor?.category === 'Transport' ? (transportTotal(p.transport) ? String(transportTotal(p.transport)) : 'e.g. 15000') : myVendor?.category === 'Invitation' ? (invitationTotal(p.invitation) ? String(invitationTotal(p.invitation)) : 'e.g. 12000') : myVendor?.category === 'Printing' ? (printingTotal(p.printing) ? String(printingTotal(p.printing)) : 'e.g. 8000') : myVendor?.category === 'Security' ? '2000' : '150000'}
                         className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
                       />
                       {myVendor?.category === 'Venue' && venueTotal(p.venue) > 0 && (
@@ -4113,6 +4312,11 @@ export function App() {
                       {myVendor?.category === 'Invitation' && invitationTotal(p.invitation) > 0 && (
                         <div className="mt-1.5 text-[10px] text-slate-400">
                           <span>Auto-added from design, types, add-ons, languages &amp; print quantity: <b className="text-amber-300">₹{invitationTotal(p.invitation).toLocaleString('en-IN')}</b>. Edit the box to override.</span>
+                        </div>
+                      )}
+                      {myVendor?.category === 'Printing' && printingTotal(p.printing) > 0 && (
+                        <div className="mt-1.5 text-[10px] text-slate-400">
+                          <span>Auto-added from products, materials &amp; design: <b className="text-amber-300">₹{printingTotal(p.printing).toLocaleString('en-IN')}</b>. Edit the box to override.</span>
                         </div>
                       )}
                       {myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 && (
@@ -6374,51 +6578,341 @@ export function App() {
 
                       {/* Printing: structured product spec (replaces capacity + generic price tiers). */}
                       {myVendor?.category === 'Printing' && (
-                        <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/40 p-3">
-                          <p className="text-[10px] text-amber-400 uppercase font-bold">Printing details</p>
-
-                          <div>
-                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Product</label>
-                            <div className="flex flex-wrap gap-2">
-                              {PRINTING_PRODUCTS.map((pr) => (
-                                <button type="button" key={pr} onClick={() => updatePackagePrinting(p.id, 'product', pr)} className={catChip(p.printing?.product === pr)}>{pr}</button>
-                              ))}
-                            </div>
+                        <div className="space-y-4 rounded-xl border border-slate-800 bg-slate-950/40 p-3.5">
+                          <div className="flex items-center justify-between">
+                            <p className="text-[10px] text-amber-400 uppercase font-bold flex items-center gap-1.5">
+                              <Printer className="w-3.5 h-3.5" /> Printing Specifications &amp; Pricing
+                            </p>
+                            {printingTotal(p.printing) > 0 && (
+                              <span className="text-[10px] text-amber-400 font-bold bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-full">
+                                Total: ₹{printingTotal(p.printing).toLocaleString('en-IN')}
+                              </span>
+                            )}
                           </div>
 
-                          <div>
-                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Material / Finish</label>
-                            <div className="flex flex-wrap gap-2">
-                              {PRINTING_FINISHES.map((f) => (
-                                <button type="button" key={f} onClick={() => togglePrintingFinish(p.id, f)} className={catChip((p.printing?.finishes || []).includes(f))}>{f}</button>
-                              ))}
+                          {/* 1. Products (Banners, Albums, Standees, Photo frames, Thank-you cards - Flex removed) */}
+                          <div className="space-y-2.5">
+                            <div>
+                              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
+                                Product (Select products to configure type, size, price &amp; photos)
+                              </label>
+                              <div className="flex flex-wrap gap-2">
+                                {PRINTING_PRODUCTS.map((pr) => {
+                                  const isSelected = (p.printing?.products || (p.printing?.product ? [p.printing.product] : [])).includes(pr);
+                                  return (
+                                    <button
+                                      type="button"
+                                      key={pr}
+                                      onClick={() => togglePrintingProduct(p.id, pr)}
+                                      className={catChip(isSelected)}
+                                    >
+                                      {pr}
+                                    </button>
+                                  );
+                                })}
+                              </div>
                             </div>
+
+                            {/* Individual Product Configurations */}
+                            {((p.printing?.products && p.printing.products.length > 0)
+                              ? p.printing.products
+                              : (p.printing?.product ? [p.printing.product] : [])
+                            ).map((pr) => {
+                              const pType = p.printing?.productTypes?.[pr];
+                              const pSize = p.printing?.productSizes?.[pr];
+                              const pPrice = p.printing?.productPrices?.[pr];
+                              const pImg = p.printing?.productImages?.[pr];
+                              const isUploading = uploadingPrintingImg === `${p.id}:product:${pr}`;
+                              const hasUpload = pr === 'Albums' || pr === 'Photo frames' || pr === 'Thank-you cards' || pr === 'Banners' || pr === 'Standees';
+
+                              return (
+                                <div key={pr} className="p-3 rounded-xl border border-amber-500/30 bg-amber-950/10 space-y-2.5">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                                      <Printer className="w-3.5 h-3.5" /> {pr}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => togglePrintingProduct(p.id, pr)}
+                                      className="text-slate-400 hover:text-rose-400 text-xs flex items-center gap-1"
+                                    >
+                                      ✕ Remove
+                                    </button>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                                    <div>
+                                      <label className="block text-[10px] text-slate-400 mb-1">
+                                        Type of {pr.toLowerCase()}
+                                      </label>
+                                      <input
+                                        type="text"
+                                        value={pType ?? ''}
+                                        onChange={(e) => updatePrintingProductField(p.id, pr, 'types', e.target.value)}
+                                        placeholder={pr === 'Banners' ? 'e.g. Vinyl / Star Flex / Backlit' : pr === 'Albums' ? 'e.g. Photobook / Layflat' : pr === 'Standees' ? 'e.g. Roll-up / X-standee' : pr === 'Photo frames' ? 'e.g. Acrylic / Canvas / Wood' : 'e.g. Folded card / Postcard'}
+                                        className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-[10px] text-slate-400 mb-1">
+                                        Size of {pr.toLowerCase()}
+                                      </label>
+                                      <input
+                                        type="text"
+                                        value={pSize ?? ''}
+                                        onChange={(e) => updatePrintingProductField(p.id, pr, 'sizes', e.target.value)}
+                                        placeholder={pr === 'Banners' ? 'e.g. 6x4 ft' : pr === 'Albums' ? 'e.g. 12x18 inch' : pr === 'Standees' ? 'e.g. 6x3 ft' : pr === 'Photo frames' ? 'e.g. 12x18 inch' : 'e.g. 4x6 inch'}
+                                        className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-[10px] text-slate-400 mb-1 font-semibold">
+                                        Price of {pr.toLowerCase()} (₹)
+                                      </label>
+                                      <input
+                                        type="number"
+                                        min={0}
+                                        value={pPrice ?? ''}
+                                        onChange={(e) => updatePrintingProductField(p.id, pr, 'prices', e.target.value === '' ? undefined : Number(e.target.value))}
+                                        placeholder="e.g. 1500"
+                                        className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                      />
+                                    </div>
+                                  </div>
+
+                                  {hasUpload && (
+                                    <div>
+                                      <label className="block text-[10px] text-slate-400 mb-1">Upload sample photo for {pr}</label>
+                                      <div className="flex items-center gap-2.5">
+                                        {pImg ? (
+                                          <div className="relative group">
+                                            <img src={pImg} alt={pr} className="w-16 h-12 rounded-lg object-cover border border-slate-700" />
+                                            <button
+                                              type="button"
+                                              onClick={() => removePrintingImage(p.id, `product:${pr}`)}
+                                              className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px] shadow"
+                                            >
+                                              ✕
+                                            </button>
+                                          </div>
+                                        ) : null}
+                                        <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold cursor-pointer border border-slate-700 transition-colors">
+                                          {isUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                                          {pImg ? 'Change photo' : `Upload ${pr} photo`}
+                                          <input
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            disabled={isUploading}
+                                            onChange={(e) => {
+                                              const f = e.target.files?.[0];
+                                              if (f) uploadPrintingImage(p.id, `product:${pr}`, f);
+                                              e.target.value = '';
+                                            }}
+                                          />
+                                        </label>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
 
-                          <div className="grid grid-cols-3 gap-2">
+                          {/* 2. Material / Finish (Matte, Glossy, Lamination) with price and upload image */}
+                          <div className="space-y-2.5 pt-2 border-t border-slate-800/80">
                             <div>
-                              <label className="block text-[10px] text-slate-500 mb-1">Size</label>
-                              <input type="text" value={p.printing?.size ?? ''} onChange={(e) => updatePackagePrinting(p.id, 'size', e.target.value)}
-                                placeholder="e.g. 6x4 ft" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
+                                Material / Finish (Select to configure price &amp; material photo)
+                              </label>
+                              <div className="flex flex-wrap gap-2">
+                                {PRINTING_FINISHES.map((f) => {
+                                  const isSelected = (p.printing?.finishes || []).includes(f);
+                                  return (
+                                    <button
+                                      type="button"
+                                      key={f}
+                                      onClick={() => togglePrintingFinish(p.id, f)}
+                                      className={catChip(isSelected)}
+                                    >
+                                      {f}
+                                    </button>
+                                  );
+                                })}
+                              </div>
                             </div>
-                            <div>
-                              <label className="block text-[10px] text-slate-500 mb-1">Quantity</label>
-                              <input type="number" min={0} value={p.printing?.quantity ?? ''} onChange={(e) => updatePackagePrinting(p.id, 'quantity', e.target.value === '' ? undefined : Number(e.target.value))}
-                                placeholder="e.g. 100" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
-                            </div>
-                            <div>
-                              <label className="block text-[10px] text-slate-500 mb-1">Delivery time</label>
-                              <input type="text" value={p.printing?.deliveryTime ?? ''} onChange={(e) => updatePackagePrinting(p.id, 'deliveryTime', e.target.value)}
-                                placeholder="e.g. 2 days" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
-                            </div>
+
+                            {/* Individual Finish Configurations */}
+                            {(p.printing?.finishes || []).map((f) => {
+                              const price = p.printing?.finishPrices?.[f];
+                              const imgUrl = p.printing?.finishImages?.[f];
+                              const isUploading = uploadingPrintingImg === `${p.id}:finish:${f}`;
+
+                              return (
+                                <div key={f} className="p-3 rounded-xl border border-slate-800 bg-slate-900/50 space-y-2.5">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-xs font-bold text-amber-300">{f} Material</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => togglePrintingFinish(p.id, f)}
+                                      className="text-slate-400 hover:text-rose-400 text-xs flex items-center gap-1"
+                                    >
+                                      ✕ Remove
+                                    </button>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                    <div>
+                                      <label className="block text-[10px] text-slate-400 mb-1 font-semibold">
+                                        Price of {f} material (₹)
+                                      </label>
+                                      <input
+                                        type="number"
+                                        min={0}
+                                        value={price ?? ''}
+                                        onChange={(e) => updatePrintingFinishPrice(p.id, f, e.target.value === '' ? undefined : Number(e.target.value))}
+                                        placeholder="e.g. 500"
+                                        className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-[10px] text-slate-400 mb-1">
+                                        Upload image of {f} material
+                                      </label>
+                                      <div className="flex items-center gap-2.5">
+                                        {imgUrl ? (
+                                          <div className="relative group">
+                                            <img src={imgUrl} alt={f} className="w-16 h-12 rounded-lg object-cover border border-slate-700" />
+                                            <button
+                                              type="button"
+                                              onClick={() => removePrintingImage(p.id, `finish:${f}`)}
+                                              className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px] shadow"
+                                            >
+                                              ✕
+                                            </button>
+                                          </div>
+                                        ) : null}
+                                        <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold cursor-pointer border border-slate-700 transition-colors">
+                                          {isUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                                          {imgUrl ? 'Change photo' : `Upload ${f} photo`}
+                                          <input
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            disabled={isUploading}
+                                            onChange={(e) => {
+                                              const file = e.target.files?.[0];
+                                              if (file) uploadPrintingImage(p.id, `finish:${f}`, file);
+                                              e.target.value = '';
+                                            }}
+                                          />
+                                        </label>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
 
-                          <div>
-                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Design included</label>
-                            <div className="flex gap-1.5">
-                              <button type="button" onClick={() => updatePackagePrinting(p.id, 'designIncluded', true)} className={catChip(p.printing?.designIncluded === true)}>Yes</button>
-                              <button type="button" onClick={() => updatePackagePrinting(p.id, 'designIncluded', false)} className={catChip(p.printing?.designIncluded === false)}>No</button>
+                          {/* 3. Delivery Time (Size & Quantity removed per request) */}
+                          <div className="pt-2 border-t border-slate-800/80 max-w-xs">
+                            <label className="block text-[10px] text-slate-500 mb-1">Delivery time</label>
+                            <input
+                              type="text"
+                              value={p.printing?.deliveryTime ?? ''}
+                              onChange={(e) => updatePackagePrinting(p.id, 'deliveryTime', e.target.value)}
+                              placeholder="e.g. 2 days"
+                              className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                            />
+                          </div>
+
+                          {/* 4. Design Included with price, what design description, and upload */}
+                          <div className="p-3 rounded-xl border border-slate-800 bg-slate-900/50 space-y-2.5">
+                            <div className="flex items-center justify-between">
+                              <label className="block text-[10px] text-slate-400 uppercase font-bold">Design included</label>
+                              <div className="flex gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => updatePackagePrinting(p.id, 'designIncluded', true)}
+                                  className={catChip(p.printing?.designIncluded === true)}
+                                >
+                                  Yes
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => updatePackagePrinting(p.id, 'designIncluded', false)}
+                                  className={catChip(p.printing?.designIncluded === false)}
+                                >
+                                  No
+                                </button>
+                              </div>
                             </div>
+
+                            {p.printing?.designIncluded && (
+                              <div className="space-y-2.5 pt-2 border-t border-slate-800">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                  <div>
+                                    <label className="block text-[10px] text-slate-400 mb-1 font-semibold">
+                                      Price of design (₹)
+                                    </label>
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      value={p.printing?.designPrice ?? ''}
+                                      onChange={(e) => updatePackagePrinting(p.id, 'designPrice', e.target.value === '' ? undefined : Number(e.target.value))}
+                                      placeholder="e.g. 1000"
+                                      className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-[10px] text-slate-400 mb-1">
+                                      What design
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={p.printing?.designDescription ?? ''}
+                                      onChange={(e) => updatePackagePrinting(p.id, 'designDescription', e.target.value)}
+                                      placeholder="e.g. Custom banner typography &amp; graphics"
+                                      className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                    />
+                                  </div>
+                                </div>
+
+                                <div>
+                                  <label className="block text-[10px] text-slate-400 mb-1">Upload design sample</label>
+                                  <div className="flex items-center gap-2.5">
+                                    {p.printing?.designImage ? (
+                                      <div className="relative group">
+                                        <img src={p.printing.designImage} alt="Design sample" className="w-16 h-12 rounded-lg object-cover border border-slate-700" />
+                                        <button
+                                          type="button"
+                                          onClick={() => removePrintingImage(p.id, 'design')}
+                                          className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px] shadow"
+                                        >
+                                          ✕
+                                        </button>
+                                      </div>
+                                    ) : null}
+                                    <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold cursor-pointer border border-slate-700 transition-colors">
+                                      {uploadingPrintingImg === `${p.id}:design` ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                                      {p.printing?.designImage ? 'Change design photo' : 'Upload design sample'}
+                                      <input
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        disabled={uploadingPrintingImg === `${p.id}:design`}
+                                        onChange={(e) => {
+                                          const f = e.target.files?.[0];
+                                          if (f) uploadPrintingImage(p.id, 'design', f);
+                                          e.target.value = '';
+                                        }}
+                                      />
+                                    </label>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
                       )}

@@ -219,10 +219,20 @@ const vendorPackageSchema = new Schema(
     // Printing-only structured details.
     printing: {
       product: String,
+      products: [String],
+      productTypes: { type: Schema.Types.Mixed, default: {} },
+      productSizes: { type: Schema.Types.Mixed, default: {} },
+      productPrices: { type: Schema.Types.Mixed, default: {} },
+      productImages: { type: Schema.Types.Mixed, default: {} },
       size: String,
       quantity: Number,
       finishes: [String],
+      finishPrices: { type: Schema.Types.Mixed, default: {} },
+      finishImages: { type: Schema.Types.Mixed, default: {} },
       designIncluded: Boolean,
+      designPrice: Number,
+      designDescription: String,
+      designImage: String,
       deliveryTime: String,
     },
     // Return Gifts-only structured details.
