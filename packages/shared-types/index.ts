@@ -425,7 +425,10 @@ export const VENUE_CATERING_POLICIES = ['In-house only', 'External allowed'] as 
 export interface CateringFoodItem {
   name: string;
   price?: number;
+  photo?: string;
 }
+
+export type CateringCourseItem = CateringFoodItem;
 
 // Structured menu details for a Catering vendor's package (per-plate menu).
 export interface CateringPackageDetails {
@@ -434,9 +437,11 @@ export interface CateringPackageDetails {
   foodTypeItems?: Record<string, CateringFoodItem[]>; // item names and rates per food type (Veg, Non-Veg, Jain)
   cuisines?: string[]; // South Indian, Chettinad, North Indian, Continental
   cuisineItems?: Record<string, CateringFoodItem[]>; // item names and rates per cuisine (South Indian, Chettinad, North Indian, Continental)
-  starters?: number; // number of starter dishes
-  mains?: number; // number of main-course dishes
-  desserts?: number; // number of desserts
+  courses?: string[]; // Starters, Mains, Desserts
+  courseItems?: Record<string, CateringCourseItem[]>; // dishes per course with photo, name, and price
+  starters?: number; // number of starter dishes included
+  mains?: number; // number of main-course dishes included
+  desserts?: number; // number of desserts included
   minGuests?: number; // minimum guest count
   liveCounters?: string[]; // Chaat, Dosa, Ice Cream, …
   serviceStyle?: string; // Buffet / Seated / Banana-leaf
@@ -450,6 +455,7 @@ export interface CateringPackageDetails {
 export const CATERING_MENU_TIERS = ['Silver', 'Gold', 'Platinum'] as const;
 export const CATERING_FOOD_TYPES = ['Veg', 'Non-Veg', 'Jain'] as const;
 export const CATERING_CUISINES = ['South Indian', 'Chettinad', 'North Indian', 'Continental'] as const;
+export const CATERING_COURSES = ['Starters', 'Mains', 'Desserts'] as const;
 export const CATERING_LIVE_COUNTERS = ['Chaat', 'Dosa', 'Ice Cream'] as const;
 export const CATERING_SERVICE_STYLES = ['Buffet', 'Seated', 'Banana-leaf'] as const;
 

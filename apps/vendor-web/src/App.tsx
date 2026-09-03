@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Store, Star, Upload, Check, LogOut, Loader2, Plus, SlidersHorizontal, ChevronDown, Receipt, X, Bell, ShieldCheck, Clock as ClockIcon, AlertCircle, FileText, CalendarDays, Sparkles } from 'lucide-react';
-import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, VendorDeal, OfferedOptionItem, CateringFoodItem, VENDOR_CATEGORIES, CATEGORY_OPTIONS, CATERING_OPTION_STYLE, MEDIA_QUALITY_OPTIONS, MEDIA_EQUIPMENT_OPTIONS, mediaExtraField, isDealLive, CATERING_MENU_TIERS, CATERING_FOOD_TYPES, CATERING_CUISINES, CATERING_LIVE_COUNTERS, CATERING_SERVICE_STYLES, slotLabelWithTime, AVAILABILITY_SLOTS, offeredSlotIds, VENUE_SESSIONS, VENUE_HALL_TYPES, VENUE_HALL_CLASSES, VENUE_CATERING_POLICIES, DECORATION_TIERS, DECORATION_THEMES, DECORATION_AREAS, DECORATION_FLOWER_TYPES, MAKEUP_TYPES, MAKEUP_FINISHES, MEDIA_TIERS, MEDIA_COVERAGE, MEDIA_STYLES, TRANSPORT_TIERS, TRANSPORT_VEHICLE_TYPES, TRANSPORT_PRICING_BASIS, TRANSPORT_USES, PRIEST_CEREMONY_TYPES, PRIEST_LANGUAGES, INVITATION_TIERS, INVITATION_TYPES, INVITATION_DESIGNS, INVITATION_ADDONS, INVITATION_LANGUAGES, PRINTING_PRODUCTS, PRINTING_FINISHES, RETURN_GIFTS_TIERS, RETURN_GIFT_TYPES, ENTERTAINMENT_ACT_TYPES, MUSIC_DJ_TIERS, MUSIC_DJ_TYPES, MUSIC_DJ_VENUE_TYPES, LIGHTING_TIERS, LIGHTING_TYPES, FLOWERS_VARIETIES, FLOWERS_ITEMS, FLOWERS_KINDS, MEHENDI_TIERS, MEHENDI_TYPES, MEHENDI_INTRICACY, EVENT_HOST_EVENT_TYPES, EVENT_HOST_LANGUAGES, EVENT_HOST_MODES, SECURITY_TYPES, SECURITY_GENDERS, RENTAL_ITEMS, UTENSILS_MATERIALS, UTENSILS_VESSEL_TYPES, WEDDING_PLANNER_SCOPES, CORPORATE_EVENT_TYPES, CORPORATE_ADDONS } from '../../../packages/shared-types';
+import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, VendorDeal, OfferedOptionItem, CateringFoodItem, CateringCourseItem, VENDOR_CATEGORIES, CATEGORY_OPTIONS, CATERING_OPTION_STYLE, MEDIA_QUALITY_OPTIONS, MEDIA_EQUIPMENT_OPTIONS, mediaExtraField, isDealLive, CATERING_MENU_TIERS, CATERING_FOOD_TYPES, CATERING_CUISINES, CATERING_COURSES, CATERING_LIVE_COUNTERS, CATERING_SERVICE_STYLES, slotLabelWithTime, AVAILABILITY_SLOTS, offeredSlotIds, VENUE_SESSIONS, VENUE_HALL_TYPES, VENUE_HALL_CLASSES, VENUE_CATERING_POLICIES, DECORATION_TIERS, DECORATION_THEMES, DECORATION_AREAS, DECORATION_FLOWER_TYPES, MAKEUP_TYPES, MAKEUP_FINISHES, MEDIA_TIERS, MEDIA_COVERAGE, MEDIA_STYLES, TRANSPORT_TIERS, TRANSPORT_VEHICLE_TYPES, TRANSPORT_PRICING_BASIS, TRANSPORT_USES, PRIEST_CEREMONY_TYPES, PRIEST_LANGUAGES, INVITATION_TIERS, INVITATION_TYPES, INVITATION_DESIGNS, INVITATION_ADDONS, INVITATION_LANGUAGES, PRINTING_PRODUCTS, PRINTING_FINISHES, RETURN_GIFTS_TIERS, RETURN_GIFT_TYPES, ENTERTAINMENT_ACT_TYPES, MUSIC_DJ_TIERS, MUSIC_DJ_TYPES, MUSIC_DJ_VENUE_TYPES, LIGHTING_TIERS, LIGHTING_TYPES, FLOWERS_VARIETIES, FLOWERS_ITEMS, FLOWERS_KINDS, MEHENDI_TIERS, MEHENDI_TYPES, MEHENDI_INTRICACY, EVENT_HOST_EVENT_TYPES, EVENT_HOST_LANGUAGES, EVENT_HOST_MODES, SECURITY_TYPES, SECURITY_GENDERS, RENTAL_ITEMS, UTENSILS_MATERIALS, UTENSILS_VESSEL_TYPES, WEDDING_PLANNER_SCOPES, CORPORATE_EVENT_TYPES, CORPORATE_ADDONS } from '../../../packages/shared-types';
 import { STATIC_CITY_GROUPS } from '../../../packages/shared-utils';
 import { AuthGate } from './components/AuthGate';
 import { FloralGoldBackground } from './components/FloralGoldBackground';
@@ -1203,6 +1203,127 @@ export function App() {
         };
       })
     );
+  const [uploadingCoursePhoto, setUploadingCoursePhoto] = useState<string | null>(null);
+  const handleCateringCoursePhotoUpload = async (pkgId: string, course: string, itemIdx: number, file: File) => {
+    if (!token) return;
+    const key = `${pkgId}-${course}-${itemIdx}`;
+    setUploadingCoursePhoto(key);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch(`${GATEWAY_URL}/api/v1/uploads`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+      const json = await res.json().catch(() => ({}));
+      if (json?.data?.fileUrl) {
+        updateCateringCourseItem(pkgId, course, itemIdx, 'photo', json.data.fileUrl);
+      }
+    } catch {
+      /* best-effort */
+    } finally {
+      setUploadingCoursePhoto(null);
+    }
+  };
+
+  const toggleCateringCourse = (pkgId: string, course: string) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const currentCourses: string[] = p.catering?.courses || [];
+        const isRemoving = currentCourses.includes(course);
+        const nextCourses = isRemoving ? currentCourses.filter((x) => x !== course) : [...currentCourses, course];
+        let nextCourseItems = p.catering?.courseItems;
+        if (!isRemoving) {
+          const existing = nextCourseItems?.[course] || [];
+          if (existing.length === 0) {
+            nextCourseItems = {
+              ...(nextCourseItems || {}),
+              [course]: [{ name: '', price: 0, photo: '' }],
+            };
+          }
+        }
+        return {
+          ...p,
+          catering: {
+            ...(p.catering || {}),
+            courses: nextCourses,
+            ...(nextCourseItems !== undefined ? { courseItems: nextCourseItems } : {}),
+          },
+        };
+      })
+    );
+
+  const addCateringCourseItem = (pkgId: string, course: string) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const currentCatering = p.catering || {};
+        const currentItems = currentCatering.courseItems || {};
+        const list = currentItems[course] || [];
+        return {
+          ...p,
+          catering: {
+            ...currentCatering,
+            courseItems: {
+              ...currentItems,
+              [course]: [...list, { name: '', price: 0, photo: '' }],
+            },
+          },
+        };
+      })
+    );
+
+  const updateCateringCourseItem = (
+    pkgId: string,
+    course: string,
+    idx: number,
+    field: 'name' | 'price' | 'photo',
+    val: any
+  ) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const currentCatering = p.catering || {};
+        const currentItems = currentCatering.courseItems || {};
+        const list = currentItems[course] || [];
+        const nextList = list.map((it, i) =>
+          i === idx ? { ...it, [field]: field === 'price' ? (val === '' ? undefined : Number(val)) : val } : it
+        );
+        return {
+          ...p,
+          catering: {
+            ...currentCatering,
+            courseItems: {
+              ...currentItems,
+              [course]: nextList,
+            },
+          },
+        };
+      })
+    );
+
+  const removeCateringCourseItem = (pkgId: string, course: string, idx: number) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const currentCatering = p.catering || {};
+        const currentItems = currentCatering.courseItems || {};
+        const list = currentItems[course] || [];
+        const nextList = list.filter((_, i) => i !== idx);
+        return {
+          ...p,
+          catering: {
+            ...currentCatering,
+            courseItems: {
+              ...currentItems,
+              [course]: nextList,
+            },
+          },
+        };
+      })
+    );
   const catChip = (active: boolean) =>
     `px-2.5 py-1 rounded-lg text-xs font-semibold border transition-colors ${active ? 'bg-amber-500 text-slate-950 border-amber-500' : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-600'}`;
 
@@ -1507,7 +1628,7 @@ export function App() {
           const calc = utensilsTotal(p.utensils);
           return { ...p, price: calc > 0 ? calc : (p.price || 0) };
         }
-        if (myVendor.category === 'Catering' && (p.catering?.foodTypeItems || p.catering?.cuisineItems)) {
+        if (myVendor.category === 'Catering' && (p.catering?.foodTypeItems || p.catering?.cuisineItems || p.catering?.courseItems)) {
           const cleanedFoodItems: Record<string, any[]> = {};
           if (p.catering?.foodTypeItems) {
             for (const [ft, items] of Object.entries(p.catering.foodTypeItems)) {
@@ -1522,12 +1643,20 @@ export function App() {
               if (valid.length > 0) cleanedCuisineItems[c] = valid;
             }
           }
+          const cleanedCourseItems: Record<string, any[]> = {};
+          if (p.catering?.courseItems) {
+            for (const [course, items] of Object.entries(p.catering.courseItems)) {
+              const valid = (items || []).filter((it: any) => it && ((it.name && it.name.trim()) || it.photo));
+              if (valid.length > 0) cleanedCourseItems[course] = valid;
+            }
+          }
           return {
             ...p,
             catering: {
               ...p.catering,
               foodTypeItems: cleanedFoodItems,
               cuisineItems: cleanedCuisineItems,
+              courseItems: cleanedCourseItems,
             },
           };
         }
@@ -3204,17 +3333,166 @@ export function App() {
                           </div>
 
                           <div>
-                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Number of dishes included</label>
-                            <p className="text-[10px] text-slate-500 mb-1.5">How many items the customer gets in each course. e.g. 6 starters, 8 mains, 3 desserts.</p>
-                            <div className="grid grid-cols-3 gap-2">
-                              {([['starters', 'Starters'], ['mains', 'Mains'], ['desserts', 'Desserts']] as const).map(([field, label]) => (
-                                <div key={field}>
-                                  <label className="block text-[10px] text-slate-500 mb-1">{label}</label>
-                                  <input type="number" min={0} value={(p.catering as any)?.[field] ?? ''} onChange={(e) => updatePackageCatering(p.id, field, e.target.value === '' ? undefined : Number(e.target.value))}
-                                    placeholder="e.g. 6" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
-                                </div>
-                              ))}
+                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Dishes & Courses</label>
+                            <p className="text-[10px] text-slate-500 mb-2">Click Starters, Mains, or Desserts to add dishes with photos, item names, and prices.</p>
+
+                            <div className="flex flex-wrap gap-2 mb-3">
+                              {CATERING_COURSES.map((course) => {
+                                const field = course.toLowerCase() as 'starters' | 'mains' | 'desserts';
+                                const items = p.catering?.courseItems?.[course] || [];
+                                const countVal = (p.catering as any)?.[field];
+                                const isSelected = (p.catering?.courses || []).includes(course) || items.length > 0 || (countVal !== undefined && countVal > 0);
+                                return (
+                                  <button
+                                    type="button"
+                                    key={course}
+                                    onClick={() => toggleCateringCourse(p.id, course)}
+                                    className={catChip(isSelected)}
+                                  >
+                                    {course} {items.length > 0 ? `(${items.length})` : ''}
+                                  </button>
+                                );
+                              })}
                             </div>
+
+                            {/* Course items editor for active courses */}
+                            {CATERING_COURSES.map((course) => {
+                              const field = course.toLowerCase() as 'starters' | 'mains' | 'desserts';
+                              const items = p.catering?.courseItems?.[course] || [];
+                              const countVal = (p.catering as any)?.[field];
+                              const isSelected = (p.catering?.courses || []).includes(course) || items.length > 0 || (countVal !== undefined && countVal > 0);
+                              if (!isSelected) return null;
+
+                              const courseColor = course === 'Starters' ? 'border-amber-500/30 bg-amber-950/15' : course === 'Mains' ? 'border-emerald-500/30 bg-emerald-950/15' : 'border-purple-500/30 bg-purple-950/15';
+                              const badgeColor = course === 'Starters' ? 'text-amber-400' : course === 'Mains' ? 'text-emerald-400' : 'text-purple-400';
+                              const dotColor = course === 'Starters' ? 'bg-amber-400' : course === 'Mains' ? 'bg-emerald-400' : 'bg-purple-400';
+                              const placeholder =
+                                course === 'Starters' ? 'Starter dish — e.g. Paneer Tikka, Chicken 65, Spring Rolls' :
+                                course === 'Mains' ? 'Main dish — e.g. Butter Chicken, Paneer Butter Masala, Veg Biryani' :
+                                'Dessert dish — e.g. Gulab Jamun, Rasmalai, Ice Cream';
+
+                              return (
+                                <div key={course} className={`p-3 rounded-xl border ${courseColor} space-y-3 mb-3`}>
+                                  <div className="flex items-center justify-between flex-wrap gap-2">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className={`w-2 h-2 rounded-full ${dotColor}`} />
+                                      <span className={`text-[11px] font-bold uppercase tracking-wide ${badgeColor}`}>{course}</span>
+                                      {items.length > 0 && (
+                                        <span className="text-[10px] text-slate-400">({items.length} dishes)</span>
+                                      )}
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                      <div className="flex items-center gap-1.5">
+                                        <label className="text-[10px] text-slate-400 whitespace-nowrap">Dishes included:</label>
+                                        <input
+                                          type="number"
+                                          min={0}
+                                          value={countVal ?? ''}
+                                          onChange={(e) => updatePackageCatering(p.id, field, e.target.value === '' ? undefined : Number(e.target.value))}
+                                          placeholder="e.g. 6"
+                                          className="w-16 p-1 text-center rounded-lg bg-slate-950 border border-slate-800 text-white text-xs"
+                                        />
+                                      </div>
+                                      <button
+                                        type="button"
+                                        onClick={() => addCateringCourseItem(p.id, course)}
+                                        className="flex items-center gap-1 text-xs font-bold text-amber-400 hover:text-amber-300"
+                                      >
+                                        <Plus className="w-3.5 h-3.5" /> Add {course.slice(0, -1)}
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  {items.length === 0 ? (
+                                    <div className="py-2.5 px-3 rounded-lg bg-slate-950/60 border border-dashed border-slate-800 text-center">
+                                      <p className="text-xs text-slate-400 mb-1.5">No {course.toLowerCase()} added yet.</p>
+                                      <button
+                                        type="button"
+                                        onClick={() => addCateringCourseItem(p.id, course)}
+                                        className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 font-semibold"
+                                      >
+                                        <Plus className="w-3.5 h-3.5" /> Add {course} item
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <div className="space-y-2">
+                                      {items.map((item, itemIdx) => (
+                                        <div key={itemIdx} className="flex items-center gap-2 p-2 rounded-lg bg-slate-950/80 border border-slate-800/80">
+                                          {/* Photo upload / thumbnail */}
+                                          <div className="shrink-0">
+                                            {item.photo ? (
+                                              <div className="relative h-9 w-9 rounded-lg overflow-hidden border border-slate-700 bg-slate-900 group">
+                                                <img src={item.photo} alt={item.name || 'Dish'} className="w-full h-full object-cover" />
+                                                <button
+                                                  type="button"
+                                                  onClick={() => updateCateringCourseItem(p.id, course, itemIdx, 'photo', '')}
+                                                  className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-rose-400 hover:text-rose-300 transition-opacity"
+                                                  title="Remove photo"
+                                                >
+                                                  <X className="w-3.5 h-3.5" />
+                                                </button>
+                                              </div>
+                                            ) : (
+                                              <label className="cursor-pointer flex items-center gap-1 text-[11px] px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 hover:text-white hover:border-slate-600 font-semibold shrink-0">
+                                                {uploadingCoursePhoto === `${p.id}-${course}-${itemIdx}` ? (
+                                                  <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-400" />
+                                                ) : (
+                                                  <Upload className="w-3.5 h-3.5 text-amber-400" />
+                                                )}
+                                                <span className="text-[10px]">Photo</span>
+                                                <input
+                                                  type="file"
+                                                  accept="image/*"
+                                                  className="hidden"
+                                                  disabled={uploadingCoursePhoto === `${p.id}-${course}-${itemIdx}`}
+                                                  onChange={(e) => {
+                                                    const f = e.target.files?.[0];
+                                                    if (f) handleCateringCoursePhotoUpload(p.id, course, itemIdx, f);
+                                                    e.target.value = '';
+                                                  }}
+                                                />
+                                              </label>
+                                            )}
+                                          </div>
+
+                                          {/* Dish name */}
+                                          <input
+                                            type="text"
+                                            value={item.name}
+                                            onChange={(e) => updateCateringCourseItem(p.id, course, itemIdx, 'name', e.target.value)}
+                                            placeholder={placeholder}
+                                            className="flex-1 min-w-[120px] p-2 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs"
+                                          />
+
+                                          {/* Price */}
+                                          <div className="flex items-center gap-1 px-2 rounded-lg bg-slate-900 border border-slate-800 shrink-0">
+                                            <span className="text-slate-500 text-xs">₹</span>
+                                            <input
+                                              type="number"
+                                              min={0}
+                                              value={item.price === 0 ? '' : (item.price || '')}
+                                              onChange={(e) => updateCateringCourseItem(p.id, course, itemIdx, 'price', e.target.value)}
+                                              placeholder="Price"
+                                              className="w-20 py-2 bg-transparent text-white text-xs focus:outline-none"
+                                            />
+                                          </div>
+
+                                          {/* Remove */}
+                                          <button
+                                            type="button"
+                                            onClick={() => removeCateringCourseItem(p.id, course, itemIdx)}
+                                            aria-label="Remove item"
+                                            className="w-7 h-7 rounded-lg bg-slate-800 text-slate-400 hover:text-rose-400 flex items-center justify-center shrink-0"
+                                          >
+                                            <X className="w-3.5 h-3.5" />
+                                          </button>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
 
                           <div>

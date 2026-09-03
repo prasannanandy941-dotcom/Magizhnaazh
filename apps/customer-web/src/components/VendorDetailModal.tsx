@@ -958,6 +958,43 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                                 })}
                               </div>
                             )}
+                            {/* Items & prices per course (Starters, Mains, Desserts) */}
+                            {c.courseItems && Object.entries(c.courseItems).some(([_, its]) => (its || []).some((it) => (it.name && it.name.trim()) || it.photo)) && (
+                              <div className="mt-2.5 pt-2.5 border-t border-slate-800/80 space-y-2">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase block">Dishes by Course</span>
+                                {Object.entries(c.courseItems).map(([course, its]) => {
+                                  const list = (its || []).filter((it) => (it.name && it.name.trim()) || it.photo);
+                                  if (list.length === 0) return null;
+                                  const dot = course === 'Starters' ? 'bg-amber-400' : course === 'Mains' ? 'bg-emerald-400' : 'bg-purple-400';
+                                  const labelColor = course === 'Starters' ? 'text-amber-400' : course === 'Mains' ? 'text-emerald-400' : 'text-purple-400';
+                                  return (
+                                    <div key={course} className="space-y-1">
+                                      <div className="flex items-center gap-1.5">
+                                        <span className={`w-2 h-2 rounded-full ${dot}`} />
+                                        <span className={`text-[10px] font-bold uppercase ${labelColor}`}>
+                                          {course} ({list.length})
+                                        </span>
+                                      </div>
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                                        {list.map((it, idx) => (
+                                          <div key={idx} className="flex items-center justify-between gap-2 text-[11px] bg-slate-950/70 p-1.5 rounded-lg border border-slate-800/70">
+                                            <div className="flex items-center gap-2 min-w-0">
+                                              {it.photo && (
+                                                <img src={it.photo} alt={it.name || 'Dish'} className="w-8 h-8 rounded object-cover border border-slate-800 shrink-0" />
+                                              )}
+                                              <span className="text-slate-200 font-medium truncate">{it.name || 'Dish'}</span>
+                                            </div>
+                                            {it.price !== undefined && it.price > 0 && (
+                                              <span className="font-bold text-amber-400 shrink-0">₹{it.price.toLocaleString('en-IN')}</span>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
                             {incl.some(([, v]) => v !== undefined) && (
                               <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px]">
                                 {incl.filter(([, v]) => v !== undefined).map(([label, v]) => (
