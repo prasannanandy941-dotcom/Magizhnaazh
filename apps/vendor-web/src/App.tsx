@@ -1014,6 +1014,18 @@ export function App() {
     return sum;
   };
 
+  // Auto-total for a Venue hall: the chosen hall-type price + hall-class price
+  // + every "Yes" feature's price. Mirrors cateringTotal so the Total amount
+  // field fills itself from the priced options.
+  const venueTotal = (v?: any): number => {
+    if (!v) return 0;
+    let sum = (Number(v.hallTypePrice) || 0) + (Number(v.hallClassPrice) || 0);
+    if (v.featurePrices && typeof v.featurePrices === 'object') {
+      for (const val of Object.values(v.featurePrices)) sum += Number(val) || 0;
+    }
+    return sum;
+  };
+
   const updatePackageField = (id: string, field: keyof VendorPackage, raw: string) =>
     setPackages((prev) =>
       prev.map((p) => {
@@ -1983,6 +1995,12 @@ export function App() {
         if (myVendor.category === 'Utensils for Rent') {
           const calc = utensilsTotal(p.utensils);
           return { ...p, price: calc > 0 ? calc : (p.price || 0) };
+        }
+        if (myVendor.category === 'Venue') {
+          // Total amount = auto-sum of hall type/class + feature prices, unless
+          // the vendor typed their own figure in the Total amount box.
+          const calc = venueTotal(p.venue);
+          return { ...p, price: p.price > 0 ? p.price : calc };
         }
         if (myVendor.category === 'Catering') {
           const cleanedFoodItems: Record<string, any[]> = {};
@@ -3375,14 +3393,24 @@ export function App() {
                             Sum: ₹{cateringTotal(p.catering).toLocaleString('en-IN')}
                           </span>
                         )}
+                        {myVendor?.category === 'Venue' && venueTotal(p.venue) > 0 && (
+                          <span className="text-[10px] text-amber-400 font-bold">
+                            Sum: ₹{venueTotal(p.venue).toLocaleString('en-IN')}
+                          </span>
+                        )}
                       </div>
                       <input
                         type="number"
-                        value={p.price || (myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 ? cateringTotal(p.catering) : '')}
+                        value={p.price || (myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 ? cateringTotal(p.catering) : myVendor?.category === 'Venue' && venueTotal(p.venue) > 0 ? venueTotal(p.venue) : '')}
                         onChange={(e) => updatePackageField(p.id, 'price', e.target.value)}
                         placeholder={myVendor?.category === 'Catering' ? (cateringTotal(p.catering) ? String(cateringTotal(p.catering)) : 'e.g. 35000') : myVendor?.category === 'Security' ? '2000' : '150000'}
                         className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
                       />
+                      {myVendor?.category === 'Venue' && venueTotal(p.venue) > 0 && (
+                        <div className="mt-1.5 text-[10px] text-slate-400">
+                          <span>Auto-added from hall type, class &amp; features: <b className="text-amber-300">₹{venueTotal(p.venue).toLocaleString('en-IN')}</b>. Edit the box to override.</span>
+                        </div>
+                      )}
                       {myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 && (
                         <div className="mt-1.5 flex flex-wrap items-center gap-1 text-[10px] text-slate-400">
                           <span>Auto-added from all items: <b className="text-amber-300">₹{cateringTotal(p.catering).toLocaleString('en-IN')}</b></span>
