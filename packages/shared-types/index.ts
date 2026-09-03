@@ -298,19 +298,26 @@ export const PRINTING_FINISHES = ['Matte', 'Glossy', 'Lamination'] as const;
 export interface InvitationPackageDetails {
   tier?: string; // Digital / Printed / Premium
   type?: string; // Digital e-invite / Video invite / Printed card
+  types?: string[]; // multi types
+  typePrices?: Record<string, number>;
+  typeImages?: Record<string, string>;
   design?: string; // Custom / Template
+  designPrices?: Record<string, number>;
   quantity?: number; // for printed
+  quantityPrice?: number;
   revisions?: number; // number of design revisions
-  addOns?: string[]; // RSVP link, Map, Caricature
+  addOns?: string[]; // RSVP link, Map, Invitation call by person
+  addOnPrices?: Record<string, number>;
   deliveryTime?: string; // free text, e.g. "3 days"
   languages?: string[]; // Tamil / Hindi / English / Telugu
+  languagePrice?: number;
 }
 
 // Option sets for the Invitation package form.
 export const INVITATION_TIERS = ['Digital', 'Printed', 'Premium'] as const;
 export const INVITATION_TYPES = ['Digital e-invite', 'Video invite', 'Printed card'] as const;
 export const INVITATION_DESIGNS = ['Custom', 'Template'] as const;
-export const INVITATION_ADDONS = ['RSVP link', 'Map', 'Caricature'] as const;
+export const INVITATION_ADDONS = ['RSVP link', 'Map', 'Invitation call by person'] as const;
 export const INVITATION_LANGUAGES = ['Tamil', 'Hindi', 'English', 'Telugu'] as const;
 
 // Structured details for a Pujari/Priest vendor's package (per ceremony).

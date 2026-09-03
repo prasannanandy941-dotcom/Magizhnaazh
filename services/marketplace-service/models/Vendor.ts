@@ -202,12 +202,19 @@ const vendorPackageSchema = new Schema(
     invitation: {
       tier: String,
       type: { type: String },
+      types: [String],
+      typePrices: { type: Schema.Types.Mixed, default: {} },
+      typeImages: { type: Schema.Types.Mixed, default: {} },
       design: String,
+      designPrices: { type: Schema.Types.Mixed, default: {} },
       quantity: Number,
+      quantityPrice: Number,
       revisions: Number,
       addOns: [String],
+      addOnPrices: { type: Schema.Types.Mixed, default: {} },
       deliveryTime: String,
       languages: [String],
+      languagePrice: Number,
     },
     // Printing-only structured details.
     printing: {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Store, Star, Upload, Check, LogOut, Loader2, Plus, SlidersHorizontal, ChevronDown, Receipt, X, Bell, ShieldCheck, Clock as ClockIcon, AlertCircle, FileText, CalendarDays, Sparkles, Car } from 'lucide-react';
+import { Store, Star, Upload, Check, LogOut, Loader2, Plus, SlidersHorizontal, ChevronDown, Receipt, X, Bell, ShieldCheck, Clock as ClockIcon, AlertCircle, FileText, CalendarDays, Sparkles, Car, Mail } from 'lucide-react';
 import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, VendorDeal, OfferedOptionItem, CateringFoodItem, CateringCourseItem, VENDOR_CATEGORIES, CATEGORY_OPTIONS, CATERING_OPTION_STYLE, MEDIA_QUALITY_OPTIONS, MEDIA_EQUIPMENT_OPTIONS, mediaExtraField, isDealLive, CATERING_MENU_TIERS, CATERING_FOOD_TYPES, CATERING_CUISINES, CATERING_COURSES, CATERING_LIVE_COUNTERS, CATERING_SERVICE_STYLES, BUFFET_PLATE_TYPES, BANANA_LEAF_TYPES, slotLabelWithTime, AVAILABILITY_SLOTS, offeredSlotIds, VENUE_SESSIONS, VENUE_HALL_TYPES, VENUE_HALL_CLASSES, VENUE_CATERING_POLICIES, VENUE_FEATURES, DECORATION_TIERS, DECORATION_THEMES, DECORATION_AREAS, DECORATION_FLOWER_TYPES, MAKEUP_TYPES, MAKEUP_FINISHES, MEDIA_TIERS, MEDIA_COVERAGE, MEDIA_STYLES, TRANSPORT_TIERS, TRANSPORT_VEHICLE_TYPES, TRANSPORT_PRICING_BASIS, TRANSPORT_USES, PRIEST_CEREMONY_TYPES, PRIEST_LANGUAGES, INVITATION_TIERS, INVITATION_TYPES, INVITATION_DESIGNS, INVITATION_ADDONS, INVITATION_LANGUAGES, PRINTING_PRODUCTS, PRINTING_FINISHES, RETURN_GIFTS_TIERS, RETURN_GIFT_TYPES, ENTERTAINMENT_ACT_TYPES, MUSIC_DJ_TIERS, MUSIC_DJ_TYPES, MUSIC_DJ_VENUE_TYPES, LIGHTING_TIERS, LIGHTING_TYPES, FLOWERS_VARIETIES, FLOWERS_ITEMS, FLOWERS_KINDS, MEHENDI_TIERS, MEHENDI_TYPES, MEHENDI_INTRICACY, EVENT_HOST_EVENT_TYPES, EVENT_HOST_LANGUAGES, EVENT_HOST_MODES, SECURITY_TYPES, SECURITY_GENDERS, RENTAL_ITEMS, UTENSILS_MATERIALS, UTENSILS_VESSEL_TYPES, WEDDING_PLANNER_SCOPES, CORPORATE_EVENT_TYPES, CORPORATE_ADDONS } from '../../../packages/shared-types';
 import { STATIC_CITY_GROUPS } from '../../../packages/shared-utils';
 import { AuthGate } from './components/AuthGate';
@@ -2171,16 +2171,228 @@ export function App() {
       return { ...p, priest: { ...(p.priest || {}), languages: next } };
     }));
 
-  // Invitation packages carry structured design details.
+  // Auto-total for an Invitation package:
+  // - Design price (Custom / Template)
+  // - Type prices (sum for all selected types: Digital e-invite, Video invite, Printed card)
+  // - Add-ons prices (RSVP link, Invitation call by person)
+  // - Languages price (languagePrice)
+  // - Print quantity price (quantityPrice)
+  const invitationTotal = (inv?: any): number => {
+    if (!inv) return 0;
+    let sum = 0;
+
+    // Design price
+    if (inv.design && inv.designPrices && typeof inv.designPrices === 'object') {
+      sum += Number(inv.designPrices[inv.design]) || 0;
+    }
+
+    // Type prices
+    const selectedTypes: string[] = Array.isArray(inv.types) && inv.types.length > 0
+      ? inv.types
+      : (inv.type ? [inv.type] : []);
+    if (inv.typePrices && typeof inv.typePrices === 'object') {
+      for (const t of selectedTypes) {
+        sum += Number(inv.typePrices[t]) || 0;
+      }
+    }
+
+    // Add-on prices (RSVP link, Invitation call by person)
+    const selectedAddOns: string[] = Array.isArray(inv.addOns) ? inv.addOns : [];
+    if (inv.addOnPrices && typeof inv.addOnPrices === 'object') {
+      for (const a of selectedAddOns) {
+        const key = a === 'Caricature' ? 'Invitation call by person' : a;
+        sum += Number(inv.addOnPrices[key] || inv.addOnPrices[a]) || 0;
+      }
+    }
+
+    // Languages price
+    sum += Number(inv.languagePrice) || 0;
+
+    // Print quantity price
+    sum += Number(inv.quantityPrice) || 0;
+
+    return sum;
+  };
+
+  const [uploadingInvitationImg, setUploadingInvitationImg] = useState<string | null>(null);
+  const uploadInvitationImage = async (pkgId: string, typeName: string, file: File) => {
+    if (!token) return;
+    setUploadingInvitationImg(`${pkgId}:${typeName}`);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch(`${GATEWAY_URL}/api/v1/uploads`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+      const json = await res.json().catch(() => ({}));
+      if (json?.data?.fileUrl) {
+        const url = json.data.fileUrl as string;
+        setPackages((prev) =>
+          prev.map((p) => {
+            if (p.id !== pkgId) return p;
+            const imgs = { ...(p.invitation?.typeImages || {}) };
+            imgs[typeName] = url;
+            return {
+              ...p,
+              invitation: { ...(p.invitation || {}), typeImages: imgs },
+            };
+          })
+        );
+      }
+    } catch {
+      /* best-effort */
+    } finally {
+      setUploadingInvitationImg(null);
+    }
+  };
+
+  const removeInvitationImage = (pkgId: string, typeName: string) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const imgs = { ...(p.invitation?.typeImages || {}) };
+        delete imgs[typeName];
+        return {
+          ...p,
+          invitation: { ...(p.invitation || {}), typeImages: imgs },
+        };
+      })
+    );
+
   const updatePackageInvitation = (pkgId: string, field: string, value: any) =>
-    setPackages((prev) => prev.map((p) => (p.id === pkgId ? { ...p, invitation: { ...(p.invitation || {}), [field]: value } } : p)));
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const nextInvitation = { ...(p.invitation || {}), [field]: value };
+        const calc = invitationTotal(nextInvitation);
+        return {
+          ...p,
+          invitation: nextInvitation,
+          price: calc > 0 ? calc : (p.price || 0),
+        };
+      })
+    );
+
+  const updateInvitationDesignPrice = (pkgId: string, designName: string, price: number | undefined) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const prices = { ...(p.invitation?.designPrices || {}) };
+        if (price === undefined) delete prices[designName];
+        else prices[designName] = price;
+        const nextInvitation = {
+          ...(p.invitation || {}),
+          design: designName,
+          designPrices: prices,
+        };
+        const calc = invitationTotal(nextInvitation);
+        return {
+          ...p,
+          invitation: nextInvitation,
+          price: calc > 0 ? calc : (p.price || 0),
+        };
+      })
+    );
+
+  const toggleInvitationType = (pkgId: string, typeName: string) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const current: string[] = p.invitation?.types || (p.invitation?.type ? [p.invitation.type] : []);
+        const next = current.includes(typeName) ? current.filter((x) => x !== typeName) : [...current, typeName];
+        const nextInvitation = {
+          ...(p.invitation || {}),
+          type: next[0] || undefined,
+          types: next,
+        };
+        const calc = invitationTotal(nextInvitation);
+        return {
+          ...p,
+          invitation: nextInvitation,
+          price: calc > 0 ? calc : (p.price || 0),
+        };
+      })
+    );
+
+  const updateInvitationTypePrice = (pkgId: string, typeName: string, price: number | undefined) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const prices = { ...(p.invitation?.typePrices || {}) };
+        if (price === undefined) delete prices[typeName];
+        else prices[typeName] = price;
+        const nextInvitation = {
+          ...(p.invitation || {}),
+          typePrices: prices,
+        };
+        const calc = invitationTotal(nextInvitation);
+        return {
+          ...p,
+          invitation: nextInvitation,
+          price: calc > 0 ? calc : (p.price || 0),
+        };
+      })
+    );
+
+  const toggleInvitationAddon = (pkgId: string, addOn: string) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const current: string[] = (p.invitation?.addOns || []).map((x) => (x === 'Caricature' ? 'Invitation call by person' : x));
+        const normalized = addOn === 'Caricature' ? 'Invitation call by person' : addOn;
+        const next = current.includes(normalized) ? current.filter((x) => x !== normalized) : [...current, normalized];
+        const nextInvitation = {
+          ...(p.invitation || {}),
+          addOns: next,
+        };
+        const calc = invitationTotal(nextInvitation);
+        return {
+          ...p,
+          invitation: nextInvitation,
+          price: calc > 0 ? calc : (p.price || 0),
+        };
+      })
+    );
+
+  const updateInvitationAddonPrice = (pkgId: string, addOn: string, price: number | undefined) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const normalized = addOn === 'Caricature' ? 'Invitation call by person' : addOn;
+        const prices = { ...(p.invitation?.addOnPrices || {}) };
+        if (price === undefined) delete prices[normalized];
+        else prices[normalized] = price;
+        const nextInvitation = {
+          ...(p.invitation || {}),
+          addOnPrices: prices,
+        };
+        const calc = invitationTotal(nextInvitation);
+        return {
+          ...p,
+          invitation: nextInvitation,
+          price: calc > 0 ? calc : (p.price || 0),
+        };
+      })
+    );
+
   const toggleInvitationArray = (pkgId: string, field: 'addOns' | 'languages', item: string) =>
-    setPackages((prev) => prev.map((p) => {
-      if (p.id !== pkgId) return p;
-      const current: string[] = ((p.invitation as any)?.[field]) || [];
-      const next = current.includes(item) ? current.filter((x) => x !== item) : [...current, item];
-      return { ...p, invitation: { ...(p.invitation || {}), [field]: next } };
-    }));
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const normalized = item === 'Caricature' ? 'Invitation call by person' : item;
+        const current: string[] = ((p.invitation as any)?.[field]) || [];
+        const next = current.includes(normalized) ? current.filter((x) => x !== normalized) : [...current, normalized];
+        const nextInvitation = { ...(p.invitation || {}), [field]: next };
+        const calc = invitationTotal(nextInvitation);
+        return {
+          ...p,
+          invitation: nextInvitation,
+          price: calc > 0 ? calc : (p.price || 0),
+        };
+      })
+    );
 
   // Printing packages carry structured product details.
   const updatePackagePrinting = (pkgId: string, field: string, value: any) =>
@@ -2438,6 +2650,10 @@ export function App() {
         }
         if (myVendor.category === 'Transport') {
           const calc = transportTotal(p.transport);
+          return { ...p, price: p.price > 0 ? p.price : calc };
+        }
+        if (myVendor.category === 'Invitation') {
+          const calc = invitationTotal(p.invitation);
           return { ...p, price: p.price > 0 ? p.price : calc };
         }
         if (myVendor.category === 'Catering') {
@@ -3820,11 +4036,11 @@ export function App() {
                     </button>
                   </div>
 
-                  <div className={`grid grid-cols-1 ${myVendor?.category === 'Catering' || myVendor?.category === 'Decoration' || myVendor?.category === 'Transport' ? 'sm:grid-cols-1' : myVendor?.category === 'Security' ? 'sm:grid-cols-2' : 'sm:grid-cols-3'} gap-3`}>
+                  <div className={`grid grid-cols-1 ${myVendor?.category === 'Catering' || myVendor?.category === 'Decoration' || myVendor?.category === 'Transport' || myVendor?.category === 'Invitation' ? 'sm:grid-cols-1' : myVendor?.category === 'Security' ? 'sm:grid-cols-2' : 'sm:grid-cols-3'} gap-3`}>
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <label className="block text-[10px] text-slate-400 uppercase font-bold">
-                          {myVendor?.category === 'Catering' ? 'Total amount (₹)' : myVendor?.category === 'Security' ? 'Price per guard / shift (₹)' : myVendor?.category === 'Venue' ? 'Total amount (₹)' : myVendor?.category === 'Decoration' ? 'Total amount (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Total amount (₹)' : myVendor?.category === 'Media' ? 'Total amount (₹)' : myVendor?.category === 'Transport' ? 'Total amount (₹)' : myVendor?.category === 'Pujari/Priest' ? 'Price per ceremony (₹)' : myVendor?.category === 'Invitation' ? 'Price per design / quantity (₹)' : myVendor?.category === 'Printing' ? 'Price per quantity (₹)' : myVendor?.category === 'Return Gifts' ? 'Price per piece (₹)' : myVendor?.category === 'Entertainment' ? 'Price per act / hour (₹)' : myVendor?.category === 'Music/DJ' ? 'Price per event / hour (₹)' : myVendor?.category === 'Lighting' ? 'Price per function (₹)' : myVendor?.category === 'Flowers' ? 'Price per item / function (₹)' : myVendor?.category === 'Mehendi' ? 'Price per bride (₹)' : myVendor?.category === 'Event Host/Anchor' ? 'Price per event (₹)' : myVendor?.category === 'Rental Equipment' ? 'Per-day rate (₹)' : myVendor?.category === 'Utensils for Rent' ? 'Total price (₹)' : myVendor?.category === 'Wedding Planner' ? 'Price per package / function (₹)' : myVendor?.category === 'Corporate Event Services' ? 'Price per total event (₹)' : 'Price (₹)'}
+                          {myVendor?.category === 'Catering' ? 'Total amount (₹)' : myVendor?.category === 'Security' ? 'Price per guard / shift (₹)' : myVendor?.category === 'Venue' ? 'Total amount (₹)' : myVendor?.category === 'Decoration' ? 'Total amount (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Total amount (₹)' : myVendor?.category === 'Media' ? 'Total amount (₹)' : myVendor?.category === 'Transport' ? 'Total amount (₹)' : myVendor?.category === 'Invitation' ? 'Total amount (₹)' : myVendor?.category === 'Pujari/Priest' ? 'Price per ceremony (₹)' : myVendor?.category === 'Printing' ? 'Price per quantity (₹)' : myVendor?.category === 'Return Gifts' ? 'Price per piece (₹)' : myVendor?.category === 'Entertainment' ? 'Price per act / hour (₹)' : myVendor?.category === 'Music/DJ' ? 'Price per event / hour (₹)' : myVendor?.category === 'Lighting' ? 'Price per function (₹)' : myVendor?.category === 'Flowers' ? 'Price per item / function (₹)' : myVendor?.category === 'Mehendi' ? 'Price per bride (₹)' : myVendor?.category === 'Event Host/Anchor' ? 'Price per event (₹)' : myVendor?.category === 'Rental Equipment' ? 'Per-day rate (₹)' : myVendor?.category === 'Utensils for Rent' ? 'Total price (₹)' : myVendor?.category === 'Wedding Planner' ? 'Price per package / function (₹)' : myVendor?.category === 'Corporate Event Services' ? 'Price per total event (₹)' : 'Price (₹)'}
                         </label>
                         {myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 && (
                           <span className="text-[10px] text-amber-400 font-bold">
@@ -3856,12 +4072,17 @@ export function App() {
                             Sum: ₹{transportTotal(p.transport).toLocaleString('en-IN')}
                           </span>
                         )}
+                        {myVendor?.category === 'Invitation' && invitationTotal(p.invitation) > 0 && (
+                          <span className="text-[10px] text-amber-400 font-bold">
+                            Sum: ₹{invitationTotal(p.invitation).toLocaleString('en-IN')}
+                          </span>
+                        )}
                       </div>
                       <input
                         type="number"
-                        value={p.price || (myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 ? cateringTotal(p.catering) : myVendor?.category === 'Venue' && venueTotal(p.venue) > 0 ? venueTotal(p.venue) : myVendor?.category === 'Decoration' && decorationTotal(p.decoration) > 0 ? decorationTotal(p.decoration) : myVendor?.category === 'Makeup & Beauty' && makeupTotal(p.makeup) > 0 ? makeupTotal(p.makeup) : myVendor?.category === 'Media' && mediaTotal(p.media) > 0 ? mediaTotal(p.media) : myVendor?.category === 'Transport' && transportTotal(p.transport) > 0 ? transportTotal(p.transport) : '')}
+                        value={p.price || (myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 ? cateringTotal(p.catering) : myVendor?.category === 'Venue' && venueTotal(p.venue) > 0 ? venueTotal(p.venue) : myVendor?.category === 'Decoration' && decorationTotal(p.decoration) > 0 ? decorationTotal(p.decoration) : myVendor?.category === 'Makeup & Beauty' && makeupTotal(p.makeup) > 0 ? makeupTotal(p.makeup) : myVendor?.category === 'Media' && mediaTotal(p.media) > 0 ? mediaTotal(p.media) : myVendor?.category === 'Transport' && transportTotal(p.transport) > 0 ? transportTotal(p.transport) : myVendor?.category === 'Invitation' && invitationTotal(p.invitation) > 0 ? invitationTotal(p.invitation) : '')}
                         onChange={(e) => updatePackageField(p.id, 'price', e.target.value)}
-                        placeholder={myVendor?.category === 'Catering' ? (cateringTotal(p.catering) ? String(cateringTotal(p.catering)) : 'e.g. 35000') : myVendor?.category === 'Transport' ? (transportTotal(p.transport) ? String(transportTotal(p.transport)) : 'e.g. 15000') : myVendor?.category === 'Security' ? '2000' : '150000'}
+                        placeholder={myVendor?.category === 'Catering' ? (cateringTotal(p.catering) ? String(cateringTotal(p.catering)) : 'e.g. 35000') : myVendor?.category === 'Transport' ? (transportTotal(p.transport) ? String(transportTotal(p.transport)) : 'e.g. 15000') : myVendor?.category === 'Invitation' ? (invitationTotal(p.invitation) ? String(invitationTotal(p.invitation)) : 'e.g. 12000') : myVendor?.category === 'Security' ? '2000' : '150000'}
                         className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
                       />
                       {myVendor?.category === 'Venue' && venueTotal(p.venue) > 0 && (
@@ -3887,6 +4108,11 @@ export function App() {
                       {myVendor?.category === 'Transport' && transportTotal(p.transport) > 0 && (
                         <div className="mt-1.5 text-[10px] text-slate-400">
                           <span>Auto-added from vehicles, use, driver/fuel &amp; decoration: <b className="text-amber-300">₹{transportTotal(p.transport).toLocaleString('en-IN')}</b>. Edit the box to override.</span>
+                        </div>
+                      )}
+                      {myVendor?.category === 'Invitation' && invitationTotal(p.invitation) > 0 && (
+                        <div className="mt-1.5 text-[10px] text-slate-400">
+                          <span>Auto-added from design, types, add-ons, languages &amp; print quantity: <b className="text-amber-300">₹{invitationTotal(p.invitation).toLocaleString('en-IN')}</b>. Edit the box to override.</span>
                         </div>
                       )}
                       {myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 && (
@@ -5847,15 +6073,32 @@ export function App() {
 
                       {/* Invitation: structured design spec (replaces generic price tiers). */}
                       {myVendor?.category === 'Invitation' && (
-                        <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/40 p-3">
-                          <p className="text-[10px] text-amber-400 uppercase font-bold">Invitation details</p>
+                        <div className="space-y-4 rounded-xl border border-slate-800 bg-slate-950/40 p-3.5">
+                          <div className="flex items-center justify-between">
+                            <p className="text-[10px] text-amber-400 uppercase font-bold flex items-center gap-1.5">
+                              <Mail className="w-3.5 h-3.5" /> Invitation Details &amp; Pricing
+                            </p>
+                            {invitationTotal(p.invitation) > 0 && (
+                              <span className="text-[10px] text-amber-400 font-bold bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-full">
+                                Total: ₹{invitationTotal(p.invitation).toLocaleString('en-IN')}
+                              </span>
+                            )}
+                          </div>
 
-                          <div className="grid grid-cols-2 gap-3">
+                          {/* Tier & 1. Design (Custom / Template) with only price option */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
                               <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Tier</label>
                               <div className="flex flex-wrap gap-2">
                                 {INVITATION_TIERS.map((t) => (
-                                  <button type="button" key={t} onClick={() => updatePackageInvitation(p.id, 'tier', t)} className={catChip(p.invitation?.tier === t)}>{t}</button>
+                                  <button
+                                    type="button"
+                                    key={t}
+                                    onClick={() => updatePackageInvitation(p.id, 'tier', t)}
+                                    className={catChip(p.invitation?.tier === t)}
+                                  >
+                                    {t}
+                                  </button>
                                 ))}
                               </div>
                             </div>
@@ -5863,54 +6106,267 @@ export function App() {
                               <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Design</label>
                               <div className="flex flex-wrap gap-2">
                                 {INVITATION_DESIGNS.map((d) => (
-                                  <button type="button" key={d} onClick={() => updatePackageInvitation(p.id, 'design', d)} className={catChip(p.invitation?.design === d)}>{d}</button>
+                                  <button
+                                    type="button"
+                                    key={d}
+                                    onClick={() => updatePackageInvitation(p.id, 'design', p.invitation?.design === d ? undefined : d)}
+                                    className={catChip(p.invitation?.design === d)}
+                                  >
+                                    {d}
+                                  </button>
+                                ))}
+                              </div>
+                              {p.invitation?.design && (
+                                <div className="mt-2">
+                                  <label className="block text-[10px] text-slate-400 mb-1 font-semibold">
+                                    Price for {p.invitation.design} design (₹)
+                                  </label>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    value={p.invitation?.designPrices?.[p.invitation.design] ?? ''}
+                                    onChange={(e) => updateInvitationDesignPrice(p.id, p.invitation!.design!, e.target.value === '' ? undefined : Number(e.target.value))}
+                                    placeholder="e.g. 2500"
+                                    className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* 2. Type (Digital e-invite, Video invite, Printed card) with price and upload option */}
+                          <div className="space-y-2.5 pt-2 border-t border-slate-800/80">
+                            <div>
+                              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
+                                Type (Select types to set price &amp; upload sample)
+                              </label>
+                              <div className="flex flex-wrap gap-2">
+                                {INVITATION_TYPES.map((t) => {
+                                  const isSelected = (p.invitation?.types || (p.invitation?.type ? [p.invitation.type] : [])).includes(t);
+                                  return (
+                                    <button
+                                      type="button"
+                                      key={t}
+                                      onClick={() => toggleInvitationType(p.id, t)}
+                                      className={catChip(isSelected)}
+                                    >
+                                      {t}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+
+                            {/* Individual Type Configurations */}
+                            {((p.invitation?.types && p.invitation.types.length > 0)
+                              ? p.invitation.types
+                              : (p.invitation?.type ? [p.invitation.type] : [])
+                            ).map((t) => {
+                              const price = p.invitation?.typePrices?.[t];
+                              const imgUrl = p.invitation?.typeImages?.[t];
+                              const isUploading = uploadingInvitationImg === `${p.id}:${t}`;
+
+                              return (
+                                <div key={t} className="p-3 rounded-xl border border-amber-500/30 bg-amber-950/10 space-y-2.5">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                                      <Mail className="w-3.5 h-3.5" /> {t}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleInvitationType(p.id, t)}
+                                      className="text-slate-400 hover:text-rose-400 text-xs flex items-center gap-1"
+                                    >
+                                      ✕ Remove
+                                    </button>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                    <div>
+                                      <label className="block text-[10px] text-slate-400 mb-1 font-semibold">
+                                        Price for {t} (₹)
+                                      </label>
+                                      <input
+                                        type="number"
+                                        min={0}
+                                        value={price ?? ''}
+                                        onChange={(e) => updateInvitationTypePrice(p.id, t, e.target.value === '' ? undefined : Number(e.target.value))}
+                                        placeholder="e.g. 1500"
+                                        className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-[10px] text-slate-400 mb-1">
+                                        Sample / Preview for {t}
+                                      </label>
+                                      <div className="flex items-center gap-2.5">
+                                        {imgUrl ? (
+                                          <div className="relative group">
+                                            <img src={imgUrl} alt={t} className="w-16 h-12 rounded-lg object-cover border border-slate-700" />
+                                            <button
+                                              type="button"
+                                              onClick={() => removeInvitationImage(p.id, t)}
+                                              className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px] shadow"
+                                            >
+                                              ✕
+                                            </button>
+                                          </div>
+                                        ) : null}
+                                        <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold cursor-pointer border border-slate-700 transition-colors">
+                                          {isUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                                          {imgUrl ? 'Change sample' : `Upload ${t} sample`}
+                                          <input
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            disabled={isUploading}
+                                            onChange={(e) => {
+                                              const f = e.target.files?.[0];
+                                              if (f) uploadInvitationImage(p.id, t, f);
+                                              e.target.value = '';
+                                            }}
+                                          />
+                                        </label>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {/* 3. Add-ons (RSVP link, Map, Invitation call by person) with prices */}
+                          <div className="space-y-2 pt-2 border-t border-slate-800/80">
+                            <div>
+                              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Add-ons</label>
+                              <div className="flex flex-wrap gap-2">
+                                {INVITATION_ADDONS.map((a) => {
+                                  const isSelected = (p.invitation?.addOns || []).includes(a) || (a === 'Invitation call by person' && (p.invitation?.addOns || []).includes('Caricature'));
+                                  return (
+                                    <button
+                                      type="button"
+                                      key={a}
+                                      onClick={() => toggleInvitationAddon(p.id, a)}
+                                      className={catChip(isSelected)}
+                                    >
+                                      {a}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-2">
+                              {(p.invitation?.addOns || []).includes('RSVP link') && (
+                                <div className="p-2.5 rounded-xl border border-slate-800 bg-slate-900/50">
+                                  <label className="block text-[10px] text-slate-400 mb-1 font-semibold">
+                                    Price for RSVP link (₹)
+                                  </label>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    value={p.invitation?.addOnPrices?.['RSVP link'] ?? ''}
+                                    onChange={(e) => updateInvitationAddonPrice(p.id, 'RSVP link', e.target.value === '' ? undefined : Number(e.target.value))}
+                                    placeholder="e.g. 500"
+                                    className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                  />
+                                </div>
+                              )}
+                              {((p.invitation?.addOns || []).includes('Invitation call by person') || (p.invitation?.addOns || []).includes('Caricature')) && (
+                                <div className="p-2.5 rounded-xl border border-slate-800 bg-slate-900/50">
+                                  <label className="block text-[10px] text-slate-400 mb-1 font-semibold">
+                                    Price for Invitation call by person (₹)
+                                  </label>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    value={p.invitation?.addOnPrices?.['Invitation call by person'] ?? p.invitation?.addOnPrices?.['Caricature'] ?? ''}
+                                    onChange={(e) => updateInvitationAddonPrice(p.id, 'Invitation call by person', e.target.value === '' ? undefined : Number(e.target.value))}
+                                    placeholder="e.g. 2000"
+                                    className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* 4. Languages with only price option */}
+                          <div className="space-y-2 pt-2 border-t border-slate-800/80">
+                            <div>
+                              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Languages</label>
+                              <div className="flex flex-wrap gap-2">
+                                {INVITATION_LANGUAGES.map((l) => (
+                                  <button
+                                    type="button"
+                                    key={l}
+                                    onClick={() => toggleInvitationArray(p.id, 'languages', l)}
+                                    className={catChip((p.invitation?.languages || []).includes(l))}
+                                  >
+                                    {l}
+                                  </button>
                                 ))}
                               </div>
                             </div>
+                            {(p.invitation?.languages || []).length > 0 && (
+                              <div className="mt-2 max-w-xs">
+                                <label className="block text-[10px] text-slate-400 mb-1 font-semibold">
+                                  Price for languages / translation (₹)
+                                </label>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={p.invitation?.languagePrice ?? ''}
+                                  onChange={(e) => updatePackageInvitation(p.id, 'languagePrice', e.target.value === '' ? undefined : Number(e.target.value))}
+                                  placeholder="e.g. 1000"
+                                  className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                />
+                              </div>
+                            )}
                           </div>
 
-                          <div>
-                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Type</label>
-                            <div className="flex flex-wrap gap-2">
-                              {INVITATION_TYPES.map((t) => (
-                                <button type="button" key={t} onClick={() => updatePackageInvitation(p.id, 'type', t)} className={catChip(p.invitation?.type === t)}>{t}</button>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div>
-                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Add-ons</label>
-                            <div className="flex flex-wrap gap-2">
-                              {INVITATION_ADDONS.map((a) => (
-                                <button type="button" key={a} onClick={() => toggleInvitationArray(p.id, 'addOns', a)} className={catChip((p.invitation?.addOns || []).includes(a))}>{a}</button>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div>
-                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Languages</label>
-                            <div className="flex flex-wrap gap-2">
-                              {INVITATION_LANGUAGES.map((l) => (
-                                <button type="button" key={l} onClick={() => toggleInvitationArray(p.id, 'languages', l)} className={catChip((p.invitation?.languages || []).includes(l))}>{l}</button>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-3 gap-2">
+                          {/* 5. Quantity (printed) with price option, revisions, and delivery time */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 pt-2 border-t border-slate-800/80">
                             <div>
                               <label className="block text-[10px] text-slate-500 mb-1">Quantity (printed)</label>
-                              <input type="number" min={0} value={p.invitation?.quantity ?? ''} onChange={(e) => updatePackageInvitation(p.id, 'quantity', e.target.value === '' ? undefined : Number(e.target.value))}
-                                placeholder="e.g. 250" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                              <input
+                                type="number"
+                                min={0}
+                                value={p.invitation?.quantity ?? ''}
+                                onChange={(e) => updatePackageInvitation(p.id, 'quantity', e.target.value === '' ? undefined : Number(e.target.value))}
+                                placeholder="e.g. 250"
+                                className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] text-slate-400 font-semibold mb-1">Price for printed cards (₹)</label>
+                              <input
+                                type="number"
+                                min={0}
+                                value={p.invitation?.quantityPrice ?? ''}
+                                onChange={(e) => updatePackageInvitation(p.id, 'quantityPrice', e.target.value === '' ? undefined : Number(e.target.value))}
+                                placeholder="e.g. 5000"
+                                className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                              />
                             </div>
                             <div>
                               <label className="block text-[10px] text-slate-500 mb-1">Design revisions</label>
-                              <input type="number" min={0} value={p.invitation?.revisions ?? ''} onChange={(e) => updatePackageInvitation(p.id, 'revisions', e.target.value === '' ? undefined : Number(e.target.value))}
-                                placeholder="e.g. 3" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                              <input
+                                type="number"
+                                min={0}
+                                value={p.invitation?.revisions ?? ''}
+                                onChange={(e) => updatePackageInvitation(p.id, 'revisions', e.target.value === '' ? undefined : Number(e.target.value))}
+                                placeholder="e.g. 3"
+                                className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                              />
                             </div>
                             <div>
                               <label className="block text-[10px] text-slate-500 mb-1">Delivery time</label>
-                              <input type="text" value={p.invitation?.deliveryTime ?? ''} onChange={(e) => updatePackageInvitation(p.id, 'deliveryTime', e.target.value)}
-                                placeholder="e.g. 3 days" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                              <input
+                                type="text"
+                                value={p.invitation?.deliveryTime ?? ''}
+                                onChange={(e) => updatePackageInvitation(p.id, 'deliveryTime', e.target.value)}
+                                placeholder="e.g. 3 days"
+                                className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                              />
                             </div>
                           </div>
                         </div>

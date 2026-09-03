@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Star, MapPin, Check, ShieldCheck, Upload, Calendar as CalendarIcon, MessageSquare, Send, CreditCard, Sparkles, Camera, Bus, Flame, Gift, ListChecks, Phone, Clock, Plus, Maximize2, Car } from 'lucide-react';
+import { X, Star, MapPin, Check, ShieldCheck, Upload, Calendar as CalendarIcon, MessageSquare, Send, CreditCard, Sparkles, Camera, Bus, Flame, Gift, ListChecks, Phone, Clock, Plus, Maximize2, Car, Mail } from 'lucide-react';
 import { Vendor, Review, getVendorTrustBadges, getLiveDeals, bestDealForAmount, AVAILABILITY_SLOTS, isSlotBooked, openSlots, offeredSlotIds } from '../../../../packages/shared-types';
 import { fetchVendorById, uploadReferenceImage, fetchVendorReviews } from '../api';
 import { PortfolioGrid } from './Portfolio';
@@ -1419,20 +1419,89 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                       {vendor.category === 'Invitation' && pkg.invitation && (() => {
                         const iv = pkg.invitation;
                         const chip = 'text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200';
+                        const typeList = Array.isArray(iv.types) && iv.types.length > 0
+                          ? iv.types
+                          : (iv.type ? [iv.type] : []);
+                        const designPrice = iv.design && iv.designPrices?.[iv.design];
+                        const addOnList = (iv.addOns || []).map((a) => (a === 'Caricature' ? 'Invitation call by person' : a));
+
                         return (
-                          <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2" onClick={(e) => e.stopPropagation()}>
+                          <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2.5" onClick={(e) => e.stopPropagation()}>
                             <span className="text-[10px] font-bold text-slate-400 uppercase block">Invitation details</span>
                             <div className="flex flex-wrap gap-1.5">
                               {iv.tier && <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-200 font-bold">{iv.tier}</span>}
-                              {iv.type && <span className={chip}>{iv.type}</span>}
-                              {iv.design && <span className={chip}>{iv.design}</span>}
+                              {iv.design && (
+                                <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-amber-300">
+                                  {iv.design} design {designPrice ? `(₹${designPrice.toLocaleString('en-IN')})` : ''}
+                                </span>
+                              )}
                               {(iv.languages || []).map((l) => <span key={`il-${l}`} className={chip}>{l}</span>)}
+                              {iv.languagePrice ? (
+                                <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-amber-300">
+                                  Translation/Languages: ₹{iv.languagePrice.toLocaleString('en-IN')}
+                                </span>
+                              ) : null}
                             </div>
-                            <div className="space-y-1 text-[11px] text-slate-300">
-                              {iv.quantity ? <div>Quantity: <span className="text-white font-semibold">{iv.quantity}</span></div> : null}
+
+                            {/* Types with sample images & rates */}
+                            {typeList.length > 0 && (
+                              <div className="space-y-1.5 pt-1">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase block">Invitation Types</span>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                  {typeList.map((t) => {
+                                    const price = iv.typePrices?.[t];
+                                    const img = iv.typeImages?.[t];
+                                    return (
+                                      <div key={t} className="flex items-center gap-2 p-2 rounded-xl bg-slate-950/60 border border-slate-800">
+                                        {img ? (
+                                          <img src={img} alt={t} className="w-12 h-10 rounded-lg object-cover border border-slate-700 shrink-0" />
+                                        ) : (
+                                          <div className="w-12 h-10 rounded-lg bg-slate-800 flex items-center justify-center text-slate-500 shrink-0">
+                                            <Mail className="w-5 h-5" />
+                                          </div>
+                                        )}
+                                        <div className="flex-1 min-w-0">
+                                          <div className="text-xs font-bold text-white truncate">{t}</div>
+                                          {price ? (
+                                            <div className="text-[10px] text-amber-400 font-semibold">
+                                              ₹{price.toLocaleString('en-IN')}
+                                            </div>
+                                          ) : null}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Add-ons with prices */}
+                            {addOnList.length > 0 && (
+                              <div className="space-y-1 pt-1 text-[11px]">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase block">Add-ons</span>
+                                <div className="flex flex-wrap gap-2">
+                                  {addOnList.map((a) => {
+                                    const price = iv.addOnPrices?.[a] ?? (a === 'Invitation call by person' ? iv.addOnPrices?.['Caricature'] : undefined);
+                                    return (
+                                      <span key={a} className="text-slate-300">
+                                        {a} {price ? <b className="text-amber-300 font-semibold">(₹{price.toLocaleString('en-IN')})</b> : <b className="text-emerald-400">(Included)</b>}
+                                      </span>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Print specifications */}
+                            <div className="space-y-1 text-[11px] text-slate-300 pt-1">
+                              {iv.quantity ? (
+                                <div>
+                                  Printed cards: <span className="text-white font-semibold">{iv.quantity} pcs</span>
+                                  {iv.quantityPrice ? <span className="text-amber-400 font-semibold ml-1.5">(₹{iv.quantityPrice.toLocaleString('en-IN')})</span> : null}
+                                </div>
+                              ) : null}
                               {iv.revisions ? <div>Design revisions: <span className="text-white font-semibold">{iv.revisions}</span></div> : null}
-                              {iv.deliveryTime ? <div>Delivery: <span className="text-white font-semibold">{iv.deliveryTime}</span></div> : null}
-                              {(iv.addOns || []).length > 0 ? <div>Add-ons: {iv.addOns!.join(', ')}</div> : null}
+                              {iv.deliveryTime ? <div>Delivery time: <span className="text-white font-semibold">{iv.deliveryTime}</span></div> : null}
                             </div>
                           </div>
                         );
