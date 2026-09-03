@@ -39,7 +39,7 @@ function VenueDetails({ v }: { v: VenuePackageDetails }) {
         {(v.sessions || []).map((s) => <Text key={s} style={styles.venueSession}>{s}</Text>)}
       </View>
       {!!v.accommodationRooms && <Text style={styles.venueLine}>Accommodation rooms: {v.accommodationRooms}</Text>}
-      {!!v.cateringPolicy && <Text style={styles.venueLine}>Catering: {v.cateringPolicy}</Text>}
+      {!!v.cateringPolicy && <Text style={styles.venueLine}>Catering: {v.cateringPolicy}{inr(v.cateringPrice)}</Text>}
       {!!v.cateringImage && <Image source={{ uri: v.cateringImage }} style={styles.venueImg} />}
       {offered.length > 0 && (
         <Text style={styles.venueLine}>

@@ -1019,7 +1019,7 @@ export function App() {
   // field fills itself from the priced options.
   const venueTotal = (v?: any): number => {
     if (!v) return 0;
-    let sum = (Number(v.hallTypePrice) || 0) + (Number(v.hallClassPrice) || 0);
+    let sum = (Number(v.hallTypePrice) || 0) + (Number(v.hallClassPrice) || 0) + (Number(v.cateringPrice) || 0);
     if (v.featurePrices && typeof v.featurePrices === 'object') {
       for (const val of Object.values(v.featurePrices)) sum += Number(val) || 0;
     }
@@ -4359,6 +4359,19 @@ export function App() {
                                 <option value="">Select…</option>
                                 {VENUE_CATERING_POLICIES.map((c) => (<option key={c} value={c}>{c}</option>))}
                               </select>
+                              {p.venue?.cateringPolicy && (
+                                <div className="mt-2 flex items-center gap-1 px-2 rounded-lg bg-slate-950 border border-slate-800">
+                                  <span className="text-slate-500 text-xs">₹</span>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    value={p.venue?.cateringPrice ?? ''}
+                                    onChange={(e) => updatePackageVenue(p.id, 'cateringPrice', e.target.value === '' ? undefined : Number(e.target.value))}
+                                    placeholder="Catering price (optional)"
+                                    className="flex-1 py-2 bg-transparent text-white text-xs focus:outline-none"
+                                  />
+                                </div>
+                              )}
                               {p.venue?.cateringPolicy && (
                                 <div className="mt-2 flex items-center gap-2">
                                   {p.venue?.cateringImage && (

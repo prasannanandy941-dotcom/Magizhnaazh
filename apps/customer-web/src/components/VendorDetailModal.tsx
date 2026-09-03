@@ -1119,7 +1119,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                             <div className="space-y-1 text-[11px] text-slate-300">
                               {pkg.capacityPersons ? <div>Seating capacity: <span className="text-white font-semibold">{pkg.capacityPersons}</span></div> : null}
                               {v.accommodationRooms ? <div>Accommodation rooms: <span className="text-white font-semibold">{v.accommodationRooms}</span></div> : null}
-                              {v.cateringPolicy ? <div>Catering: {v.cateringPolicy}</div> : null}
+                              {v.cateringPolicy ? <div>Catering: {v.cateringPolicy}{inr(v.cateringPrice)}</div> : null}
                             </div>
                             {v.cateringImage && (
                               <div>

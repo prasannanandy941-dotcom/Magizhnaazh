@@ -24,6 +24,7 @@ export interface VenuePackageDetails {
   bridalRoom?: boolean;
   accommodationRooms?: number;
   cateringPolicy?: string;
+  cateringPrice?: number;
   cateringImage?: string;
   stageIncluded?: boolean;
   valetService?: boolean;

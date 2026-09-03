@@ -415,6 +415,7 @@ export interface VenuePackageDetails {
   bridalRoom?: boolean; // bridal / green room
   accommodationRooms?: number;
   cateringPolicy?: string; // In-house only / External allowed
+  cateringPrice?: number; // price for the catering option
   cateringImage?: string; // In-house only → menu photo; External allowed → sample image
   stageIncluded?: boolean;
   valetService?: boolean; // valet / parking service
