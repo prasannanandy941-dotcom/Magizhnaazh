@@ -29,6 +29,8 @@ const vendorPackageSchema = new Schema(
         liveCounters: [String],
         liveCounterItems: { type: Schema.Types.Mixed, default: {} },
         serviceStyle: String,
+        plateTypes: [String],
+        leafType: String,
         welcomeDrinks: Boolean,
         servingStaff: Boolean,
         freeTasting: Boolean,

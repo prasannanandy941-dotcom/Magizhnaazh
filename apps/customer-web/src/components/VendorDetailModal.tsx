@@ -893,7 +893,17 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                             <div className="space-y-1 text-[11px] text-slate-300">
                               {(c.starters || c.mains || c.desserts) ? <div>Dishes: {c.starters || 0} starters · {c.mains || 0} mains · {c.desserts || 0} desserts</div> : null}
                               {c.minGuests ? <div>Minimum guests: <span className="text-white font-semibold">{c.minGuests}</span></div> : null}
-                              {c.serviceStyle ? <div>Service style: <span className="text-white font-semibold">{c.serviceStyle}</span></div> : null}
+                              {c.serviceStyle ? (
+                                <div>
+                                  Service style: <span className="text-white font-semibold">{c.serviceStyle}</span>
+                                  {c.serviceStyle === 'Buffet' && (c.plateTypes || []).length > 0 && (
+                                    <span className="text-amber-300"> ({c.plateTypes!.join(', ')})</span>
+                                  )}
+                                  {c.serviceStyle === 'Banana-leaf' && c.leafType && (
+                                    <span className="text-emerald-300"> ({c.leafType})</span>
+                                  )}
+                                </div>
+                              ) : null}
                               {(c.liveCounters || []).length > 0 ? <div>Live counters: {c.liveCounters!.join(', ')}</div> : null}
                             </div>
                             {/* Items & prices per food type */}

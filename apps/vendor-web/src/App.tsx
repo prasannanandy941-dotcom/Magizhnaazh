@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Store, Star, Upload, Check, LogOut, Loader2, Plus, SlidersHorizontal, ChevronDown, Receipt, X, Bell, ShieldCheck, Clock as ClockIcon, AlertCircle, FileText, CalendarDays, Sparkles } from 'lucide-react';
-import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, VendorDeal, OfferedOptionItem, CateringFoodItem, CateringCourseItem, VENDOR_CATEGORIES, CATEGORY_OPTIONS, CATERING_OPTION_STYLE, MEDIA_QUALITY_OPTIONS, MEDIA_EQUIPMENT_OPTIONS, mediaExtraField, isDealLive, CATERING_MENU_TIERS, CATERING_FOOD_TYPES, CATERING_CUISINES, CATERING_COURSES, CATERING_LIVE_COUNTERS, CATERING_SERVICE_STYLES, slotLabelWithTime, AVAILABILITY_SLOTS, offeredSlotIds, VENUE_SESSIONS, VENUE_HALL_TYPES, VENUE_HALL_CLASSES, VENUE_CATERING_POLICIES, DECORATION_TIERS, DECORATION_THEMES, DECORATION_AREAS, DECORATION_FLOWER_TYPES, MAKEUP_TYPES, MAKEUP_FINISHES, MEDIA_TIERS, MEDIA_COVERAGE, MEDIA_STYLES, TRANSPORT_TIERS, TRANSPORT_VEHICLE_TYPES, TRANSPORT_PRICING_BASIS, TRANSPORT_USES, PRIEST_CEREMONY_TYPES, PRIEST_LANGUAGES, INVITATION_TIERS, INVITATION_TYPES, INVITATION_DESIGNS, INVITATION_ADDONS, INVITATION_LANGUAGES, PRINTING_PRODUCTS, PRINTING_FINISHES, RETURN_GIFTS_TIERS, RETURN_GIFT_TYPES, ENTERTAINMENT_ACT_TYPES, MUSIC_DJ_TIERS, MUSIC_DJ_TYPES, MUSIC_DJ_VENUE_TYPES, LIGHTING_TIERS, LIGHTING_TYPES, FLOWERS_VARIETIES, FLOWERS_ITEMS, FLOWERS_KINDS, MEHENDI_TIERS, MEHENDI_TYPES, MEHENDI_INTRICACY, EVENT_HOST_EVENT_TYPES, EVENT_HOST_LANGUAGES, EVENT_HOST_MODES, SECURITY_TYPES, SECURITY_GENDERS, RENTAL_ITEMS, UTENSILS_MATERIALS, UTENSILS_VESSEL_TYPES, WEDDING_PLANNER_SCOPES, CORPORATE_EVENT_TYPES, CORPORATE_ADDONS } from '../../../packages/shared-types';
+import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, VendorDeal, OfferedOptionItem, CateringFoodItem, CateringCourseItem, VENDOR_CATEGORIES, CATEGORY_OPTIONS, CATERING_OPTION_STYLE, MEDIA_QUALITY_OPTIONS, MEDIA_EQUIPMENT_OPTIONS, mediaExtraField, isDealLive, CATERING_MENU_TIERS, CATERING_FOOD_TYPES, CATERING_CUISINES, CATERING_COURSES, CATERING_LIVE_COUNTERS, CATERING_SERVICE_STYLES, BUFFET_PLATE_TYPES, BANANA_LEAF_TYPES, slotLabelWithTime, AVAILABILITY_SLOTS, offeredSlotIds, VENUE_SESSIONS, VENUE_HALL_TYPES, VENUE_HALL_CLASSES, VENUE_CATERING_POLICIES, DECORATION_TIERS, DECORATION_THEMES, DECORATION_AREAS, DECORATION_FLOWER_TYPES, MAKEUP_TYPES, MAKEUP_FINISHES, MEDIA_TIERS, MEDIA_COVERAGE, MEDIA_STYLES, TRANSPORT_TIERS, TRANSPORT_VEHICLE_TYPES, TRANSPORT_PRICING_BASIS, TRANSPORT_USES, PRIEST_CEREMONY_TYPES, PRIEST_LANGUAGES, INVITATION_TIERS, INVITATION_TYPES, INVITATION_DESIGNS, INVITATION_ADDONS, INVITATION_LANGUAGES, PRINTING_PRODUCTS, PRINTING_FINISHES, RETURN_GIFTS_TIERS, RETURN_GIFT_TYPES, ENTERTAINMENT_ACT_TYPES, MUSIC_DJ_TIERS, MUSIC_DJ_TYPES, MUSIC_DJ_VENUE_TYPES, LIGHTING_TIERS, LIGHTING_TYPES, FLOWERS_VARIETIES, FLOWERS_ITEMS, FLOWERS_KINDS, MEHENDI_TIERS, MEHENDI_TYPES, MEHENDI_INTRICACY, EVENT_HOST_EVENT_TYPES, EVENT_HOST_LANGUAGES, EVENT_HOST_MODES, SECURITY_TYPES, SECURITY_GENDERS, RENTAL_ITEMS, UTENSILS_MATERIALS, UTENSILS_VESSEL_TYPES, WEDDING_PLANNER_SCOPES, CORPORATE_EVENT_TYPES, CORPORATE_ADDONS } from '../../../packages/shared-types';
 import { STATIC_CITY_GROUPS } from '../../../packages/shared-utils';
 import { AuthGate } from './components/AuthGate';
 import { FloralGoldBackground } from './components/FloralGoldBackground';
@@ -1400,6 +1400,21 @@ export function App() {
               ...currentItems,
               [counter]: nextList,
             },
+          },
+        };
+      })
+    );
+  const toggleCateringPlateType = (pkgId: string, pt: string) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const current = p.catering?.plateTypes || [];
+        const next = current.includes(pt) ? current.filter((x) => x !== pt) : [...current, pt];
+        return {
+          ...p,
+          catering: {
+            ...(p.catering || {}),
+            plateTypes: next,
           },
         };
       })
@@ -3682,11 +3697,82 @@ export function App() {
 
                           <div>
                             <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Service Style</label>
-                            <select value={p.catering?.serviceStyle ?? ''} onChange={(e) => updatePackageCatering(p.id, 'serviceStyle', e.target.value || undefined)}
-                              className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm">
+                            <div className="flex flex-wrap gap-2 mb-2">
+                              {CATERING_SERVICE_STYLES.map((s) => (
+                                <button
+                                  type="button"
+                                  key={s}
+                                  onClick={() => updatePackageCatering(p.id, 'serviceStyle', p.catering?.serviceStyle === s ? undefined : s)}
+                                  className={catChip(p.catering?.serviceStyle === s)}
+                                >
+                                  {s}
+                                </button>
+                              ))}
+                            </div>
+                            <select
+                              value={p.catering?.serviceStyle ?? ''}
+                              onChange={(e) => updatePackageCatering(p.id, 'serviceStyle', e.target.value || undefined)}
+                              className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                            >
                               <option value="">Select…</option>
                               {CATERING_SERVICE_STYLES.map((s) => (<option key={s} value={s}>{s}</option>))}
                             </select>
+
+                            {/* When Buffet is selected: Plate Types */}
+                            {p.catering?.serviceStyle === 'Buffet' && (
+                              <div className="mt-3 p-3 rounded-xl border border-amber-500/30 bg-amber-950/20 space-y-2">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="w-2 h-2 rounded-full bg-amber-400" />
+                                  <label className="block text-[11px] text-amber-300 uppercase font-bold tracking-wide">
+                                    Plate Types for Buffet
+                                  </label>
+                                </div>
+                                <p className="text-[10px] text-slate-400">Choose the plate options provided with the buffet service:</p>
+                                <div className="flex flex-wrap gap-2 pt-1">
+                                  {BUFFET_PLATE_TYPES.map((pt) => {
+                                    const isSelected = (p.catering?.plateTypes || []).includes(pt);
+                                    return (
+                                      <button
+                                        type="button"
+                                        key={pt}
+                                        onClick={() => toggleCateringPlateType(p.id, pt)}
+                                        className={catChip(isSelected)}
+                                      >
+                                        {pt}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* When Banana-leaf is selected: Leaf Type */}
+                            {p.catering?.serviceStyle === 'Banana-leaf' && (
+                              <div className="mt-3 p-3 rounded-xl border border-emerald-500/30 bg-emerald-950/20 space-y-2">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                                  <label className="block text-[11px] text-emerald-300 uppercase font-bold tracking-wide">
+                                    Banana Leaf Type
+                                  </label>
+                                </div>
+                                <p className="text-[10px] text-slate-400">Choose the leaf option used for banana-leaf service:</p>
+                                <div className="flex flex-wrap gap-2 pt-1">
+                                  {BANANA_LEAF_TYPES.map((lt) => {
+                                    const isSelected = p.catering?.leafType === lt;
+                                    return (
+                                      <button
+                                        type="button"
+                                        key={lt}
+                                        onClick={() => updatePackageCatering(p.id, 'leafType', p.catering?.leafType === lt ? undefined : lt)}
+                                        className={catChip(isSelected)}
+                                      >
+                                        {lt}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
                           </div>
 
                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
