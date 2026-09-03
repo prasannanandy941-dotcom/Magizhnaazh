@@ -1019,9 +1019,6 @@ export function App() {
         if (it && typeof it === 'object') sum += Number(it.price) || 0;
       }
     }
-    if (c.pricePerPlate !== undefined && c.pricePerPlate !== null) {
-      sum += Number(c.pricePerPlate) || 0;
-    }
     return sum;
   };
 
@@ -1046,20 +1043,6 @@ export function App() {
             return { ...p, utensils, price: val };
           }
           return { ...p, price: val };
-        }
-        if (field === 'pricePerPlate') {
-          const val = raw === '' ? undefined : Number(raw);
-          const nextCatering = {
-            ...(p.catering || {}),
-            pricePerPlate: val,
-          };
-          const calc = cateringTotal(nextCatering);
-          return {
-            ...p,
-            pricePerPlate: val,
-            price: calc > 0 ? calc : (p.price || 0),
-            catering: nextCatering,
-          };
         }
         if (field === 'durationHours') return { ...p, durationHours: raw === '' ? undefined : Number(raw) };
         if (field === 'capacityPersons') return { ...p, capacityPersons: raw === '' ? undefined : Number(raw) };
@@ -1996,10 +1979,9 @@ export function App() {
           const cleanedFreeTastingItems = p.catering?.freeTasting
             ? (p.catering?.freeTastingItems || []).filter((it: any) => it && it.trim())
             : undefined;
-          const pricePerPlate = p.catering?.pricePerPlate ?? p.pricePerPlate;
           const nextCatering = {
             ...p.catering,
-            ...(pricePerPlate !== undefined ? { pricePerPlate } : {}),
+            pricePerPlate: undefined,
             foodTypeItems: cleanedFoodItems,
             cuisineItems: cleanedCuisineItems,
             courseItems: cleanedCourseItems,
@@ -2012,13 +1994,13 @@ export function App() {
           return {
             ...p,
             price,
-            ...(pricePerPlate !== undefined ? { pricePerPlate } : {}),
+            pricePerPlate: undefined,
             catering: nextCatering,
           };
         }
         return p;
       })
-      .filter((p) => p.packageName.trim() || p.price > 0 || (p.pricePerPlate && p.pricePerPlate > 0) || (p.catering?.pricePerPlate && p.catering.pricePerPlate > 0));
+      .filter((p) => p.packageName.trim() || p.price > 0);
     setSavingPackages(true);
     setPackagesNotice('');
     try {
@@ -3341,22 +3323,7 @@ export function App() {
                     </button>
                   </div>
 
-                  <div className={`grid grid-cols-1 ${myVendor?.category === 'Catering' ? 'sm:grid-cols-2' : myVendor?.category === 'Security' ? 'sm:grid-cols-2' : 'sm:grid-cols-3'} gap-3`}>
-                    {myVendor?.category === 'Catering' && (
-                      <div>
-                        <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
-                          Per plate cost (₹)
-                        </label>
-                        <input
-                          type="number"
-                          min={0}
-                          value={p.catering?.pricePerPlate ?? p.pricePerPlate ?? ''}
-                          onChange={(e) => updatePackageField(p.id, 'pricePerPlate', e.target.value)}
-                          placeholder="e.g. 350"
-                          className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
-                        />
-                      </div>
-                    )}
+                  <div className={`grid grid-cols-1 ${myVendor?.category === 'Catering' ? 'sm:grid-cols-1' : myVendor?.category === 'Security' ? 'sm:grid-cols-2' : 'sm:grid-cols-3'} gap-3`}>
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <label className="block text-[10px] text-slate-400 uppercase font-bold">
@@ -4099,24 +4066,6 @@ export function App() {
                                 </div>
                               </div>
                             )}
-
-                            {/* Per plate cost / Per leaf cost */}
-                            <div className="mt-3">
-                              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
-                                {p.catering?.serviceStyle === 'Banana-leaf' ? 'Per leaf / plate cost (₹)' : 'Per plate cost (₹)'}
-                              </label>
-                              <div className="relative">
-                                <span className="absolute left-3 top-2.5 text-slate-500 text-sm">₹</span>
-                                <input
-                                  type="number"
-                                  min={0}
-                                  value={p.catering?.pricePerPlate ?? p.pricePerPlate ?? ''}
-                                  onChange={(e) => updatePackageField(p.id, 'pricePerPlate', e.target.value)}
-                                  placeholder={p.catering?.serviceStyle === 'Banana-leaf' ? 'e.g. 450 per leaf' : 'e.g. 350 per plate'}
-                                  className="w-full pl-7 pr-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
-                                />
-                              </div>
-                            </div>
                           </div>
 
                           <div className="space-y-3">

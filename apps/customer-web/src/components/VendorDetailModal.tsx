@@ -907,7 +907,6 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                             <div className="space-y-1 text-[11px] text-slate-300">
                               {(c.starters || c.mains || c.desserts) ? <div>Dishes: {c.starters || 0} starters · {c.mains || 0} mains · {c.desserts || 0} desserts</div> : null}
                               {c.minGuests ? <div>Minimum guests: <span className="text-white font-semibold">{c.minGuests}</span></div> : null}
-                              {(c.pricePerPlate || pkg.pricePerPlate) ? <div>Per plate cost: <span className="text-amber-400 font-bold">₹{(c.pricePerPlate || pkg.pricePerPlate)!.toLocaleString('en-IN')}</span></div> : null}
                               {c.serviceStyle ? (
                                 <div>
                                   Service style: <span className="text-white font-semibold">{c.serviceStyle}</span>
