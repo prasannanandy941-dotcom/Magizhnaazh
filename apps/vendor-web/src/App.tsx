@@ -1717,6 +1717,87 @@ export function App() {
       const next = current.includes(item) ? current.filter((x) => x !== item) : [...current, item];
       return { ...p, decoration: { ...(p.decoration || {}), [field]: next } };
     }));
+  // Price for one decoration option (theme/area/flower), stored in the matching
+  // *Prices map keyed by the option name.
+  const setDecorPrice = (pkgId: string, mapField: 'themePrices' | 'areaPrices' | 'flowerPrices', key: string, value: number | undefined) =>
+    setPackages((prev) => prev.map((p) => {
+      if (p.id !== pkgId) return p;
+      const prices = { ...((p.decoration as any)?.[mapField] || {}) };
+      if (value === undefined) delete prices[key]; else prices[key] = value;
+      return { ...p, decoration: { ...(p.decoration || {}), [mapField]: prices } };
+    }));
+  // Upload a decoration image. slot encodes the target: "theme:Floral",
+  // "area:Stage", "flower:Fresh", or "mandap". Busy key is `${pkgId}:${slot}`.
+  const [uploadingDecorImg, setUploadingDecorImg] = useState<string | null>(null);
+  const uploadDecorImage = async (pkgId: string, slot: string, file: File) => {
+    if (!token) return;
+    setUploadingDecorImg(`${pkgId}:${slot}`);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch(`${GATEWAY_URL}/api/v1/uploads`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd });
+      const json = await res.json().catch(() => ({}));
+      if (json?.data?.fileUrl) {
+        const url = json.data.fileUrl as string;
+        const [group, key] = slot.split(':');
+        const mapField = group === 'theme' ? 'themeImages' : group === 'area' ? 'areaImages' : group === 'flower' ? 'flowerImages' : '';
+        setPackages((prev) => prev.map((p) => {
+          if (p.id !== pkgId) return p;
+          if (group === 'mandap') return { ...p, decoration: { ...(p.decoration || {}), mandapImage: url } };
+          const imgs = { ...((p.decoration as any)?.[mapField] || {}) };
+          imgs[key] = url;
+          return { ...p, decoration: { ...(p.decoration || {}), [mapField]: imgs } };
+        }));
+      }
+    } catch {
+      /* upload is best-effort; vendor can retry */
+    } finally {
+      setUploadingDecorImg(null);
+    }
+  };
+  const removeDecorImage = (pkgId: string, slot: string) =>
+    setPackages((prev) => prev.map((p) => {
+      if (p.id !== pkgId) return p;
+      const [group, key] = slot.split(':');
+      if (group === 'mandap') return { ...p, decoration: { ...(p.decoration || {}), mandapImage: undefined } };
+      const mapField = group === 'theme' ? 'themeImages' : group === 'area' ? 'areaImages' : 'flowerImages';
+      const imgs = { ...((p.decoration as any)?.[mapField] || {}) };
+      delete imgs[key];
+      return { ...p, decoration: { ...(p.decoration || {}), [mapField]: imgs } };
+    }));
+  // One row (price input + image upload) for a selected decoration option.
+  const renderDecorPricedRow = (p: VendorPackage, group: 'theme' | 'area' | 'flower', name: string) => {
+    const priceField = group === 'theme' ? 'themePrices' : group === 'area' ? 'areaPrices' : 'flowerPrices';
+    const imgField = group === 'theme' ? 'themeImages' : group === 'area' ? 'areaImages' : 'flowerImages';
+    const price = (p.decoration as any)?.[priceField]?.[name];
+    const img = (p.decoration as any)?.[imgField]?.[name];
+    const slot = `${group}:${name}`;
+    return (
+      <div key={slot} className="flex items-center gap-2 flex-wrap rounded-lg border border-slate-800/70 bg-slate-950/30 p-2">
+        <span className="text-[11px] font-bold text-amber-300 min-w-[64px]">{name}</span>
+        <div className="flex items-center gap-1 px-2 rounded-lg bg-slate-950 border border-slate-800">
+          <span className="text-slate-500 text-xs">₹</span>
+          <input type="number" min={0} value={price ?? ''} onChange={(e) => setDecorPrice(p.id, priceField as any, name, e.target.value === '' ? undefined : Number(e.target.value))}
+            placeholder="Price" className="w-20 py-1.5 bg-transparent text-white text-xs focus:outline-none" />
+        </div>
+        {img && (
+          <div className="relative">
+            <img src={img} alt={name} className="w-10 h-10 rounded-lg object-cover border border-slate-800" />
+            <button type="button" onClick={() => removeDecorImage(p.id, slot)}
+              className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-slate-800 text-slate-300 hover:text-rose-400 flex items-center justify-center" aria-label="Remove image">
+              <X className="w-2.5 h-2.5" />
+            </button>
+          </div>
+        )}
+        <label className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:border-slate-700 text-[11px] font-bold cursor-pointer transition-colors">
+          {uploadingDecorImg === `${p.id}:${slot}` ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
+          {img ? 'Replace' : 'Upload'}
+          <input type="file" accept="image/*" className="hidden" disabled={!!uploadingDecorImg}
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadDecorImage(p.id, slot, f); e.target.value = ''; }} />
+        </label>
+      </div>
+    );
+  };
 
   // Makeup & Beauty packages carry structured details.
   const updatePackageMakeup = (pkgId: string, field: string, value: any) =>
@@ -3382,7 +3463,7 @@ export function App() {
                     </button>
                   </div>
 
-                  <div className={`grid grid-cols-1 ${myVendor?.category === 'Catering' ? 'sm:grid-cols-1' : myVendor?.category === 'Security' ? 'sm:grid-cols-2' : 'sm:grid-cols-3'} gap-3`}>
+                  <div className={`grid grid-cols-1 ${myVendor?.category === 'Catering' || myVendor?.category === 'Decoration' ? 'sm:grid-cols-1' : myVendor?.category === 'Security' ? 'sm:grid-cols-2' : 'sm:grid-cols-3'} gap-3`}>
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <label className="block text-[10px] text-slate-400 uppercase font-bold">
@@ -3426,7 +3507,7 @@ export function App() {
                         </div>
                       )}
                     </div>
-                    {myVendor?.category !== 'Security' && myVendor?.category !== 'Catering' && myVendor?.category !== 'Media' && myVendor?.category !== 'Transport' && myVendor?.category !== 'Invitation' && myVendor?.category !== 'Printing' && myVendor?.category !== 'Return Gifts' && myVendor?.category !== 'Music/DJ' && myVendor?.category !== 'Lighting' && myVendor?.category !== 'Flowers' && myVendor?.category !== 'Mehendi' && myVendor?.category !== 'Event Host/Anchor' && myVendor?.category !== 'Rental Equipment' && myVendor?.category !== 'Utensils for Rent' && myVendor?.category !== 'Wedding Planner' && myVendor?.category !== 'Corporate Event Services' && (
+                    {myVendor?.category !== 'Security' && myVendor?.category !== 'Catering' && myVendor?.category !== 'Decoration' && myVendor?.category !== 'Media' && myVendor?.category !== 'Transport' && myVendor?.category !== 'Invitation' && myVendor?.category !== 'Printing' && myVendor?.category !== 'Return Gifts' && myVendor?.category !== 'Music/DJ' && myVendor?.category !== 'Lighting' && myVendor?.category !== 'Flowers' && myVendor?.category !== 'Mehendi' && myVendor?.category !== 'Event Host/Anchor' && myVendor?.category !== 'Rental Equipment' && myVendor?.category !== 'Utensils for Rent' && myVendor?.category !== 'Wedding Planner' && myVendor?.category !== 'Corporate Event Services' && (
                       <div>
                         <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
                           {myVendor?.category === 'Pujari/Priest' ? 'No. of persons' : myVendor?.category === 'Entertainment' ? 'Number of performers' : 'Capacity (persons)'}
@@ -3440,7 +3521,7 @@ export function App() {
                         />
                       </div>
                     )}
-                    {myVendor?.category !== 'Security' && myVendor?.category !== 'Catering' && myVendor?.category !== 'Media' && myVendor?.category !== 'Transport' && myVendor?.category !== 'Invitation' && myVendor?.category !== 'Printing' && myVendor?.category !== 'Return Gifts' && myVendor?.category !== 'Music/DJ' && myVendor?.category !== 'Lighting' && myVendor?.category !== 'Flowers' && myVendor?.category !== 'Mehendi' && myVendor?.category !== 'Event Host/Anchor' && myVendor?.category !== 'Rental Equipment' && myVendor?.category !== 'Utensils for Rent' && myVendor?.category !== 'Wedding Planner' && myVendor?.category !== 'Corporate Event Services' && (
+                    {myVendor?.category !== 'Security' && myVendor?.category !== 'Catering' && myVendor?.category !== 'Decoration' && myVendor?.category !== 'Media' && myVendor?.category !== 'Transport' && myVendor?.category !== 'Invitation' && myVendor?.category !== 'Printing' && myVendor?.category !== 'Return Gifts' && myVendor?.category !== 'Music/DJ' && myVendor?.category !== 'Lighting' && myVendor?.category !== 'Flowers' && myVendor?.category !== 'Mehendi' && myVendor?.category !== 'Event Host/Anchor' && myVendor?.category !== 'Rental Equipment' && myVendor?.category !== 'Utensils for Rent' && myVendor?.category !== 'Wedding Planner' && myVendor?.category !== 'Corporate Event Services' && (
                       <div>
                         <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
                           Duration (hours)
@@ -4457,21 +4538,31 @@ export function App() {
                           </div>
 
                           <div>
-                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Theme</label>
+                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Theme <span className="text-slate-500 normal-case font-normal">— select, then set price / image</span></label>
                             <div className="flex flex-wrap gap-2">
                               {DECORATION_THEMES.map((t) => (
                                 <button type="button" key={t} onClick={() => toggleDecorationOption(p.id, 'themes', t)} className={catChip((p.decoration?.themes || []).includes(t))}>{t}</button>
                               ))}
                             </div>
+                            {(p.decoration?.themes || []).length > 0 && (
+                              <div className="mt-2 space-y-2">
+                                {(p.decoration?.themes || []).map((t) => renderDecorPricedRow(p, 'theme', t))}
+                              </div>
+                            )}
                           </div>
 
                           <div>
-                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Areas covered</label>
+                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Areas covered <span className="text-slate-500 normal-case font-normal">— select, then set price / image</span></label>
                             <div className="flex flex-wrap gap-2">
                               {DECORATION_AREAS.map((a) => (
                                 <button type="button" key={a} onClick={() => toggleDecorationOption(p.id, 'areas', a)} className={catChip((p.decoration?.areas || []).includes(a))}>{a}</button>
                               ))}
                             </div>
+                            {(p.decoration?.areas || []).length > 0 && (
+                              <div className="mt-2 space-y-2">
+                                {(p.decoration?.areas || []).map((a) => renderDecorPricedRow(p, 'area', a))}
+                              </div>
+                            )}
                           </div>
 
                           <div>
@@ -4481,18 +4572,38 @@ export function App() {
                                 <button type="button" key={f} onClick={() => updatePackageDecoration(p.id, 'flowers', f)} className={catChip(p.decoration?.flowers === f)}>{f}</button>
                               ))}
                             </div>
+                            {p.decoration?.flowers && (
+                              <div className="mt-2">
+                                {renderDecorPricedRow(p, 'flower', p.decoration.flowers)}
+                              </div>
+                            )}
                           </div>
 
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Mandap type</label>
-                              <input type="text" value={p.decoration?.mandapType ?? ''} onChange={(e) => updatePackageDecoration(p.id, 'mandapType', e.target.value)}
-                                placeholder="e.g. Traditional wooden" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
-                            </div>
-                            <div>
-                              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Functions covered</label>
-                              <input type="number" min={0} value={p.decoration?.functionsCovered ?? ''} onChange={(e) => updatePackageDecoration(p.id, 'functionsCovered', e.target.value === '' ? undefined : Number(e.target.value))}
-                                placeholder="e.g. 2" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                          <div>
+                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Mandap type</label>
+                            <input type="text" value={p.decoration?.mandapType ?? ''} onChange={(e) => updatePackageDecoration(p.id, 'mandapType', e.target.value)}
+                              placeholder="e.g. Traditional wooden" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                            <div className="mt-2 flex items-center gap-2 flex-wrap">
+                              <div className="flex items-center gap-1 px-2 rounded-lg bg-slate-950 border border-slate-800">
+                                <span className="text-slate-500 text-xs">₹</span>
+                                <input type="number" min={0} value={p.decoration?.mandapPrice ?? ''} onChange={(e) => updatePackageDecoration(p.id, 'mandapPrice', e.target.value === '' ? undefined : Number(e.target.value))}
+                                  placeholder="Mandap price" className="w-28 py-2 bg-transparent text-white text-xs focus:outline-none" />
+                              </div>
+                              {p.decoration?.mandapImage && (
+                                <div className="relative">
+                                  <img src={p.decoration.mandapImage} alt="Mandap" className="w-10 h-10 rounded-lg object-cover border border-slate-800" />
+                                  <button type="button" onClick={() => removeDecorImage(p.id, 'mandap:')}
+                                    className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-slate-800 text-slate-300 hover:text-rose-400 flex items-center justify-center" aria-label="Remove image">
+                                    <X className="w-2.5 h-2.5" />
+                                  </button>
+                                </div>
+                              )}
+                              <label className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:border-slate-700 text-[11px] font-bold cursor-pointer transition-colors">
+                                {uploadingDecorImg === `${p.id}:mandap:` ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
+                                {p.decoration?.mandapImage ? 'Replace' : 'Upload'}
+                                <input type="file" accept="image/*" className="hidden" disabled={!!uploadingDecorImg}
+                                  onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadDecorImage(p.id, 'mandap:', f); e.target.value = ''; }} />
+                              </label>
                             </div>
                           </div>
 

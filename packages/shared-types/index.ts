@@ -388,10 +388,18 @@ export const MAKEUP_FINISHES = ['Regular', 'HD', 'Airbrush'] as const;
 export interface DecorationPackageDetails {
   tier?: string; // Basic / Premium / Luxury
   themes?: string[]; // Floral / Royal / Minimal / Traditional / Destination
+  themePrices?: Record<string, number>; // price per selected theme
+  themeImages?: Record<string, string>; // image per selected theme
   areas?: string[]; // Stage, Entrance, Mandap, Walkway, Reception backdrop
+  areaPrices?: Record<string, number>; // price per selected area
+  areaImages?: Record<string, string>; // image per selected area
   flowers?: string; // Fresh / Artificial
+  flowerPrices?: Record<string, number>; // price per flower kind
+  flowerImages?: Record<string, string>; // image per flower kind
   coupleSofa?: boolean; // couple sofa / seating included
   mandapType?: string; // free text, e.g. "Traditional wooden mandap"
+  mandapPrice?: number; // price for the mandap
+  mandapImage?: string; // uploaded mandap image
   lighting?: boolean; // lighting included
   functionsCovered?: number; // number of functions covered
 }

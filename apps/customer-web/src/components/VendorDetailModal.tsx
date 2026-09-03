@@ -1148,22 +1148,33 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                       {vendor.category === 'Decoration' && pkg.decoration && (() => {
                         const d = pkg.decoration;
                         const chip = 'text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200';
+                        const inr = (n?: number) => (n ? ` — ₹${n.toLocaleString('en-IN')}` : '');
                         const incl: [string, boolean | undefined][] = [
                           ['Couple sofa', d.coupleSofa], ['Lighting', d.lighting],
+                        ];
+                        const imgs: [string, string][] = [
+                          ...(d.themes || []).filter((t) => d.themeImages?.[t]).map((t) => [t, d.themeImages![t]] as [string, string]),
+                          ...(d.areas || []).filter((a) => d.areaImages?.[a]).map((a) => [a, d.areaImages![a]] as [string, string]),
+                          ...(d.flowers && d.flowerImages?.[d.flowers] ? [[d.flowers, d.flowerImages[d.flowers]] as [string, string]] : []),
+                          ...(d.mandapImage ? [['Mandap', d.mandapImage] as [string, string]] : []),
                         ];
                         return (
                           <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2" onClick={(e) => e.stopPropagation()}>
                             <span className="text-[10px] font-bold text-slate-400 uppercase block">Decoration details</span>
                             <div className="flex flex-wrap gap-1.5">
                               {d.tier && <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-200 font-bold">{d.tier}</span>}
-                              {(d.themes || []).map((t) => <span key={`t-${t}`} className={chip}>{t}</span>)}
-                              {d.flowers && <span className={chip}>{d.flowers} flowers</span>}
+                              {(d.themes || []).map((t) => <span key={`t-${t}`} className={chip}>{t}{inr(d.themePrices?.[t])}</span>)}
+                              {d.flowers && <span className={chip}>{d.flowers} flowers{inr(d.flowerPrices?.[d.flowers])}</span>}
                             </div>
                             <div className="space-y-1 text-[11px] text-slate-300">
-                              {(d.areas || []).length > 0 ? <div>Areas: {d.areas!.join(', ')}</div> : null}
-                              {d.mandapType ? <div>Mandap: <span className="text-white font-semibold">{d.mandapType}</span></div> : null}
-                              {d.functionsCovered ? <div>Functions covered: <span className="text-white font-semibold">{d.functionsCovered}</span></div> : null}
+                              {(d.areas || []).length > 0 ? <div>Areas: {(d.areas || []).map((a) => `${a}${inr(d.areaPrices?.[a])}`).join(', ')}</div> : null}
+                              {d.mandapType ? <div>Mandap: <span className="text-white font-semibold">{d.mandapType}</span>{inr(d.mandapPrice)}</div> : null}
                             </div>
+                            {imgs.length > 0 && (
+                              <div className="flex flex-wrap gap-2">
+                                {imgs.map(([label, url]) => <img key={label} src={url} alt={label} title={label} className="w-16 h-16 rounded-lg object-cover border border-slate-800" />)}
+                              </div>
+                            )}
                             {incl.some(([, v]) => v !== undefined) && (
                               <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px]">
                                 {incl.filter(([, v]) => v !== undefined).map(([label, v]) => (
