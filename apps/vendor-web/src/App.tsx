@@ -1026,6 +1026,19 @@ export function App() {
     return sum;
   };
 
+  // Auto-total for a Decoration package: mandap price + every theme, area and
+  // flower price. Mirrors venueTotal so the Total amount fills itself in.
+  const decorationTotal = (d?: any): number => {
+    if (!d) return 0;
+    let sum = Number(d.mandapPrice) || 0;
+    for (const map of [d.themePrices, d.areaPrices, d.flowerPrices]) {
+      if (map && typeof map === 'object') {
+        for (const val of Object.values(map)) sum += Number(val) || 0;
+      }
+    }
+    return sum;
+  };
+
   const updatePackageField = (id: string, field: keyof VendorPackage, raw: string) =>
     setPackages((prev) =>
       prev.map((p) => {
@@ -2081,6 +2094,12 @@ export function App() {
           // Total amount = auto-sum of hall type/class + feature prices, unless
           // the vendor typed their own figure in the Total amount box.
           const calc = venueTotal(p.venue);
+          return { ...p, price: p.price > 0 ? p.price : calc };
+        }
+        if (myVendor.category === 'Decoration') {
+          // Total amount = auto-sum of theme/area/flower/mandap prices, unless
+          // the vendor typed their own figure in the Total amount box.
+          const calc = decorationTotal(p.decoration);
           return { ...p, price: p.price > 0 ? p.price : calc };
         }
         if (myVendor.category === 'Catering') {
@@ -3467,7 +3486,7 @@ export function App() {
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <label className="block text-[10px] text-slate-400 uppercase font-bold">
-                          {myVendor?.category === 'Catering' ? 'Total amount (₹)' : myVendor?.category === 'Security' ? 'Price per guard / shift (₹)' : myVendor?.category === 'Venue' ? 'Total amount (₹)' : myVendor?.category === 'Decoration' ? 'Price per function (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Price per look / function (₹)' : myVendor?.category === 'Media' ? 'Price per event / day (₹)' : myVendor?.category === 'Transport' ? 'Price per vehicle (₹)' : myVendor?.category === 'Pujari/Priest' ? 'Price per ceremony (₹)' : myVendor?.category === 'Invitation' ? 'Price per design / quantity (₹)' : myVendor?.category === 'Printing' ? 'Price per quantity (₹)' : myVendor?.category === 'Return Gifts' ? 'Price per piece (₹)' : myVendor?.category === 'Entertainment' ? 'Price per act / hour (₹)' : myVendor?.category === 'Music/DJ' ? 'Price per event / hour (₹)' : myVendor?.category === 'Lighting' ? 'Price per function (₹)' : myVendor?.category === 'Flowers' ? 'Price per item / function (₹)' : myVendor?.category === 'Mehendi' ? 'Price per bride (₹)' : myVendor?.category === 'Event Host/Anchor' ? 'Price per event (₹)' : myVendor?.category === 'Rental Equipment' ? 'Per-day rate (₹)' : myVendor?.category === 'Utensils for Rent' ? 'Total price (₹)' : myVendor?.category === 'Wedding Planner' ? 'Price per package / function (₹)' : myVendor?.category === 'Corporate Event Services' ? 'Price per total event (₹)' : 'Price (₹)'}
+                          {myVendor?.category === 'Catering' ? 'Total amount (₹)' : myVendor?.category === 'Security' ? 'Price per guard / shift (₹)' : myVendor?.category === 'Venue' ? 'Total amount (₹)' : myVendor?.category === 'Decoration' ? 'Total amount (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Price per look / function (₹)' : myVendor?.category === 'Media' ? 'Price per event / day (₹)' : myVendor?.category === 'Transport' ? 'Price per vehicle (₹)' : myVendor?.category === 'Pujari/Priest' ? 'Price per ceremony (₹)' : myVendor?.category === 'Invitation' ? 'Price per design / quantity (₹)' : myVendor?.category === 'Printing' ? 'Price per quantity (₹)' : myVendor?.category === 'Return Gifts' ? 'Price per piece (₹)' : myVendor?.category === 'Entertainment' ? 'Price per act / hour (₹)' : myVendor?.category === 'Music/DJ' ? 'Price per event / hour (₹)' : myVendor?.category === 'Lighting' ? 'Price per function (₹)' : myVendor?.category === 'Flowers' ? 'Price per item / function (₹)' : myVendor?.category === 'Mehendi' ? 'Price per bride (₹)' : myVendor?.category === 'Event Host/Anchor' ? 'Price per event (₹)' : myVendor?.category === 'Rental Equipment' ? 'Per-day rate (₹)' : myVendor?.category === 'Utensils for Rent' ? 'Total price (₹)' : myVendor?.category === 'Wedding Planner' ? 'Price per package / function (₹)' : myVendor?.category === 'Corporate Event Services' ? 'Price per total event (₹)' : 'Price (₹)'}
                         </label>
                         {myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 && (
                           <span className="text-[10px] text-amber-400 font-bold">
@@ -3479,10 +3498,15 @@ export function App() {
                             Sum: ₹{venueTotal(p.venue).toLocaleString('en-IN')}
                           </span>
                         )}
+                        {myVendor?.category === 'Decoration' && decorationTotal(p.decoration) > 0 && (
+                          <span className="text-[10px] text-amber-400 font-bold">
+                            Sum: ₹{decorationTotal(p.decoration).toLocaleString('en-IN')}
+                          </span>
+                        )}
                       </div>
                       <input
                         type="number"
-                        value={p.price || (myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 ? cateringTotal(p.catering) : myVendor?.category === 'Venue' && venueTotal(p.venue) > 0 ? venueTotal(p.venue) : '')}
+                        value={p.price || (myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 ? cateringTotal(p.catering) : myVendor?.category === 'Venue' && venueTotal(p.venue) > 0 ? venueTotal(p.venue) : myVendor?.category === 'Decoration' && decorationTotal(p.decoration) > 0 ? decorationTotal(p.decoration) : '')}
                         onChange={(e) => updatePackageField(p.id, 'price', e.target.value)}
                         placeholder={myVendor?.category === 'Catering' ? (cateringTotal(p.catering) ? String(cateringTotal(p.catering)) : 'e.g. 35000') : myVendor?.category === 'Security' ? '2000' : '150000'}
                         className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
@@ -3490,6 +3514,11 @@ export function App() {
                       {myVendor?.category === 'Venue' && venueTotal(p.venue) > 0 && (
                         <div className="mt-1.5 text-[10px] text-slate-400">
                           <span>Auto-added from hall type, class &amp; features: <b className="text-amber-300">₹{venueTotal(p.venue).toLocaleString('en-IN')}</b>. Edit the box to override.</span>
+                        </div>
+                      )}
+                      {myVendor?.category === 'Decoration' && decorationTotal(p.decoration) > 0 && (
+                        <div className="mt-1.5 text-[10px] text-slate-400">
+                          <span>Auto-added from themes, areas, flowers &amp; mandap: <b className="text-amber-300">₹{decorationTotal(p.decoration).toLocaleString('en-IN')}</b>. Edit the box to override.</span>
                         </div>
                       )}
                       {myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 && (
