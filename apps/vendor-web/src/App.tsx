@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Store, Star, Upload, Check, LogOut, Loader2, Plus, SlidersHorizontal, ChevronDown, Receipt, X, Bell, ShieldCheck, Clock as ClockIcon, AlertCircle, FileText, CalendarDays, Sparkles, Car, Mail, Printer } from 'lucide-react';
+import { Store, Star, Upload, Check, LogOut, Loader2, Plus, SlidersHorizontal, ChevronDown, Receipt, X, Bell, ShieldCheck, Clock as ClockIcon, AlertCircle, FileText, CalendarDays, Sparkles, Car, Mail, Printer, Gift } from 'lucide-react';
 import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, VendorDeal, OfferedOptionItem, CateringFoodItem, CateringCourseItem, VENDOR_CATEGORIES, CATEGORY_OPTIONS, CATERING_OPTION_STYLE, MEDIA_QUALITY_OPTIONS, MEDIA_EQUIPMENT_OPTIONS, mediaExtraField, isDealLive, CATERING_MENU_TIERS, CATERING_FOOD_TYPES, CATERING_CUISINES, CATERING_COURSES, CATERING_LIVE_COUNTERS, CATERING_SERVICE_STYLES, BUFFET_PLATE_TYPES, BANANA_LEAF_TYPES, slotLabelWithTime, AVAILABILITY_SLOTS, offeredSlotIds, VENUE_SESSIONS, VENUE_HALL_TYPES, VENUE_HALL_CLASSES, VENUE_CATERING_POLICIES, VENUE_FEATURES, DECORATION_TIERS, DECORATION_THEMES, DECORATION_AREAS, DECORATION_FLOWER_TYPES, MAKEUP_TYPES, MAKEUP_FINISHES, MEDIA_TIERS, MEDIA_COVERAGE, MEDIA_STYLES, TRANSPORT_TIERS, TRANSPORT_VEHICLE_TYPES, TRANSPORT_PRICING_BASIS, TRANSPORT_USES, PRIEST_CEREMONY_TYPES, PRIEST_LANGUAGES, INVITATION_TIERS, INVITATION_TYPES, INVITATION_DESIGNS, INVITATION_ADDONS, INVITATION_LANGUAGES, PRINTING_PRODUCTS, PRINTING_FINISHES, RETURN_GIFTS_TIERS, RETURN_GIFT_TYPES, ENTERTAINMENT_ACT_TYPES, MUSIC_DJ_TIERS, MUSIC_DJ_TYPES, MUSIC_DJ_VENUE_TYPES, LIGHTING_TIERS, LIGHTING_TYPES, FLOWERS_VARIETIES, FLOWERS_ITEMS, FLOWERS_KINDS, MEHENDI_TIERS, MEHENDI_TYPES, MEHENDI_INTRICACY, EVENT_HOST_EVENT_TYPES, EVENT_HOST_LANGUAGES, EVENT_HOST_MODES, SECURITY_TYPES, SECURITY_GENDERS, RENTAL_ITEMS, UTENSILS_MATERIALS, UTENSILS_VESSEL_TYPES, WEDDING_PLANNER_SCOPES, CORPORATE_EVENT_TYPES, CORPORATE_ADDONS } from '../../../packages/shared-types';
 import { STATIC_CITY_GROUPS } from '../../../packages/shared-utils';
 import { AuthGate } from './components/AuthGate';
@@ -2595,9 +2595,136 @@ export function App() {
       })
     );
 
-  // Return Gifts packages carry structured gift details.
+  // Auto-total for a Return Gifts package:
+  // - Gift type prices: sum of giftPrices for selected giftTypes (Dry fruits, Silver items, Potli bags, Plants, Hampers, Sweets)
+  // - Count of gifts price: countPrice
+  // - Packaging price: packagingPrice
+  // - Customization price: customizationPrice (if customization is true)
+  const returnGiftsTotal = (rg?: any): number => {
+    if (!rg) return 0;
+    let sum = 0;
+
+    // Gift type prices
+    const selectedTypes: string[] = Array.isArray(rg.giftTypes) && rg.giftTypes.length > 0
+      ? rg.giftTypes
+      : (rg.giftType ? [rg.giftType] : []);
+    if (rg.giftPrices && typeof rg.giftPrices === 'object') {
+      for (const gt of selectedTypes) {
+        sum += Number(rg.giftPrices[gt]) || 0;
+      }
+    }
+
+    // Count of gifts price
+    sum += Number(rg.countPrice) || 0;
+
+    // Packaging price
+    sum += Number(rg.packagingPrice) || 0;
+
+    // Customization price
+    if (rg.customization) {
+      sum += Number(rg.customizationPrice) || 0;
+    }
+
+    return sum;
+  };
+
+  const [uploadingReturnGiftImg, setUploadingReturnGiftImg] = useState<string | null>(null);
+  const uploadReturnGiftImage = async (pkgId: string, giftType: string, file: File) => {
+    if (!token) return;
+    setUploadingReturnGiftImg(`${pkgId}:${giftType}`);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch(`${GATEWAY_URL}/api/v1/uploads`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+      const json = await res.json().catch(() => ({}));
+      if (json?.data?.fileUrl) {
+        const url = json.data.fileUrl as string;
+        setPackages((prev) =>
+          prev.map((p) => {
+            if (p.id !== pkgId) return p;
+            const imgs = { ...(p.returnGifts?.giftImages || {}) };
+            imgs[giftType] = url;
+            const nextRg = { ...(p.returnGifts || {}), giftImages: imgs };
+            return { ...p, returnGifts: nextRg };
+          })
+        );
+      }
+    } catch {
+      /* best-effort */
+    } finally {
+      setUploadingReturnGiftImg(null);
+    }
+  };
+
+  const removeReturnGiftImage = (pkgId: string, giftType: string) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const imgs = { ...(p.returnGifts?.giftImages || {}) };
+        delete imgs[giftType];
+        const nextRg = { ...(p.returnGifts || {}), giftImages: imgs };
+        return { ...p, returnGifts: nextRg };
+      })
+    );
+
   const updatePackageReturnGifts = (pkgId: string, field: string, value: any) =>
-    setPackages((prev) => prev.map((p) => (p.id === pkgId ? { ...p, returnGifts: { ...(p.returnGifts || {}), [field]: value } } : p)));
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const nextRg = { ...(p.returnGifts || {}), [field]: value };
+        const calc = returnGiftsTotal(nextRg);
+        return {
+          ...p,
+          returnGifts: nextRg,
+          price: calc > 0 ? calc : (p.price || 0),
+        };
+      })
+    );
+
+  const toggleReturnGiftType = (pkgId: string, g: string) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const current: string[] = p.returnGifts?.giftTypes || (p.returnGifts?.giftType ? [p.returnGifts.giftType] : []);
+        const next = current.includes(g) ? current.filter((x) => x !== g) : [...current, g];
+        const nextRg = {
+          ...(p.returnGifts || {}),
+          giftType: next[0] || undefined,
+          giftTypes: next,
+        };
+        const calc = returnGiftsTotal(nextRg);
+        return {
+          ...p,
+          returnGifts: nextRg,
+          price: calc > 0 ? calc : (p.price || 0),
+        };
+      })
+    );
+
+  const updateReturnGiftField = (pkgId: string, g: string, field: 'details' | 'price', value: any) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const targetMap = field === 'details' ? 'giftItemDetails' : 'giftPrices';
+        const currentMap = { ...((p.returnGifts as any)?.[targetMap] || {}) };
+        if (value === undefined || value === '') delete currentMap[g];
+        else currentMap[g] = value;
+        const nextRg = {
+          ...(p.returnGifts || {}),
+          [targetMap]: currentMap,
+        };
+        const calc = returnGiftsTotal(nextRg);
+        return {
+          ...p,
+          returnGifts: nextRg,
+          price: calc > 0 ? calc : (p.price || 0),
+        };
+      })
+    );
 
   // Entertainment packages carry structured act details.
   const updatePackageEntertainment = (pkgId: string, field: string, value: any) =>
@@ -2848,6 +2975,10 @@ export function App() {
         }
         if (myVendor.category === 'Printing') {
           const calc = printingTotal(p.printing);
+          return { ...p, price: p.price > 0 ? p.price : calc };
+        }
+        if (myVendor.category === 'Return Gifts') {
+          const calc = returnGiftsTotal(p.returnGifts);
           return { ...p, price: p.price > 0 ? p.price : calc };
         }
         if (myVendor.category === 'Catering') {
@@ -4230,11 +4361,11 @@ export function App() {
                     </button>
                   </div>
 
-                  <div className={`grid grid-cols-1 ${myVendor?.category === 'Catering' || myVendor?.category === 'Decoration' || myVendor?.category === 'Transport' || myVendor?.category === 'Invitation' || myVendor?.category === 'Printing' ? 'sm:grid-cols-1' : myVendor?.category === 'Security' ? 'sm:grid-cols-2' : 'sm:grid-cols-3'} gap-3`}>
+                  <div className={`grid grid-cols-1 ${myVendor?.category === 'Catering' || myVendor?.category === 'Decoration' || myVendor?.category === 'Transport' || myVendor?.category === 'Invitation' || myVendor?.category === 'Printing' || myVendor?.category === 'Return Gifts' ? 'sm:grid-cols-1' : myVendor?.category === 'Security' ? 'sm:grid-cols-2' : 'sm:grid-cols-3'} gap-3`}>
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <label className="block text-[10px] text-slate-400 uppercase font-bold">
-                          {myVendor?.category === 'Catering' ? 'Total amount (₹)' : myVendor?.category === 'Security' ? 'Price per guard / shift (₹)' : myVendor?.category === 'Venue' ? 'Total amount (₹)' : myVendor?.category === 'Decoration' ? 'Total amount (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Total amount (₹)' : myVendor?.category === 'Media' ? 'Total amount (₹)' : myVendor?.category === 'Transport' ? 'Total amount (₹)' : myVendor?.category === 'Invitation' ? 'Total amount (₹)' : myVendor?.category === 'Printing' ? 'Total amount (₹)' : myVendor?.category === 'Pujari/Priest' ? 'Price per ceremony (₹)' : myVendor?.category === 'Return Gifts' ? 'Price per piece (₹)' : myVendor?.category === 'Entertainment' ? 'Price per act / hour (₹)' : myVendor?.category === 'Music/DJ' ? 'Price per event / hour (₹)' : myVendor?.category === 'Lighting' ? 'Price per function (₹)' : myVendor?.category === 'Flowers' ? 'Price per item / function (₹)' : myVendor?.category === 'Mehendi' ? 'Price per bride (₹)' : myVendor?.category === 'Event Host/Anchor' ? 'Price per event (₹)' : myVendor?.category === 'Rental Equipment' ? 'Per-day rate (₹)' : myVendor?.category === 'Utensils for Rent' ? 'Total price (₹)' : myVendor?.category === 'Wedding Planner' ? 'Price per package / function (₹)' : myVendor?.category === 'Corporate Event Services' ? 'Price per total event (₹)' : 'Price (₹)'}
+                          {myVendor?.category === 'Catering' ? 'Total amount (₹)' : myVendor?.category === 'Security' ? 'Price per guard / shift (₹)' : myVendor?.category === 'Venue' ? 'Total amount (₹)' : myVendor?.category === 'Decoration' ? 'Total amount (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Total amount (₹)' : myVendor?.category === 'Media' ? 'Total amount (₹)' : myVendor?.category === 'Transport' ? 'Total amount (₹)' : myVendor?.category === 'Invitation' ? 'Total amount (₹)' : myVendor?.category === 'Printing' ? 'Total amount (₹)' : myVendor?.category === 'Return Gifts' ? 'Total amount (₹)' : myVendor?.category === 'Pujari/Priest' ? 'Price per ceremony (₹)' : myVendor?.category === 'Entertainment' ? 'Price per act / hour (₹)' : myVendor?.category === 'Music/DJ' ? 'Price per event / hour (₹)' : myVendor?.category === 'Lighting' ? 'Price per function (₹)' : myVendor?.category === 'Flowers' ? 'Price per item / function (₹)' : myVendor?.category === 'Mehendi' ? 'Price per bride (₹)' : myVendor?.category === 'Event Host/Anchor' ? 'Price per event (₹)' : myVendor?.category === 'Rental Equipment' ? 'Per-day rate (₹)' : myVendor?.category === 'Utensils for Rent' ? 'Total price (₹)' : myVendor?.category === 'Wedding Planner' ? 'Price per package / function (₹)' : myVendor?.category === 'Corporate Event Services' ? 'Price per total event (₹)' : 'Price (₹)'}
                         </label>
                         {myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 && (
                           <span className="text-[10px] text-amber-400 font-bold">
@@ -4276,12 +4407,17 @@ export function App() {
                             Sum: ₹{printingTotal(p.printing).toLocaleString('en-IN')}
                           </span>
                         )}
+                        {myVendor?.category === 'Return Gifts' && returnGiftsTotal(p.returnGifts) > 0 && (
+                          <span className="text-[10px] text-amber-400 font-bold">
+                            Sum: ₹{returnGiftsTotal(p.returnGifts).toLocaleString('en-IN')}
+                          </span>
+                        )}
                       </div>
                       <input
                         type="number"
-                        value={p.price || (myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 ? cateringTotal(p.catering) : myVendor?.category === 'Venue' && venueTotal(p.venue) > 0 ? venueTotal(p.venue) : myVendor?.category === 'Decoration' && decorationTotal(p.decoration) > 0 ? decorationTotal(p.decoration) : myVendor?.category === 'Makeup & Beauty' && makeupTotal(p.makeup) > 0 ? makeupTotal(p.makeup) : myVendor?.category === 'Media' && mediaTotal(p.media) > 0 ? mediaTotal(p.media) : myVendor?.category === 'Transport' && transportTotal(p.transport) > 0 ? transportTotal(p.transport) : myVendor?.category === 'Invitation' && invitationTotal(p.invitation) > 0 ? invitationTotal(p.invitation) : myVendor?.category === 'Printing' && printingTotal(p.printing) > 0 ? printingTotal(p.printing) : '')}
+                        value={p.price || (myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 ? cateringTotal(p.catering) : myVendor?.category === 'Venue' && venueTotal(p.venue) > 0 ? venueTotal(p.venue) : myVendor?.category === 'Decoration' && decorationTotal(p.decoration) > 0 ? decorationTotal(p.decoration) : myVendor?.category === 'Makeup & Beauty' && makeupTotal(p.makeup) > 0 ? makeupTotal(p.makeup) : myVendor?.category === 'Media' && mediaTotal(p.media) > 0 ? mediaTotal(p.media) : myVendor?.category === 'Transport' && transportTotal(p.transport) > 0 ? transportTotal(p.transport) : myVendor?.category === 'Invitation' && invitationTotal(p.invitation) > 0 ? invitationTotal(p.invitation) : myVendor?.category === 'Printing' && printingTotal(p.printing) > 0 ? printingTotal(p.printing) : myVendor?.category === 'Return Gifts' && returnGiftsTotal(p.returnGifts) > 0 ? returnGiftsTotal(p.returnGifts) : '')}
                         onChange={(e) => updatePackageField(p.id, 'price', e.target.value)}
-                        placeholder={myVendor?.category === 'Catering' ? (cateringTotal(p.catering) ? String(cateringTotal(p.catering)) : 'e.g. 35000') : myVendor?.category === 'Transport' ? (transportTotal(p.transport) ? String(transportTotal(p.transport)) : 'e.g. 15000') : myVendor?.category === 'Invitation' ? (invitationTotal(p.invitation) ? String(invitationTotal(p.invitation)) : 'e.g. 12000') : myVendor?.category === 'Printing' ? (printingTotal(p.printing) ? String(printingTotal(p.printing)) : 'e.g. 8000') : myVendor?.category === 'Security' ? '2000' : '150000'}
+                        placeholder={myVendor?.category === 'Catering' ? (cateringTotal(p.catering) ? String(cateringTotal(p.catering)) : 'e.g. 35000') : myVendor?.category === 'Transport' ? (transportTotal(p.transport) ? String(transportTotal(p.transport)) : 'e.g. 15000') : myVendor?.category === 'Invitation' ? (invitationTotal(p.invitation) ? String(invitationTotal(p.invitation)) : 'e.g. 12000') : myVendor?.category === 'Printing' ? (printingTotal(p.printing) ? String(printingTotal(p.printing)) : 'e.g. 8000') : myVendor?.category === 'Return Gifts' ? (returnGiftsTotal(p.returnGifts) ? String(returnGiftsTotal(p.returnGifts)) : 'e.g. 15000') : myVendor?.category === 'Security' ? '2000' : '150000'}
                         className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
                       />
                       {myVendor?.category === 'Venue' && venueTotal(p.venue) > 0 && (
@@ -4317,6 +4453,11 @@ export function App() {
                       {myVendor?.category === 'Printing' && printingTotal(p.printing) > 0 && (
                         <div className="mt-1.5 text-[10px] text-slate-400">
                           <span>Auto-added from products, materials &amp; design: <b className="text-amber-300">₹{printingTotal(p.printing).toLocaleString('en-IN')}</b>. Edit the box to override.</span>
+                        </div>
+                      )}
+                      {myVendor?.category === 'Return Gifts' && returnGiftsTotal(p.returnGifts) > 0 && (
+                        <div className="mt-1.5 text-[10px] text-slate-400">
+                          <span>Auto-added from gift types, count, packaging &amp; customization: <b className="text-amber-300">₹{returnGiftsTotal(p.returnGifts).toLocaleString('en-IN')}</b>. Edit the box to override.</span>
                         </div>
                       )}
                       {myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 && (
@@ -6919,8 +7060,17 @@ export function App() {
 
                       {/* Return Gifts: structured spec (replaces capacity + generic price tiers). */}
                       {myVendor?.category === 'Return Gifts' && (
-                        <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/40 p-3">
-                          <p className="text-[10px] text-amber-400 uppercase font-bold">Return gift details</p>
+                        <div className="space-y-4 rounded-xl border border-slate-800 bg-slate-950/40 p-3.5">
+                          <div className="flex items-center justify-between">
+                            <p className="text-[10px] text-amber-400 uppercase font-bold flex items-center gap-1.5">
+                              <Gift className="w-3.5 h-3.5" /> Return Gift Specifications &amp; Pricing
+                            </p>
+                            {returnGiftsTotal(p.returnGifts) > 0 && (
+                              <span className="text-[10px] text-amber-400 font-bold bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-full">
+                                Total: ₹{returnGiftsTotal(p.returnGifts).toLocaleString('en-IN')}
+                              </span>
+                            )}
+                          </div>
 
                           <div>
                             <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Tier (per-piece budget)</label>
@@ -6931,49 +7081,252 @@ export function App() {
                             </div>
                           </div>
 
-                          <div>
-                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Gift Type</label>
-                            <div className="flex flex-wrap gap-2">
-                              {RETURN_GIFT_TYPES.map((g) => (
-                                <button type="button" key={g} onClick={() => updatePackageReturnGifts(p.id, 'giftType', g)} className={catChip(p.returnGifts?.giftType === g)}>{g}</button>
-                              ))}
+                          {/* 1. Gift Types with details, price, and image upload */}
+                          <div className="space-y-2.5 pt-2 border-t border-slate-800/80">
+                            <div>
+                              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
+                                Gift Type (Select to configure item details, price &amp; sample photo)
+                              </label>
+                              <div className="flex flex-wrap gap-2">
+                                {RETURN_GIFT_TYPES.map((g) => {
+                                  const isSelected = (p.returnGifts?.giftTypes || (p.returnGifts?.giftType ? [p.returnGifts.giftType] : [])).includes(g);
+                                  return (
+                                    <button
+                                      type="button"
+                                      key={g}
+                                      onClick={() => toggleReturnGiftType(p.id, g)}
+                                      className={catChip(isSelected)}
+                                    >
+                                      {g}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+
+                            {/* Individual Gift Type Configurations */}
+                            {((p.returnGifts?.giftTypes && p.returnGifts.giftTypes.length > 0)
+                              ? p.returnGifts.giftTypes
+                              : (p.returnGifts?.giftType ? [p.returnGifts.giftType] : [])
+                            ).map((g) => {
+                              const detail = p.returnGifts?.giftItemDetails?.[g];
+                              const price = p.returnGifts?.giftPrices?.[g];
+                              const imgUrl = p.returnGifts?.giftImages?.[g];
+                              const isUploading = uploadingReturnGiftImg === `${p.id}:${g}`;
+
+                              const detailLabel = g === 'Dry fruits' ? 'Grams / Kgs' : g === 'Silver items' ? 'Item name' : g === 'Potli bags' ? 'Item name / style' : g === 'Plants' ? 'What plant' : g === 'Hampers' ? 'Kind of hampers' : 'Types of sweets';
+                              const detailPlaceholder = g === 'Dry fruits' ? 'e.g. 250g / 500g / 1kg' : g === 'Silver items' ? 'e.g. Silver coin 10g / Silver diya' : g === 'Potli bags' ? 'e.g. Velvet embroidered potli' : g === 'Plants' ? 'e.g. Money plant / Jade plant' : g === 'Hampers' ? 'e.g. Festive luxury hamper' : 'e.g. Kaju katli / Ghee mysore pak';
+
+                              return (
+                                <div key={g} className="p-3 rounded-xl border border-amber-500/30 bg-amber-950/10 space-y-2.5">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                                      <Gift className="w-3.5 h-3.5" /> {g}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleReturnGiftType(p.id, g)}
+                                      className="text-slate-400 hover:text-rose-400 text-xs flex items-center gap-1"
+                                    >
+                                      ✕ Remove
+                                    </button>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                    <div>
+                                      <label className="block text-[10px] text-slate-400 mb-1">{detailLabel}</label>
+                                      <input
+                                        type="text"
+                                        value={detail ?? ''}
+                                        onChange={(e) => updateReturnGiftField(p.id, g, 'details', e.target.value)}
+                                        placeholder={detailPlaceholder}
+                                        className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-[10px] text-slate-400 mb-1 font-semibold">Price for {g.toLowerCase()} (₹)</label>
+                                      <input
+                                        type="number"
+                                        min={0}
+                                        value={price ?? ''}
+                                        onChange={(e) => updateReturnGiftField(p.id, g, 'price', e.target.value === '' ? undefined : Number(e.target.value))}
+                                        placeholder="e.g. 350"
+                                        className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <div>
+                                    <label className="block text-[10px] text-slate-400 mb-1">Upload image of {g.toLowerCase()}</label>
+                                    <div className="flex items-center gap-2.5">
+                                      {imgUrl ? (
+                                        <div className="relative group">
+                                          <img src={imgUrl} alt={g} className="w-16 h-12 rounded-lg object-cover border border-slate-700" />
+                                          <button
+                                            type="button"
+                                            onClick={() => removeReturnGiftImage(p.id, g)}
+                                            className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px] shadow"
+                                          >
+                                            ✕
+                                          </button>
+                                        </div>
+                                      ) : null}
+                                      <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold cursor-pointer border border-slate-700 transition-colors">
+                                        {isUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                                        {imgUrl ? 'Change photo' : `Upload ${g} photo`}
+                                        <input
+                                          type="file"
+                                          accept="image/*"
+                                          className="hidden"
+                                          disabled={isUploading}
+                                          onChange={(e) => {
+                                            const f = e.target.files?.[0];
+                                            if (f) uploadReturnGiftImage(p.id, g, f);
+                                            e.target.value = '';
+                                          }}
+                                        />
+                                      </label>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {/* 2 & 3. Count of gifts with Price & Packaging type with Price */}
+                          <div className="pt-2 border-t border-slate-800/80 space-y-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              {/* Count of gifts + price */}
+                              <div className="p-3 rounded-xl border border-slate-800 bg-slate-900/40 space-y-2">
+                                <label className="block text-[10px] text-slate-400 uppercase font-bold">Count of gifts</label>
+                                <div>
+                                  <label className="block text-[10px] text-slate-500 mb-1">Count / pieces</label>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    value={p.returnGifts?.countOfGifts ?? ''}
+                                    onChange={(e) => updatePackageReturnGifts(p.id, 'countOfGifts', e.target.value === '' ? undefined : Number(e.target.value))}
+                                    placeholder="e.g. 100"
+                                    className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] text-slate-400 font-semibold mb-1">Price for count of gifts (₹)</label>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    value={p.returnGifts?.countPrice ?? ''}
+                                    onChange={(e) => updatePackageReturnGifts(p.id, 'countPrice', e.target.value === '' ? undefined : Number(e.target.value))}
+                                    placeholder="e.g. 5000"
+                                    className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                  />
+                                </div>
+                              </div>
+
+                              {/* Packaging type + price */}
+                              <div className="p-3 rounded-xl border border-slate-800 bg-slate-900/40 space-y-2">
+                                <label className="block text-[10px] text-slate-400 uppercase font-bold">Packaging type</label>
+                                <div>
+                                  <label className="block text-[10px] text-slate-500 mb-1">Packaging type</label>
+                                  <input
+                                    type="text"
+                                    value={p.returnGifts?.packagingType ?? ''}
+                                    onChange={(e) => updatePackageReturnGifts(p.id, 'packagingType', e.target.value)}
+                                    placeholder="e.g. Gift box / Jute bag / Tin box"
+                                    className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] text-slate-400 font-semibold mb-1">Price for packaging (₹)</label>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    value={p.returnGifts?.packagingPrice ?? ''}
+                                    onChange={(e) => updatePackageReturnGifts(p.id, 'packagingPrice', e.target.value === '' ? undefined : Number(e.target.value))}
+                                    placeholder="e.g. 1500"
+                                    className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Additional metadata: minQuantity, packingTimeDays, bulkDiscount */}
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                              <div>
+                                <label className="block text-[10px] text-slate-500 mb-1">Minimum quantity</label>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={p.returnGifts?.minQuantity ?? ''}
+                                  onChange={(e) => updatePackageReturnGifts(p.id, 'minQuantity', e.target.value === '' ? undefined : Number(e.target.value))}
+                                  placeholder="e.g. 50"
+                                  className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] text-slate-500 mb-1">Packing time (days)</label>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={p.returnGifts?.packingTimeDays ?? ''}
+                                  onChange={(e) => updatePackageReturnGifts(p.id, 'packingTimeDays', e.target.value === '' ? undefined : Number(e.target.value))}
+                                  placeholder="e.g. 3"
+                                  className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] text-slate-500 mb-1">Bulk quantity discount</label>
+                                <input
+                                  type="text"
+                                  value={p.returnGifts?.bulkDiscount ?? ''}
+                                  onChange={(e) => updatePackageReturnGifts(p.id, 'bulkDiscount', e.target.value)}
+                                  placeholder="e.g. 10% off above 200"
+                                  className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                />
+                              </div>
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-3 gap-2">
-                            <div>
-                              <label className="block text-[10px] text-slate-500 mb-1">Count of gifts</label>
-                              <input type="number" min={0} value={p.returnGifts?.countOfGifts ?? ''} onChange={(e) => updatePackageReturnGifts(p.id, 'countOfGifts', e.target.value === '' ? undefined : Number(e.target.value))}
-                                placeholder="e.g. 1 set" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                          {/* 4. Customization (name / date print) with Price on vendor side */}
+                          <div className="p-3 rounded-xl border border-slate-800 bg-slate-900/50 space-y-2.5">
+                            <div className="flex items-center justify-between">
+                              <label className="block text-[10px] text-slate-400 uppercase font-bold">Customization (name / date print)</label>
+                              <div className="flex gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => updatePackageReturnGifts(p.id, 'customization', true)}
+                                  className={catChip(p.returnGifts?.customization === true)}
+                                >
+                                  Yes
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => updatePackageReturnGifts(p.id, 'customization', false)}
+                                  className={catChip(p.returnGifts?.customization === false)}
+                                >
+                                  No
+                                </button>
+                              </div>
                             </div>
-                            <div>
-                              <label className="block text-[10px] text-slate-500 mb-1">Minimum quantity</label>
-                              <input type="number" min={0} value={p.returnGifts?.minQuantity ?? ''} onChange={(e) => updatePackageReturnGifts(p.id, 'minQuantity', e.target.value === '' ? undefined : Number(e.target.value))}
-                                placeholder="e.g. 50" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
-                            </div>
-                            <div>
-                              <label className="block text-[10px] text-slate-500 mb-1">Packing time (days)</label>
-                              <input type="number" min={0} value={p.returnGifts?.packingTimeDays ?? ''} onChange={(e) => updatePackageReturnGifts(p.id, 'packingTimeDays', e.target.value === '' ? undefined : Number(e.target.value))}
-                                placeholder="e.g. 3" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
-                            </div>
-                            <div>
-                              <label className="block text-[10px] text-slate-500 mb-1">Packaging type</label>
-                              <input type="text" value={p.returnGifts?.packagingType ?? ''} onChange={(e) => updatePackageReturnGifts(p.id, 'packagingType', e.target.value)}
-                                placeholder="e.g. Gift box" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
-                            </div>
-                            <div className="col-span-2">
-                              <label className="block text-[10px] text-slate-500 mb-1">Bulk quantity discount</label>
-                              <input type="text" value={p.returnGifts?.bulkDiscount ?? ''} onChange={(e) => updatePackageReturnGifts(p.id, 'bulkDiscount', e.target.value)}
-                                placeholder="e.g. 10% off above 200" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
-                            </div>
-                          </div>
 
-                          <div>
-                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Customization (name / date print)</label>
-                            <div className="flex gap-1.5">
-                              <button type="button" onClick={() => updatePackageReturnGifts(p.id, 'customization', true)} className={catChip(p.returnGifts?.customization === true)}>Yes</button>
-                              <button type="button" onClick={() => updatePackageReturnGifts(p.id, 'customization', false)} className={catChip(p.returnGifts?.customization === false)}>No</button>
-                            </div>
+                            {p.returnGifts?.customization && (
+                              <div className="pt-2 border-t border-slate-800 space-y-1.5">
+                                <div className="max-w-xs">
+                                  <label className="block text-[10px] text-slate-400 font-semibold mb-1">Price for customization (₹)</label>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    value={p.returnGifts?.customizationPrice ?? ''}
+                                    onChange={(e) => updatePackageReturnGifts(p.id, 'customizationPrice', e.target.value === '' ? undefined : Number(e.target.value))}
+                                    placeholder="e.g. 1000"
+                                    className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                  />
+                                </div>
+                                <p className="text-[10px] text-slate-400">
+                                  Customer will be prompted to enter the name / event date to print on the gift in the customer app.
+                                </p>
+                              </div>
+                            )}
                           </div>
                         </div>
                       )}

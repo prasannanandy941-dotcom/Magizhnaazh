@@ -264,15 +264,23 @@ export interface EntertainmentPackageDetails {
 // Option set for the Entertainment package form.
 export const ENTERTAINMENT_ACT_TYPES = ['Fireworks', 'Celebrity', 'Live band', 'Dance troupe', 'Magician', 'Folk artists'] as const;
 
-// Structured details for a Return Gifts vendor's package (per piece).
+// Structured details for a Return Gifts vendor's package.
 export interface ReturnGiftsPackageDetails {
   tier?: string; // Economy / Standard / Premium
-  giftType?: string; // Dry fruits / Silver items / Potli bags / Plants / Hampers / Sweets
+  giftType?: string; // legacy single
+  giftTypes?: string[]; // multi selected: Dry fruits / Silver items / Potli bags / Plants / Hampers / Sweets
+  giftItemDetails?: Record<string, string>; // grams/kgs for dry fruits, item name for silver items, item name for potli bags, what plant for plants, kind of hamper for hampers, types of sweets for sweets
+  giftPrices?: Record<string, number>; // price per gift type
+  giftImages?: Record<string, string>; // sample image per gift type
   countOfGifts?: number; // number of gift pieces per order/set
+  countPrice?: number; // price for count of gifts
   minQuantity?: number;
   packingTimeDays?: number; // packing time in days
-  customization?: boolean; // name / date print
   packagingType?: string; // free text
+  packagingPrice?: number; // price for packaging
+  customization?: boolean; // name / date print
+  customizationPrice?: number; // price for customization
+  customerCustomizationText?: string; // customer-provided name/date for customization
   bulkDiscount?: string; // free text, e.g. "10% off above 200"
 }
 

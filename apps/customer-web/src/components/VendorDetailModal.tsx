@@ -119,6 +119,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
   // showing (Portfolio styles, Decoration themes, Photography types, etc.) —
   // works the same way for every category since it's just a list of labels.
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
+  const [returnGiftCustomNames, setReturnGiftCustomNames] = useState<Record<string, string>>({});
   const toggleOption = (title: string) => {
     setSelectedOptions((prev) => (prev.includes(title) ? prev.filter((x) => x !== title) : [...prev, title]));
   };
@@ -1609,23 +1610,95 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
 
                       {vendor.category === 'Return Gifts' && pkg.returnGifts && (() => {
                         const rg = pkg.returnGifts;
-                        const chip = 'text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200';
+                        const giftList = Array.isArray(rg.giftTypes) && rg.giftTypes.length > 0
+                          ? rg.giftTypes
+                          : (rg.giftType ? [rg.giftType] : []);
+
                         return (
-                          <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2" onClick={(e) => e.stopPropagation()}>
+                          <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2.5" onClick={(e) => e.stopPropagation()}>
                             <span className="text-[10px] font-bold text-slate-400 uppercase block">Return gift details</span>
-                            <div className="flex flex-wrap gap-1.5">
-                              {rg.tier && <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-200 font-bold">{rg.tier}</span>}
-                              {rg.giftType && <span className={chip}>{rg.giftType}</span>}
-                            </div>
-                            <div className="space-y-1 text-[11px] text-slate-300">
-                              {rg.countOfGifts ? <div>Count of gifts: <span className="text-white font-semibold">{rg.countOfGifts}</span></div> : null}
+
+                            {rg.tier && (
+                              <div>
+                                <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-200 font-bold">{rg.tier}</span>
+                              </div>
+                            )}
+
+                            {/* Gift Types with item details, prices, and sample photos */}
+                            {giftList.length > 0 && (
+                              <div className="space-y-1.5">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase block">Gift Types</span>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                  {giftList.map((gName) => {
+                                    const detail = rg.giftItemDetails?.[gName];
+                                    const price = rg.giftPrices?.[gName];
+                                    const img = rg.giftImages?.[gName];
+
+                                    return (
+                                      <div key={gName} className="flex items-start gap-2.5 p-2 rounded-xl bg-slate-950/60 border border-slate-800">
+                                        {img ? (
+                                          <img src={img} alt={gName} className="w-12 h-12 rounded-lg object-cover border border-slate-700 shrink-0" />
+                                        ) : (
+                                          <div className="w-12 h-12 rounded-lg bg-slate-800 flex items-center justify-center text-slate-500 shrink-0">
+                                            <Gift className="w-5 h-5" />
+                                          </div>
+                                        )}
+                                        <div className="flex-1 min-w-0 text-[11px]">
+                                          <div className="font-bold text-white truncate">{gName}</div>
+                                          {detail && <div className="text-slate-400 text-[10px] truncate">{detail}</div>}
+                                          {price ? <div className="text-amber-400 font-semibold text-[11px]">₹{price.toLocaleString('en-IN')}</div> : null}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Count, Packaging, and Customization pricing */}
+                            <div className="space-y-1 text-[11px] text-slate-300 pt-1">
+                              {rg.countOfGifts ? (
+                                <div>
+                                  Count of gifts: <span className="text-white font-semibold">{rg.countOfGifts} pcs</span>
+                                  {rg.countPrice ? <span className="text-amber-400 font-semibold ml-1.5">(₹{rg.countPrice.toLocaleString('en-IN')})</span> : null}
+                                </div>
+                              ) : null}
+                              {rg.packagingType ? (
+                                <div>
+                                  Packaging: <span className="text-white font-semibold">{rg.packagingType}</span>
+                                  {rg.packagingPrice ? <span className="text-amber-400 font-semibold ml-1.5">(₹{rg.packagingPrice.toLocaleString('en-IN')})</span> : null}
+                                </div>
+                              ) : null}
                               {rg.minQuantity ? <div>Minimum quantity: <span className="text-white font-semibold">{rg.minQuantity}</span></div> : null}
                               {rg.packingTimeDays ? <div>Packing time: <span className="text-white font-semibold">{rg.packingTimeDays} days</span></div> : null}
-                              {rg.packagingType ? <div>Packaging: <span className="text-white font-semibold">{rg.packagingType}</span></div> : null}
                               {rg.bulkDiscount ? <div>Bulk discount: <span className="text-white font-semibold">{rg.bulkDiscount}</span></div> : null}
                             </div>
-                            {rg.customization !== undefined && (
-                              <div className="text-[11px]"><span className="text-slate-400">Customization (name / date): <b className={rg.customization ? 'text-emerald-400' : 'text-slate-500'}>{rg.customization ? 'Yes' : 'No'}</b></span></div>
+
+                            {/* Customization with customer name / date input */}
+                            {rg.customization && (
+                              <div className="pt-2 border-t border-slate-800 space-y-1.5" onClick={(e) => e.stopPropagation()}>
+                                <div className="flex items-center justify-between text-[11px]">
+                                  <span className="text-amber-300 font-semibold flex items-center gap-1">
+                                    <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Customization Available
+                                  </span>
+                                  {rg.customizationPrice ? (
+                                    <span className="text-amber-400 font-bold">₹{rg.customizationPrice.toLocaleString('en-IN')}</span>
+                                  ) : (
+                                    <span className="text-emerald-400 font-bold">Free</span>
+                                  )}
+                                </div>
+                                <label className="block text-[10px] text-slate-400">Enter Name / Event date to print on gifts:</label>
+                                <input
+                                  type="text"
+                                  value={returnGiftCustomNames[pkg.id] ?? ''}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setReturnGiftCustomNames((prev) => ({ ...prev, [pkg.id]: val }));
+                                  }}
+                                  placeholder="e.g. Priya &amp; Karthik - 15.11.2026"
+                                  className="w-full p-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-amber-400"
+                                />
+                              </div>
                             )}
                           </div>
                         );
@@ -2403,7 +2476,13 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                     vendor,
                     selectedPkg?.id,
                     bookingPrice,
-                    customRequest || undefined,
+                    (() => {
+                      const rgCustom = selectedPkg ? returnGiftCustomNames[selectedPkg.id] : undefined;
+                      return [
+                        customRequest,
+                        rgCustom ? `Return gift print customization: ${rgCustom}` : undefined,
+                      ].filter(Boolean).join('\n') || undefined;
+                    })(),
                     selectedEventDate || undefined,
                     (() => {
                       // Include the chosen package tier so the vendor sees which
