@@ -916,6 +916,7 @@ export type VendorCategory =
   | 'Entertainment'
   | 'Music/DJ'
   | 'Lighting'
+  | 'Lights & Sounds'
   | 'Flowers'
   | 'Mehendi'
   | 'Event Host/Anchor'
@@ -946,6 +947,7 @@ export const CATEGORY_OPTIONS: Record<string, string[]> = {
   'Return Gifts': ['Traditional (Silver & Brass)', 'Sweets & Dry Fruits', 'Eco-Friendly Plants', 'Personalized Gifts', 'Hampers & Favors', 'Kids Gifts'],
   Entertainment: ['Live Band', 'Dance Troupe', 'Magic Show', 'Stand-up Comedy', 'Fireworks & Pyrotechnics', 'Games & Activities'],
   'Music/DJ': ['DJ Package', 'Live Band', 'Anchor / MC', 'Sound & Lighting Setup', 'Nadaswaram & Thavil', 'Dhol & Band Baaja', 'Carnatic / Classical', 'Bhajan / Devotional'],
+  'Lights & Sounds': ['Stage Lighting', 'Fairy Lights', 'Laser Show', 'LED Wall', 'Chandeliers', 'Outdoor Lighting', 'Sound System', 'Line Array Speakers', 'Microphones', 'DJ Mixer'],
   Lighting: ['Stage Lighting', 'Fairy Lights', 'Laser Show', 'LED Wall', 'Chandeliers', 'Outdoor Lighting'],
   Flowers: ['Fresh Flower Decor', 'Garlands', 'Bouquets', 'Floral Backdrop', 'Car Decoration', 'Flower Rangoli'],
   Mehendi: ['Bridal Mehendi', 'Guest Mehendi', 'Arabic Design', 'Rajasthani Design', 'Contemporary Design', 'Mehendi Party Setup'],
@@ -988,7 +990,7 @@ export const VENDOR_CATEGORIES: VendorCategory[] = [
   'Return Gifts',
   'Entertainment',
   'Music/DJ',
-  'Lighting',
+  'Lights & Sounds',
   'Flowers',
   'Mehendi',
   'Event Host/Anchor',

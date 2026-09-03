@@ -12,7 +12,7 @@ import { colors, radius, space, fonts } from '../theme';
 const CATEGORIES = [
   'All', 'Venue', 'Catering', 'Media', 'Decoration', 'Makeup & Beauty', 'Transport',
   'Pujari/Priest', 'Invitation', 'Printing', 'Return Gifts', 'Entertainment', 'Music/DJ',
-  'Lighting', 'Flowers', 'Mehendi', 'Event Host/Anchor', 'Security', 'Cleaning',
+  'Lights & Sounds', 'Flowers', 'Mehendi', 'Event Host/Anchor', 'Security', 'Cleaning',
   'Rental Equipment', 'Utensils for Rent', 'Wedding Planner', 'Corporate Event Services',
 ];
 

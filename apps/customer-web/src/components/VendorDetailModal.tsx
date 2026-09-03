@@ -1759,7 +1759,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                         );
                       })()}
 
-                      {vendor.category === 'Lighting' && pkg.lighting && (() => {
+                      {(vendor.category === 'Lighting' || vendor.category === 'Lights & Sounds') && pkg.lighting && (() => {
                         const lt = pkg.lighting;
                         const chip = 'text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200';
                         const incl: [string, boolean | undefined][] = [
@@ -1767,7 +1767,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                         ];
                         return (
                           <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2" onClick={(e) => e.stopPropagation()}>
-                            <span className="text-[10px] font-bold text-slate-400 uppercase block">Lighting details</span>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase block">Lights &amp; Sounds details</span>
                             <div className="flex flex-wrap gap-1.5">
                               {lt.tier && <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-200 font-bold">{lt.tier}</span>}
                               {(lt.lightingTypes || []).map((l) => <span key={`lt-${l}`} className={chip}>{l}</span>)}
