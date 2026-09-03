@@ -30,6 +30,7 @@ export interface VendorPackage {
   id: string;
   packageName: string;
   price: number;
+  pricePerPlate?: number; // per plate / per person cost (catering)
   description: string;
   includedServices: string[];
   durationHours?: number;
@@ -433,6 +434,7 @@ export type CateringCourseItem = CateringFoodItem;
 // Structured menu details for a Catering vendor's package (per-plate menu).
 export interface CateringPackageDetails {
   menuTier?: string; // Silver / Gold / Platinum
+  pricePerPlate?: number; // Per plate cost (₹)
   foodTypes?: string[]; // Veg / Non-Veg / Jain
   foodTypeItems?: Record<string, CateringFoodItem[]>; // item names and rates per food type (Veg, Non-Veg, Jain)
   cuisines?: string[]; // South Indian, Chettinad, North Indian, Continental

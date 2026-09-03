@@ -995,6 +995,17 @@ export function App() {
           }
           return { ...p, price: val };
         }
+        if (field === 'pricePerPlate') {
+          const val = raw === '' ? undefined : Number(raw);
+          return {
+            ...p,
+            pricePerPlate: val,
+            catering: {
+              ...(p.catering || {}),
+              pricePerPlate: val,
+            },
+          };
+        }
         if (field === 'durationHours') return { ...p, durationHours: raw === '' ? undefined : Number(raw) };
         if (field === 'capacityPersons') return { ...p, capacityPersons: raw === '' ? undefined : Number(raw) };
         if (field === 'includedServices') return { ...p, includedServices: raw.split(',').map((s) => s.trim()).filter(Boolean) };
@@ -1776,10 +1787,13 @@ export function App() {
               if (valid.length > 0) cleanedLiveCounterItems[counter] = valid;
             }
           }
+          const pricePerPlate = p.catering?.pricePerPlate ?? p.pricePerPlate;
           return {
             ...p,
+            ...(pricePerPlate !== undefined ? { pricePerPlate } : {}),
             catering: {
               ...p.catering,
+              ...(pricePerPlate !== undefined ? { pricePerPlate } : {}),
               foodTypeItems: cleanedFoodItems,
               cuisineItems: cleanedCuisineItems,
               courseItems: cleanedCourseItems,
@@ -1789,7 +1803,7 @@ export function App() {
         }
         return p;
       })
-      .filter((p) => p.packageName.trim() || p.price > 0);
+      .filter((p) => p.packageName.trim() || p.price > 0 || (p.pricePerPlate && p.pricePerPlate > 0) || (p.catering?.pricePerPlate && p.catering.pricePerPlate > 0));
     setSavingPackages(true);
     setPackagesNotice('');
     try {
@@ -3112,7 +3126,22 @@ export function App() {
                     </button>
                   </div>
 
-                  <div className={`grid grid-cols-1 ${myVendor?.category === 'Catering' ? 'sm:grid-cols-1' : myVendor?.category === 'Security' ? 'sm:grid-cols-2' : 'sm:grid-cols-3'} gap-3`}>
+                  <div className={`grid grid-cols-1 ${myVendor?.category === 'Catering' ? 'sm:grid-cols-2' : myVendor?.category === 'Security' ? 'sm:grid-cols-2' : 'sm:grid-cols-3'} gap-3`}>
+                    {myVendor?.category === 'Catering' && (
+                      <div>
+                        <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
+                          Per plate cost (₹)
+                        </label>
+                        <input
+                          type="number"
+                          min={0}
+                          value={p.catering?.pricePerPlate ?? p.pricePerPlate ?? ''}
+                          onChange={(e) => updatePackageField(p.id, 'pricePerPlate', e.target.value)}
+                          placeholder="e.g. 350"
+                          className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                        />
+                      </div>
+                    )}
                     <div>
                       <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
                         {myVendor?.category === 'Catering' ? 'Total amount (₹)' : myVendor?.category === 'Security' ? 'Price per guard / shift (₹)' : myVendor?.category === 'Venue' ? 'Price per session (₹)' : myVendor?.category === 'Decoration' ? 'Price per function (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Price per look / function (₹)' : myVendor?.category === 'Media' ? 'Price per event / day (₹)' : myVendor?.category === 'Transport' ? 'Price per vehicle (₹)' : myVendor?.category === 'Pujari/Priest' ? 'Price per ceremony (₹)' : myVendor?.category === 'Invitation' ? 'Price per design / quantity (₹)' : myVendor?.category === 'Printing' ? 'Price per quantity (₹)' : myVendor?.category === 'Return Gifts' ? 'Price per piece (₹)' : myVendor?.category === 'Entertainment' ? 'Price per act / hour (₹)' : myVendor?.category === 'Music/DJ' ? 'Price per event / hour (₹)' : myVendor?.category === 'Lighting' ? 'Price per function (₹)' : myVendor?.category === 'Flowers' ? 'Price per item / function (₹)' : myVendor?.category === 'Mehendi' ? 'Price per bride (₹)' : myVendor?.category === 'Event Host/Anchor' ? 'Price per event (₹)' : myVendor?.category === 'Rental Equipment' ? 'Per-day rate (₹)' : myVendor?.category === 'Utensils for Rent' ? 'Total price (₹)' : myVendor?.category === 'Wedding Planner' ? 'Price per package / function (₹)' : myVendor?.category === 'Corporate Event Services' ? 'Price per total event (₹)' : 'Price (₹)'}
@@ -3121,7 +3150,7 @@ export function App() {
                         type="number"
                         value={p.price || ''}
                         onChange={(e) => updatePackageField(p.id, 'price', e.target.value)}
-                        placeholder={myVendor?.category === 'Catering' ? '500' : myVendor?.category === 'Security' ? '2000' : '150000'}
+                        placeholder={myVendor?.category === 'Catering' ? 'e.g. 35000' : myVendor?.category === 'Security' ? '2000' : '150000'}
                         className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
                       />
                     </div>
@@ -3834,6 +3863,24 @@ export function App() {
                                 </div>
                               </div>
                             )}
+
+                            {/* Per plate cost / Per leaf cost */}
+                            <div className="mt-3">
+                              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
+                                {p.catering?.serviceStyle === 'Banana-leaf' ? 'Per leaf / plate cost (₹)' : 'Per plate cost (₹)'}
+                              </label>
+                              <div className="relative">
+                                <span className="absolute left-3 top-2.5 text-slate-500 text-sm">₹</span>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={p.catering?.pricePerPlate ?? p.pricePerPlate ?? ''}
+                                  onChange={(e) => updatePackageField(p.id, 'pricePerPlate', e.target.value)}
+                                  placeholder={p.catering?.serviceStyle === 'Banana-leaf' ? 'e.g. 450 per leaf' : 'e.g. 350 per plate'}
+                                  className="w-full pl-7 pr-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                />
+                              </div>
+                            </div>
                           </div>
 
                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">

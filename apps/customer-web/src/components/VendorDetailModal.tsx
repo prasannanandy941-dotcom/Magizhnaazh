@@ -864,9 +864,24 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                           </span>
                           {pkg.packageName}
                         </h4>
-                        <span className="font-display font-extrabold text-amber-400 text-base shrink-0">
-                          ₹{pkg.price.toLocaleString('en-IN')}
-                        </span>
+                        <div className="text-right shrink-0">
+                          {(pkg.catering?.pricePerPlate || pkg.pricePerPlate) ? (
+                            <>
+                              <div className="font-display font-extrabold text-amber-400 text-base">
+                                ₹{(pkg.catering?.pricePerPlate || pkg.pricePerPlate)!.toLocaleString('en-IN')} <span className="text-xs font-normal text-slate-400">/ plate</span>
+                              </div>
+                              {pkg.price > 0 && (
+                                <div className="text-[10px] text-slate-400">
+                                  Total: ₹{pkg.price.toLocaleString('en-IN')}
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <span className="font-display font-extrabold text-amber-400 text-base">
+                              ₹{pkg.price.toLocaleString('en-IN')}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       {selectedPkgId === pkg.id && (
                         <span className="inline-block mt-2 text-[10px] font-bold uppercase text-indigo-300 bg-indigo-500/15 px-2 py-0.5 rounded-full">Selected</span>
@@ -893,6 +908,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                             <div className="space-y-1 text-[11px] text-slate-300">
                               {(c.starters || c.mains || c.desserts) ? <div>Dishes: {c.starters || 0} starters · {c.mains || 0} mains · {c.desserts || 0} desserts</div> : null}
                               {c.minGuests ? <div>Minimum guests: <span className="text-white font-semibold">{c.minGuests}</span></div> : null}
+                              {(c.pricePerPlate || pkg.pricePerPlate) ? <div>Per plate cost: <span className="text-amber-400 font-bold">₹{(c.pricePerPlate || pkg.pricePerPlate)!.toLocaleString('en-IN')}</span></div> : null}
                               {c.serviceStyle ? (
                                 <div>
                                   Service style: <span className="text-white font-semibold">{c.serviceStyle}</span>

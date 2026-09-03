@@ -6,6 +6,7 @@ const vendorPackageSchema = new Schema(
     id: String,
     packageName: String,
     price: Number,
+    pricePerPlate: Number,
     description: String,
     includedServices: [String],
     durationHours: Number,
@@ -16,6 +17,7 @@ const vendorPackageSchema = new Schema(
     catering: {
       type: {
         menuTier: String,
+        pricePerPlate: Number,
         foodTypes: [String],
         foodTypeItems: { type: Schema.Types.Mixed, default: {} },
         cuisines: [String],
