@@ -422,10 +422,16 @@ export const VENUE_HALL_TYPES = ['AC', 'Non-AC'] as const;
 export const VENUE_HALL_CLASSES = ['Premium', 'Normal'] as const;
 export const VENUE_CATERING_POLICIES = ['In-house only', 'External allowed'] as const;
 
+export interface CateringFoodItem {
+  name: string;
+  price?: number;
+}
+
 // Structured menu details for a Catering vendor's package (per-plate menu).
 export interface CateringPackageDetails {
   menuTier?: string; // Silver / Gold / Platinum
   foodTypes?: string[]; // Veg / Non-Veg / Jain
+  foodTypeItems?: Record<string, CateringFoodItem[]>; // item names and rates per food type (Veg, Non-Veg, Jain)
   cuisines?: string[]; // South Indian, Chettinad, North Indian, Continental
   starters?: number; // number of starter dishes
   mains?: number; // number of main-course dishes

@@ -17,6 +17,7 @@ const vendorPackageSchema = new Schema(
       type: {
         menuTier: String,
         foodTypes: [String],
+        foodTypeItems: { type: Schema.Types.Mixed, default: {} },
         cuisines: [String],
         starters: Number,
         mains: Number,

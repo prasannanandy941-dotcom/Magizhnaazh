@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Store, Star, Upload, Check, LogOut, Loader2, Plus, SlidersHorizontal, ChevronDown, Receipt, X, Bell, ShieldCheck, Clock as ClockIcon, AlertCircle, FileText, CalendarDays, Sparkles } from 'lucide-react';
-import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, VendorDeal, OfferedOptionItem, VENDOR_CATEGORIES, CATEGORY_OPTIONS, CATERING_OPTION_STYLE, MEDIA_QUALITY_OPTIONS, MEDIA_EQUIPMENT_OPTIONS, mediaExtraField, isDealLive, CATERING_MENU_TIERS, CATERING_FOOD_TYPES, CATERING_CUISINES, CATERING_LIVE_COUNTERS, CATERING_SERVICE_STYLES, slotLabelWithTime, AVAILABILITY_SLOTS, offeredSlotIds, VENUE_SESSIONS, VENUE_HALL_TYPES, VENUE_HALL_CLASSES, VENUE_CATERING_POLICIES, DECORATION_TIERS, DECORATION_THEMES, DECORATION_AREAS, DECORATION_FLOWER_TYPES, MAKEUP_TYPES, MAKEUP_FINISHES, MEDIA_TIERS, MEDIA_COVERAGE, MEDIA_STYLES, TRANSPORT_TIERS, TRANSPORT_VEHICLE_TYPES, TRANSPORT_PRICING_BASIS, TRANSPORT_USES, PRIEST_CEREMONY_TYPES, PRIEST_LANGUAGES, INVITATION_TIERS, INVITATION_TYPES, INVITATION_DESIGNS, INVITATION_ADDONS, INVITATION_LANGUAGES, PRINTING_PRODUCTS, PRINTING_FINISHES, RETURN_GIFTS_TIERS, RETURN_GIFT_TYPES, ENTERTAINMENT_ACT_TYPES, MUSIC_DJ_TIERS, MUSIC_DJ_TYPES, MUSIC_DJ_VENUE_TYPES, LIGHTING_TIERS, LIGHTING_TYPES, FLOWERS_VARIETIES, FLOWERS_ITEMS, FLOWERS_KINDS, MEHENDI_TIERS, MEHENDI_TYPES, MEHENDI_INTRICACY, EVENT_HOST_EVENT_TYPES, EVENT_HOST_LANGUAGES, EVENT_HOST_MODES, SECURITY_TYPES, SECURITY_GENDERS, RENTAL_ITEMS, UTENSILS_MATERIALS, UTENSILS_VESSEL_TYPES, WEDDING_PLANNER_SCOPES, CORPORATE_EVENT_TYPES, CORPORATE_ADDONS } from '../../../packages/shared-types';
+import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, VendorDeal, OfferedOptionItem, CateringFoodItem, VENDOR_CATEGORIES, CATEGORY_OPTIONS, CATERING_OPTION_STYLE, MEDIA_QUALITY_OPTIONS, MEDIA_EQUIPMENT_OPTIONS, mediaExtraField, isDealLive, CATERING_MENU_TIERS, CATERING_FOOD_TYPES, CATERING_CUISINES, CATERING_LIVE_COUNTERS, CATERING_SERVICE_STYLES, slotLabelWithTime, AVAILABILITY_SLOTS, offeredSlotIds, VENUE_SESSIONS, VENUE_HALL_TYPES, VENUE_HALL_CLASSES, VENUE_CATERING_POLICIES, DECORATION_TIERS, DECORATION_THEMES, DECORATION_AREAS, DECORATION_FLOWER_TYPES, MAKEUP_TYPES, MAKEUP_FINISHES, MEDIA_TIERS, MEDIA_COVERAGE, MEDIA_STYLES, TRANSPORT_TIERS, TRANSPORT_VEHICLE_TYPES, TRANSPORT_PRICING_BASIS, TRANSPORT_USES, PRIEST_CEREMONY_TYPES, PRIEST_LANGUAGES, INVITATION_TIERS, INVITATION_TYPES, INVITATION_DESIGNS, INVITATION_ADDONS, INVITATION_LANGUAGES, PRINTING_PRODUCTS, PRINTING_FINISHES, RETURN_GIFTS_TIERS, RETURN_GIFT_TYPES, ENTERTAINMENT_ACT_TYPES, MUSIC_DJ_TIERS, MUSIC_DJ_TYPES, MUSIC_DJ_VENUE_TYPES, LIGHTING_TIERS, LIGHTING_TYPES, FLOWERS_VARIETIES, FLOWERS_ITEMS, FLOWERS_KINDS, MEHENDI_TIERS, MEHENDI_TYPES, MEHENDI_INTRICACY, EVENT_HOST_EVENT_TYPES, EVENT_HOST_LANGUAGES, EVENT_HOST_MODES, SECURITY_TYPES, SECURITY_GENDERS, RENTAL_ITEMS, UTENSILS_MATERIALS, UTENSILS_VESSEL_TYPES, WEDDING_PLANNER_SCOPES, CORPORATE_EVENT_TYPES, CORPORATE_ADDONS } from '../../../packages/shared-types';
 import { STATIC_CITY_GROUPS } from '../../../packages/shared-utils';
 import { AuthGate } from './components/AuthGate';
 import { FloralGoldBackground } from './components/FloralGoldBackground';
@@ -1031,9 +1031,97 @@ export function App() {
     setPackages((prev) => prev.map((p) => {
       if (p.id !== pkgId) return p;
       const current: string[] = ((p.catering as any)?.[field]) || [];
-      const next = current.includes(item) ? current.filter((x) => x !== item) : [...current, item];
-      return { ...p, catering: { ...(p.catering || {}), [field]: next } };
+      const isRemoving = current.includes(item);
+      const next = isRemoving ? current.filter((x) => x !== item) : [...current, item];
+      let nextFoodTypeItems = p.catering?.foodTypeItems;
+      if (field === 'foodTypes' && !isRemoving) {
+        const existingForType = nextFoodTypeItems?.[item] || [];
+        if (existingForType.length === 0) {
+          nextFoodTypeItems = {
+            ...(nextFoodTypeItems || {}),
+            [item]: [{ name: '', price: 0 }],
+          };
+        }
+      }
+      return {
+        ...p,
+        catering: {
+          ...(p.catering || {}),
+          [field]: next,
+          ...(nextFoodTypeItems !== undefined ? { foodTypeItems: nextFoodTypeItems } : {}),
+        },
+      };
     }));
+
+  const addCateringFoodItem = (pkgId: string, foodType: string) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const currentCatering = p.catering || {};
+        const currentItems = currentCatering.foodTypeItems || {};
+        const list = currentItems[foodType] || [];
+        return {
+          ...p,
+          catering: {
+            ...currentCatering,
+            foodTypeItems: {
+              ...currentItems,
+              [foodType]: [...list, { name: '', price: 0 }],
+            },
+          },
+        };
+      })
+    );
+
+  const updateCateringFoodItem = (
+    pkgId: string,
+    foodType: string,
+    idx: number,
+    field: 'name' | 'price',
+    val: any
+  ) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const currentCatering = p.catering || {};
+        const currentItems = currentCatering.foodTypeItems || {};
+        const list = currentItems[foodType] || [];
+        const nextList = list.map((it, i) =>
+          i === idx ? { ...it, [field]: field === 'price' ? (val === '' ? undefined : Number(val)) : val } : it
+        );
+        return {
+          ...p,
+          catering: {
+            ...currentCatering,
+            foodTypeItems: {
+              ...currentItems,
+              [foodType]: nextList,
+            },
+          },
+        };
+      })
+    );
+
+  const removeCateringFoodItem = (pkgId: string, foodType: string, idx: number) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const currentCatering = p.catering || {};
+        const currentItems = currentCatering.foodTypeItems || {};
+        const list = currentItems[foodType] || [];
+        const nextList = list.filter((_, i) => i !== idx);
+        return {
+          ...p,
+          catering: {
+            ...currentCatering,
+            foodTypeItems: {
+              ...currentItems,
+              [foodType]: nextList,
+            },
+          },
+        };
+      })
+    );
   const catChip = (active: boolean) =>
     `px-2.5 py-1 rounded-lg text-xs font-semibold border transition-colors ${active ? 'bg-amber-500 text-slate-950 border-amber-500' : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-600'}`;
 
@@ -1337,6 +1425,20 @@ export function App() {
         if (myVendor.category === 'Utensils for Rent') {
           const calc = utensilsTotal(p.utensils);
           return { ...p, price: calc > 0 ? calc : (p.price || 0) };
+        }
+        if (myVendor.category === 'Catering' && p.catering?.foodTypeItems) {
+          const cleanedItems: Record<string, any[]> = {};
+          for (const [ft, items] of Object.entries(p.catering.foodTypeItems)) {
+            const valid = (items || []).filter((it: any) => it && it.name && it.name.trim());
+            if (valid.length > 0) cleanedItems[ft] = valid;
+          }
+          return {
+            ...p,
+            catering: {
+              ...p.catering,
+              foodTypeItems: cleanedItems,
+            },
+          };
         }
         return p;
       })
@@ -2839,6 +2941,85 @@ export function App() {
                                 <button type="button" key={f} onClick={() => toggleCateringOption(p.id, 'foodTypes', f)} className={catChip((p.catering?.foodTypes || []).includes(f))}>{f}</button>
                               ))}
                             </div>
+
+                            {/* Food items & rate editor per selected food type */}
+                            {(p.catering?.foodTypes || []).length > 0 && (
+                              <div className="mt-3 space-y-3">
+                                {CATERING_FOOD_TYPES.filter((f) => (p.catering?.foodTypes || []).includes(f)).map((f) => {
+                                  const items = p.catering?.foodTypeItems?.[f] || [];
+                                  const typeColor = f === 'Non-Veg' ? 'border-rose-500/30 bg-rose-950/20' : f === 'Jain' ? 'border-amber-500/30 bg-amber-950/20' : 'border-emerald-500/30 bg-emerald-950/20';
+                                  const badgeColor = f === 'Non-Veg' ? 'text-rose-400' : f === 'Jain' ? 'text-amber-400' : 'text-emerald-400';
+                                  const dotColor = f === 'Non-Veg' ? 'bg-rose-500' : f === 'Jain' ? 'bg-amber-400' : 'bg-emerald-500';
+
+                                  return (
+                                    <div key={f} className={`p-3 rounded-xl border ${typeColor} space-y-2.5`}>
+                                      <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-1.5">
+                                          <span className={`w-2 h-2 rounded-full ${dotColor}`} />
+                                          <span className={`text-[11px] font-bold uppercase tracking-wide ${badgeColor}`}>{f} Items</span>
+                                          {items.length > 0 && (
+                                            <span className="text-[10px] text-slate-400">({items.length})</span>
+                                          )}
+                                        </div>
+                                        <button
+                                          type="button"
+                                          onClick={() => addCateringFoodItem(p.id, f)}
+                                          className="flex items-center gap-1 text-xs font-bold text-amber-400 hover:text-amber-300"
+                                        >
+                                          <Plus className="w-3.5 h-3.5" /> Add item
+                                        </button>
+                                      </div>
+
+                                      {items.length === 0 ? (
+                                        <div className="py-2.5 px-3 rounded-lg bg-slate-950/60 border border-dashed border-slate-800 text-center">
+                                          <p className="text-xs text-slate-400 mb-1.5">No {f.toLowerCase()} items added yet.</p>
+                                          <button
+                                            type="button"
+                                            onClick={() => addCateringFoodItem(p.id, f)}
+                                            className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 font-semibold"
+                                          >
+                                            <Plus className="w-3.5 h-3.5" /> Add {f} item
+                                          </button>
+                                        </div>
+                                      ) : (
+                                        <div className="space-y-2">
+                                          {items.map((item, itemIdx) => (
+                                            <div key={itemIdx} className="flex items-center gap-2">
+                                              <input
+                                                type="text"
+                                                value={item.name}
+                                                onChange={(e) => updateCateringFoodItem(p.id, f, itemIdx, 'name', e.target.value)}
+                                                placeholder={f === 'Non-Veg' ? 'Item name — e.g. Chicken Biryani' : f === 'Jain' ? 'Item name — e.g. Jain Dal Makhani' : 'Item name — e.g. Paneer Butter Masala'}
+                                                className="flex-1 p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-xs"
+                                              />
+                                              <div className="flex items-center gap-1 px-2 rounded-lg bg-slate-950 border border-slate-800">
+                                                <span className="text-slate-500 text-xs">₹</span>
+                                                <input
+                                                  type="number"
+                                                  min={0}
+                                                  value={item.price === 0 ? '' : (item.price || '')}
+                                                  onChange={(e) => updateCateringFoodItem(p.id, f, itemIdx, 'price', e.target.value)}
+                                                  placeholder="Price"
+                                                  className="w-20 py-2 bg-transparent text-white text-xs focus:outline-none"
+                                                />
+                                              </div>
+                                              <button
+                                                type="button"
+                                                onClick={() => removeCateringFoodItem(p.id, f, itemIdx)}
+                                                aria-label="Remove item"
+                                                className="w-7 h-7 rounded-lg bg-slate-800 text-slate-400 hover:text-rose-400 flex items-center justify-center shrink-0"
+                                              >
+                                                <X className="w-3.5 h-3.5" />
+                                              </button>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
                           </div>
 
                           <div>
