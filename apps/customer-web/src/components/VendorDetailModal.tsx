@@ -1024,8 +1024,13 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                                       </div>
                                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                                         {list.map((it, idx) => (
-                                          <div key={idx} className="flex items-center justify-between gap-2 text-[11px] bg-slate-950/70 px-2.5 py-1.5 rounded-lg border border-slate-800/70">
-                                            <span className="text-slate-200 font-medium truncate">{it.name}</span>
+                                          <div key={idx} className="flex items-center justify-between gap-2 text-[11px] bg-slate-950/70 p-1.5 rounded-lg border border-slate-800/70">
+                                            <div className="flex items-center gap-2 min-w-0">
+                                              {it.photo && (
+                                                <img src={it.photo} alt={it.name || 'Counter item'} className="w-8 h-8 rounded object-cover border border-slate-800 shrink-0" />
+                                              )}
+                                              <span className="text-slate-200 font-medium truncate">{it.name}</span>
+                                            </div>
                                             {it.price !== undefined && it.price > 0 && (
                                               <span className="font-bold text-amber-400 shrink-0">₹{it.price.toLocaleString('en-IN')}</span>
                                             )}

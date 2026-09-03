@@ -1335,6 +1335,30 @@ export function App() {
         };
       })
     );
+  const [uploadingLiveCounterPhoto, setUploadingLiveCounterPhoto] = useState<string | null>(null);
+  const handleCateringLiveCounterPhotoUpload = async (pkgId: string, counter: string, itemIdx: number, file: File) => {
+    if (!token) return;
+    const key = `${pkgId}-${counter}-${itemIdx}`;
+    setUploadingLiveCounterPhoto(key);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch(`${GATEWAY_URL}/api/v1/uploads`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+      const json = await res.json().catch(() => ({}));
+      if (json?.data?.fileUrl) {
+        updateCateringLiveCounterItem(pkgId, counter, itemIdx, 'photo', json.data.fileUrl);
+      }
+    } catch {
+      /* best-effort */
+    } finally {
+      setUploadingLiveCounterPhoto(null);
+    }
+  };
+
   const addCateringLiveCounterItem = (pkgId: string, counter: string) =>
     setPackages((prev) =>
       prev.map((p) => {
@@ -1348,7 +1372,7 @@ export function App() {
             ...currentCatering,
             liveCounterItems: {
               ...currentItems,
-              [counter]: [...list, { name: '', price: 0 }],
+              [counter]: [...list, { name: '', price: 0, photo: '' }],
             },
           },
         };
@@ -1359,7 +1383,7 @@ export function App() {
     pkgId: string,
     counter: string,
     idx: number,
-    field: 'name' | 'price',
+    field: 'name' | 'price' | 'photo',
     val: any
   ) =>
     setPackages((prev) =>
@@ -1748,7 +1772,7 @@ export function App() {
           const cleanedLiveCounterItems: Record<string, any[]> = {};
           if (p.catering?.liveCounterItems) {
             for (const [counter, items] of Object.entries(p.catering.liveCounterItems)) {
-              const valid = (items || []).filter((it: any) => it && it.name && it.name.trim());
+              const valid = (items || []).filter((it: any) => it && ((it.name && it.name.trim()) || it.photo));
               if (valid.length > 0) cleanedLiveCounterItems[counter] = valid;
             }
           }
@@ -3655,38 +3679,75 @@ export function App() {
                                           </button>
                                         </div>
                                       ) : (
-                                        <div className="space-y-2">
-                                          {items.map((item, itemIdx) => (
-                                            <div key={itemIdx} className="flex items-center gap-2">
-                                              <input
-                                                type="text"
-                                                value={item.name}
-                                                onChange={(e) => updateCateringLiveCounterItem(p.id, lc, itemIdx, 'name', e.target.value)}
-                                                placeholder={placeholder}
-                                                className="flex-1 p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-xs"
-                                              />
-                                              <div className="flex items-center gap-1 px-2 rounded-lg bg-slate-950 border border-slate-800">
-                                                <span className="text-slate-500 text-xs">₹</span>
+                                          <div className="space-y-2">
+                                            {items.map((item, itemIdx) => (
+                                              <div key={itemIdx} className="flex items-center gap-2 p-2 rounded-lg bg-slate-950/80 border border-slate-800/80">
+                                                {/* Photo upload / thumbnail */}
+                                                <div className="shrink-0">
+                                                  {item.photo ? (
+                                                    <div className="relative h-9 w-9 rounded-lg overflow-hidden border border-slate-700 bg-slate-900 group">
+                                                      <img src={item.photo} alt={item.name || 'Item'} className="w-full h-full object-cover" />
+                                                      <button
+                                                        type="button"
+                                                        onClick={() => updateCateringLiveCounterItem(p.id, lc, itemIdx, 'photo', '')}
+                                                        className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-rose-400 hover:text-rose-300 transition-opacity"
+                                                        title="Remove photo"
+                                                      >
+                                                        <X className="w-3.5 h-3.5" />
+                                                      </button>
+                                                    </div>
+                                                  ) : (
+                                                    <label className="cursor-pointer flex items-center gap-1 text-[11px] px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 hover:text-white hover:border-slate-600 font-semibold shrink-0">
+                                                      {uploadingLiveCounterPhoto === `${p.id}-${lc}-${itemIdx}` ? (
+                                                        <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-400" />
+                                                      ) : (
+                                                        <Upload className="w-3.5 h-3.5 text-amber-400" />
+                                                      )}
+                                                      <span className="text-[10px]">Photo</span>
+                                                      <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        className="hidden"
+                                                        disabled={uploadingLiveCounterPhoto === `${p.id}-${lc}-${itemIdx}`}
+                                                        onChange={(e) => {
+                                                          const f = e.target.files?.[0];
+                                                          if (f) handleCateringLiveCounterPhotoUpload(p.id, lc, itemIdx, f);
+                                                          e.target.value = '';
+                                                        }}
+                                                      />
+                                                    </label>
+                                                  )}
+                                                </div>
+
                                                 <input
-                                                  type="number"
-                                                  min={0}
-                                                  value={item.price === 0 ? '' : (item.price || '')}
-                                                  onChange={(e) => updateCateringLiveCounterItem(p.id, lc, itemIdx, 'price', e.target.value)}
-                                                  placeholder="Price"
-                                                  className="w-20 py-2 bg-transparent text-white text-xs focus:outline-none"
+                                                  type="text"
+                                                  value={item.name}
+                                                  onChange={(e) => updateCateringLiveCounterItem(p.id, lc, itemIdx, 'name', e.target.value)}
+                                                  placeholder={placeholder}
+                                                  className="flex-1 min-w-[120px] p-2 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs"
                                                 />
+                                                <div className="flex items-center gap-1 px-2 rounded-lg bg-slate-900 border border-slate-800 shrink-0">
+                                                  <span className="text-slate-500 text-xs">₹</span>
+                                                  <input
+                                                    type="number"
+                                                    min={0}
+                                                    value={item.price === 0 ? '' : (item.price || '')}
+                                                    onChange={(e) => updateCateringLiveCounterItem(p.id, lc, itemIdx, 'price', e.target.value)}
+                                                    placeholder="Price"
+                                                    className="w-20 py-2 bg-transparent text-white text-xs focus:outline-none"
+                                                  />
+                                                </div>
+                                                <button
+                                                  type="button"
+                                                  onClick={() => removeCateringLiveCounterItem(p.id, lc, itemIdx)}
+                                                  aria-label="Remove item"
+                                                  className="w-7 h-7 rounded-lg bg-slate-800 text-slate-400 hover:text-rose-400 flex items-center justify-center shrink-0"
+                                                >
+                                                  <X className="w-3.5 h-3.5" />
+                                                </button>
                                               </div>
-                                              <button
-                                                type="button"
-                                                onClick={() => removeCateringLiveCounterItem(p.id, lc, itemIdx)}
-                                                aria-label="Remove item"
-                                                className="w-7 h-7 rounded-lg bg-slate-800 text-slate-400 hover:text-rose-400 flex items-center justify-center shrink-0"
-                                              >
-                                                <X className="w-3.5 h-3.5" />
-                                              </button>
-                                            </div>
-                                          ))}
-                                        </div>
+                                            ))}
+                                          </div>
                                       )}
                                     </div>
                                   );
