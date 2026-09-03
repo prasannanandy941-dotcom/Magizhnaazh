@@ -451,8 +451,10 @@ export interface CateringPackageDetails {
   plateTypes?: string[]; // Paper Plate, Thermocol Plate, Steel Plates, Ceramic Plates
   leafType?: string; // Natural Banana Leaf / Artificial Leaf
   welcomeDrinks?: boolean;
+  welcomeDrinkItems?: CateringFoodItem[]; // Drink name and price
   servingStaff?: boolean; // serving staff included
   freeTasting?: boolean; // free tasting/trial offered
+  freeTastingItems?: string[]; // Items available for tasting
 }
 
 // Option sets for the Catering package form (single source of truth for the

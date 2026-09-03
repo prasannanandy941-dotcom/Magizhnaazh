@@ -1454,6 +1454,111 @@ export function App() {
         };
       })
     );
+
+  const addCateringWelcomeDrink = (pkgId: string) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const currentCatering = p.catering || {};
+        const list = currentCatering.welcomeDrinkItems || [];
+        return {
+          ...p,
+          catering: {
+            ...currentCatering,
+            welcomeDrinkItems: [...list, { name: '', price: 0 }],
+          },
+        };
+      })
+    );
+
+  const updateCateringWelcomeDrink = (
+    pkgId: string,
+    idx: number,
+    field: 'name' | 'price',
+    val: any
+  ) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const currentCatering = p.catering || {};
+        const list = currentCatering.welcomeDrinkItems || [];
+        const nextList = list.map((it, i) =>
+          i === idx ? { ...it, [field]: field === 'price' ? (val === '' ? undefined : Number(val)) : val } : it
+        );
+        return {
+          ...p,
+          catering: {
+            ...currentCatering,
+            welcomeDrinkItems: nextList,
+          },
+        };
+      })
+    );
+
+  const removeCateringWelcomeDrink = (pkgId: string, idx: number) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const currentCatering = p.catering || {};
+        const list = currentCatering.welcomeDrinkItems || [];
+        return {
+          ...p,
+          catering: {
+            ...currentCatering,
+            welcomeDrinkItems: list.filter((_, i) => i !== idx),
+          },
+        };
+      })
+    );
+
+  const addCateringFreeTastingItem = (pkgId: string) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const currentCatering = p.catering || {};
+        const list = currentCatering.freeTastingItems || [];
+        return {
+          ...p,
+          catering: {
+            ...currentCatering,
+            freeTastingItems: [...list, ''],
+          },
+        };
+      })
+    );
+
+  const updateCateringFreeTastingItem = (pkgId: string, idx: number, val: string) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const currentCatering = p.catering || {};
+        const list = currentCatering.freeTastingItems || [];
+        const nextList = list.map((it, i) => (i === idx ? val : it));
+        return {
+          ...p,
+          catering: {
+            ...currentCatering,
+            freeTastingItems: nextList,
+          },
+        };
+      })
+    );
+
+  const removeCateringFreeTastingItem = (pkgId: string, idx: number) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const currentCatering = p.catering || {};
+        const list = currentCatering.freeTastingItems || [];
+        return {
+          ...p,
+          catering: {
+            ...currentCatering,
+            freeTastingItems: list.filter((_, i) => i !== idx),
+          },
+        };
+      })
+    );
   const catChip = (active: boolean) =>
     `px-2.5 py-1 rounded-lg text-xs font-semibold border transition-colors ${active ? 'bg-amber-500 text-slate-950 border-amber-500' : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-600'}`;
 
@@ -1787,6 +1892,12 @@ export function App() {
               if (valid.length > 0) cleanedLiveCounterItems[counter] = valid;
             }
           }
+          const cleanedWelcomeDrinks = p.catering?.welcomeDrinks
+            ? (p.catering?.welcomeDrinkItems || []).filter((it: any) => it && it.name && it.name.trim())
+            : undefined;
+          const cleanedFreeTastingItems = p.catering?.freeTasting
+            ? (p.catering?.freeTastingItems || []).filter((it: any) => it && it.trim())
+            : undefined;
           const pricePerPlate = p.catering?.pricePerPlate ?? p.pricePerPlate;
           return {
             ...p,
@@ -1798,6 +1909,8 @@ export function App() {
               cuisineItems: cleanedCuisineItems,
               courseItems: cleanedCourseItems,
               liveCounterItems: cleanedLiveCounterItems,
+              welcomeDrinkItems: cleanedWelcomeDrinks,
+              freeTastingItems: cleanedFreeTastingItems,
             },
           };
         }
@@ -3883,16 +3996,151 @@ export function App() {
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                            {([['welcomeDrinks', 'Welcome drinks'], ['servingStaff', 'Serving staff included'], ['freeTasting', 'Free tasting / trial']] as const).map(([field, label]) => (
-                              <div key={field}>
-                                <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">{label}</label>
+                          <div className="space-y-3">
+                            {/* Welcome Drinks */}
+                            <div className="p-3 rounded-xl border border-slate-800 bg-slate-950/60 space-y-2.5">
+                              <div className="flex items-center justify-between">
+                                <label className="block text-[10px] text-slate-400 uppercase font-bold">Welcome Drinks</label>
                                 <div className="flex gap-1.5">
-                                  <button type="button" onClick={() => updatePackageCatering(p.id, field, true)} className={catChip((p.catering as any)?.[field] === true)}>Yes</button>
-                                  <button type="button" onClick={() => updatePackageCatering(p.id, field, false)} className={catChip((p.catering as any)?.[field] === false)}>No</button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      updatePackageCatering(p.id, 'welcomeDrinks', true);
+                                      if ((p.catering?.welcomeDrinkItems || []).length === 0) {
+                                        addCateringWelcomeDrink(p.id);
+                                      }
+                                    }}
+                                    className={catChip(p.catering?.welcomeDrinks === true)}
+                                  >
+                                    Yes
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => updatePackageCatering(p.id, 'welcomeDrinks', false)}
+                                    className={catChip(p.catering?.welcomeDrinks === false)}
+                                  >
+                                    No
+                                  </button>
                                 </div>
                               </div>
-                            ))}
+
+                              {p.catering?.welcomeDrinks && (
+                                <div className="pt-2 border-t border-slate-800/80 space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[11px] font-bold text-amber-300 uppercase tracking-wide">
+                                      Welcome Drink Options & Rates
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => addCateringWelcomeDrink(p.id)}
+                                      className="flex items-center gap-1 text-xs font-bold text-amber-400 hover:text-amber-300"
+                                    >
+                                      <Plus className="w-3.5 h-3.5" /> Add drink
+                                    </button>
+                                  </div>
+
+                                  <div className="space-y-2">
+                                    {(p.catering?.welcomeDrinkItems || []).map((drink, dIdx) => (
+                                      <div key={dIdx} className="flex items-center gap-2">
+                                        <input
+                                          type="text"
+                                          value={drink.name}
+                                          onChange={(e) => updateCateringWelcomeDrink(p.id, dIdx, 'name', e.target.value)}
+                                          placeholder="Drink name — e.g. Virgin Mojito, Badam Milk, Rose Milk, Fruit Punch"
+                                          className="flex-1 p-2 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs"
+                                        />
+                                        <div className="flex items-center gap-1 px-2 rounded-lg bg-slate-900 border border-slate-800 shrink-0">
+                                          <span className="text-slate-500 text-xs">₹</span>
+                                          <input
+                                            type="number"
+                                            min={0}
+                                            value={drink.price === 0 ? '' : (drink.price || '')}
+                                            onChange={(e) => updateCateringWelcomeDrink(p.id, dIdx, 'price', e.target.value)}
+                                            placeholder="Price"
+                                            className="w-20 py-2 bg-transparent text-white text-xs focus:outline-none"
+                                          />
+                                        </div>
+                                        <button
+                                          type="button"
+                                          onClick={() => removeCateringWelcomeDrink(p.id, dIdx)}
+                                          aria-label="Remove drink"
+                                          className="w-7 h-7 rounded-lg bg-slate-800 text-slate-400 hover:text-rose-400 flex items-center justify-center shrink-0"
+                                        >
+                                          <X className="w-3.5 h-3.5" />
+                                        </button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Free Tasting / Trial */}
+                            <div className="p-3 rounded-xl border border-slate-800 bg-slate-950/60 space-y-2.5">
+                              <div className="flex items-center justify-between">
+                                <label className="block text-[10px] text-slate-400 uppercase font-bold">Free Tasting / Trial</label>
+                                <div className="flex gap-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      updatePackageCatering(p.id, 'freeTasting', true);
+                                      if ((p.catering?.freeTastingItems || []).length === 0) {
+                                        addCateringFreeTastingItem(p.id);
+                                      }
+                                    }}
+                                    className={catChip(p.catering?.freeTasting === true)}
+                                  >
+                                    Yes
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => updatePackageCatering(p.id, 'freeTasting', false)}
+                                    className={catChip(p.catering?.freeTasting === false)}
+                                  >
+                                    No
+                                  </button>
+                                </div>
+                              </div>
+
+                              {p.catering?.freeTasting && (
+                                <div className="pt-2 border-t border-slate-800/80 space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[11px] font-bold text-emerald-300 uppercase tracking-wide">
+                                      Available Items for Tasting
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => addCateringFreeTastingItem(p.id)}
+                                      className="flex items-center gap-1 text-xs font-bold text-emerald-400 hover:text-emerald-300"
+                                    >
+                                      <Plus className="w-3.5 h-3.5" /> Add tasting item
+                                    </button>
+                                  </div>
+
+                                  <div className="space-y-2">
+                                    {(p.catering?.freeTastingItems || []).map((tItem, tIdx) => (
+                                      <div key={tIdx} className="flex items-center gap-2">
+                                        <input
+                                          type="text"
+                                          value={tItem}
+                                          onChange={(e) => updateCateringFreeTastingItem(p.id, tIdx, e.target.value)}
+                                          placeholder="Item available for tasting — e.g. Chicken Biryani, Paneer Butter Masala, Gulab Jamun"
+                                          className="flex-1 p-2 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs"
+                                        />
+                                        <button
+                                          type="button"
+                                          onClick={() => removeCateringFreeTastingItem(p.id, tIdx)}
+                                          aria-label="Remove item"
+                                          className="w-7 h-7 rounded-lg bg-slate-800 text-slate-400 hover:text-rose-400 flex items-center justify-center shrink-0"
+                                        >
+                                          <X className="w-3.5 h-3.5" />
+                                        </button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       )}
