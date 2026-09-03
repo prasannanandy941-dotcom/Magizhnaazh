@@ -221,14 +221,20 @@ export const FLOWERS_VARIETIES = ['Marigold', 'Rose', 'Imported'] as const;
 export const FLOWERS_ITEMS = ['Garlands (maalai)', 'Car decor', 'Mandap', 'Bouquet', 'Jaimala', 'Hair flowers', 'Rangoli'] as const;
 export const FLOWERS_KINDS = ['Fresh', 'Artificial'] as const;
 
-// Structured details for a Lighting vendor's package (per function).
+// Structured details for a Lighting / Lights & Sounds vendor's package (per function).
 export interface LightingPackageDetails {
   tier?: string; // Basic / Premium / Grand
   lightingTypes?: string[]; // Ambient / Laser / LED walls / Up-lighting / Fairy lights / Gobo monogram / Pathway
+  typePrices?: Record<string, number>; // Price for each lighting type
+  typeItems?: Record<string, string>; // What type of item is there
+  typeImages?: Record<string, string>; // Uploaded image for each lighting type
   areaCovered?: string; // free text
+  areaCoveredPrice?: number; // Price for area covered
   numFixtures?: number;
   powerBackup?: boolean;
+  powerBackupPrice?: number; // Price for power backup
   setupTeardown?: boolean; // setup + teardown included
+  setupTeardownPrice?: number; // Price for setup + teardown
   numFunctions?: number;
 }
 

@@ -1761,29 +1761,74 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
 
                       {(vendor.category === 'Lighting' || vendor.category === 'Lights & Sounds') && pkg.lighting && (() => {
                         const lt = pkg.lighting;
-                        const chip = 'text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200';
-                        const incl: [string, boolean | undefined][] = [
-                          ['Power backup', lt.powerBackup], ['Setup + teardown', lt.setupTeardown],
-                        ];
+                        const types = lt.lightingTypes || [];
                         return (
-                          <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2" onClick={(e) => e.stopPropagation()}>
+                          <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2.5" onClick={(e) => e.stopPropagation()}>
                             <span className="text-[10px] font-bold text-slate-400 uppercase block">Lights &amp; Sounds details</span>
-                            <div className="flex flex-wrap gap-1.5">
-                              {lt.tier && <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-200 font-bold">{lt.tier}</span>}
-                              {(lt.lightingTypes || []).map((l) => <span key={`lt-${l}`} className={chip}>{l}</span>)}
-                            </div>
-                            <div className="space-y-1 text-[11px] text-slate-300">
-                              {lt.areaCovered ? <div>Area covered: <span className="text-white font-semibold">{lt.areaCovered}</span></div> : null}
-                              {lt.numFixtures ? <div>Fixtures: <span className="text-white font-semibold">{lt.numFixtures}</span></div> : null}
-                              {lt.numFunctions ? <div>Functions covered: <span className="text-white font-semibold">{lt.numFunctions}</span></div> : null}
-                            </div>
-                            {incl.some(([, v]) => v !== undefined) && (
-                              <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px]">
-                                {incl.filter(([, v]) => v !== undefined).map(([label, v]) => (
-                                  <span key={label} className="text-slate-400">{label}: <b className={v ? 'text-emerald-400' : 'text-slate-500'}>{v ? 'Yes' : 'No'}</b></span>
-                                ))}
+
+                            {lt.tier && (
+                              <div>
+                                <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-200 font-bold">{lt.tier}</span>
                               </div>
                             )}
+
+                            {/* Lighting Types with item details, prices, and sample photos */}
+                            {types.length > 0 && (
+                              <div className="space-y-1.5">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase block">Lighting Types</span>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                  {types.map((lName) => {
+                                    const itemVal = lt.typeItems?.[lName];
+                                    const price = lt.typePrices?.[lName];
+                                    const img = lt.typeImages?.[lName];
+
+                                    return (
+                                      <div key={lName} className="flex items-start gap-2.5 p-2 rounded-xl bg-slate-950/60 border border-slate-800">
+                                        {img ? (
+                                          <img src={img} alt={lName} className="w-12 h-12 rounded-lg object-cover border border-slate-700 shrink-0" />
+                                        ) : (
+                                          <div className="w-12 h-12 rounded-lg bg-slate-800 flex items-center justify-center text-slate-500 shrink-0">
+                                            <Sparkles className="w-5 h-5 text-amber-400" />
+                                          </div>
+                                        )}
+                                        <div className="flex-1 min-w-0 text-[11px]">
+                                          <div className="font-bold text-white truncate">{lName}</div>
+                                          {itemVal && <div className="text-slate-400 text-[10px] truncate">{itemVal}</div>}
+                                          {price ? <div className="text-amber-400 font-semibold text-[11px]">₹{price.toLocaleString('en-IN')}</div> : null}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Area covered and fixtures */}
+                            <div className="space-y-1 text-[11px] text-slate-300 pt-1">
+                              {lt.areaCovered ? (
+                                <div>
+                                  Area covered: <span className="text-white font-semibold">{lt.areaCovered}</span>
+                                  {lt.areaCoveredPrice ? <span className="text-amber-400 font-semibold ml-1.5">(₹{lt.areaCoveredPrice.toLocaleString('en-IN')})</span> : null}
+                                </div>
+                              ) : null}
+                              {lt.numFixtures ? <div>Fixtures: <span className="text-white font-semibold">{lt.numFixtures}</span></div> : null}
+                            </div>
+
+                            {/* Power backup and setup/teardown with prices */}
+                            <div className="space-y-1 text-[11px] pt-1 border-t border-slate-800/80">
+                              {lt.powerBackup !== undefined && (
+                                <div className="flex items-center justify-between">
+                                  <span className="text-slate-400">Power backup: <b className={lt.powerBackup ? 'text-emerald-400' : 'text-slate-500'}>{lt.powerBackup ? 'Included' : 'No'}</b></span>
+                                  {lt.powerBackup && lt.powerBackupPrice ? <span className="text-amber-400 font-semibold">₹{lt.powerBackupPrice.toLocaleString('en-IN')}</span> : null}
+                                </div>
+                              )}
+                              {lt.setupTeardown !== undefined && (
+                                <div className="flex items-center justify-between">
+                                  <span className="text-slate-400">Setup + teardown: <b className={lt.setupTeardown ? 'text-emerald-400' : 'text-slate-500'}>{lt.setupTeardown ? 'Included' : 'No'}</b></span>
+                                  {lt.setupTeardown && lt.setupTeardownPrice ? <span className="text-amber-400 font-semibold">₹{lt.setupTeardownPrice.toLocaleString('en-IN')}</span> : null}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         );
                       })()}

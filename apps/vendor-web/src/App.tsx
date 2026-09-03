@@ -2734,16 +2734,143 @@ export function App() {
   const updatePackageMusicDj = (pkgId: string, field: string, value: any) =>
     setPackages((prev) => prev.map((p) => (p.id === pkgId ? { ...p, musicDj: { ...(p.musicDj || {}), [field]: value } } : p)));
 
+  // Auto-total for a Lighting / Lights & Sounds package:
+  // - Lighting type prices: sum of typePrices for selected lightingTypes
+  // - Area covered price: areaCoveredPrice
+  // - Power backup price: powerBackupPrice (if powerBackup is true)
+  // - Setup & teardown price: setupTeardownPrice (if setupTeardown is true)
+  const lightingTotal = (lt?: any): number => {
+    if (!lt) return 0;
+    let sum = 0;
+
+    // Lighting type prices
+    const selectedTypes: string[] = Array.isArray(lt.lightingTypes) ? lt.lightingTypes : [];
+    if (lt.typePrices && typeof lt.typePrices === 'object') {
+      for (const t of selectedTypes) {
+        sum += Number(lt.typePrices[t]) || 0;
+      }
+    }
+
+    // Area covered price
+    sum += Number(lt.areaCoveredPrice) || 0;
+
+    // Power backup price
+    if (lt.powerBackup) {
+      sum += Number(lt.powerBackupPrice) || 0;
+    }
+
+    // Setup + teardown price
+    if (lt.setupTeardown) {
+      sum += Number(lt.setupTeardownPrice) || 0;
+    }
+
+    return sum;
+  };
+
+  const [uploadingLightingImg, setUploadingLightingImg] = useState<string | null>(null);
+  const uploadLightingImage = async (pkgId: string, typeName: string, file: File) => {
+    if (!token) return;
+    setUploadingLightingImg(`${pkgId}:${typeName}`);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch(`${GATEWAY_URL}/api/v1/uploads`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        setPackages((prev) =>
+          prev.map((p) => {
+            if (p.id !== pkgId) return p;
+            const cur = p.lighting || {};
+            const nextImages = { ...(cur.typeImages || {}), [typeName]: data.url };
+            return { ...p, lighting: { ...cur, typeImages: nextImages } };
+          })
+        );
+      }
+    } catch {
+      /* ignore upload failure */
+    } finally {
+      setUploadingLightingImg(null);
+    }
+  };
+
+  const removeLightingImage = (pkgId: string, typeName: string) => {
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const cur = p.lighting || {};
+        const nextImages = { ...(cur.typeImages || {}) };
+        delete nextImages[typeName];
+        return { ...p, lighting: { ...cur, typeImages: nextImages } };
+      })
+    );
+  };
+
   // Lighting packages carry structured details.
   const updatePackageLighting = (pkgId: string, field: string, value: any) =>
-    setPackages((prev) => prev.map((p) => (p.id === pkgId ? { ...p, lighting: { ...(p.lighting || {}), [field]: value } } : p)));
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const nextLt = { ...(p.lighting || {}), [field]: value };
+        const calc = lightingTotal(nextLt);
+        return {
+          ...p,
+          lighting: nextLt,
+          price: calc > 0 ? calc : (p.price || 0),
+        };
+      })
+    );
+
   const toggleLightingType = (pkgId: string, item: string) =>
-    setPackages((prev) => prev.map((p) => {
-      if (p.id !== pkgId) return p;
-      const current: string[] = (p.lighting?.lightingTypes) || [];
-      const next = current.includes(item) ? current.filter((x) => x !== item) : [...current, item];
-      return { ...p, lighting: { ...(p.lighting || {}), lightingTypes: next } };
-    }));
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const current: string[] = p.lighting?.lightingTypes || [];
+        const next = current.includes(item) ? current.filter((x) => x !== item) : [...current, item];
+        const nextLt = { ...(p.lighting || {}), lightingTypes: next };
+        const calc = lightingTotal(nextLt);
+        return {
+          ...p,
+          lighting: nextLt,
+          price: calc > 0 ? calc : (p.price || 0),
+        };
+      })
+    );
+
+  const updateLightingField = (pkgId: string, typeName: string, field: 'price' | 'item', value: any) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const cur = p.lighting || {};
+        let nextLt = { ...cur };
+        if (field === 'price') {
+          const nextPrices = { ...(cur.typePrices || {}) };
+          if (value === undefined || value === '') {
+            delete nextPrices[typeName];
+          } else {
+            nextPrices[typeName] = Number(value);
+          }
+          nextLt = { ...nextLt, typePrices: nextPrices };
+        } else if (field === 'item') {
+          const nextItems = { ...(cur.typeItems || {}) };
+          if (!value) {
+            delete nextItems[typeName];
+          } else {
+            nextItems[typeName] = value;
+          }
+          nextLt = { ...nextLt, typeItems: nextItems };
+        }
+        const calc = lightingTotal(nextLt);
+        return {
+          ...p,
+          lighting: nextLt,
+          price: calc > 0 ? calc : (p.price || 0),
+        };
+      })
+    );
 
   // Flowers packages carry structured details.
   const updatePackageFlowers = (pkgId: string, field: string, value: any) =>
@@ -2979,6 +3106,10 @@ export function App() {
         }
         if (myVendor.category === 'Return Gifts') {
           const calc = returnGiftsTotal(p.returnGifts);
+          return { ...p, price: p.price > 0 ? p.price : calc };
+        }
+        if (myVendor.category === 'Lighting' || myVendor.category === 'Lights & Sounds') {
+          const calc = lightingTotal(p.lighting);
           return { ...p, price: p.price > 0 ? p.price : calc };
         }
         if (myVendor.category === 'Catering') {
@@ -4361,11 +4492,11 @@ export function App() {
                     </button>
                   </div>
 
-                  <div className={`grid grid-cols-1 ${myVendor?.category === 'Catering' || myVendor?.category === 'Decoration' || myVendor?.category === 'Transport' || myVendor?.category === 'Invitation' || myVendor?.category === 'Printing' || myVendor?.category === 'Return Gifts' ? 'sm:grid-cols-1' : myVendor?.category === 'Security' ? 'sm:grid-cols-2' : 'sm:grid-cols-3'} gap-3`}>
+                  <div className={`grid grid-cols-1 ${myVendor?.category === 'Catering' || myVendor?.category === 'Decoration' || myVendor?.category === 'Transport' || myVendor?.category === 'Invitation' || myVendor?.category === 'Printing' || myVendor?.category === 'Return Gifts' || myVendor?.category === 'Lighting' || myVendor?.category === 'Lights & Sounds' ? 'sm:grid-cols-1' : myVendor?.category === 'Security' ? 'sm:grid-cols-2' : 'sm:grid-cols-3'} gap-3`}>
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <label className="block text-[10px] text-slate-400 uppercase font-bold">
-                          {myVendor?.category === 'Catering' ? 'Total amount (₹)' : myVendor?.category === 'Security' ? 'Price per guard / shift (₹)' : myVendor?.category === 'Venue' ? 'Total amount (₹)' : myVendor?.category === 'Decoration' ? 'Total amount (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Total amount (₹)' : myVendor?.category === 'Media' ? 'Total amount (₹)' : myVendor?.category === 'Transport' ? 'Total amount (₹)' : myVendor?.category === 'Invitation' ? 'Total amount (₹)' : myVendor?.category === 'Printing' ? 'Total amount (₹)' : myVendor?.category === 'Return Gifts' ? 'Total amount (₹)' : myVendor?.category === 'Pujari/Priest' ? 'Price per ceremony (₹)' : myVendor?.category === 'Entertainment' ? 'Price per act / hour (₹)' : myVendor?.category === 'Music/DJ' ? 'Price per event / hour (₹)' : myVendor?.category === 'Lighting' || myVendor?.category === 'Lights & Sounds' ? 'Price per function (₹)' : myVendor?.category === 'Flowers' ? 'Price per item / function (₹)' : myVendor?.category === 'Mehendi' ? 'Price per bride (₹)' : myVendor?.category === 'Event Host/Anchor' ? 'Price per event (₹)' : myVendor?.category === 'Rental Equipment' ? 'Per-day rate (₹)' : myVendor?.category === 'Utensils for Rent' ? 'Total price (₹)' : myVendor?.category === 'Wedding Planner' ? 'Price per package / function (₹)' : myVendor?.category === 'Corporate Event Services' ? 'Price per total event (₹)' : 'Price (₹)'}
+                          {myVendor?.category === 'Catering' ? 'Total amount (₹)' : myVendor?.category === 'Security' ? 'Price per guard / shift (₹)' : myVendor?.category === 'Venue' ? 'Total amount (₹)' : myVendor?.category === 'Decoration' ? 'Total amount (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Total amount (₹)' : myVendor?.category === 'Media' ? 'Total amount (₹)' : myVendor?.category === 'Transport' ? 'Total amount (₹)' : myVendor?.category === 'Invitation' ? 'Total amount (₹)' : myVendor?.category === 'Printing' ? 'Total amount (₹)' : myVendor?.category === 'Return Gifts' ? 'Total amount (₹)' : myVendor?.category === 'Lighting' || myVendor?.category === 'Lights & Sounds' ? 'Total amount (₹)' : myVendor?.category === 'Pujari/Priest' ? 'Price per ceremony (₹)' : myVendor?.category === 'Entertainment' ? 'Price per act / hour (₹)' : myVendor?.category === 'Music/DJ' ? 'Price per event / hour (₹)' : myVendor?.category === 'Flowers' ? 'Price per item / function (₹)' : myVendor?.category === 'Mehendi' ? 'Price per bride (₹)' : myVendor?.category === 'Event Host/Anchor' ? 'Price per event (₹)' : myVendor?.category === 'Rental Equipment' ? 'Per-day rate (₹)' : myVendor?.category === 'Utensils for Rent' ? 'Total price (₹)' : myVendor?.category === 'Wedding Planner' ? 'Price per package / function (₹)' : myVendor?.category === 'Corporate Event Services' ? 'Price per total event (₹)' : 'Price (₹)'}
                         </label>
                         {myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 && (
                           <span className="text-[10px] text-amber-400 font-bold">
@@ -4412,12 +4543,17 @@ export function App() {
                             Sum: ₹{returnGiftsTotal(p.returnGifts).toLocaleString('en-IN')}
                           </span>
                         )}
+                        {(myVendor?.category === 'Lighting' || myVendor?.category === 'Lights & Sounds') && lightingTotal(p.lighting) > 0 && (
+                          <span className="text-[10px] text-amber-400 font-bold">
+                            Sum: ₹{lightingTotal(p.lighting).toLocaleString('en-IN')}
+                          </span>
+                        )}
                       </div>
                       <input
                         type="number"
-                        value={p.price || (myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 ? cateringTotal(p.catering) : myVendor?.category === 'Venue' && venueTotal(p.venue) > 0 ? venueTotal(p.venue) : myVendor?.category === 'Decoration' && decorationTotal(p.decoration) > 0 ? decorationTotal(p.decoration) : myVendor?.category === 'Makeup & Beauty' && makeupTotal(p.makeup) > 0 ? makeupTotal(p.makeup) : myVendor?.category === 'Media' && mediaTotal(p.media) > 0 ? mediaTotal(p.media) : myVendor?.category === 'Transport' && transportTotal(p.transport) > 0 ? transportTotal(p.transport) : myVendor?.category === 'Invitation' && invitationTotal(p.invitation) > 0 ? invitationTotal(p.invitation) : myVendor?.category === 'Printing' && printingTotal(p.printing) > 0 ? printingTotal(p.printing) : myVendor?.category === 'Return Gifts' && returnGiftsTotal(p.returnGifts) > 0 ? returnGiftsTotal(p.returnGifts) : '')}
+                        value={p.price || (myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 ? cateringTotal(p.catering) : myVendor?.category === 'Venue' && venueTotal(p.venue) > 0 ? venueTotal(p.venue) : myVendor?.category === 'Decoration' && decorationTotal(p.decoration) > 0 ? decorationTotal(p.decoration) : myVendor?.category === 'Makeup & Beauty' && makeupTotal(p.makeup) > 0 ? makeupTotal(p.makeup) : myVendor?.category === 'Media' && mediaTotal(p.media) > 0 ? mediaTotal(p.media) : myVendor?.category === 'Transport' && transportTotal(p.transport) > 0 ? transportTotal(p.transport) : myVendor?.category === 'Invitation' && invitationTotal(p.invitation) > 0 ? invitationTotal(p.invitation) : myVendor?.category === 'Printing' && printingTotal(p.printing) > 0 ? printingTotal(p.printing) : myVendor?.category === 'Return Gifts' && returnGiftsTotal(p.returnGifts) > 0 ? returnGiftsTotal(p.returnGifts) : (myVendor?.category === 'Lighting' || myVendor?.category === 'Lights & Sounds') && lightingTotal(p.lighting) > 0 ? lightingTotal(p.lighting) : '')}
                         onChange={(e) => updatePackageField(p.id, 'price', e.target.value)}
-                        placeholder={myVendor?.category === 'Catering' ? (cateringTotal(p.catering) ? String(cateringTotal(p.catering)) : 'e.g. 35000') : myVendor?.category === 'Transport' ? (transportTotal(p.transport) ? String(transportTotal(p.transport)) : 'e.g. 15000') : myVendor?.category === 'Invitation' ? (invitationTotal(p.invitation) ? String(invitationTotal(p.invitation)) : 'e.g. 12000') : myVendor?.category === 'Printing' ? (printingTotal(p.printing) ? String(printingTotal(p.printing)) : 'e.g. 8000') : myVendor?.category === 'Return Gifts' ? (returnGiftsTotal(p.returnGifts) ? String(returnGiftsTotal(p.returnGifts)) : 'e.g. 15000') : myVendor?.category === 'Security' ? '2000' : '150000'}
+                        placeholder={myVendor?.category === 'Catering' ? (cateringTotal(p.catering) ? String(cateringTotal(p.catering)) : 'e.g. 35000') : myVendor?.category === 'Transport' ? (transportTotal(p.transport) ? String(transportTotal(p.transport)) : 'e.g. 15000') : myVendor?.category === 'Invitation' ? (invitationTotal(p.invitation) ? String(invitationTotal(p.invitation)) : 'e.g. 12000') : myVendor?.category === 'Printing' ? (printingTotal(p.printing) ? String(printingTotal(p.printing)) : 'e.g. 8000') : myVendor?.category === 'Return Gifts' ? (returnGiftsTotal(p.returnGifts) ? String(returnGiftsTotal(p.returnGifts)) : 'e.g. 15000') : (myVendor?.category === 'Lighting' || myVendor?.category === 'Lights & Sounds') ? (lightingTotal(p.lighting) ? String(lightingTotal(p.lighting)) : 'e.g. 20000') : myVendor?.category === 'Security' ? '2000' : '150000'}
                         className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
                       />
                       {myVendor?.category === 'Venue' && venueTotal(p.venue) > 0 && (
@@ -4458,6 +4594,11 @@ export function App() {
                       {myVendor?.category === 'Return Gifts' && returnGiftsTotal(p.returnGifts) > 0 && (
                         <div className="mt-1.5 text-[10px] text-slate-400">
                           <span>Auto-added from gift types, count, packaging &amp; customization: <b className="text-amber-300">₹{returnGiftsTotal(p.returnGifts).toLocaleString('en-IN')}</b>. Edit the box to override.</span>
+                        </div>
+                      )}
+                      {(myVendor?.category === 'Lighting' || myVendor?.category === 'Lights & Sounds') && lightingTotal(p.lighting) > 0 && (
+                        <div className="mt-1.5 text-[10px] text-slate-400">
+                          <span>Auto-added from lighting types, area covered, power backup &amp; setup: <b className="text-amber-300">₹{lightingTotal(p.lighting).toLocaleString('en-IN')}</b>. Edit the box to override.</span>
                         </div>
                       )}
                       {myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 && (
@@ -7422,8 +7563,17 @@ export function App() {
 
                       {/* Lighting: structured spec (replaces capacity + generic price tiers). */}
                       {(myVendor?.category === 'Lighting' || myVendor?.category === 'Lights & Sounds') && (
-                        <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/40 p-3">
-                          <p className="text-[10px] text-amber-400 uppercase font-bold">Lights &amp; Sounds details</p>
+                        <div className="space-y-4 rounded-xl border border-slate-800 bg-slate-950/40 p-3.5">
+                          <div className="flex items-center justify-between">
+                            <p className="text-[10px] text-amber-400 uppercase font-bold flex items-center gap-1.5">
+                              Lights &amp; Sounds details &amp; Pricing
+                            </p>
+                            {lightingTotal(p.lighting) > 0 && (
+                              <span className="text-[10px] text-amber-400 font-bold bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-full">
+                                Total: ₹{lightingTotal(p.lighting).toLocaleString('en-IN')}
+                              </span>
+                            )}
+                          </div>
 
                           <div>
                             <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Tier</label>
@@ -7434,43 +7584,222 @@ export function App() {
                             </div>
                           </div>
 
-                          <div>
-                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Lighting Type</label>
-                            <div className="flex flex-wrap gap-2">
-                              {LIGHTING_TYPES.map((l) => (
-                                <button type="button" key={l} onClick={() => toggleLightingType(p.id, l)} className={catChip((p.lighting?.lightingTypes || []).includes(l))}>{l}</button>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-3 gap-2">
+                          {/* 2. LIGHTING TYPE: options with price, what type of item is there, and upload image */}
+                          <div className="space-y-2.5 pt-2 border-t border-slate-800/80">
                             <div>
-                              <label className="block text-[10px] text-slate-500 mb-1">Area covered</label>
-                              <input type="text" value={p.lighting?.areaCovered ?? ''} onChange={(e) => updatePackageLighting(p.id, 'areaCovered', e.target.value)}
-                                placeholder="e.g. Stage + entrance" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
-                            </div>
-                            <div>
-                              <label className="block text-[10px] text-slate-500 mb-1">Number of fixtures</label>
-                              <input type="number" min={0} value={p.lighting?.numFixtures ?? ''} onChange={(e) => updatePackageLighting(p.id, 'numFixtures', e.target.value === '' ? undefined : Number(e.target.value))}
-                                placeholder="e.g. 20" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
-                            </div>
-                            <div>
-                              <label className="block text-[10px] text-slate-500 mb-1">Number of functions</label>
-                              <input type="number" min={0} value={p.lighting?.numFunctions ?? ''} onChange={(e) => updatePackageLighting(p.id, 'numFunctions', e.target.value === '' ? undefined : Number(e.target.value))}
-                                placeholder="e.g. 2" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-2">
-                            {([['powerBackup', 'Power backup'], ['setupTeardown', 'Setup + teardown included']] as const).map(([field, label]) => (
-                              <div key={field}>
-                                <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">{label}</label>
-                                <div className="flex gap-1.5">
-                                  <button type="button" onClick={() => updatePackageLighting(p.id, field, true)} className={catChip((p.lighting as any)?.[field] === true)}>Yes</button>
-                                  <button type="button" onClick={() => updatePackageLighting(p.id, field, false)} className={catChip((p.lighting as any)?.[field] === false)}>No</button>
-                                </div>
+                              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
+                                Lighting Type (Select options to configure item details, price &amp; sample photo)
+                              </label>
+                              <div className="flex flex-wrap gap-2">
+                                {LIGHTING_TYPES.map((l) => (
+                                  <button
+                                    type="button"
+                                    key={l}
+                                    onClick={() => toggleLightingType(p.id, l)}
+                                    className={catChip((p.lighting?.lightingTypes || []).includes(l))}
+                                  >
+                                    {l}
+                                  </button>
+                                ))}
                               </div>
-                            ))}
+                            </div>
+
+                            {/* Individual Lighting Type Configuration Cards */}
+                            {(p.lighting?.lightingTypes || []).map((l) => {
+                              const itemVal = p.lighting?.typeItems?.[l];
+                              const priceVal = p.lighting?.typePrices?.[l];
+                              const imgUrl = p.lighting?.typeImages?.[l];
+                              const isUploading = uploadingLightingImg === `${p.id}:${l}`;
+
+                              return (
+                                <div key={l} className="p-3 rounded-xl border border-amber-500/30 bg-amber-950/10 space-y-2.5">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-xs font-bold text-amber-300">
+                                      {l}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleLightingType(p.id, l)}
+                                      className="text-slate-400 hover:text-rose-400 text-xs flex items-center gap-1"
+                                    >
+                                      ✕ Remove
+                                    </button>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                    <div>
+                                      <label className="block text-[10px] text-slate-400 mb-1">What type of item is there</label>
+                                      <input
+                                        type="text"
+                                        value={itemVal ?? ''}
+                                        onChange={(e) => updateLightingField(p.id, l, 'item', e.target.value)}
+                                        placeholder={`e.g. Specific model / count for ${l}`}
+                                        className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-[10px] text-slate-400 mb-1 font-semibold">Price for {l.toLowerCase()} (₹)</label>
+                                      <input
+                                        type="number"
+                                        min={0}
+                                        value={priceVal ?? ''}
+                                        onChange={(e) => updateLightingField(p.id, l, 'price', e.target.value === '' ? undefined : Number(e.target.value))}
+                                        placeholder="e.g. 5000"
+                                        className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <div>
+                                    <label className="block text-[10px] text-slate-400 mb-1">Upload image of {l.toLowerCase()}</label>
+                                    <div className="flex items-center gap-2.5">
+                                      {imgUrl ? (
+                                        <div className="relative group">
+                                          <img src={imgUrl} alt={l} className="w-16 h-12 rounded-lg object-cover border border-slate-700" />
+                                          <button
+                                            type="button"
+                                            onClick={() => removeLightingImage(p.id, l)}
+                                            className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px] shadow"
+                                          >
+                                            ✕
+                                          </button>
+                                        </div>
+                                      ) : null}
+                                      <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold cursor-pointer border border-slate-700 transition-colors">
+                                        {isUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 text-amber-400" />}
+                                        {imgUrl ? 'Change photo' : `Upload ${l} photo`}
+                                        <input
+                                          type="file"
+                                          accept="image/*"
+                                          className="hidden"
+                                          disabled={isUploading}
+                                          onChange={(e) => {
+                                            const f = e.target.files?.[0];
+                                            if (f) uploadLightingImage(p.id, l, f);
+                                            e.target.value = '';
+                                          }}
+                                        />
+                                      </label>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {/* 3. Area covered with Price option (Image 1 'Number of functions' removed) */}
+                          <div className="pt-2 border-t border-slate-800/80 space-y-2.5">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                              <div>
+                                <label className="block text-[10px] text-slate-400 mb-1">Area covered</label>
+                                <input
+                                  type="text"
+                                  value={p.lighting?.areaCovered ?? ''}
+                                  onChange={(e) => updatePackageLighting(p.id, 'areaCovered', e.target.value)}
+                                  placeholder="e.g. Stage + entrance"
+                                  className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] text-slate-400 font-semibold mb-1">Price for area covered (₹)</label>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={p.lighting?.areaCoveredPrice ?? ''}
+                                  onChange={(e) => updatePackageLighting(p.id, 'areaCoveredPrice', e.target.value === '' ? undefined : Number(e.target.value))}
+                                  placeholder="e.g. 8000"
+                                  className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                />
+                              </div>
+                            </div>
+                            <div className="max-w-xs">
+                              <label className="block text-[10px] text-slate-500 mb-1">Number of fixtures (optional)</label>
+                              <input
+                                type="number"
+                                min={0}
+                                value={p.lighting?.numFixtures ?? ''}
+                                onChange={(e) => updatePackageLighting(p.id, 'numFixtures', e.target.value === '' ? undefined : Number(e.target.value))}
+                                placeholder="e.g. 20"
+                                className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                              />
+                            </div>
+                          </div>
+
+                          {/* 4. Power backup & Setup + Teardown: with price option for each */}
+                          <div className="pt-2 border-t border-slate-800/80 space-y-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              {/* Power backup */}
+                              <div className="p-3 rounded-xl border border-slate-800 bg-slate-900/40 space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <label className="block text-[10px] text-slate-400 uppercase font-bold">Power backup</label>
+                                  <div className="flex gap-1.5">
+                                    <button
+                                      type="button"
+                                      onClick={() => updatePackageLighting(p.id, 'powerBackup', true)}
+                                      className={catChip(p.lighting?.powerBackup === true)}
+                                    >
+                                      Yes
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => updatePackageLighting(p.id, 'powerBackup', false)}
+                                      className={catChip(p.lighting?.powerBackup === false)}
+                                    >
+                                      No
+                                    </button>
+                                  </div>
+                                </div>
+                                {p.lighting?.powerBackup && (
+                                  <div className="pt-1.5">
+                                    <label className="block text-[10px] text-slate-400 font-semibold mb-1">Price for power backup (₹)</label>
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      value={p.lighting?.powerBackupPrice ?? ''}
+                                      onChange={(e) => updatePackageLighting(p.id, 'powerBackupPrice', e.target.value === '' ? undefined : Number(e.target.value))}
+                                      placeholder="e.g. 3000"
+                                      className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                    />
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Setup + teardown */}
+                              <div className="p-3 rounded-xl border border-slate-800 bg-slate-900/40 space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <label className="block text-[10px] text-slate-400 uppercase font-bold">Setup + teardown included</label>
+                                  <div className="flex gap-1.5">
+                                    <button
+                                      type="button"
+                                      onClick={() => updatePackageLighting(p.id, 'setupTeardown', true)}
+                                      className={catChip(p.lighting?.setupTeardown === true)}
+                                    >
+                                      Yes
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => updatePackageLighting(p.id, 'setupTeardown', false)}
+                                      className={catChip(p.lighting?.setupTeardown === false)}
+                                    >
+                                      No
+                                    </button>
+                                  </div>
+                                </div>
+                                {p.lighting?.setupTeardown && (
+                                  <div className="pt-1.5">
+                                    <label className="block text-[10px] text-slate-400 font-semibold mb-1">Price for setup &amp; teardown (₹)</label>
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      value={p.lighting?.setupTeardownPrice ?? ''}
+                                      onChange={(e) => updatePackageLighting(p.id, 'setupTeardownPrice', e.target.value === '' ? undefined : Number(e.target.value))}
+                                      placeholder="e.g. 2500"
+                                      className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         </div>
                       )}

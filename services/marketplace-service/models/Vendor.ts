@@ -277,10 +277,16 @@ const vendorPackageSchema = new Schema(
     lighting: {
       tier: String,
       lightingTypes: [String],
+      typePrices: { type: Map, of: Number },
+      typeItems: { type: Map, of: String },
+      typeImages: { type: Map, of: String },
       areaCovered: String,
+      areaCoveredPrice: Number,
       numFixtures: Number,
       powerBackup: Boolean,
+      powerBackupPrice: Number,
       setupTeardown: Boolean,
+      setupTeardownPrice: Number,
       numFunctions: Number,
     },
     // Flowers-only structured details.
