@@ -973,6 +973,58 @@ export function App() {
     ]);
   };
 
+  // Catering packages: calculate the sum of all item prices entered by the vendor
+  // (food items, cuisines, courses, live counters, welcome drinks, per plate cost).
+  const cateringTotal = (c?: any): number => {
+    if (!c) return 0;
+    let sum = 0;
+    if (c.foodTypeItems && typeof c.foodTypeItems === 'object') {
+      for (const items of Object.values(c.foodTypeItems)) {
+        if (Array.isArray(items)) {
+          for (const it of items) {
+            if (it && typeof it === 'object') sum += Number(it.price) || 0;
+          }
+        }
+      }
+    }
+    if (c.cuisineItems && typeof c.cuisineItems === 'object') {
+      for (const items of Object.values(c.cuisineItems)) {
+        if (Array.isArray(items)) {
+          for (const it of items) {
+            if (it && typeof it === 'object') sum += Number(it.price) || 0;
+          }
+        }
+      }
+    }
+    if (c.courseItems && typeof c.courseItems === 'object') {
+      for (const items of Object.values(c.courseItems)) {
+        if (Array.isArray(items)) {
+          for (const it of items) {
+            if (it && typeof it === 'object') sum += Number(it.price) || 0;
+          }
+        }
+      }
+    }
+    if (c.liveCounterItems && typeof c.liveCounterItems === 'object') {
+      for (const items of Object.values(c.liveCounterItems)) {
+        if (Array.isArray(items)) {
+          for (const it of items) {
+            if (it && typeof it === 'object') sum += Number(it.price) || 0;
+          }
+        }
+      }
+    }
+    if (Array.isArray(c.welcomeDrinkItems)) {
+      for (const it of c.welcomeDrinkItems) {
+        if (it && typeof it === 'object') sum += Number(it.price) || 0;
+      }
+    }
+    if (c.pricePerPlate !== undefined && c.pricePerPlate !== null) {
+      sum += Number(c.pricePerPlate) || 0;
+    }
+    return sum;
+  };
+
   const updatePackageField = (id: string, field: keyof VendorPackage, raw: string) =>
     setPackages((prev) =>
       prev.map((p) => {
@@ -997,13 +1049,16 @@ export function App() {
         }
         if (field === 'pricePerPlate') {
           const val = raw === '' ? undefined : Number(raw);
+          const nextCatering = {
+            ...(p.catering || {}),
+            pricePerPlate: val,
+          };
+          const calc = cateringTotal(nextCatering);
           return {
             ...p,
             pricePerPlate: val,
-            catering: {
-              ...(p.catering || {}),
-              pricePerPlate: val,
-            },
+            price: calc > 0 ? calc : (p.price || 0),
+            catering: nextCatering,
           };
         }
         if (field === 'durationHours') return { ...p, durationHours: raw === '' ? undefined : Number(raw) };
@@ -1036,7 +1091,16 @@ export function App() {
   // Catering packages carry a structured menu spec (food types, cuisines, dish
   // counts, live counters, service style, inclusions). Update one field:
   const updatePackageCatering = (pkgId: string, field: string, value: any) =>
-    setPackages((prev) => prev.map((p) => (p.id === pkgId ? { ...p, catering: { ...(p.catering || {}), [field]: value } } : p)));
+    setPackages((prev) => prev.map((p) => {
+      if (p.id !== pkgId) return p;
+      const nextCatering = { ...(p.catering || {}), [field]: value };
+      const calc = cateringTotal(nextCatering);
+      return {
+        ...p,
+        price: calc > 0 ? calc : (p.price || 0),
+        catering: nextCatering,
+      };
+    }));
   // Toggle membership of a value in one of the catering multi-select arrays.
   const toggleCateringOption = (pkgId: string, field: 'foodTypes' | 'cuisines' | 'liveCounters', item: string) =>
     setPackages((prev) => prev.map((p) => {
@@ -1074,15 +1138,18 @@ export function App() {
           };
         }
       }
+      const nextCatering = {
+        ...(p.catering || {}),
+        [field]: next,
+        ...(nextFoodTypeItems !== undefined ? { foodTypeItems: nextFoodTypeItems } : {}),
+        ...(nextCuisineItems !== undefined ? { cuisineItems: nextCuisineItems } : {}),
+        ...(nextLiveCounterItems !== undefined ? { liveCounterItems: nextLiveCounterItems } : {}),
+      };
+      const calc = cateringTotal(nextCatering);
       return {
         ...p,
-        catering: {
-          ...(p.catering || {}),
-          [field]: next,
-          ...(nextFoodTypeItems !== undefined ? { foodTypeItems: nextFoodTypeItems } : {}),
-          ...(nextCuisineItems !== undefined ? { cuisineItems: nextCuisineItems } : {}),
-          ...(nextLiveCounterItems !== undefined ? { liveCounterItems: nextLiveCounterItems } : {}),
-        },
+        price: calc > 0 ? calc : (p.price || 0),
+        catering: nextCatering,
       };
     }));
 
@@ -1122,15 +1189,18 @@ export function App() {
         const nextList = list.map((it, i) =>
           i === idx ? { ...it, [field]: field === 'price' ? (val === '' ? undefined : Number(val)) : val } : it
         );
+        const nextCatering = {
+          ...currentCatering,
+          foodTypeItems: {
+            ...currentItems,
+            [foodType]: nextList,
+          },
+        };
+        const calc = cateringTotal(nextCatering);
         return {
           ...p,
-          catering: {
-            ...currentCatering,
-            foodTypeItems: {
-              ...currentItems,
-              [foodType]: nextList,
-            },
-          },
+          price: calc > 0 ? calc : (p.price || 0),
+          catering: nextCatering,
         };
       })
     );
@@ -1143,15 +1213,18 @@ export function App() {
         const currentItems = currentCatering.foodTypeItems || {};
         const list = currentItems[foodType] || [];
         const nextList = list.filter((_, i) => i !== idx);
+        const nextCatering = {
+          ...currentCatering,
+          foodTypeItems: {
+            ...currentItems,
+            [foodType]: nextList,
+          },
+        };
+        const calc = cateringTotal(nextCatering);
         return {
           ...p,
-          catering: {
-            ...currentCatering,
-            foodTypeItems: {
-              ...currentItems,
-              [foodType]: nextList,
-            },
-          },
+          price: calc > 0 ? calc : (p.price || 0),
+          catering: nextCatering,
         };
       })
     );
@@ -1192,15 +1265,18 @@ export function App() {
         const nextList = list.map((it, i) =>
           i === idx ? { ...it, [field]: field === 'price' ? (val === '' ? undefined : Number(val)) : val } : it
         );
+        const nextCatering = {
+          ...currentCatering,
+          cuisineItems: {
+            ...currentItems,
+            [cuisine]: nextList,
+          },
+        };
+        const calc = cateringTotal(nextCatering);
         return {
           ...p,
-          catering: {
-            ...currentCatering,
-            cuisineItems: {
-              ...currentItems,
-              [cuisine]: nextList,
-            },
-          },
+          price: calc > 0 ? calc : (p.price || 0),
+          catering: nextCatering,
         };
       })
     );
@@ -1213,15 +1289,18 @@ export function App() {
         const currentItems = currentCatering.cuisineItems || {};
         const list = currentItems[cuisine] || [];
         const nextList = list.filter((_, i) => i !== idx);
+        const nextCatering = {
+          ...currentCatering,
+          cuisineItems: {
+            ...currentItems,
+            [cuisine]: nextList,
+          },
+        };
+        const calc = cateringTotal(nextCatering);
         return {
           ...p,
-          catering: {
-            ...currentCatering,
-            cuisineItems: {
-              ...currentItems,
-              [cuisine]: nextList,
-            },
-          },
+          price: calc > 0 ? calc : (p.price || 0),
+          catering: nextCatering,
         };
       })
     );
@@ -1313,15 +1392,18 @@ export function App() {
         const nextList = list.map((it, i) =>
           i === idx ? { ...it, [field]: field === 'price' ? (val === '' ? undefined : Number(val)) : val } : it
         );
+        const nextCatering = {
+          ...currentCatering,
+          courseItems: {
+            ...currentItems,
+            [course]: nextList,
+          },
+        };
+        const calc = cateringTotal(nextCatering);
         return {
           ...p,
-          catering: {
-            ...currentCatering,
-            courseItems: {
-              ...currentItems,
-              [course]: nextList,
-            },
-          },
+          price: calc > 0 ? calc : (p.price || 0),
+          catering: nextCatering,
         };
       })
     );
@@ -1334,15 +1416,18 @@ export function App() {
         const currentItems = currentCatering.courseItems || {};
         const list = currentItems[course] || [];
         const nextList = list.filter((_, i) => i !== idx);
+        const nextCatering = {
+          ...currentCatering,
+          courseItems: {
+            ...currentItems,
+            [course]: nextList,
+          },
+        };
+        const calc = cateringTotal(nextCatering);
         return {
           ...p,
-          catering: {
-            ...currentCatering,
-            courseItems: {
-              ...currentItems,
-              [course]: nextList,
-            },
-          },
+          price: calc > 0 ? calc : (p.price || 0),
+          catering: nextCatering,
         };
       })
     );
@@ -1406,15 +1491,18 @@ export function App() {
         const nextList = list.map((it, i) =>
           i === idx ? { ...it, [field]: field === 'price' ? (val === '' ? undefined : Number(val)) : val } : it
         );
+        const nextCatering = {
+          ...currentCatering,
+          liveCounterItems: {
+            ...currentItems,
+            [counter]: nextList,
+          },
+        };
+        const calc = cateringTotal(nextCatering);
         return {
           ...p,
-          catering: {
-            ...currentCatering,
-            liveCounterItems: {
-              ...currentItems,
-              [counter]: nextList,
-            },
-          },
+          price: calc > 0 ? calc : (p.price || 0),
+          catering: nextCatering,
         };
       })
     );
@@ -1427,15 +1515,18 @@ export function App() {
         const currentItems = currentCatering.liveCounterItems || {};
         const list = currentItems[counter] || [];
         const nextList = list.filter((_, i) => i !== idx);
+        const nextCatering = {
+          ...currentCatering,
+          liveCounterItems: {
+            ...currentItems,
+            [counter]: nextList,
+          },
+        };
+        const calc = cateringTotal(nextCatering);
         return {
           ...p,
-          catering: {
-            ...currentCatering,
-            liveCounterItems: {
-              ...currentItems,
-              [counter]: nextList,
-            },
-          },
+          price: calc > 0 ? calc : (p.price || 0),
+          catering: nextCatering,
         };
       })
     );
@@ -1485,12 +1576,15 @@ export function App() {
         const nextList = list.map((it, i) =>
           i === idx ? { ...it, [field]: field === 'price' ? (val === '' ? undefined : Number(val)) : val } : it
         );
+        const nextCatering = {
+          ...currentCatering,
+          welcomeDrinkItems: nextList,
+        };
+        const calc = cateringTotal(nextCatering);
         return {
           ...p,
-          catering: {
-            ...currentCatering,
-            welcomeDrinkItems: nextList,
-          },
+          price: calc > 0 ? calc : (p.price || 0),
+          catering: nextCatering,
         };
       })
     );
@@ -1501,12 +1595,16 @@ export function App() {
         if (p.id !== pkgId) return p;
         const currentCatering = p.catering || {};
         const list = currentCatering.welcomeDrinkItems || [];
+        const nextList = list.filter((_, i) => i !== idx);
+        const nextCatering = {
+          ...currentCatering,
+          welcomeDrinkItems: nextList,
+        };
+        const calc = cateringTotal(nextCatering);
         return {
           ...p,
-          catering: {
-            ...currentCatering,
-            welcomeDrinkItems: list.filter((_, i) => i !== idx),
-          },
+          price: calc > 0 ? calc : (p.price || 0),
+          catering: nextCatering,
         };
       })
     );
@@ -1863,7 +1961,7 @@ export function App() {
           const calc = utensilsTotal(p.utensils);
           return { ...p, price: calc > 0 ? calc : (p.price || 0) };
         }
-        if (myVendor.category === 'Catering' && (p.catering?.foodTypeItems || p.catering?.cuisineItems || p.catering?.courseItems || p.catering?.liveCounterItems)) {
+        if (myVendor.category === 'Catering') {
           const cleanedFoodItems: Record<string, any[]> = {};
           if (p.catering?.foodTypeItems) {
             for (const [ft, items] of Object.entries(p.catering.foodTypeItems)) {
@@ -1899,19 +1997,23 @@ export function App() {
             ? (p.catering?.freeTastingItems || []).filter((it: any) => it && it.trim())
             : undefined;
           const pricePerPlate = p.catering?.pricePerPlate ?? p.pricePerPlate;
+          const nextCatering = {
+            ...p.catering,
+            ...(pricePerPlate !== undefined ? { pricePerPlate } : {}),
+            foodTypeItems: cleanedFoodItems,
+            cuisineItems: cleanedCuisineItems,
+            courseItems: cleanedCourseItems,
+            liveCounterItems: cleanedLiveCounterItems,
+            welcomeDrinkItems: cleanedWelcomeDrinks,
+            freeTastingItems: cleanedFreeTastingItems,
+          };
+          const calc = cateringTotal(nextCatering);
+          const price = calc > 0 ? calc : (p.price || 0);
           return {
             ...p,
+            price,
             ...(pricePerPlate !== undefined ? { pricePerPlate } : {}),
-            catering: {
-              ...p.catering,
-              ...(pricePerPlate !== undefined ? { pricePerPlate } : {}),
-              foodTypeItems: cleanedFoodItems,
-              cuisineItems: cleanedCuisineItems,
-              courseItems: cleanedCourseItems,
-              liveCounterItems: cleanedLiveCounterItems,
-              welcomeDrinkItems: cleanedWelcomeDrinks,
-              freeTastingItems: cleanedFreeTastingItems,
-            },
+            catering: nextCatering,
           };
         }
         return p;
@@ -3256,16 +3358,37 @@ export function App() {
                       </div>
                     )}
                     <div>
-                      <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
-                        {myVendor?.category === 'Catering' ? 'Total amount (₹)' : myVendor?.category === 'Security' ? 'Price per guard / shift (₹)' : myVendor?.category === 'Venue' ? 'Price per session (₹)' : myVendor?.category === 'Decoration' ? 'Price per function (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Price per look / function (₹)' : myVendor?.category === 'Media' ? 'Price per event / day (₹)' : myVendor?.category === 'Transport' ? 'Price per vehicle (₹)' : myVendor?.category === 'Pujari/Priest' ? 'Price per ceremony (₹)' : myVendor?.category === 'Invitation' ? 'Price per design / quantity (₹)' : myVendor?.category === 'Printing' ? 'Price per quantity (₹)' : myVendor?.category === 'Return Gifts' ? 'Price per piece (₹)' : myVendor?.category === 'Entertainment' ? 'Price per act / hour (₹)' : myVendor?.category === 'Music/DJ' ? 'Price per event / hour (₹)' : myVendor?.category === 'Lighting' ? 'Price per function (₹)' : myVendor?.category === 'Flowers' ? 'Price per item / function (₹)' : myVendor?.category === 'Mehendi' ? 'Price per bride (₹)' : myVendor?.category === 'Event Host/Anchor' ? 'Price per event (₹)' : myVendor?.category === 'Rental Equipment' ? 'Per-day rate (₹)' : myVendor?.category === 'Utensils for Rent' ? 'Total price (₹)' : myVendor?.category === 'Wedding Planner' ? 'Price per package / function (₹)' : myVendor?.category === 'Corporate Event Services' ? 'Price per total event (₹)' : 'Price (₹)'}
-                      </label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-[10px] text-slate-400 uppercase font-bold">
+                          {myVendor?.category === 'Catering' ? 'Total amount (₹)' : myVendor?.category === 'Security' ? 'Price per guard / shift (₹)' : myVendor?.category === 'Venue' ? 'Price per session (₹)' : myVendor?.category === 'Decoration' ? 'Price per function (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Price per look / function (₹)' : myVendor?.category === 'Media' ? 'Price per event / day (₹)' : myVendor?.category === 'Transport' ? 'Price per vehicle (₹)' : myVendor?.category === 'Pujari/Priest' ? 'Price per ceremony (₹)' : myVendor?.category === 'Invitation' ? 'Price per design / quantity (₹)' : myVendor?.category === 'Printing' ? 'Price per quantity (₹)' : myVendor?.category === 'Return Gifts' ? 'Price per piece (₹)' : myVendor?.category === 'Entertainment' ? 'Price per act / hour (₹)' : myVendor?.category === 'Music/DJ' ? 'Price per event / hour (₹)' : myVendor?.category === 'Lighting' ? 'Price per function (₹)' : myVendor?.category === 'Flowers' ? 'Price per item / function (₹)' : myVendor?.category === 'Mehendi' ? 'Price per bride (₹)' : myVendor?.category === 'Event Host/Anchor' ? 'Price per event (₹)' : myVendor?.category === 'Rental Equipment' ? 'Per-day rate (₹)' : myVendor?.category === 'Utensils for Rent' ? 'Total price (₹)' : myVendor?.category === 'Wedding Planner' ? 'Price per package / function (₹)' : myVendor?.category === 'Corporate Event Services' ? 'Price per total event (₹)' : 'Price (₹)'}
+                        </label>
+                        {myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 && (
+                          <span className="text-[10px] text-amber-400 font-bold">
+                            Sum: ₹{cateringTotal(p.catering).toLocaleString('en-IN')}
+                          </span>
+                        )}
+                      </div>
                       <input
                         type="number"
-                        value={p.price || ''}
+                        value={p.price || (myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 ? cateringTotal(p.catering) : '')}
                         onChange={(e) => updatePackageField(p.id, 'price', e.target.value)}
-                        placeholder={myVendor?.category === 'Catering' ? 'e.g. 35000' : myVendor?.category === 'Security' ? '2000' : '150000'}
+                        placeholder={myVendor?.category === 'Catering' ? (cateringTotal(p.catering) ? String(cateringTotal(p.catering)) : 'e.g. 35000') : myVendor?.category === 'Security' ? '2000' : '150000'}
                         className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
                       />
+                      {myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 && (
+                        <div className="mt-1.5 flex flex-wrap items-center gap-1 text-[10px] text-slate-400">
+                          <span>Auto-added from all items: <b className="text-amber-300">₹{cateringTotal(p.catering).toLocaleString('en-IN')}</b></span>
+                          {p.catering?.minGuests && p.catering.minGuests > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => updatePackageField(p.id, 'price', String(cateringTotal(p.catering) * p.catering!.minGuests!))}
+                              className="text-indigo-400 hover:text-indigo-300 underline font-semibold ml-1.5"
+                            >
+                              (Set for {p.catering.minGuests} guests = ₹{(cateringTotal(p.catering) * p.catering.minGuests).toLocaleString('en-IN')})
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                     {myVendor?.category !== 'Security' && myVendor?.category !== 'Catering' && myVendor?.category !== 'Media' && myVendor?.category !== 'Transport' && myVendor?.category !== 'Invitation' && myVendor?.category !== 'Printing' && myVendor?.category !== 'Return Gifts' && myVendor?.category !== 'Music/DJ' && myVendor?.category !== 'Lighting' && myVendor?.category !== 'Flowers' && myVendor?.category !== 'Mehendi' && myVendor?.category !== 'Event Host/Anchor' && myVendor?.category !== 'Rental Equipment' && myVendor?.category !== 'Utensils for Rent' && myVendor?.category !== 'Wedding Planner' && myVendor?.category !== 'Corporate Event Services' && (
                       <div>
