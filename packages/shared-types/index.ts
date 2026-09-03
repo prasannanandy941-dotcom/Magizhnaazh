@@ -443,7 +443,8 @@ export interface CateringPackageDetails {
   mains?: number; // number of main-course dishes included
   desserts?: number; // number of desserts included
   minGuests?: number; // minimum guest count
-  liveCounters?: string[]; // Chaat, Dosa, Ice Cream, …
+  liveCounters?: string[]; // Chaat, Ice Cream, …
+  liveCounterItems?: Record<string, CateringFoodItem[]>; // item names and rates per live counter (Chaat, Ice Cream)
   serviceStyle?: string; // Buffet / Seated / Banana-leaf
   welcomeDrinks?: boolean;
   servingStaff?: boolean; // serving staff included
@@ -456,7 +457,7 @@ export const CATERING_MENU_TIERS = ['Silver', 'Gold', 'Platinum'] as const;
 export const CATERING_FOOD_TYPES = ['Veg', 'Non-Veg', 'Jain'] as const;
 export const CATERING_CUISINES = ['South Indian', 'Chettinad', 'North Indian', 'Continental'] as const;
 export const CATERING_COURSES = ['Starters', 'Mains', 'Desserts'] as const;
-export const CATERING_LIVE_COUNTERS = ['Chaat', 'Dosa', 'Ice Cream'] as const;
+export const CATERING_LIVE_COUNTERS = ['Chaat', 'Ice Cream'] as const;
 export const CATERING_SERVICE_STYLES = ['Buffet', 'Seated', 'Banana-leaf'] as const;
 
 // A named price tier within a package.

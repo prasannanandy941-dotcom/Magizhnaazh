@@ -1053,6 +1053,16 @@ export function App() {
           };
         }
       }
+      let nextLiveCounterItems = p.catering?.liveCounterItems;
+      if (field === 'liveCounters' && !isRemoving) {
+        const existingForCounter = nextLiveCounterItems?.[item] || [];
+        if (existingForCounter.length === 0) {
+          nextLiveCounterItems = {
+            ...(nextLiveCounterItems || {}),
+            [item]: [{ name: '', price: 0 }],
+          };
+        }
+      }
       return {
         ...p,
         catering: {
@@ -1060,6 +1070,7 @@ export function App() {
           [field]: next,
           ...(nextFoodTypeItems !== undefined ? { foodTypeItems: nextFoodTypeItems } : {}),
           ...(nextCuisineItems !== undefined ? { cuisineItems: nextCuisineItems } : {}),
+          ...(nextLiveCounterItems !== undefined ? { liveCounterItems: nextLiveCounterItems } : {}),
         },
       };
     }));
@@ -1319,6 +1330,75 @@ export function App() {
             courseItems: {
               ...currentItems,
               [course]: nextList,
+            },
+          },
+        };
+      })
+    );
+  const addCateringLiveCounterItem = (pkgId: string, counter: string) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const currentCatering = p.catering || {};
+        const currentItems = currentCatering.liveCounterItems || {};
+        const list = currentItems[counter] || [];
+        return {
+          ...p,
+          catering: {
+            ...currentCatering,
+            liveCounterItems: {
+              ...currentItems,
+              [counter]: [...list, { name: '', price: 0 }],
+            },
+          },
+        };
+      })
+    );
+
+  const updateCateringLiveCounterItem = (
+    pkgId: string,
+    counter: string,
+    idx: number,
+    field: 'name' | 'price',
+    val: any
+  ) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const currentCatering = p.catering || {};
+        const currentItems = currentCatering.liveCounterItems || {};
+        const list = currentItems[counter] || [];
+        const nextList = list.map((it, i) =>
+          i === idx ? { ...it, [field]: field === 'price' ? (val === '' ? undefined : Number(val)) : val } : it
+        );
+        return {
+          ...p,
+          catering: {
+            ...currentCatering,
+            liveCounterItems: {
+              ...currentItems,
+              [counter]: nextList,
+            },
+          },
+        };
+      })
+    );
+
+  const removeCateringLiveCounterItem = (pkgId: string, counter: string, idx: number) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const currentCatering = p.catering || {};
+        const currentItems = currentCatering.liveCounterItems || {};
+        const list = currentItems[counter] || [];
+        const nextList = list.filter((_, i) => i !== idx);
+        return {
+          ...p,
+          catering: {
+            ...currentCatering,
+            liveCounterItems: {
+              ...currentItems,
+              [counter]: nextList,
             },
           },
         };
@@ -1628,7 +1708,7 @@ export function App() {
           const calc = utensilsTotal(p.utensils);
           return { ...p, price: calc > 0 ? calc : (p.price || 0) };
         }
-        if (myVendor.category === 'Catering' && (p.catering?.foodTypeItems || p.catering?.cuisineItems || p.catering?.courseItems)) {
+        if (myVendor.category === 'Catering' && (p.catering?.foodTypeItems || p.catering?.cuisineItems || p.catering?.courseItems || p.catering?.liveCounterItems)) {
           const cleanedFoodItems: Record<string, any[]> = {};
           if (p.catering?.foodTypeItems) {
             for (const [ft, items] of Object.entries(p.catering.foodTypeItems)) {
@@ -1650,6 +1730,13 @@ export function App() {
               if (valid.length > 0) cleanedCourseItems[course] = valid;
             }
           }
+          const cleanedLiveCounterItems: Record<string, any[]> = {};
+          if (p.catering?.liveCounterItems) {
+            for (const [counter, items] of Object.entries(p.catering.liveCounterItems)) {
+              const valid = (items || []).filter((it: any) => it && it.name && it.name.trim());
+              if (valid.length > 0) cleanedLiveCounterItems[counter] = valid;
+            }
+          }
           return {
             ...p,
             catering: {
@@ -1657,6 +1744,7 @@ export function App() {
               foodTypeItems: cleanedFoodItems,
               cuisineItems: cleanedCuisineItems,
               courseItems: cleanedCourseItems,
+              liveCounterItems: cleanedLiveCounterItems,
             },
           };
         }
@@ -3508,6 +3596,88 @@ export function App() {
                                 <button type="button" key={lc} onClick={() => toggleCateringOption(p.id, 'liveCounters', lc)} className={catChip((p.catering?.liveCounters || []).includes(lc))}>{lc}</button>
                               ))}
                             </div>
+
+                            {/* Live counter items & rate editor per selected counter */}
+                            {(p.catering?.liveCounters || []).length > 0 && (
+                              <div className="mt-3 space-y-3">
+                                {CATERING_LIVE_COUNTERS.filter((lc) => (p.catering?.liveCounters || []).includes(lc)).map((lc) => {
+                                  const items = p.catering?.liveCounterItems?.[lc] || [];
+                                  const counterColor = lc === 'Chaat' ? 'border-amber-500/30 bg-amber-950/20' : 'border-cyan-500/30 bg-cyan-950/20';
+                                  const badgeColor = lc === 'Chaat' ? 'text-amber-300' : 'text-cyan-300';
+                                  const dotColor = lc === 'Chaat' ? 'bg-amber-400' : 'bg-cyan-400';
+                                  const placeholder = lc === 'Chaat'
+                                    ? 'Item name — e.g. Pani Puri, Sev Puri, Dahi Puri, Bhel Puri'
+                                    : 'Item name — e.g. Belgian Chocolate, Vanilla, Butterscotch, Kulfi';
+
+                                  return (
+                                    <div key={lc} className={`p-3 rounded-xl border ${counterColor} space-y-2.5`}>
+                                      <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-1.5">
+                                          <span className={`w-2 h-2 rounded-full ${dotColor}`} />
+                                          <span className={`text-[11px] font-bold uppercase tracking-wide ${badgeColor}`}>{lc} Live Counter Items</span>
+                                          {items.length > 0 && (
+                                            <span className="text-[10px] text-slate-400">({items.length})</span>
+                                          )}
+                                        </div>
+                                        <button
+                                          type="button"
+                                          onClick={() => addCateringLiveCounterItem(p.id, lc)}
+                                          className="flex items-center gap-1 text-xs font-bold text-amber-400 hover:text-amber-300"
+                                        >
+                                          <Plus className="w-3.5 h-3.5" /> Add item
+                                        </button>
+                                      </div>
+
+                                      {items.length === 0 ? (
+                                        <div className="py-2.5 px-3 rounded-lg bg-slate-950/60 border border-dashed border-slate-800 text-center">
+                                          <p className="text-xs text-slate-400 mb-1.5">No {lc.toLowerCase()} items added yet.</p>
+                                          <button
+                                            type="button"
+                                            onClick={() => addCateringLiveCounterItem(p.id, lc)}
+                                            className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 font-semibold"
+                                          >
+                                            <Plus className="w-3.5 h-3.5" /> Add {lc} item
+                                          </button>
+                                        </div>
+                                      ) : (
+                                        <div className="space-y-2">
+                                          {items.map((item, itemIdx) => (
+                                            <div key={itemIdx} className="flex items-center gap-2">
+                                              <input
+                                                type="text"
+                                                value={item.name}
+                                                onChange={(e) => updateCateringLiveCounterItem(p.id, lc, itemIdx, 'name', e.target.value)}
+                                                placeholder={placeholder}
+                                                className="flex-1 p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-xs"
+                                              />
+                                              <div className="flex items-center gap-1 px-2 rounded-lg bg-slate-950 border border-slate-800">
+                                                <span className="text-slate-500 text-xs">₹</span>
+                                                <input
+                                                  type="number"
+                                                  min={0}
+                                                  value={item.price === 0 ? '' : (item.price || '')}
+                                                  onChange={(e) => updateCateringLiveCounterItem(p.id, lc, itemIdx, 'price', e.target.value)}
+                                                  placeholder="Price"
+                                                  className="w-20 py-2 bg-transparent text-white text-xs focus:outline-none"
+                                                />
+                                              </div>
+                                              <button
+                                                type="button"
+                                                onClick={() => removeCateringLiveCounterItem(p.id, lc, itemIdx)}
+                                                aria-label="Remove item"
+                                                className="w-7 h-7 rounded-lg bg-slate-800 text-slate-400 hover:text-rose-400 flex items-center justify-center shrink-0"
+                                              >
+                                                <X className="w-3.5 h-3.5" />
+                                              </button>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
                           </div>
 
                           <div>
