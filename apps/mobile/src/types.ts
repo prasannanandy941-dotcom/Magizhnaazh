@@ -13,6 +13,24 @@ export interface User {
   avatarUrl?: string;
 }
 
+export interface VenuePackageDetails {
+  sessions?: string[];
+  hallType?: string;
+  hallTypePrice?: number;
+  hallClass?: string;
+  hallClassPrice?: number;
+  parking?: boolean;
+  powerBackup?: boolean;
+  bridalRoom?: boolean;
+  accommodationRooms?: number;
+  cateringPolicy?: string;
+  cateringImage?: string;
+  stageIncluded?: boolean;
+  valetService?: boolean;
+  featurePrices?: Record<string, number>;
+  featureImages?: Record<string, string>;
+}
+
 export interface VendorPackage {
   id: string;
   packageName: string;
@@ -20,6 +38,7 @@ export interface VendorPackage {
   description?: string;
   capacityPersons?: number;
   images?: string[];
+  venue?: VenuePackageDetails;
 }
 
 export interface LocationPoint {

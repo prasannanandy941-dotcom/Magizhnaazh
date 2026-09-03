@@ -7,7 +7,7 @@ import type { RouteProp } from '@react-navigation/native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import * as api from '../api';
 import { useAuth } from '../auth';
-import type { Vendor, VendorPackage, EventItem } from '../types';
+import type { Vendor, VendorPackage, VenuePackageDetails, EventItem } from '../types';
 import type { RootStackParamList, RootNav } from '../navTypes';
 import { colors, radius, space, fonts } from '../theme';
 
@@ -18,6 +18,41 @@ function advanceFor(vendor: Vendor, price: number): number {
   if (typeof flat === 'number' && flat > 0) return price > 0 ? Math.min(flat, price) : flat;
   const pct = vendor.policies?.advancePercentage ?? 20;
   return Math.round((price * pct) / 100);
+}
+
+// Compact hall spec shown under a Venue package: type/class (with prices),
+// sessions, catering (+ menu/sample image), and the offered Yes-features with
+// their optional prices and images.
+const VENUE_FEATURES: [keyof VenuePackageDetails | string, string][] = [
+  ['parking', 'Parking'], ['powerBackup', 'Power backup'], ['bridalRoom', 'Bridal/green room'],
+  ['stageIncluded', 'Stage'], ['valetService', 'Valet'],
+];
+function VenueDetails({ v }: { v: VenuePackageDetails }) {
+  const inr = (n?: number) => (n ? ` — ₹${n.toLocaleString('en-IN')}` : '');
+  const offered = VENUE_FEATURES.filter(([key]) => (v as any)[key] === true);
+  const featureImgs = offered.filter(([key]) => v.featureImages?.[key as string]);
+  return (
+    <View style={styles.venueBox}>
+      <View style={styles.venueChips}>
+        {!!v.hallType && <Text style={styles.venueChip}>{v.hallType}{inr(v.hallTypePrice)}</Text>}
+        {!!v.hallClass && <Text style={styles.venueChip}>{v.hallClass}{inr(v.hallClassPrice)}</Text>}
+        {(v.sessions || []).map((s) => <Text key={s} style={styles.venueSession}>{s}</Text>)}
+      </View>
+      {!!v.accommodationRooms && <Text style={styles.venueLine}>Accommodation rooms: {v.accommodationRooms}</Text>}
+      {!!v.cateringPolicy && <Text style={styles.venueLine}>Catering: {v.cateringPolicy}</Text>}
+      {!!v.cateringImage && <Image source={{ uri: v.cateringImage }} style={styles.venueImg} />}
+      {offered.length > 0 && (
+        <Text style={styles.venueLine}>
+          {offered.map(([key, label]) => `${label}${inr(v.featurePrices?.[key as string])}`).join(' · ')}
+        </Text>
+      )}
+      {featureImgs.length > 0 && (
+        <View style={styles.venueChips}>
+          {featureImgs.map(([key]) => <Image key={key as string} source={{ uri: v.featureImages![key as string] }} style={styles.venueImg} />)}
+        </View>
+      )}
+    </View>
+  );
 }
 
 export default function VendorDetailScreen() {
@@ -99,6 +134,7 @@ export default function VendorDetailScreen() {
                   <View style={{ flex: 1 }}>
                     <Text style={styles.pkgName}>{sel ? '✓ ' : ''}{p.packageName}</Text>
                     {!!p.description && <Text style={styles.pkgDesc} numberOfLines={2}>{p.description}</Text>}
+                    {vendor.category === 'Venue' && p.venue && <VenueDetails v={p.venue} />}
                   </View>
                   <Text style={styles.pkgPrice}>₹{(p.price || 0).toLocaleString('en-IN')}</Text>
                 </TouchableOpacity>
@@ -257,6 +293,12 @@ const styles = StyleSheet.create({
   pkgName: { fontSize: 15, fontWeight: '700', color: colors.text },
   pkgDesc: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
   pkgPrice: { fontSize: 15, fontWeight: '800', color: colors.gold, marginLeft: space.md },
+  venueBox: { marginTop: space.sm, paddingTop: space.sm, borderTopWidth: 1, borderTopColor: colors.border, gap: 4 },
+  venueChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, alignItems: 'center' },
+  venueChip: { fontSize: 11, color: colors.text, backgroundColor: colors.chipBg, borderColor: colors.border, borderWidth: 1, borderRadius: radius.sm, paddingHorizontal: 8, paddingVertical: 3 },
+  venueSession: { fontSize: 11, fontWeight: '700', color: colors.goldBright, backgroundColor: 'rgba(212,175,55,0.15)', borderRadius: radius.sm, paddingHorizontal: 8, paddingVertical: 3 },
+  venueLine: { fontSize: 11, color: colors.textMuted },
+  venueImg: { width: 64, height: 64, borderRadius: radius.sm, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surfaceAlt },
   hint: { fontSize: 12, color: colors.textMuted, marginBottom: space.sm },
   pkgSel: { borderColor: colors.primary, borderWidth: 2, backgroundColor: colors.surfaceAlt },
   footer: {

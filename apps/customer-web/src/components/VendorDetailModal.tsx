@@ -1102,16 +1102,18 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                       {vendor.category === 'Venue' && pkg.venue && (() => {
                         const v = pkg.venue;
                         const chip = 'text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200';
-                        const amenities: [string, boolean | undefined][] = [
-                          ['Parking', v.parking], ['Power backup', v.powerBackup], ['Bridal/green room', v.bridalRoom],
-                          ['Stage', v.stageIncluded], ['Valet', v.valetService],
+                        const inr = (n?: number) => (n ? ` — ₹${n.toLocaleString('en-IN')}` : '');
+                        const amenities: [string, boolean | undefined, string][] = [
+                          ['Parking', v.parking, 'parking'], ['Power backup', v.powerBackup, 'powerBackup'], ['Bridal/green room', v.bridalRoom, 'bridalRoom'],
+                          ['Stage', v.stageIncluded, 'stageIncluded'], ['Valet', v.valetService, 'valetService'],
                         ];
+                        const featureImgs = amenities.filter(([, val, key]) => val && v.featureImages?.[key]) as [string, boolean, string][];
                         return (
                           <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2" onClick={(e) => e.stopPropagation()}>
                             <span className="text-[10px] font-bold text-slate-400 uppercase block">Hall details</span>
                             <div className="flex flex-wrap gap-1.5">
-                              {v.hallType && <span className={chip}>{v.hallType}</span>}
-                              {v.hallClass && <span className={chip}>{v.hallClass}</span>}
+                              {v.hallType && <span className={chip}>{v.hallType}{inr(v.hallTypePrice)}</span>}
+                              {v.hallClass && <span className={chip}>{v.hallClass}{inr(v.hallClassPrice)}</span>}
                               {(v.sessions || []).map((s) => <span key={s} className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-200 font-bold">{s}</span>)}
                             </div>
                             <div className="space-y-1 text-[11px] text-slate-300">
@@ -1119,10 +1121,23 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                               {v.accommodationRooms ? <div>Accommodation rooms: <span className="text-white font-semibold">{v.accommodationRooms}</span></div> : null}
                               {v.cateringPolicy ? <div>Catering: {v.cateringPolicy}</div> : null}
                             </div>
+                            {v.cateringImage && (
+                              <div>
+                                <span className="text-[10px] text-slate-400">{v.cateringPolicy === 'In-house only' ? 'Menu' : 'Catering'}</span>
+                                <img src={v.cateringImage} alt="Catering" className="mt-1 w-20 h-20 rounded-lg object-cover border border-slate-800" />
+                              </div>
+                            )}
                             {amenities.some(([, val]) => val !== undefined) && (
                               <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px]">
-                                {amenities.filter(([, val]) => val !== undefined).map(([label, val]) => (
-                                  <span key={label} className="text-slate-400">{label}: <b className={val ? 'text-emerald-400' : 'text-slate-500'}>{val ? 'Yes' : 'No'}</b></span>
+                                {amenities.filter(([, val]) => val !== undefined).map(([label, val, key]) => (
+                                  <span key={label} className="text-slate-400">{label}: <b className={val ? 'text-emerald-400' : 'text-slate-500'}>{val ? 'Yes' : 'No'}</b>{val ? inr(v.featurePrices?.[key]) : ''}</span>
+                                ))}
+                              </div>
+                            )}
+                            {featureImgs.length > 0 && (
+                              <div className="flex flex-wrap gap-2">
+                                {featureImgs.map(([label, , key]) => (
+                                  <img key={key} src={v.featureImages![key]} alt={label} title={label} className="w-16 h-16 rounded-lg object-cover border border-slate-800" />
                                 ))}
                               </div>
                             )}

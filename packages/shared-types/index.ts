@@ -407,15 +407,32 @@ export const DECORATION_FLOWER_TYPES = ['Fresh', 'Artificial'] as const;
 export interface VenuePackageDetails {
   sessions?: string[]; // Morning / Evening / Full Day (priced per session)
   hallType?: string; // AC / Non-AC
+  hallTypePrice?: number; // price for the chosen hall type
   hallClass?: string; // Premium / Normal
+  hallClassPrice?: number; // price for the chosen hall class
   parking?: boolean;
   powerBackup?: boolean; // power backup / generator
   bridalRoom?: boolean; // bridal / green room
   accommodationRooms?: number;
   cateringPolicy?: string; // In-house only / External allowed
+  cateringImage?: string; // In-house only → menu photo; External allowed → sample image
   stageIncluded?: boolean;
   valetService?: boolean; // valet / parking service
+  // For each "Yes" feature (parking, powerBackup, bridalRoom, stageIncluded,
+  // valetService): an optional price and an optional uploaded image, keyed by
+  // the feature field name.
+  featurePrices?: Record<string, number>;
+  featureImages?: Record<string, string>;
 }
+
+// The Yes/No hall features that carry an optional price + image when offered.
+export const VENUE_FEATURES = [
+  ['parking', 'Parking available'],
+  ['powerBackup', 'Power backup / generator'],
+  ['bridalRoom', 'Bridal / green room'],
+  ['stageIncluded', 'Stage included'],
+  ['valetService', 'Valet / parking service'],
+] as const;
 
 // Option sets for the Venue package form.
 export const VENUE_SESSIONS = ['Morning', 'Evening', 'Full Day'] as const;

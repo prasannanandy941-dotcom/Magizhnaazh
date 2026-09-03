@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Store, Star, Upload, Check, LogOut, Loader2, Plus, SlidersHorizontal, ChevronDown, Receipt, X, Bell, ShieldCheck, Clock as ClockIcon, AlertCircle, FileText, CalendarDays, Sparkles } from 'lucide-react';
-import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, VendorDeal, OfferedOptionItem, CateringFoodItem, CateringCourseItem, VENDOR_CATEGORIES, CATEGORY_OPTIONS, CATERING_OPTION_STYLE, MEDIA_QUALITY_OPTIONS, MEDIA_EQUIPMENT_OPTIONS, mediaExtraField, isDealLive, CATERING_MENU_TIERS, CATERING_FOOD_TYPES, CATERING_CUISINES, CATERING_COURSES, CATERING_LIVE_COUNTERS, CATERING_SERVICE_STYLES, BUFFET_PLATE_TYPES, BANANA_LEAF_TYPES, slotLabelWithTime, AVAILABILITY_SLOTS, offeredSlotIds, VENUE_SESSIONS, VENUE_HALL_TYPES, VENUE_HALL_CLASSES, VENUE_CATERING_POLICIES, DECORATION_TIERS, DECORATION_THEMES, DECORATION_AREAS, DECORATION_FLOWER_TYPES, MAKEUP_TYPES, MAKEUP_FINISHES, MEDIA_TIERS, MEDIA_COVERAGE, MEDIA_STYLES, TRANSPORT_TIERS, TRANSPORT_VEHICLE_TYPES, TRANSPORT_PRICING_BASIS, TRANSPORT_USES, PRIEST_CEREMONY_TYPES, PRIEST_LANGUAGES, INVITATION_TIERS, INVITATION_TYPES, INVITATION_DESIGNS, INVITATION_ADDONS, INVITATION_LANGUAGES, PRINTING_PRODUCTS, PRINTING_FINISHES, RETURN_GIFTS_TIERS, RETURN_GIFT_TYPES, ENTERTAINMENT_ACT_TYPES, MUSIC_DJ_TIERS, MUSIC_DJ_TYPES, MUSIC_DJ_VENUE_TYPES, LIGHTING_TIERS, LIGHTING_TYPES, FLOWERS_VARIETIES, FLOWERS_ITEMS, FLOWERS_KINDS, MEHENDI_TIERS, MEHENDI_TYPES, MEHENDI_INTRICACY, EVENT_HOST_EVENT_TYPES, EVENT_HOST_LANGUAGES, EVENT_HOST_MODES, SECURITY_TYPES, SECURITY_GENDERS, RENTAL_ITEMS, UTENSILS_MATERIALS, UTENSILS_VESSEL_TYPES, WEDDING_PLANNER_SCOPES, CORPORATE_EVENT_TYPES, CORPORATE_ADDONS } from '../../../packages/shared-types';
+import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, VendorDeal, OfferedOptionItem, CateringFoodItem, CateringCourseItem, VENDOR_CATEGORIES, CATEGORY_OPTIONS, CATERING_OPTION_STYLE, MEDIA_QUALITY_OPTIONS, MEDIA_EQUIPMENT_OPTIONS, mediaExtraField, isDealLive, CATERING_MENU_TIERS, CATERING_FOOD_TYPES, CATERING_CUISINES, CATERING_COURSES, CATERING_LIVE_COUNTERS, CATERING_SERVICE_STYLES, BUFFET_PLATE_TYPES, BANANA_LEAF_TYPES, slotLabelWithTime, AVAILABILITY_SLOTS, offeredSlotIds, VENUE_SESSIONS, VENUE_HALL_TYPES, VENUE_HALL_CLASSES, VENUE_CATERING_POLICIES, VENUE_FEATURES, DECORATION_TIERS, DECORATION_THEMES, DECORATION_AREAS, DECORATION_FLOWER_TYPES, MAKEUP_TYPES, MAKEUP_FINISHES, MEDIA_TIERS, MEDIA_COVERAGE, MEDIA_STYLES, TRANSPORT_TIERS, TRANSPORT_VEHICLE_TYPES, TRANSPORT_PRICING_BASIS, TRANSPORT_USES, PRIEST_CEREMONY_TYPES, PRIEST_LANGUAGES, INVITATION_TIERS, INVITATION_TYPES, INVITATION_DESIGNS, INVITATION_ADDONS, INVITATION_LANGUAGES, PRINTING_PRODUCTS, PRINTING_FINISHES, RETURN_GIFTS_TIERS, RETURN_GIFT_TYPES, ENTERTAINMENT_ACT_TYPES, MUSIC_DJ_TIERS, MUSIC_DJ_TYPES, MUSIC_DJ_VENUE_TYPES, LIGHTING_TIERS, LIGHTING_TYPES, FLOWERS_VARIETIES, FLOWERS_ITEMS, FLOWERS_KINDS, MEHENDI_TIERS, MEHENDI_TYPES, MEHENDI_INTRICACY, EVENT_HOST_EVENT_TYPES, EVENT_HOST_LANGUAGES, EVENT_HOST_MODES, SECURITY_TYPES, SECURITY_GENDERS, RENTAL_ITEMS, UTENSILS_MATERIALS, UTENSILS_VESSEL_TYPES, WEDDING_PLANNER_SCOPES, CORPORATE_EVENT_TYPES, CORPORATE_ADDONS } from '../../../packages/shared-types';
 import { STATIC_CITY_GROUPS } from '../../../packages/shared-utils';
 import { AuthGate } from './components/AuthGate';
 import { FloralGoldBackground } from './components/FloralGoldBackground';
@@ -1646,6 +1646,54 @@ export function App() {
       const next = current.includes(session) ? current.filter((x) => x !== session) : [...current, session];
       return { ...p, venue: { ...(p.venue || {}), sessions: next } };
     }));
+  // Price for one "Yes" hall feature (parking, powerBackup, …), stored in the
+  // venue.featurePrices map keyed by the feature field name.
+  const setVenueFeaturePrice = (pkgId: string, field: string, value: number | undefined) =>
+    setPackages((prev) => prev.map((p) => {
+      if (p.id !== pkgId) return p;
+      const prices = { ...(p.venue?.featurePrices || {}) };
+      if (value === undefined) delete prices[field]; else prices[field] = value;
+      return { ...p, venue: { ...(p.venue || {}), featurePrices: prices } };
+    }));
+  // Upload an image for a venue hall — either a feature's photo (slot = the
+  // feature field) or the catering menu/sample (slot = 'catering'). Reuses the
+  // shared uploads endpoint. Busy key is `${pkgId}:${slot}`.
+  const [uploadingVenueImg, setUploadingVenueImg] = useState<string | null>(null);
+  const uploadVenueImage = async (pkgId: string, slot: string, file: File) => {
+    if (!token) return;
+    setUploadingVenueImg(`${pkgId}:${slot}`);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch(`${GATEWAY_URL}/api/v1/uploads`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+      const json = await res.json().catch(() => ({}));
+      if (json?.data?.fileUrl) {
+        if (slot === 'catering') {
+          updatePackageVenue(pkgId, 'cateringImage', json.data.fileUrl);
+        } else {
+          setPackages((prev) => prev.map((p) => (p.id === pkgId
+            ? { ...p, venue: { ...(p.venue || {}), featureImages: { ...(p.venue?.featureImages || {}), [slot]: json.data.fileUrl } } }
+            : p)));
+        }
+      }
+    } catch {
+      /* upload is best-effort; vendor can retry */
+    } finally {
+      setUploadingVenueImg(null);
+    }
+  };
+  const removeVenueImage = (pkgId: string, slot: string) =>
+    setPackages((prev) => prev.map((p) => {
+      if (p.id !== pkgId) return p;
+      if (slot === 'catering') return { ...p, venue: { ...(p.venue || {}), cateringImage: undefined } };
+      const imgs = { ...(p.venue?.featureImages || {}) };
+      delete imgs[slot];
+      return { ...p, venue: { ...(p.venue || {}), featureImages: imgs } };
+    }));
 
   // Decoration packages carry structured details (theme, areas, flowers, etc.).
   const updatePackageDecoration = (pkgId: string, field: string, value: any) =>
@@ -1996,10 +2044,16 @@ export function App() {
     setSavingPackages(true);
     setPackagesNotice('');
     try {
-      const res = await updateVendor(token, myVendor.id, { packages: cleaned } as any);
+      // Venue edits its event-services tiers here (no facilities tab), so
+      // persist `facilities` alongside the halls for that category.
+      const payload: any = myVendor.category === 'Venue'
+        ? { packages: cleaned, facilities }
+        : { packages: cleaned };
+      const res = await updateVendor(token, myVendor.id, payload);
       if (res.data?.vendor) {
         setMyVendor(res.data.vendor);
         setPackages(res.data.vendor.packages || []);
+        if (myVendor.category === 'Venue') setFacilities(res.data.vendor.facilities || {});
       }
       setPackagesNotice('Packages saved — customers see these on your listing.');
     } catch (err: any) {
@@ -2487,7 +2541,9 @@ export function App() {
           {[
             { key: 'dashboard', label: 'Bookings & Quotes' },
             { key: 'reviews', label: `Reviews${reviews.length ? ` (${reviews.length})` : ''}` },
-            { key: 'facilities', label: facilitiesSectionLabel(myVendor?.category) },
+            // Venue's event-services live inside the Halls tab, so it has no
+            // separate "Hall Facilities" tab.
+            ...(myVendor?.category !== 'Venue' ? [{ key: 'facilities', label: facilitiesSectionLabel(myVendor?.category) }] : []),
             ...(myVendor?.category !== 'Wedding Planner' ? [{ key: 'packages', label: `${myVendor?.category === 'Venue' ? 'Halls' : 'Packages'}${packages.length ? ` (${packages.length})` : ''}` }] : []),
             ...(myVendor?.category !== 'Security' ? [{ key: 'offers', label: `Offers${deals.length ? ` (${deals.length})` : ''}` }] : []),
             { key: 'availability', label: 'Availability' },
@@ -3257,6 +3313,30 @@ export function App() {
               </p>
             </div>
 
+            {/* Event services — a Venue-wide setting (not per-hall). Lives here
+                in the Halls tab since Venue has no separate facilities tab. */}
+            {myVendor?.category === 'Venue' && (
+              <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4">
+                <p className="text-xs font-bold text-amber-400 uppercase mb-3">Event services</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {SERVICE_TIERS.map((s) => (
+                    <div key={s.key} className="flex items-center justify-between gap-2 p-3 rounded-xl bg-slate-950 border border-slate-800">
+                      <span className="text-sm text-slate-200">{s.label}</span>
+                      <select
+                        value={(facilities[s.key] as string) || 'not_offered'}
+                        onChange={(e) => setServiceTier(s.key, e.target.value)}
+                        className="bg-slate-950 text-slate-200 border border-slate-800 rounded-lg px-2 py-1.5 text-xs"
+                      >
+                        <option value="included">Included</option>
+                        <option value="extra_cost">Available (extra cost)</option>
+                        <option value="not_offered">Not offered</option>
+                      </select>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {packages.length === 0 && (
               <p className="text-xs text-slate-500">{myVendor?.category === 'Venue' ? 'No halls yet — add your first function hall below.' : 'No packages yet — add your first one below.'}</p>
             )}
@@ -3288,7 +3368,7 @@ export function App() {
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <label className="block text-[10px] text-slate-400 uppercase font-bold">
-                          {myVendor?.category === 'Catering' ? 'Total amount (₹)' : myVendor?.category === 'Security' ? 'Price per guard / shift (₹)' : myVendor?.category === 'Venue' ? 'Price per session (₹)' : myVendor?.category === 'Decoration' ? 'Price per function (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Price per look / function (₹)' : myVendor?.category === 'Media' ? 'Price per event / day (₹)' : myVendor?.category === 'Transport' ? 'Price per vehicle (₹)' : myVendor?.category === 'Pujari/Priest' ? 'Price per ceremony (₹)' : myVendor?.category === 'Invitation' ? 'Price per design / quantity (₹)' : myVendor?.category === 'Printing' ? 'Price per quantity (₹)' : myVendor?.category === 'Return Gifts' ? 'Price per piece (₹)' : myVendor?.category === 'Entertainment' ? 'Price per act / hour (₹)' : myVendor?.category === 'Music/DJ' ? 'Price per event / hour (₹)' : myVendor?.category === 'Lighting' ? 'Price per function (₹)' : myVendor?.category === 'Flowers' ? 'Price per item / function (₹)' : myVendor?.category === 'Mehendi' ? 'Price per bride (₹)' : myVendor?.category === 'Event Host/Anchor' ? 'Price per event (₹)' : myVendor?.category === 'Rental Equipment' ? 'Per-day rate (₹)' : myVendor?.category === 'Utensils for Rent' ? 'Total price (₹)' : myVendor?.category === 'Wedding Planner' ? 'Price per package / function (₹)' : myVendor?.category === 'Corporate Event Services' ? 'Price per total event (₹)' : 'Price (₹)'}
+                          {myVendor?.category === 'Catering' ? 'Total amount (₹)' : myVendor?.category === 'Security' ? 'Price per guard / shift (₹)' : myVendor?.category === 'Venue' ? 'Total amount (₹)' : myVendor?.category === 'Decoration' ? 'Price per function (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Price per look / function (₹)' : myVendor?.category === 'Media' ? 'Price per event / day (₹)' : myVendor?.category === 'Transport' ? 'Price per vehicle (₹)' : myVendor?.category === 'Pujari/Priest' ? 'Price per ceremony (₹)' : myVendor?.category === 'Invitation' ? 'Price per design / quantity (₹)' : myVendor?.category === 'Printing' ? 'Price per quantity (₹)' : myVendor?.category === 'Return Gifts' ? 'Price per piece (₹)' : myVendor?.category === 'Entertainment' ? 'Price per act / hour (₹)' : myVendor?.category === 'Music/DJ' ? 'Price per event / hour (₹)' : myVendor?.category === 'Lighting' ? 'Price per function (₹)' : myVendor?.category === 'Flowers' ? 'Price per item / function (₹)' : myVendor?.category === 'Mehendi' ? 'Price per bride (₹)' : myVendor?.category === 'Event Host/Anchor' ? 'Price per event (₹)' : myVendor?.category === 'Rental Equipment' ? 'Per-day rate (₹)' : myVendor?.category === 'Utensils for Rent' ? 'Total price (₹)' : myVendor?.category === 'Wedding Planner' ? 'Price per package / function (₹)' : myVendor?.category === 'Corporate Event Services' ? 'Price per total event (₹)' : 'Price (₹)'}
                         </label>
                         {myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 && (
                           <span className="text-[10px] text-amber-400 font-bold">
@@ -4201,6 +4281,19 @@ export function App() {
                                   <button type="button" key={t} onClick={() => updatePackageVenue(p.id, 'hallType', t)} className={catChip(p.venue?.hallType === t)}>{t}</button>
                                 ))}
                               </div>
+                              {p.venue?.hallType && (
+                                <div className="mt-2 flex items-center gap-1 px-2 rounded-lg bg-slate-950 border border-slate-800">
+                                  <span className="text-slate-500 text-xs">₹</span>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    value={p.venue?.hallTypePrice ?? ''}
+                                    onChange={(e) => updatePackageVenue(p.id, 'hallTypePrice', e.target.value === '' ? undefined : Number(e.target.value))}
+                                    placeholder={`Price for ${p.venue.hallType}`}
+                                    className="flex-1 py-2 bg-transparent text-white text-xs focus:outline-none"
+                                  />
+                                </div>
+                              )}
                             </div>
                             <div>
                               <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Hall Class</label>
@@ -4209,6 +4302,19 @@ export function App() {
                                   <button type="button" key={c} onClick={() => updatePackageVenue(p.id, 'hallClass', c)} className={catChip(p.venue?.hallClass === c)}>{c}</button>
                                 ))}
                               </div>
+                              {p.venue?.hallClass && (
+                                <div className="mt-2 flex items-center gap-1 px-2 rounded-lg bg-slate-950 border border-slate-800">
+                                  <span className="text-slate-500 text-xs">₹</span>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    value={p.venue?.hallClassPrice ?? ''}
+                                    onChange={(e) => updatePackageVenue(p.id, 'hallClassPrice', e.target.value === '' ? undefined : Number(e.target.value))}
+                                    placeholder={`Price for ${p.venue.hallClass}`}
+                                    className="flex-1 py-2 bg-transparent text-white text-xs focus:outline-none"
+                                  />
+                                </div>
+                              )}
                             </div>
                           </div>
 
@@ -4225,17 +4331,70 @@ export function App() {
                                 <option value="">Select…</option>
                                 {VENUE_CATERING_POLICIES.map((c) => (<option key={c} value={c}>{c}</option>))}
                               </select>
+                              {p.venue?.cateringPolicy && (
+                                <div className="mt-2 flex items-center gap-2">
+                                  {p.venue?.cateringImage && (
+                                    <div className="relative">
+                                      <img src={p.venue.cateringImage} alt="Catering" className="w-12 h-12 rounded-lg object-cover border border-slate-800" />
+                                      <button type="button" onClick={() => removeVenueImage(p.id, 'catering')}
+                                        className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-slate-800 text-slate-300 hover:text-rose-400 flex items-center justify-center" aria-label="Remove image">
+                                        <X className="w-2.5 h-2.5" />
+                                      </button>
+                                    </div>
+                                  )}
+                                  <label className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:border-slate-700 text-[11px] font-bold cursor-pointer transition-colors">
+                                    {uploadingVenueImg === `${p.id}:catering` ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
+                                    {p.venue.cateringPolicy === 'In-house only'
+                                      ? (p.venue?.cateringImage ? 'Replace menu' : 'Upload menu')
+                                      : (p.venue?.cateringImage ? 'Replace image' : 'Upload image')}
+                                    <input type="file" accept="image/*" className="hidden" disabled={!!uploadingVenueImg}
+                                      onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadVenueImage(p.id, 'catering', f); e.target.value = ''; }} />
+                                  </label>
+                                </div>
+                              )}
                             </div>
                           </div>
 
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            {([['parking', 'Parking available'], ['powerBackup', 'Power backup / generator'], ['bridalRoom', 'Bridal / green room'], ['stageIncluded', 'Stage included'], ['valetService', 'Valet / parking service']] as const).map(([field, label]) => (
-                              <div key={field}>
+                            {VENUE_FEATURES.map(([field, label]) => (
+                              <div key={field} className="rounded-lg border border-slate-800/70 bg-slate-950/30 p-2">
                                 <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">{label}</label>
                                 <div className="flex gap-1.5">
                                   <button type="button" onClick={() => updatePackageVenue(p.id, field, true)} className={catChip((p.venue as any)?.[field] === true)}>Yes</button>
                                   <button type="button" onClick={() => updatePackageVenue(p.id, field, false)} className={catChip((p.venue as any)?.[field] === false)}>No</button>
                                 </div>
+                                {(p.venue as any)?.[field] === true && (
+                                  <div className="mt-2 space-y-2">
+                                    <div className="flex items-center gap-1 px-2 rounded-lg bg-slate-950 border border-slate-800">
+                                      <span className="text-slate-500 text-xs">₹</span>
+                                      <input
+                                        type="number"
+                                        min={0}
+                                        value={p.venue?.featurePrices?.[field] ?? ''}
+                                        onChange={(e) => setVenueFeaturePrice(p.id, field, e.target.value === '' ? undefined : Number(e.target.value))}
+                                        placeholder="Price (optional)"
+                                        className="flex-1 py-1.5 bg-transparent text-white text-xs focus:outline-none"
+                                      />
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      {p.venue?.featureImages?.[field] && (
+                                        <div className="relative">
+                                          <img src={p.venue.featureImages[field]} alt={label} className="w-10 h-10 rounded-lg object-cover border border-slate-800" />
+                                          <button type="button" onClick={() => removeVenueImage(p.id, field)}
+                                            className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-slate-800 text-slate-300 hover:text-rose-400 flex items-center justify-center" aria-label="Remove image">
+                                            <X className="w-2.5 h-2.5" />
+                                          </button>
+                                        </div>
+                                      )}
+                                      <label className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:border-slate-700 text-[11px] font-bold cursor-pointer transition-colors">
+                                        {uploadingVenueImg === `${p.id}:${field}` ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
+                                        {p.venue?.featureImages?.[field] ? 'Replace' : 'Upload image'}
+                                        <input type="file" accept="image/*" className="hidden" disabled={!!uploadingVenueImg}
+                                          onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadVenueImage(p.id, field, f); e.target.value = ''; }} />
+                                      </label>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             ))}
                           </div>
