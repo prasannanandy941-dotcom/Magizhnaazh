@@ -1043,12 +1043,23 @@ export function App() {
           };
         }
       }
+      let nextCuisineItems = p.catering?.cuisineItems;
+      if (field === 'cuisines' && !isRemoving) {
+        const existingForCuisine = nextCuisineItems?.[item] || [];
+        if (existingForCuisine.length === 0) {
+          nextCuisineItems = {
+            ...(nextCuisineItems || {}),
+            [item]: [{ name: '', price: 0 }],
+          };
+        }
+      }
       return {
         ...p,
         catering: {
           ...(p.catering || {}),
           [field]: next,
           ...(nextFoodTypeItems !== undefined ? { foodTypeItems: nextFoodTypeItems } : {}),
+          ...(nextCuisineItems !== undefined ? { cuisineItems: nextCuisineItems } : {}),
         },
       };
     }));
@@ -1117,6 +1128,76 @@ export function App() {
             foodTypeItems: {
               ...currentItems,
               [foodType]: nextList,
+            },
+          },
+        };
+      })
+    );
+
+  const addCateringCuisineItem = (pkgId: string, cuisine: string) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const currentCatering = p.catering || {};
+        const currentItems = currentCatering.cuisineItems || {};
+        const list = currentItems[cuisine] || [];
+        return {
+          ...p,
+          catering: {
+            ...currentCatering,
+            cuisineItems: {
+              ...currentItems,
+              [cuisine]: [...list, { name: '', price: 0 }],
+            },
+          },
+        };
+      })
+    );
+
+  const updateCateringCuisineItem = (
+    pkgId: string,
+    cuisine: string,
+    idx: number,
+    field: 'name' | 'price',
+    val: any
+  ) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const currentCatering = p.catering || {};
+        const currentItems = currentCatering.cuisineItems || {};
+        const list = currentItems[cuisine] || [];
+        const nextList = list.map((it, i) =>
+          i === idx ? { ...it, [field]: field === 'price' ? (val === '' ? undefined : Number(val)) : val } : it
+        );
+        return {
+          ...p,
+          catering: {
+            ...currentCatering,
+            cuisineItems: {
+              ...currentItems,
+              [cuisine]: nextList,
+            },
+          },
+        };
+      })
+    );
+
+  const removeCateringCuisineItem = (pkgId: string, cuisine: string, idx: number) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const currentCatering = p.catering || {};
+        const currentItems = currentCatering.cuisineItems || {};
+        const list = currentItems[cuisine] || [];
+        const nextList = list.filter((_, i) => i !== idx);
+        return {
+          ...p,
+          catering: {
+            ...currentCatering,
+            cuisineItems: {
+              ...currentItems,
+              [cuisine]: nextList,
             },
           },
         };
@@ -1426,17 +1507,27 @@ export function App() {
           const calc = utensilsTotal(p.utensils);
           return { ...p, price: calc > 0 ? calc : (p.price || 0) };
         }
-        if (myVendor.category === 'Catering' && p.catering?.foodTypeItems) {
-          const cleanedItems: Record<string, any[]> = {};
-          for (const [ft, items] of Object.entries(p.catering.foodTypeItems)) {
-            const valid = (items || []).filter((it: any) => it && it.name && it.name.trim());
-            if (valid.length > 0) cleanedItems[ft] = valid;
+        if (myVendor.category === 'Catering' && (p.catering?.foodTypeItems || p.catering?.cuisineItems)) {
+          const cleanedFoodItems: Record<string, any[]> = {};
+          if (p.catering?.foodTypeItems) {
+            for (const [ft, items] of Object.entries(p.catering.foodTypeItems)) {
+              const valid = (items || []).filter((it: any) => it && it.name && it.name.trim());
+              if (valid.length > 0) cleanedFoodItems[ft] = valid;
+            }
+          }
+          const cleanedCuisineItems: Record<string, any[]> = {};
+          if (p.catering?.cuisineItems) {
+            for (const [c, items] of Object.entries(p.catering.cuisineItems)) {
+              const valid = (items || []).filter((it: any) => it && it.name && it.name.trim());
+              if (valid.length > 0) cleanedCuisineItems[c] = valid;
+            }
           }
           return {
             ...p,
             catering: {
               ...p.catering,
-              foodTypeItems: cleanedItems,
+              foodTypeItems: cleanedFoodItems,
+              cuisineItems: cleanedCuisineItems,
             },
           };
         }
@@ -3029,6 +3120,87 @@ export function App() {
                                 <button type="button" key={c} onClick={() => toggleCateringOption(p.id, 'cuisines', c)} className={catChip((p.catering?.cuisines || []).includes(c))}>{c}</button>
                               ))}
                             </div>
+
+                            {/* Cuisine items & rate editor per selected cuisine */}
+                            {(p.catering?.cuisines || []).length > 0 && (
+                              <div className="mt-3 space-y-3">
+                                {CATERING_CUISINES.filter((c) => (p.catering?.cuisines || []).includes(c)).map((c) => {
+                                  const items = p.catering?.cuisineItems?.[c] || [];
+                                  const placeholder =
+                                    c === 'South Indian' ? 'Item name — e.g. Masala Dosa, Idli Sambar, Medu Vada' :
+                                    c === 'Chettinad' ? 'Item name — e.g. Chettinad Chicken, Kozhi Varuval, Pepper Mutton' :
+                                    c === 'North Indian' ? 'Item name — e.g. Dal Makhani, Butter Naan, Paneer Tikka' :
+                                    'Item name — e.g. Pasta Alfredo, Garlic Bread, Lasagna';
+
+                                  return (
+                                    <div key={c} className="p-3 rounded-xl border border-indigo-500/30 bg-indigo-950/20 space-y-2.5">
+                                      <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-1.5">
+                                          <span className="w-2 h-2 rounded-full bg-indigo-400" />
+                                          <span className="text-[11px] font-bold uppercase tracking-wide text-indigo-300">{c} Items</span>
+                                          {items.length > 0 && (
+                                            <span className="text-[10px] text-slate-400">({items.length})</span>
+                                          )}
+                                        </div>
+                                        <button
+                                          type="button"
+                                          onClick={() => addCateringCuisineItem(p.id, c)}
+                                          className="flex items-center gap-1 text-xs font-bold text-amber-400 hover:text-amber-300"
+                                        >
+                                          <Plus className="w-3.5 h-3.5" /> Add item
+                                        </button>
+                                      </div>
+
+                                      {items.length === 0 ? (
+                                        <div className="py-2.5 px-3 rounded-lg bg-slate-950/60 border border-dashed border-slate-800 text-center">
+                                          <p className="text-xs text-slate-400 mb-1.5">No {c.toLowerCase()} items added yet.</p>
+                                          <button
+                                            type="button"
+                                            onClick={() => addCateringCuisineItem(p.id, c)}
+                                            className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 font-semibold"
+                                          >
+                                            <Plus className="w-3.5 h-3.5" /> Add {c} item
+                                          </button>
+                                        </div>
+                                      ) : (
+                                        <div className="space-y-2">
+                                          {items.map((item, itemIdx) => (
+                                            <div key={itemIdx} className="flex items-center gap-2">
+                                              <input
+                                                type="text"
+                                                value={item.name}
+                                                onChange={(e) => updateCateringCuisineItem(p.id, c, itemIdx, 'name', e.target.value)}
+                                                placeholder={placeholder}
+                                                className="flex-1 p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-xs"
+                                              />
+                                              <div className="flex items-center gap-1 px-2 rounded-lg bg-slate-950 border border-slate-800">
+                                                <span className="text-slate-500 text-xs">₹</span>
+                                                <input
+                                                  type="number"
+                                                  min={0}
+                                                  value={item.price === 0 ? '' : (item.price || '')}
+                                                  onChange={(e) => updateCateringCuisineItem(p.id, c, itemIdx, 'price', e.target.value)}
+                                                  placeholder="Price"
+                                                  className="w-20 py-2 bg-transparent text-white text-xs focus:outline-none"
+                                                />
+                                              </div>
+                                              <button
+                                                type="button"
+                                                onClick={() => removeCateringCuisineItem(p.id, c, itemIdx)}
+                                                aria-label="Remove item"
+                                                className="w-7 h-7 rounded-lg bg-slate-800 text-slate-400 hover:text-rose-400 flex items-center justify-center shrink-0"
+                                              >
+                                                <X className="w-3.5 h-3.5" />
+                                              </button>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
                           </div>
 
                           <div>

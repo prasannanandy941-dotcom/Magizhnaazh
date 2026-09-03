@@ -928,6 +928,36 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                                 })}
                               </div>
                             )}
+                            {/* Items & prices per cuisine */}
+                            {c.cuisineItems && Object.entries(c.cuisineItems).some(([_, its]) => (its || []).some((it) => it.name && it.name.trim())) && (
+                              <div className="mt-2.5 pt-2.5 border-t border-slate-800/80 space-y-2">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase block">Cuisine Items & Rates</span>
+                                {Object.entries(c.cuisineItems).map(([type, its]) => {
+                                  const list = (its || []).filter((it) => it.name && it.name.trim());
+                                  if (list.length === 0) return null;
+                                  return (
+                                    <div key={type} className="space-y-1">
+                                      <div className="flex items-center gap-1.5">
+                                        <span className="w-2 h-2 rounded-full bg-indigo-400" />
+                                        <span className="text-[10px] font-bold uppercase text-indigo-300">
+                                          {type} Items ({list.length})
+                                        </span>
+                                      </div>
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                                        {list.map((it, idx) => (
+                                          <div key={idx} className="flex items-center justify-between text-[11px] bg-slate-950/70 px-2.5 py-1.5 rounded-lg border border-slate-800/70">
+                                            <span className="text-slate-200 font-medium">{it.name}</span>
+                                            {it.price !== undefined && it.price > 0 && (
+                                              <span className="font-bold text-amber-400">₹{it.price.toLocaleString('en-IN')}</span>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
                             {incl.some(([, v]) => v !== undefined) && (
                               <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px]">
                                 {incl.filter(([, v]) => v !== undefined).map(([label, v]) => (

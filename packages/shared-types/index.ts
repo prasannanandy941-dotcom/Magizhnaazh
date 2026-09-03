@@ -433,6 +433,7 @@ export interface CateringPackageDetails {
   foodTypes?: string[]; // Veg / Non-Veg / Jain
   foodTypeItems?: Record<string, CateringFoodItem[]>; // item names and rates per food type (Veg, Non-Veg, Jain)
   cuisines?: string[]; // South Indian, Chettinad, North Indian, Continental
+  cuisineItems?: Record<string, CateringFoodItem[]>; // item names and rates per cuisine (South Indian, Chettinad, North Indian, Continental)
   starters?: number; // number of starter dishes
   mains?: number; // number of main-course dishes
   desserts?: number; // number of desserts
