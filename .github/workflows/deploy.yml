@@ -75,4 +75,7 @@ jobs:
             done
             pm2 save
 
+            echo "==> Reloading nginx"
+            nginx -s reload || sudo nginx -s reload || echo "  (skip: nginx reload)"
+
             echo "==> Deploy complete"
