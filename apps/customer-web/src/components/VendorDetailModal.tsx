@@ -1420,31 +1420,34 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                       })()}
 
                       {vendor.category === 'Pujari/Priest' && pkg.priest && (() => {
-                        const pr = pkg.priest;
+                        const pr: any = pkg.priest;
                         const chip = 'text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200';
-                        const incl: [string, boolean | undefined][] = [
-                          ['Samagri included', pr.samagriIncluded], ['Muhurtham consult', pr.muhurthamConsult],
-                        ];
+                        const inr = (n: any) => (Number(n) === 0 ? 'Included' : `₹${Number(n).toLocaleString('en-IN')}`);
+                        const ceremonies: string[] = pr.ceremonyTypePrices ? Object.keys(pr.ceremonyTypePrices) : (pr.ceremonyType ? [pr.ceremonyType] : []);
                         return (
-                          <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2" onClick={(e) => e.stopPropagation()}>
+                          <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2.5" onClick={(e) => e.stopPropagation()}>
                             <span className="text-[10px] font-bold text-slate-400 uppercase block">Ceremony details</span>
                             <div className="flex flex-wrap gap-1.5">
-                              {pr.ceremonyType && <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-200 font-bold">{pr.ceremonyType}</span>}
                               {pr.community && <span className={chip}>{pr.community}</span>}
-                              {(pr.languages || []).map((l) => <span key={`l-${l}`} className={chip}>{l}</span>)}
+                              {(pr.languages || []).map((l: string) => <span key={`l-${l}`} className={chip}>{l}</span>)}
                             </div>
-                            <div className="space-y-1 text-[11px] text-slate-300">
-                              {pr.numPriests ? <div>Priests: <span className="text-white font-semibold">{pr.numPriests}</span></div> : null}
-                              {pkg.capacityPersons ? <div>Persons: <span className="text-white font-semibold">{pkg.capacityPersons}</span></div> : null}
-                              {pkg.durationHours ? <div>Duration: <span className="text-white font-semibold">{pkg.durationHours} hrs</span></div> : null}
-                            </div>
-                            {incl.some(([, v]) => v !== undefined) && (
-                              <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px]">
-                                {incl.filter(([, v]) => v !== undefined).map(([label, v]) => (
-                                  <span key={label} className="text-slate-400">{label}: <b className={v ? 'text-emerald-400' : 'text-slate-500'}>{v ? 'Yes' : 'No'}</b></span>
+                            {ceremonies.length > 0 && (
+                              <div className="space-y-1">
+                                <span className="text-[10px] font-bold text-slate-500 uppercase block">Ceremonies</span>
+                                {ceremonies.map((c) => (
+                                  <div key={c} className="flex items-center justify-between text-[11px]">
+                                    <span className="text-slate-400">{c}</span>
+                                    {typeof pr.ceremonyTypePrices?.[c] === 'number' && <span className="text-amber-300 font-semibold">{inr(pr.ceremonyTypePrices[c])}</span>}
+                                  </div>
                                 ))}
                               </div>
                             )}
+                            <div className="space-y-1 text-[11px]">
+                              {pr.numPriests ? <div className="text-slate-300">Priests: <span className="text-white font-semibold">{pr.numPriests}</span></div> : null}
+                              {typeof pr.priestsPrice === 'number' ? <div className="flex items-center justify-between"><span className="text-slate-400">Priests</span><span className="text-amber-300 font-semibold">{inr(pr.priestsPrice)}</span></div> : null}
+                              {typeof pr.samagriPrice === 'number' ? <div className="flex items-center justify-between"><span className="text-slate-400">Pooja items (samagri)</span><span className="text-amber-300 font-semibold">{inr(pr.samagriPrice)}</span></div> : null}
+                              {pr.muhurthamConsult !== undefined ? <div className="text-slate-400">Muhurtham consult: <b className={pr.muhurthamConsult ? 'text-emerald-400' : 'text-slate-500'}>{pr.muhurthamConsult ? 'Yes' : 'No'}</b></div> : null}
+                            </div>
                           </div>
                         );
                       })()}

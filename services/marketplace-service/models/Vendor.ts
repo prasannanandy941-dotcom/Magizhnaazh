@@ -186,10 +186,13 @@ const vendorPackageSchema = new Schema(
     priest: {
       type: {
         ceremonyType: String,
+        ceremonyTypePrices: Schema.Types.Mixed,
         community: String,
         languages: [String],
         samagriIncluded: Boolean,
+        samagriPrice: Number,
         numPriests: Number,
+        priestsPrice: Number,
         durationHours: Number,
         muhurthamConsult: Boolean,
       },

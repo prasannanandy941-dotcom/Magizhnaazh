@@ -404,11 +404,14 @@ export const INVITATION_LANGUAGES = ['Tamil', 'Hindi', 'English', 'Telugu'] as c
 
 // Structured details for a Pujari/Priest vendor's package (per ceremony).
 export interface PriestPackageDetails {
-  ceremonyType?: string; // Wedding / Engagement / Griha Pravesh / Naming
+  ceremonyType?: string; // legacy single-select
+  ceremonyTypePrices?: Record<string, number>; // price per ceremony type
   community?: string; // free text: Iyer / Iyengar / North Indian / etc.
   languages?: string[]; // Tamil / Sanskrit / Hindi
-  samagriIncluded?: boolean; // pooja items (samagri) included
+  samagriIncluded?: boolean; // legacy
+  samagriPrice?: number; // price for pooja items (samagri)
   numPriests?: number;
+  priestsPrice?: number; // price for the priests
   durationHours?: number;
   muhurthamConsult?: boolean; // muhurtham consultation
 }

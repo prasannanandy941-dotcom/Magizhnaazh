@@ -2198,8 +2198,31 @@ export function App() {
     );
 
   // Pujari/Priest packages carry structured ceremony details.
+  // Priest total = every ceremony-type price + priests price + samagri price.
+  const priestTotal = (pr?: any): number => {
+    if (!pr) return 0;
+    let sum = 0;
+    if (pr.ceremonyTypePrices && typeof pr.ceremonyTypePrices === 'object') {
+      for (const v of Object.values(pr.ceremonyTypePrices)) sum += Number(v) || 0;
+    }
+    sum += Number(pr.priestsPrice) || 0;
+    sum += Number(pr.samagriPrice) || 0;
+    return sum;
+  };
   const updatePackagePriest = (pkgId: string, field: string, value: any) =>
-    setPackages((prev) => prev.map((p) => (p.id === pkgId ? { ...p, priest: { ...(p.priest || {}), [field]: value } } : p)));
+    setPackages((prev) => prev.map((p) => {
+      if (p.id !== pkgId) return p;
+      const priest = { ...(p.priest || {}), [field]: value };
+      return { ...p, priest, price: priestTotal(priest) };
+    }));
+  const updatePriestCeremonyPrice = (pkgId: string, type: string, price?: number) =>
+    setPackages((prev) => prev.map((p) => {
+      if (p.id !== pkgId) return p;
+      const map: Record<string, number> = { ...((p.priest?.ceremonyTypePrices) || {}) };
+      if (price === undefined) delete map[type]; else map[type] = price;
+      const priest = { ...(p.priest || {}), ceremonyTypePrices: map };
+      return { ...p, priest, price: priestTotal(priest) };
+    }));
   const togglePriestLanguage = (pkgId: string, lang: string) =>
     setPackages((prev) => prev.map((p) => {
       if (p.id !== pkgId) return p;
@@ -5069,7 +5092,7 @@ export function App() {
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <label className="block text-[10px] text-slate-400 uppercase font-bold">
-                          {myVendor?.category === 'Catering' ? 'Total amount (₹)' : myVendor?.category === 'Security' ? 'Total amount (₹)' : myVendor?.category === 'Venue' ? 'Total amount (₹)' : myVendor?.category === 'Decoration' ? 'Total amount (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Total amount (₹)' : myVendor?.category === 'Media' ? 'Total amount (₹)' : myVendor?.category === 'Transport' ? 'Total amount (₹)' : myVendor?.category === 'Invitation' ? 'Total amount (₹)' : myVendor?.category === 'Printing' ? 'Total amount (₹)' : myVendor?.category === 'Return Gifts' ? 'Total amount (₹)' : myVendor?.category === 'Lighting' || myVendor?.category === 'Lights & Sounds' ? 'Total amount (₹)' : myVendor?.category === 'Pujari/Priest' ? 'Price per ceremony (₹)' : myVendor?.category === 'Entertainment' ? 'Total amount (₹)' : myVendor?.category === 'Music/DJ' ? 'Price per event / hour (₹)' : myVendor?.category === 'Flowers' ? 'Total amount (₹)' : myVendor?.category === 'Mehendi' ? 'Total amount (₹)' : myVendor?.category === 'Event Host/Anchor' ? 'Price per event (₹)' : myVendor?.category === 'Rental Equipment' ? 'Total amount (₹)' : myVendor?.category === 'Utensils for Rent' ? 'Total price (₹)' : myVendor?.category === 'Wedding Planner' ? 'Price per package / function (₹)' : myVendor?.category === 'Corporate Event Services' ? 'Price per total event (₹)' : 'Price (₹)'}
+                          {myVendor?.category === 'Catering' ? 'Total amount (₹)' : myVendor?.category === 'Security' ? 'Total amount (₹)' : myVendor?.category === 'Venue' ? 'Total amount (₹)' : myVendor?.category === 'Decoration' ? 'Total amount (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Total amount (₹)' : myVendor?.category === 'Media' ? 'Total amount (₹)' : myVendor?.category === 'Transport' ? 'Total amount (₹)' : myVendor?.category === 'Invitation' ? 'Total amount (₹)' : myVendor?.category === 'Printing' ? 'Total amount (₹)' : myVendor?.category === 'Return Gifts' ? 'Total amount (₹)' : myVendor?.category === 'Lighting' || myVendor?.category === 'Lights & Sounds' ? 'Total amount (₹)' : myVendor?.category === 'Pujari/Priest' ? 'Total amount (₹)' : myVendor?.category === 'Entertainment' ? 'Total amount (₹)' : myVendor?.category === 'Music/DJ' ? 'Price per event / hour (₹)' : myVendor?.category === 'Flowers' ? 'Total amount (₹)' : myVendor?.category === 'Mehendi' ? 'Total amount (₹)' : myVendor?.category === 'Event Host/Anchor' ? 'Price per event (₹)' : myVendor?.category === 'Rental Equipment' ? 'Total amount (₹)' : myVendor?.category === 'Utensils for Rent' ? 'Total price (₹)' : myVendor?.category === 'Wedding Planner' ? 'Price per package / function (₹)' : myVendor?.category === 'Corporate Event Services' ? 'Price per total event (₹)' : 'Price (₹)'}
                         </label>
                         {myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 && (
                           <span className="text-[10px] text-amber-400 font-bold">
@@ -5189,10 +5212,10 @@ export function App() {
                         </div>
                       )}
                     </div>
-                    {myVendor?.category !== 'Security' && myVendor?.category !== 'Catering' && myVendor?.category !== 'Decoration' && myVendor?.category !== 'Media' && myVendor?.category !== 'Transport' && myVendor?.category !== 'Invitation' && myVendor?.category !== 'Printing' && myVendor?.category !== 'Return Gifts' && myVendor?.category !== 'Music/DJ' && myVendor?.category !== 'Lighting' && myVendor?.category !== 'Lights & Sounds' && myVendor?.category !== 'Flowers' && myVendor?.category !== 'Mehendi' && myVendor?.category !== 'Event Host/Anchor' && myVendor?.category !== 'Rental Equipment' && myVendor?.category !== 'Utensils for Rent' && myVendor?.category !== 'Wedding Planner' && myVendor?.category !== 'Corporate Event Services' && myVendor?.category !== 'Entertainment' && (
+                    {myVendor?.category !== 'Security' && myVendor?.category !== 'Catering' && myVendor?.category !== 'Decoration' && myVendor?.category !== 'Media' && myVendor?.category !== 'Transport' && myVendor?.category !== 'Invitation' && myVendor?.category !== 'Printing' && myVendor?.category !== 'Return Gifts' && myVendor?.category !== 'Music/DJ' && myVendor?.category !== 'Lighting' && myVendor?.category !== 'Lights & Sounds' && myVendor?.category !== 'Flowers' && myVendor?.category !== 'Mehendi' && myVendor?.category !== 'Event Host/Anchor' && myVendor?.category !== 'Rental Equipment' && myVendor?.category !== 'Utensils for Rent' && myVendor?.category !== 'Wedding Planner' && myVendor?.category !== 'Corporate Event Services' && myVendor?.category !== 'Entertainment' && myVendor?.category !== 'Pujari/Priest' && (
                       <div>
                         <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
-                          {myVendor?.category === 'Pujari/Priest' ? 'No. of persons' : 'Capacity (persons)'}
+                          Capacity (persons)
                         </label>
                         <input
                           type="number"
@@ -5203,7 +5226,7 @@ export function App() {
                         />
                       </div>
                     )}
-                    {myVendor?.category !== 'Security' && myVendor?.category !== 'Catering' && myVendor?.category !== 'Decoration' && myVendor?.category !== 'Media' && myVendor?.category !== 'Transport' && myVendor?.category !== 'Invitation' && myVendor?.category !== 'Printing' && myVendor?.category !== 'Return Gifts' && myVendor?.category !== 'Music/DJ' && myVendor?.category !== 'Lighting' && myVendor?.category !== 'Lights & Sounds' && myVendor?.category !== 'Flowers' && myVendor?.category !== 'Mehendi' && myVendor?.category !== 'Event Host/Anchor' && myVendor?.category !== 'Rental Equipment' && myVendor?.category !== 'Utensils for Rent' && myVendor?.category !== 'Wedding Planner' && myVendor?.category !== 'Corporate Event Services' && myVendor?.category !== 'Entertainment' && (
+                    {myVendor?.category !== 'Security' && myVendor?.category !== 'Catering' && myVendor?.category !== 'Decoration' && myVendor?.category !== 'Media' && myVendor?.category !== 'Transport' && myVendor?.category !== 'Invitation' && myVendor?.category !== 'Printing' && myVendor?.category !== 'Return Gifts' && myVendor?.category !== 'Music/DJ' && myVendor?.category !== 'Lighting' && myVendor?.category !== 'Lights & Sounds' && myVendor?.category !== 'Flowers' && myVendor?.category !== 'Mehendi' && myVendor?.category !== 'Event Host/Anchor' && myVendor?.category !== 'Rental Equipment' && myVendor?.category !== 'Utensils for Rent' && myVendor?.category !== 'Wedding Planner' && myVendor?.category !== 'Corporate Event Services' && myVendor?.category !== 'Entertainment' && myVendor?.category !== 'Pujari/Priest' && (
                       <div>
                         <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
                           Duration (hours)
@@ -7138,14 +7161,21 @@ export function App() {
 
                       {/* Pujari/Priest: structured ceremony spec (replaces generic price tiers). */}
                       {myVendor?.category === 'Pujari/Priest' && (
-                        <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/40 p-3">
-                          <p className="text-[10px] text-amber-400 uppercase font-bold">Ceremony details</p>
+                        <div className="space-y-4 rounded-xl border border-slate-800 bg-slate-950/40 p-3.5">
+                          <p className="text-[10px] text-amber-400 uppercase font-bold">Ceremony details &amp; Pricing</p>
 
+                          {/* Ceremony type — price for each */}
                           <div>
-                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Ceremony Type</label>
-                            <div className="flex flex-wrap gap-2">
+                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-2">Ceremony type — price for each (leave blank if not offered)</label>
+                            <div className="grid grid-cols-2 gap-2">
                               {PRIEST_CEREMONY_TYPES.map((c) => (
-                                <button type="button" key={c} onClick={() => updatePackagePriest(p.id, 'ceremonyType', c)} className={catChip(p.priest?.ceremonyType === c)}>{c}</button>
+                                <div key={c}>
+                                  <label className="block text-[10px] text-slate-500 mb-1">{c}</label>
+                                  <div className="relative">
+                                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 text-sm">₹</span>
+                                    <input type="number" min={0} value={p.priest?.ceremonyTypePrices?.[c] ?? ''} onChange={(e) => updatePriestCeremonyPrice(p.id, c, e.target.value === '' ? undefined : Number(e.target.value))} placeholder="Price" className="w-full pl-6 pr-2 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                                  </div>
+                                </div>
                               ))}
                             </div>
                           </div>
@@ -7159,29 +7189,41 @@ export function App() {
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-2 gap-3">
+                          <div className="grid grid-cols-3 gap-2">
                             <div>
-                              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Community</label>
+                              <label className="block text-[10px] text-slate-500 mb-1">Community</label>
                               <input type="text" value={p.priest?.community ?? ''} onChange={(e) => updatePackagePriest(p.id, 'community', e.target.value)}
-                                placeholder="e.g. Iyer / Iyengar / North Indian" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                                placeholder="e.g. Iyer" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
                             </div>
                             <div>
-                              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">No. of priests</label>
+                              <label className="block text-[10px] text-slate-500 mb-1">No. of priests</label>
                               <input type="number" min={0} value={p.priest?.numPriests ?? ''} onChange={(e) => updatePackagePriest(p.id, 'numPriests', e.target.value === '' ? undefined : Number(e.target.value))}
                                 placeholder="e.g. 2" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] text-slate-500 mb-1">Priests price (₹)</label>
+                              <div className="relative">
+                                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 text-sm">₹</span>
+                                <input type="number" min={0} value={p.priest?.priestsPrice ?? ''} onChange={(e) => updatePackagePriest(p.id, 'priestsPrice', e.target.value === '' ? undefined : Number(e.target.value))} placeholder="Price" className="w-full pl-6 pr-2 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                              </div>
                             </div>
                           </div>
 
                           <div className="grid grid-cols-2 gap-2">
-                            {([['samagriIncluded', 'Pooja items (samagri) included'], ['muhurthamConsult', 'Muhurtham consultation']] as const).map(([field, label]) => (
-                              <div key={field}>
-                                <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">{label}</label>
-                                <div className="flex gap-1.5">
-                                  <button type="button" onClick={() => updatePackagePriest(p.id, field, true)} className={catChip((p.priest as any)?.[field] === true)}>Yes</button>
-                                  <button type="button" onClick={() => updatePackagePriest(p.id, field, false)} className={catChip((p.priest as any)?.[field] === false)}>No</button>
-                                </div>
+                            <div>
+                              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Pooja items (samagri) price (₹)</label>
+                              <div className="relative">
+                                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 text-sm">₹</span>
+                                <input type="number" min={0} value={p.priest?.samagriPrice ?? ''} onChange={(e) => updatePackagePriest(p.id, 'samagriPrice', e.target.value === '' ? undefined : Number(e.target.value))} placeholder="Blank if not included" className="w-full pl-6 pr-2 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
                               </div>
-                            ))}
+                            </div>
+                            <div>
+                              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Muhurtham consultation</label>
+                              <div className="flex gap-1.5">
+                                <button type="button" onClick={() => updatePackagePriest(p.id, 'muhurthamConsult', true)} className={catChip(p.priest?.muhurthamConsult === true)}>Yes</button>
+                                <button type="button" onClick={() => updatePackagePriest(p.id, 'muhurthamConsult', false)} className={catChip(p.priest?.muhurthamConsult === false)}>No</button>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       )}
