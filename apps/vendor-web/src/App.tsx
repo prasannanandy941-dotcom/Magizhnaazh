@@ -9320,21 +9320,6 @@ export function App() {
                             </div>
                           </div>
 
-                          {/* Calculation Summary Box */}
-                          <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between text-xs flex-wrap gap-2">
-                            <div className="text-slate-400">
-                              <span>Base: </span>
-                              <span className="text-slate-200 font-semibold font-mono">₹{(Number(p.corporate?.basePrice) || 0).toLocaleString('en-IN')}</span>
-                              <span> + Add-ons: </span>
-                              <span className="text-slate-200 font-semibold font-mono">
-                                ₹{[p.corporate?.avStageBranding, p.corporate?.registrationDesk, p.corporate?.cateringCoordination, p.corporate?.mcHost]
-                                  .reduce((a: number, b: any) => a + (Number(b) || 0), 0).toLocaleString('en-IN')}
-                              </span>
-                            </div>
-                            <div className="text-amber-400 font-bold font-mono text-sm">
-                              = Total Amount: ₹{(p.price || corporateTotal(p.corporate) || 0).toLocaleString('en-IN')}
-                            </div>
-                          </div>
                         </div>
                       )}
 
