@@ -919,6 +919,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                                         <span className={`text-[10px] font-bold uppercase ${labelColor}`}>
                                           {type} Items ({list.length})
                                         </span>
+                                        {c.foodTypeImages?.[type] && <img src={c.foodTypeImages[type]} alt={type} onClick={() => setLightboxImage(c.foodTypeImages![type])} className="w-9 h-7 rounded object-cover border border-slate-700 ml-1 cursor-pointer" />}
                                       </div>
                                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                                         {list.map((it, idx) => (
@@ -949,6 +950,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                                         <span className="text-[10px] font-bold uppercase text-indigo-300">
                                           {type} Items ({list.length})
                                         </span>
+                                        {c.cuisineImages?.[type] && <img src={c.cuisineImages[type]} alt={type} onClick={() => setLightboxImage(c.cuisineImages![type])} className="w-9 h-7 rounded object-cover border border-slate-700 ml-1 cursor-pointer" />}
                                       </div>
                                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                                         {list.map((it, idx) => (

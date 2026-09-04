@@ -596,8 +596,10 @@ export interface CateringPackageDetails {
   pricePerPlate?: number; // Per plate cost (₹)
   foodTypes?: string[]; // Veg / Non-Veg / Jain
   foodTypeItems?: Record<string, CateringFoodItem[]>; // item names and rates per food type (Veg, Non-Veg, Jain)
+  foodTypeImages?: Record<string, string>; // a photo per food type
   cuisines?: string[]; // South Indian, Chettinad, North Indian, Continental
   cuisineItems?: Record<string, CateringFoodItem[]>; // item names and rates per cuisine (South Indian, Chettinad, North Indian, Continental)
+  cuisineImages?: Record<string, string>; // a photo per cuisine
   courses?: string[]; // Starters, Mains, Desserts
   courseItems?: Record<string, CateringCourseItem[]>; // dishes per course with photo, name, and price
   starters?: number; // number of starter dishes included

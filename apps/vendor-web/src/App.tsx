@@ -1239,6 +1239,33 @@ export function App() {
       })
     );
 
+  // Photo per catering food type / cuisine.
+  const [uploadingCateringImg, setUploadingCateringImg] = useState<string | null>(null);
+  const uploadCateringImage = async (pkgId: string, mapField: 'foodTypeImages' | 'cuisineImages', key: string, file: File) => {
+    if (!token) return;
+    setUploadingCateringImg(`${pkgId}:${mapField}:${key}`);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch(`${GATEWAY_URL}/api/v1/uploads`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd });
+      const data = await res.json().catch(() => ({}));
+      const fileUrl = data?.data?.fileUrl || data?.url || URL.createObjectURL(file);
+      setPackages((prev) => prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const cur = p.catering || {};
+        return { ...p, catering: { ...cur, [mapField]: { ...((cur as any)[mapField] || {}), [key]: fileUrl } } };
+      }));
+    } catch { /* best effort */ } finally { setUploadingCateringImg(null); }
+  };
+  const removeCateringImage = (pkgId: string, mapField: 'foodTypeImages' | 'cuisineImages', key: string) =>
+    setPackages((prev) => prev.map((p) => {
+      if (p.id !== pkgId) return p;
+      const cur = p.catering || {};
+      const m = { ...((cur as any)[mapField] || {}) };
+      delete m[key];
+      return { ...p, catering: { ...cur, [mapField]: m } };
+    }));
+
   const addCateringCuisineItem = (pkgId: string, cuisine: string) =>
     setPackages((prev) =>
       prev.map((p) => {
@@ -5393,6 +5420,17 @@ export function App() {
                                         </button>
                                       </div>
 
+                                      <div className="flex items-center gap-2.5">
+                                        {p.catering?.foodTypeImages?.[f] ? (
+                                          <div className="relative"><img src={p.catering.foodTypeImages[f]} alt={f} className="w-14 h-11 rounded object-cover border border-slate-700" /><button type="button" onClick={() => removeCateringImage(p.id, 'foodTypeImages', f)} className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px]">✕</button></div>
+                                        ) : null}
+                                        <label className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold cursor-pointer border border-slate-700">
+                                          {uploadingCateringImg === `${p.id}:foodTypeImages:${f}` ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 text-amber-400" />}
+                                          {p.catering?.foodTypeImages?.[f] ? 'Change photo' : 'Upload photo'}
+                                          <input type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) uploadCateringImage(p.id, 'foodTypeImages', f, file); e.target.value = ''; }} />
+                                        </label>
+                                      </div>
+
                                       {items.length === 0 ? (
                                         <div className="py-2.5 px-3 rounded-lg bg-slate-950/60 border border-dashed border-slate-800 text-center">
                                           <p className="text-xs text-slate-400 mb-1.5">No {f.toLowerCase()} items added yet.</p>
@@ -5481,6 +5519,17 @@ export function App() {
                                         >
                                           <Plus className="w-3.5 h-3.5" /> Add item
                                         </button>
+                                      </div>
+
+                                      <div className="flex items-center gap-2.5">
+                                        {p.catering?.cuisineImages?.[c] ? (
+                                          <div className="relative"><img src={p.catering.cuisineImages[c]} alt={c} className="w-14 h-11 rounded object-cover border border-slate-700" /><button type="button" onClick={() => removeCateringImage(p.id, 'cuisineImages', c)} className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px]">✕</button></div>
+                                        ) : null}
+                                        <label className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold cursor-pointer border border-slate-700">
+                                          {uploadingCateringImg === `${p.id}:cuisineImages:${c}` ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 text-amber-400" />}
+                                          {p.catering?.cuisineImages?.[c] ? 'Change photo' : 'Upload photo'}
+                                          <input type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) uploadCateringImage(p.id, 'cuisineImages', c, file); e.target.value = ''; }} />
+                                        </label>
                                       </div>
 
                                       {items.length === 0 ? (
