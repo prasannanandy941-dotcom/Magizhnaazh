@@ -1,7 +1,7 @@
 import path from 'path';
 import dotenv from 'dotenv';
 // Loads JWT_SECRET / JWT_EXPIRES_IN (session lifetime) and MONGODB_URI.
-dotenv.config({ path: path.resolve(__dirname, '.env'), override: true });
+dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 import crypto from 'crypto';
 import express, { Request, Response } from 'express';

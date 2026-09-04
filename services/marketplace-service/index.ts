@@ -1,7 +1,7 @@
 import path from 'path';
 import dotenv from 'dotenv';
 // Loads MONGODB_URI and INTERNAL_API_SECRET (guards the internal rating-sync route).
-dotenv.config({ path: path.resolve(__dirname, '.env'), override: true });
+dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 import express, { Request, Response } from 'express';
 import cors from 'cors';

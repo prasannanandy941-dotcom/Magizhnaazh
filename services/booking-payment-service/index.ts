@@ -1,7 +1,7 @@
 import path from 'path';
 import crypto from 'crypto';
 import dotenv from 'dotenv';
-dotenv.config({ path: path.resolve(__dirname, '.env'), override: true });
+dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 import express, { Request, Response } from 'express';
 import cors from 'cors';
