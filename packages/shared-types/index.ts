@@ -191,14 +191,27 @@ export const EVENT_HOST_MODES = ['Solo', 'Co-host'] as const;
 
 // Structured details for a Mehendi vendor's package (per bride / per hand).
 export interface MehendiPackageDetails {
-  tier?: string; // Guest-simple / Bridal / Arabic / Rajasthani
-  type?: string; // Bridal / Guest / Arabic / Rajasthani / Glitter
-  intricacy?: string; // Simple / Full hands + feet
-  numArtists?: number; // for guest stalls
-  perHandPrice?: number; // per-hand price for guests
+  // Legacy single-selects / booleans (kept for back-compat)
+  tier?: string;
+  type?: string;
+  intricacy?: string;
   organicHenna?: boolean;
-  durationHours?: number;
   travelIncluded?: boolean;
+  perHandPrice?: number; // per-hand price for guests
+  durationHours?: number;
+  // Priced, multi-select structure (each option has its own price; tiers &
+  // intricacies also take a photo). The package Total = sum of all these.
+  tiers?: string[];
+  tierPrices?: Record<string, number>;
+  tierImages?: Record<string, string>;
+  intricacies?: string[];
+  intricacyPrices?: Record<string, number>;
+  intricacyImages?: Record<string, string>;
+  typePrices?: Record<string, number>; // price per Type offered
+  numArtists?: number; // for guest stalls
+  artistsPrice?: number; // price for the guest-stall artists
+  organicHennaPrice?: number; // price if organic henna offered
+  travelPrice?: number; // price for travel
 }
 
 // Option sets for the Mehendi package form.

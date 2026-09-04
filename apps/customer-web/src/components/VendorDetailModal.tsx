@@ -1977,31 +1977,47 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                       })()}
 
                       {vendor.category === 'Mehendi' && pkg.mehendi && (() => {
-                        const mh = pkg.mehendi;
-                        const chip = 'text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200';
-                        const incl: [string, boolean | undefined][] = [
-                          ['Organic henna', mh.organicHenna], ['Travel', mh.travelIncluded],
-                        ];
+                        const mh: any = pkg.mehendi;
+                        const inr = (n: any) => (Number(n) === 0 ? 'Included' : `₹${Number(n).toLocaleString('en-IN')}`);
+                        const tiers: string[] = mh.tiers || (mh.tier ? [mh.tier] : []);
+                        const intricacies: string[] = mh.intricacies || (mh.intricacy ? [mh.intricacy] : []);
+                        const types: string[] = mh.typePrices ? Object.keys(mh.typePrices) : (mh.type ? [mh.type] : []);
+                        const pricedRow = (label: string, price: any, img?: string) => (
+                          <div key={label} className="flex items-center justify-between gap-2 text-[11px]">
+                            <span className="flex items-center gap-2 text-slate-300">
+                              {img ? <img src={img} alt={label} className="w-8 h-8 rounded object-cover border border-slate-700" /> : null}
+                              {label}
+                            </span>
+                            {price !== undefined && <span className="text-amber-300 font-semibold">{inr(price)}</span>}
+                          </div>
+                        );
                         return (
-                          <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2" onClick={(e) => e.stopPropagation()}>
+                          <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2.5" onClick={(e) => e.stopPropagation()}>
                             <span className="text-[10px] font-bold text-slate-400 uppercase block">Mehendi details</span>
-                            <div className="flex flex-wrap gap-1.5">
-                              {mh.tier && <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-200 font-bold">{mh.tier}</span>}
-                              {mh.type && <span className={chip}>{mh.type}</span>}
-                              {mh.intricacy && <span className={chip}>{mh.intricacy}</span>}
-                            </div>
-                            <div className="space-y-1 text-[11px] text-slate-300">
-                              {mh.numArtists ? <div>Artists (guest stalls): <span className="text-white font-semibold">{mh.numArtists}</span></div> : null}
-                              {mh.perHandPrice ? <div>Per-hand price (guests): <span className="text-white font-semibold">₹{mh.perHandPrice.toLocaleString('en-IN')}</span></div> : null}
-                              {mh.durationHours ? <div>Duration: <span className="text-white font-semibold">{mh.durationHours} hrs</span></div> : null}
-                            </div>
-                            {incl.some(([, v]) => v !== undefined) && (
-                              <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px]">
-                                {incl.filter(([, v]) => v !== undefined).map(([label, v]) => (
-                                  <span key={label} className="text-slate-400">{label}: <b className={v ? 'text-emerald-400' : 'text-slate-500'}>{v ? 'Yes' : 'No'}</b></span>
-                                ))}
+                            {tiers.length > 0 && (
+                              <div className="space-y-1">
+                                <span className="text-[10px] font-bold text-slate-500 uppercase block">Tiers</span>
+                                {tiers.map((t) => pricedRow(t, mh.tierPrices?.[t], mh.tierImages?.[t]))}
                               </div>
                             )}
+                            {intricacies.length > 0 && (
+                              <div className="space-y-1">
+                                <span className="text-[10px] font-bold text-slate-500 uppercase block">Design intricacy</span>
+                                {intricacies.map((i) => pricedRow(i, mh.intricacyPrices?.[i], mh.intricacyImages?.[i]))}
+                              </div>
+                            )}
+                            {types.length > 0 && (
+                              <div className="space-y-1">
+                                <span className="text-[10px] font-bold text-slate-500 uppercase block">Types</span>
+                                {types.map((t) => pricedRow(t, mh.typePrices?.[t]))}
+                              </div>
+                            )}
+                            <div className="space-y-1">
+                              {mh.numArtists ? <div className="text-[11px] text-slate-300">Artists (guest stalls): <span className="text-white font-semibold">{mh.numArtists}</span></div> : null}
+                              {typeof mh.artistsPrice === 'number' ? pricedRow('Artists', mh.artistsPrice) : null}
+                              {typeof mh.organicHennaPrice === 'number' ? pricedRow('Organic henna', mh.organicHennaPrice) : null}
+                              {typeof mh.travelPrice === 'number' ? pricedRow('Travel', mh.travelPrice) : null}
+                            </div>
                           </div>
                         );
                       })()}

@@ -3181,8 +3181,82 @@ export function App() {
     );
 
   // Mehendi packages carry structured details.
+  // Mehendi package total = every entered tier/intricacy/type price + the
+  // artists / organic-henna / travel prices.
+  const mehendiTotal = (m?: any): number => {
+    if (!m) return 0;
+    let sum = 0;
+    const sumMap = (sel: string[] | undefined, prices: any) => {
+      if (!Array.isArray(sel) || !prices) return;
+      for (const k of sel) sum += Number(prices[k]) || 0;
+    };
+    sumMap(m.tiers, m.tierPrices);
+    sumMap(m.intricacies, m.intricacyPrices);
+    if (m.typePrices && typeof m.typePrices === 'object') {
+      for (const v of Object.values(m.typePrices)) sum += Number(v) || 0;
+    }
+    sum += Number(m.artistsPrice) || 0;
+    sum += Number(m.organicHennaPrice) || 0;
+    sum += Number(m.travelPrice) || 0;
+    return sum;
+  };
+  const commitMehendi = (pkgId: string, mehendi: any) =>
+    setPackages((prev) => prev.map((p) => (p.id === pkgId ? { ...p, mehendi, price: mehendiTotal(mehendi) } : p)));
+
   const updatePackageMehendi = (pkgId: string, field: string, value: any) =>
-    setPackages((prev) => prev.map((p) => (p.id === pkgId ? { ...p, mehendi: { ...(p.mehendi || {}), [field]: value } } : p)));
+    setPackages((prev) => prev.map((p) => {
+      if (p.id !== pkgId) return p;
+      const mehendi = { ...(p.mehendi || {}), [field]: value };
+      return { ...p, mehendi, price: mehendiTotal(mehendi) };
+    }));
+
+  // Toggle a chip in a Mehendi string[] field (tiers / intricacies).
+  const toggleMehendiChip = (pkgId: string, field: 'tiers' | 'intricacies', value: string) =>
+    setPackages((prev) => prev.map((p) => {
+      if (p.id !== pkgId) return p;
+      const cur: string[] = ((p.mehendi as any)?.[field]) || [];
+      const next = cur.includes(value) ? cur.filter((x) => x !== value) : [...cur, value];
+      const mehendi = { ...(p.mehendi || {}), [field]: next };
+      return { ...p, mehendi, price: mehendiTotal(mehendi) };
+    }));
+
+  // Set a price in a Mehendi price map (tierPrices / intricacyPrices / typePrices).
+  const updateMehendiMapPrice = (pkgId: string, mapField: 'tierPrices' | 'intricacyPrices' | 'typePrices', key: string, price?: number) =>
+    setPackages((prev) => prev.map((p) => {
+      if (p.id !== pkgId) return p;
+      const map: Record<string, number> = { ...(((p.mehendi as any)?.[mapField]) || {}) };
+      if (price === undefined) delete map[key]; else map[key] = price;
+      const mehendi = { ...(p.mehendi || {}), [mapField]: map };
+      return { ...p, mehendi, price: mehendiTotal(mehendi) };
+    }));
+
+  const [uploadingMehendiImg, setUploadingMehendiImg] = useState<string | null>(null);
+  const uploadMehendiImage = async (pkgId: string, target: 'tier' | 'intricacy', key: string, file: File) => {
+    if (!token) return;
+    setUploadingMehendiImg(`${pkgId}:${target}:${key}`);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch(`${GATEWAY_URL}/api/v1/uploads`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd });
+      const data = await res.json().catch(() => ({}));
+      const fileUrl = data?.data?.fileUrl || data?.url || URL.createObjectURL(file);
+      const mapField = target === 'tier' ? 'tierImages' : 'intricacyImages';
+      setPackages((prev) => prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const cur = p.mehendi || {};
+        return { ...p, mehendi: { ...cur, [mapField]: { ...((cur as any)[mapField] || {}), [key]: fileUrl } } };
+      }));
+    } catch { /* best effort */ } finally { setUploadingMehendiImg(null); }
+  };
+  const removeMehendiImage = (pkgId: string, target: 'tier' | 'intricacy', key: string) =>
+    setPackages((prev) => prev.map((p) => {
+      if (p.id !== pkgId) return p;
+      const cur = p.mehendi || {};
+      const mapField = target === 'tier' ? 'tierImages' : 'intricacyImages';
+      const m = { ...((cur as any)[mapField] || {}) };
+      delete m[key];
+      return { ...p, mehendi: { ...cur, [mapField]: m } };
+    }));
 
   // Event Host/Anchor packages carry structured details.
   const updatePackageEventHost = (pkgId: string, field: string, value: any) =>
@@ -4793,7 +4867,7 @@ export function App() {
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <label className="block text-[10px] text-slate-400 uppercase font-bold">
-                          {myVendor?.category === 'Catering' ? 'Total amount (₹)' : myVendor?.category === 'Security' ? 'Price per guard / shift (₹)' : myVendor?.category === 'Venue' ? 'Total amount (₹)' : myVendor?.category === 'Decoration' ? 'Total amount (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Total amount (₹)' : myVendor?.category === 'Media' ? 'Total amount (₹)' : myVendor?.category === 'Transport' ? 'Total amount (₹)' : myVendor?.category === 'Invitation' ? 'Total amount (₹)' : myVendor?.category === 'Printing' ? 'Total amount (₹)' : myVendor?.category === 'Return Gifts' ? 'Total amount (₹)' : myVendor?.category === 'Lighting' || myVendor?.category === 'Lights & Sounds' ? 'Total amount (₹)' : myVendor?.category === 'Pujari/Priest' ? 'Price per ceremony (₹)' : myVendor?.category === 'Entertainment' ? 'Price per act / hour (₹)' : myVendor?.category === 'Music/DJ' ? 'Price per event / hour (₹)' : myVendor?.category === 'Flowers' ? 'Total amount (₹)' : myVendor?.category === 'Mehendi' ? 'Price per bride (₹)' : myVendor?.category === 'Event Host/Anchor' ? 'Price per event (₹)' : myVendor?.category === 'Rental Equipment' ? 'Per-day rate (₹)' : myVendor?.category === 'Utensils for Rent' ? 'Total price (₹)' : myVendor?.category === 'Wedding Planner' ? 'Price per package / function (₹)' : myVendor?.category === 'Corporate Event Services' ? 'Price per total event (₹)' : 'Price (₹)'}
+                          {myVendor?.category === 'Catering' ? 'Total amount (₹)' : myVendor?.category === 'Security' ? 'Price per guard / shift (₹)' : myVendor?.category === 'Venue' ? 'Total amount (₹)' : myVendor?.category === 'Decoration' ? 'Total amount (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Total amount (₹)' : myVendor?.category === 'Media' ? 'Total amount (₹)' : myVendor?.category === 'Transport' ? 'Total amount (₹)' : myVendor?.category === 'Invitation' ? 'Total amount (₹)' : myVendor?.category === 'Printing' ? 'Total amount (₹)' : myVendor?.category === 'Return Gifts' ? 'Total amount (₹)' : myVendor?.category === 'Lighting' || myVendor?.category === 'Lights & Sounds' ? 'Total amount (₹)' : myVendor?.category === 'Pujari/Priest' ? 'Price per ceremony (₹)' : myVendor?.category === 'Entertainment' ? 'Price per act / hour (₹)' : myVendor?.category === 'Music/DJ' ? 'Price per event / hour (₹)' : myVendor?.category === 'Flowers' ? 'Total amount (₹)' : myVendor?.category === 'Mehendi' ? 'Total amount (₹)' : myVendor?.category === 'Event Host/Anchor' ? 'Price per event (₹)' : myVendor?.category === 'Rental Equipment' ? 'Per-day rate (₹)' : myVendor?.category === 'Utensils for Rent' ? 'Total price (₹)' : myVendor?.category === 'Wedding Planner' ? 'Price per package / function (₹)' : myVendor?.category === 'Corporate Event Services' ? 'Price per total event (₹)' : 'Price (₹)'}
                         </label>
                         {myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 && (
                           <span className="text-[10px] text-amber-400 font-bold">
@@ -8589,62 +8663,122 @@ export function App() {
 
                       {/* Mehendi: structured spec (replaces duration + generic price tiers). */}
                       {myVendor?.category === 'Mehendi' && (
-                        <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/40 p-3">
-                          <p className="text-[10px] text-amber-400 uppercase font-bold">Mehendi details</p>
-
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Tier</label>
-                              <div className="flex flex-wrap gap-2">
-                                {MEHENDI_TIERS.map((t) => (
-                                  <button type="button" key={t} onClick={() => updatePackageMehendi(p.id, 'tier', t)} className={catChip(p.mehendi?.tier === t)}>{t}</button>
-                                ))}
-                              </div>
-                            </div>
-                            <div>
-                              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Design intricacy</label>
-                              <div className="flex flex-wrap gap-2">
-                                {MEHENDI_INTRICACY.map((i) => (
-                                  <button type="button" key={i} onClick={() => updatePackageMehendi(p.id, 'intricacy', i)} className={catChip(p.mehendi?.intricacy === i)}>{i}</button>
-                                ))}
-                              </div>
-                            </div>
+                        <div className="space-y-4 rounded-xl border border-slate-800 bg-slate-950/40 p-3.5">
+                          <div className="flex items-center justify-between">
+                            <p className="text-[10px] text-amber-400 uppercase font-bold">Mehendi details &amp; Pricing</p>
+                            {mehendiTotal(p.mehendi) > 0 && (
+                              <span className="text-[10px] text-amber-400 font-bold bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-full font-mono">
+                                Total: ₹{mehendiTotal(p.mehendi).toLocaleString('en-IN')}
+                              </span>
+                            )}
                           </div>
 
-                          <div>
-                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Type</label>
+                          {/* TIER — select, set price & upload a photo per tier */}
+                          <div className="space-y-2">
+                            <label className="block text-[10px] text-slate-400 uppercase font-bold">Tier (select to set price &amp; upload photo)</label>
                             <div className="flex flex-wrap gap-2">
+                              {MEHENDI_TIERS.map((t) => (
+                                <button type="button" key={t} onClick={() => toggleMehendiChip(p.id, 'tiers', t)} className={catChip((p.mehendi?.tiers || []).includes(t))}>{t}</button>
+                              ))}
+                            </div>
+                            {(p.mehendi?.tiers || []).map((t) => {
+                              const isUploading = uploadingMehendiImg === `${p.id}:tier:${t}`;
+                              const imgUrl = p.mehendi?.tierImages?.[t];
+                              return (
+                                <div key={t} className="p-3 rounded-xl border border-amber-500/30 bg-amber-950/10 space-y-2.5">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-xs font-bold text-amber-300">{t}</span>
+                                    <button type="button" onClick={() => toggleMehendiChip(p.id, 'tiers', t)} className="text-slate-400 hover:text-rose-400 text-xs">✕ Remove</button>
+                                  </div>
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                    <div>
+                                      <label className="block text-[10px] text-slate-400 mb-1 font-semibold">Price for {t.toLowerCase()} (₹)</label>
+                                      <input type="number" min={0} value={p.mehendi?.tierPrices?.[t] ?? ''} onChange={(e) => updateMehendiMapPrice(p.id, 'tierPrices', t, e.target.value === '' ? undefined : Number(e.target.value))} placeholder="e.g. 5000" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                                    </div>
+                                    <div>
+                                      <label className="block text-[10px] text-slate-400 mb-1">Upload {t.toLowerCase()} photo</label>
+                                      <div className="flex items-center gap-2.5">
+                                        {imgUrl ? (<div className="relative"><img src={imgUrl} alt={t} className="w-16 h-12 rounded-lg object-cover border border-slate-700" /><button type="button" onClick={() => removeMehendiImage(p.id, 'tier', t)} className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px]">✕</button></div>) : null}
+                                        <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold cursor-pointer border border-slate-700">
+                                          {isUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 text-amber-400" />}
+                                          {imgUrl ? 'Change photo' : 'Upload photo'}
+                                          <input type="file" accept="image/*" className="hidden" disabled={isUploading} onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadMehendiImage(p.id, 'tier', t, f); e.target.value = ''; }} />
+                                        </label>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {/* DESIGN INTRICACY — select, set price & upload a photo per option */}
+                          <div className="space-y-2">
+                            <label className="block text-[10px] text-slate-400 uppercase font-bold">Design intricacy (select to set price &amp; upload photo)</label>
+                            <div className="flex flex-wrap gap-2">
+                              {MEHENDI_INTRICACY.map((i) => (
+                                <button type="button" key={i} onClick={() => toggleMehendiChip(p.id, 'intricacies', i)} className={catChip((p.mehendi?.intricacies || []).includes(i))}>{i}</button>
+                              ))}
+                            </div>
+                            {(p.mehendi?.intricacies || []).map((i) => {
+                              const isUploading = uploadingMehendiImg === `${p.id}:intricacy:${i}`;
+                              const imgUrl = p.mehendi?.intricacyImages?.[i];
+                              return (
+                                <div key={i} className="p-3 rounded-xl border border-amber-500/30 bg-amber-950/10 space-y-2.5">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-xs font-bold text-amber-300">{i}</span>
+                                    <button type="button" onClick={() => toggleMehendiChip(p.id, 'intricacies', i)} className="text-slate-400 hover:text-rose-400 text-xs">✕ Remove</button>
+                                  </div>
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                    <div>
+                                      <label className="block text-[10px] text-slate-400 mb-1 font-semibold">Price for {i.toLowerCase()} (₹)</label>
+                                      <input type="number" min={0} value={p.mehendi?.intricacyPrices?.[i] ?? ''} onChange={(e) => updateMehendiMapPrice(p.id, 'intricacyPrices', i, e.target.value === '' ? undefined : Number(e.target.value))} placeholder="e.g. 3000" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                                    </div>
+                                    <div>
+                                      <label className="block text-[10px] text-slate-400 mb-1">Upload photo</label>
+                                      <div className="flex items-center gap-2.5">
+                                        {imgUrl ? (<div className="relative"><img src={imgUrl} alt={i} className="w-16 h-12 rounded-lg object-cover border border-slate-700" /><button type="button" onClick={() => removeMehendiImage(p.id, 'intricacy', i)} className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px]">✕</button></div>) : null}
+                                        <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold cursor-pointer border border-slate-700">
+                                          {isUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 text-amber-400" />}
+                                          {imgUrl ? 'Change photo' : 'Upload photo'}
+                                          <input type="file" accept="image/*" className="hidden" disabled={isUploading} onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadMehendiImage(p.id, 'intricacy', i, f); e.target.value = ''; }} />
+                                        </label>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {/* TYPE — price for each */}
+                          <div>
+                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-2">Type — price for each (leave blank if not offered)</label>
+                            <div className="grid grid-cols-2 gap-2">
                               {MEHENDI_TYPES.map((t) => (
-                                <button type="button" key={t} onClick={() => updatePackageMehendi(p.id, 'type', t)} className={catChip(p.mehendi?.type === t)}>{t}</button>
+                                <div key={t}>
+                                  <label className="block text-[10px] text-slate-500 mb-1">{t}</label>
+                                  <div className="relative">
+                                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 text-sm">₹</span>
+                                    <input type="number" min={0} value={p.mehendi?.typePrices?.[t] ?? ''} onChange={(e) => updateMehendiMapPrice(p.id, 'typePrices', t, e.target.value === '' ? undefined : Number(e.target.value))} placeholder="Price" className="w-full pl-6 pr-2 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                                  </div>
+                                </div>
                               ))}
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-3 gap-2">
+                          {/* Artists + priced options */}
+                          <div className="grid grid-cols-2 gap-2">
                             <div>
                               <label className="block text-[10px] text-slate-500 mb-1">Artists (guest stalls)</label>
-                              <input type="number" min={0} value={p.mehendi?.numArtists ?? ''} onChange={(e) => updatePackageMehendi(p.id, 'numArtists', e.target.value === '' ? undefined : Number(e.target.value))}
-                                placeholder="e.g. 2" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                              <input type="number" min={0} value={p.mehendi?.numArtists ?? ''} onChange={(e) => updatePackageMehendi(p.id, 'numArtists', e.target.value === '' ? undefined : Number(e.target.value))} placeholder="e.g. 2" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
                             </div>
-                            <div>
-                              <label className="block text-[10px] text-slate-500 mb-1">Per-hand price (guests) ₹</label>
-                              <input type="number" min={0} value={p.mehendi?.perHandPrice ?? ''} onChange={(e) => updatePackageMehendi(p.id, 'perHandPrice', e.target.value === '' ? undefined : Number(e.target.value))}
-                                placeholder="e.g. 200" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
-                            </div>
-                            <div>
-                              <label className="block text-[10px] text-slate-500 mb-1">Duration (hrs)</label>
-                              <input type="number" min={0} value={p.mehendi?.durationHours ?? ''} onChange={(e) => updatePackageMehendi(p.id, 'durationHours', e.target.value === '' ? undefined : Number(e.target.value))}
-                                placeholder="e.g. 4" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-2">
-                            {([['organicHenna', 'Organic henna'], ['travelIncluded', 'Travel included']] as const).map(([field, label]) => (
+                            {([['artistsPrice', 'Artists price (₹)'], ['organicHennaPrice', 'Organic henna (₹)'], ['travelPrice', 'Travel (₹)']] as const).map(([field, label]) => (
                               <div key={field}>
-                                <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">{label}</label>
-                                <div className="flex gap-1.5">
-                                  <button type="button" onClick={() => updatePackageMehendi(p.id, field, true)} className={catChip((p.mehendi as any)?.[field] === true)}>Yes</button>
-                                  <button type="button" onClick={() => updatePackageMehendi(p.id, field, false)} className={catChip((p.mehendi as any)?.[field] === false)}>No</button>
+                                <label className="block text-[10px] text-slate-500 mb-1">{label}</label>
+                                <div className="relative">
+                                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 text-sm">₹</span>
+                                  <input type="number" min={0} value={(p.mehendi as any)?.[field] ?? ''} onChange={(e) => updatePackageMehendi(p.id, field, e.target.value === '' ? undefined : Number(e.target.value))} placeholder="Blank if N/A" className="w-full pl-6 pr-2 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
                                 </div>
                               </div>
                             ))}
