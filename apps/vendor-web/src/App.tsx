@@ -714,7 +714,7 @@ export function App() {
               className="ml-auto flex items-center gap-1 text-[11px] text-white font-bold px-2 py-1 rounded-lg bg-black/20 hover:bg-black/30"
             >
               <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-              {items.length > 0 ? `${items.length} item${items.length === 1 ? '' : 's'}` : 'Add items'}
+              {(() => { const unit = myVendor?.category === 'Security' ? 'person' : 'item'; return items.length > 0 ? `${items.length} ${items.length === 1 ? unit : (unit === 'person' ? 'persons' : 'items')}` : (unit === 'person' ? 'Add persons' : 'Add items'); })()}
             </button>
           )}
           {NO_ITEM_OPTIONS.has(opt) && myVendor?.category === 'Media' && (
@@ -749,7 +749,7 @@ export function App() {
             )}
             {items.length === 0 && (
               <p className="text-[11px] text-slate-500">
-                No items yet — add {opt.toLowerCase()} items with a rate. Customers see each one on your listing.
+                No {myVendor?.category === 'Security' ? 'persons' : 'items'} yet — add {opt.toLowerCase()} {myVendor?.category === 'Security' ? 'persons' : 'items'} with a rate. Customers see each one on your listing.
               </p>
             )}
             {items.map((item, i) => (
@@ -758,7 +758,7 @@ export function App() {
                   type="text"
                   value={item.name}
                   onChange={(e) => updateOptionItem(opt, i, 'name', e.target.value)}
-                  placeholder={`Item name (e.g. ${nameExample})`}
+                  placeholder={`${myVendor?.category === 'Security' ? 'Person name' : 'Item name'} (e.g. ${nameExample})`}
                   list={nameSuggestions.length > 0 ? nameListId : undefined}
                   className="flex-1 min-w-[150px] p-2 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs"
                 />
@@ -866,7 +866,7 @@ export function App() {
               onClick={() => addOptionItem(opt)}
               className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white font-bold hover:bg-slate-700"
             >
-              <Plus className="w-3.5 h-3.5" /> Add item
+              <Plus className="w-3.5 h-3.5" /> {myVendor?.category === 'Security' ? 'Add person' : 'Add item'}
             </button>
 
             {/* Photos / profile document for this option — shown to customers under it.
@@ -3273,8 +3273,69 @@ export function App() {
     setPackages((prev) => prev.map((p) => (p.id === pkgId ? { ...p, eventHost: { ...(p.eventHost || {}), [field]: value } } : p)));
 
   // Security packages carry structured details.
+  // Security package total = every entered gender-staffing price + the facility
+  // add-on prices (metal detectors / CCTV / VIP / crowd mgmt).
+  const securityTotal = (s?: any): number => {
+    if (!s) return 0;
+    let sum = 0;
+    if (Array.isArray(s.genders) && s.genderPrices) {
+      for (const g of s.genders) sum += Number(s.genderPrices[g]) || 0;
+    }
+    sum += Number(s.metalDetectorsPrice) || 0;
+    sum += Number(s.cctvPrice) || 0;
+    sum += Number(s.vipProtectionPrice) || 0;
+    sum += Number(s.crowdManagementPrice) || 0;
+    return sum;
+  };
   const updatePackageSecurity = (pkgId: string, field: string, value: any) =>
-    setPackages((prev) => prev.map((p) => (p.id === pkgId ? { ...p, security: { ...(p.security || {}), [field]: value } } : p)));
+    setPackages((prev) => prev.map((p) => {
+      if (p.id !== pkgId) return p;
+      const security = { ...(p.security || {}), [field]: value };
+      return { ...p, security, price: securityTotal(security) };
+    }));
+  // Toggle a gender chip in security.genders[].
+  const toggleSecurityGender = (pkgId: string, g: string) =>
+    setPackages((prev) => prev.map((p) => {
+      if (p.id !== pkgId) return p;
+      const cur: string[] = (p.security?.genders) || [];
+      const next = cur.includes(g) ? cur.filter((x) => x !== g) : [...cur, g];
+      const security = { ...(p.security || {}), genders: next };
+      return { ...p, security, price: securityTotal(security) };
+    }));
+  // Set a name / price for one gender group.
+  const updateSecurityGenderField = (pkgId: string, mapField: 'genderNames' | 'genderPrices', g: string, value: any) =>
+    setPackages((prev) => prev.map((p) => {
+      if (p.id !== pkgId) return p;
+      const map: Record<string, any> = { ...(((p.security as any)?.[mapField]) || {}) };
+      if (value === undefined || value === '') delete map[g]; else map[g] = value;
+      const security = { ...(p.security || {}), [mapField]: map };
+      return { ...p, security, price: securityTotal(security) };
+    }));
+  const [uploadingSecurityImg, setUploadingSecurityImg] = useState<string | null>(null);
+  const uploadSecurityImage = async (pkgId: string, g: string, file: File) => {
+    if (!token) return;
+    setUploadingSecurityImg(`${pkgId}:${g}`);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch(`${GATEWAY_URL}/api/v1/uploads`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd });
+      const data = await res.json().catch(() => ({}));
+      const fileUrl = data?.data?.fileUrl || data?.url || URL.createObjectURL(file);
+      setPackages((prev) => prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const cur = p.security || {};
+        return { ...p, security: { ...cur, genderImages: { ...((cur as any).genderImages || {}), [g]: fileUrl } } };
+      }));
+    } catch { /* best effort */ } finally { setUploadingSecurityImg(null); }
+  };
+  const removeSecurityImage = (pkgId: string, g: string) =>
+    setPackages((prev) => prev.map((p) => {
+      if (p.id !== pkgId) return p;
+      const cur = p.security || {};
+      const m = { ...((cur as any).genderImages || {}) };
+      delete m[g];
+      return { ...p, security: { ...cur, genderImages: m } };
+    }));
 
   // Rental Equipment packages carry structured details.
   const updatePackageRental = (pkgId: string, field: string, value: any) =>
@@ -4877,7 +4938,7 @@ export function App() {
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <label className="block text-[10px] text-slate-400 uppercase font-bold">
-                          {myVendor?.category === 'Catering' ? 'Total amount (₹)' : myVendor?.category === 'Security' ? 'Price per guard / shift (₹)' : myVendor?.category === 'Venue' ? 'Total amount (₹)' : myVendor?.category === 'Decoration' ? 'Total amount (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Total amount (₹)' : myVendor?.category === 'Media' ? 'Total amount (₹)' : myVendor?.category === 'Transport' ? 'Total amount (₹)' : myVendor?.category === 'Invitation' ? 'Total amount (₹)' : myVendor?.category === 'Printing' ? 'Total amount (₹)' : myVendor?.category === 'Return Gifts' ? 'Total amount (₹)' : myVendor?.category === 'Lighting' || myVendor?.category === 'Lights & Sounds' ? 'Total amount (₹)' : myVendor?.category === 'Pujari/Priest' ? 'Price per ceremony (₹)' : myVendor?.category === 'Entertainment' ? 'Price per act / hour (₹)' : myVendor?.category === 'Music/DJ' ? 'Price per event / hour (₹)' : myVendor?.category === 'Flowers' ? 'Total amount (₹)' : myVendor?.category === 'Mehendi' ? 'Total amount (₹)' : myVendor?.category === 'Event Host/Anchor' ? 'Price per event (₹)' : myVendor?.category === 'Rental Equipment' ? 'Per-day rate (₹)' : myVendor?.category === 'Utensils for Rent' ? 'Total price (₹)' : myVendor?.category === 'Wedding Planner' ? 'Price per package / function (₹)' : myVendor?.category === 'Corporate Event Services' ? 'Price per total event (₹)' : 'Price (₹)'}
+                          {myVendor?.category === 'Catering' ? 'Total amount (₹)' : myVendor?.category === 'Security' ? 'Total amount (₹)' : myVendor?.category === 'Venue' ? 'Total amount (₹)' : myVendor?.category === 'Decoration' ? 'Total amount (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Total amount (₹)' : myVendor?.category === 'Media' ? 'Total amount (₹)' : myVendor?.category === 'Transport' ? 'Total amount (₹)' : myVendor?.category === 'Invitation' ? 'Total amount (₹)' : myVendor?.category === 'Printing' ? 'Total amount (₹)' : myVendor?.category === 'Return Gifts' ? 'Total amount (₹)' : myVendor?.category === 'Lighting' || myVendor?.category === 'Lights & Sounds' ? 'Total amount (₹)' : myVendor?.category === 'Pujari/Priest' ? 'Price per ceremony (₹)' : myVendor?.category === 'Entertainment' ? 'Price per act / hour (₹)' : myVendor?.category === 'Music/DJ' ? 'Price per event / hour (₹)' : myVendor?.category === 'Flowers' ? 'Total amount (₹)' : myVendor?.category === 'Mehendi' ? 'Total amount (₹)' : myVendor?.category === 'Event Host/Anchor' ? 'Price per event (₹)' : myVendor?.category === 'Rental Equipment' ? 'Per-day rate (₹)' : myVendor?.category === 'Utensils for Rent' ? 'Total price (₹)' : myVendor?.category === 'Wedding Planner' ? 'Price per package / function (₹)' : myVendor?.category === 'Corporate Event Services' ? 'Price per total event (₹)' : 'Price (₹)'}
                         </label>
                         {myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 && (
                           <span className="text-[10px] text-amber-400 font-bold">
@@ -5028,26 +5089,66 @@ export function App() {
                   </div>
 
                   {myVendor?.category === 'Security' && (
-                    <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/40 p-3">
-                      <p className="text-[10px] text-amber-400 uppercase font-bold">Security details</p>
+                    <div className="space-y-4 rounded-xl border border-slate-800 bg-slate-950/40 p-3.5">
+                      <div className="flex items-center justify-between">
+                        <p className="text-[10px] text-amber-400 uppercase font-bold">Security details &amp; Pricing</p>
+                        {securityTotal(p.security) > 0 && (
+                          <span className="text-[10px] text-amber-400 font-bold bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-full font-mono">
+                            Total: ₹{securityTotal(p.security).toLocaleString('en-IN')}
+                          </span>
+                        )}
+                      </div>
 
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Type</label>
-                          <div className="flex flex-wrap gap-2">
-                            {SECURITY_TYPES.map((t) => (
-                              <button type="button" key={t} onClick={() => updatePackageSecurity(p.id, 'type', t)} className={catChip(p.security?.type === t)}>{t}</button>
-                            ))}
-                          </div>
+                      <div>
+                        <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Type</label>
+                        <div className="flex flex-wrap gap-2">
+                          {SECURITY_TYPES.map((t) => (
+                            <button type="button" key={t} onClick={() => updatePackageSecurity(p.id, 'type', t)} className={catChip(p.security?.type === t)}>{t}</button>
+                          ))}
                         </div>
-                        <div>
-                          <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Gender</label>
-                          <div className="flex flex-wrap gap-2">
-                            {SECURITY_GENDERS.map((g) => (
-                              <button type="button" key={g} onClick={() => updatePackageSecurity(p.id, 'gender', g)} className={catChip(p.security?.gender === g)}>{g}</button>
-                            ))}
-                          </div>
+                      </div>
+
+                      {/* GENDER — select, then name + price + photo per staffing group */}
+                      <div className="space-y-2">
+                        <label className="block text-[10px] text-slate-400 uppercase font-bold">Gender (select to set name, price &amp; upload photo)</label>
+                        <div className="flex flex-wrap gap-2">
+                          {SECURITY_GENDERS.map((g) => (
+                            <button type="button" key={g} onClick={() => toggleSecurityGender(p.id, g)} className={catChip((p.security?.genders || []).includes(g))}>{g}</button>
+                          ))}
                         </div>
+                        {(p.security?.genders || []).map((g) => {
+                          const isUploading = uploadingSecurityImg === `${p.id}:${g}`;
+                          const imgUrl = p.security?.genderImages?.[g];
+                          return (
+                            <div key={g} className="p-3 rounded-xl border border-amber-500/30 bg-amber-950/10 space-y-2.5">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-bold text-amber-300">{g}</span>
+                                <button type="button" onClick={() => toggleSecurityGender(p.id, g)} className="text-slate-400 hover:text-rose-400 text-xs">✕ Remove</button>
+                              </div>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                <div>
+                                  <label className="block text-[10px] text-slate-400 mb-1 font-semibold">Name</label>
+                                  <input type="text" value={p.security?.genderNames?.[g] ?? ''} onChange={(e) => updateSecurityGenderField(p.id, 'genderNames', g, e.target.value)} placeholder={`e.g. ${g} bouncers`} className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] text-slate-400 mb-1 font-semibold">Price (₹)</label>
+                                  <input type="number" min={0} value={p.security?.genderPrices?.[g] ?? ''} onChange={(e) => updateSecurityGenderField(p.id, 'genderPrices', g, e.target.value === '' ? undefined : Number(e.target.value))} placeholder="e.g. 2000" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                                </div>
+                              </div>
+                              <div>
+                                <label className="block text-[10px] text-slate-400 mb-1">Upload photo</label>
+                                <div className="flex items-center gap-2.5">
+                                  {imgUrl ? (<div className="relative"><img src={imgUrl} alt={g} className="w-16 h-12 rounded-lg object-cover border border-slate-700" /><button type="button" onClick={() => removeSecurityImage(p.id, g)} className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px]">✕</button></div>) : null}
+                                  <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold cursor-pointer border border-slate-700">
+                                    {isUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 text-amber-400" />}
+                                    {imgUrl ? 'Change photo' : 'Upload photo'}
+                                    <input type="file" accept="image/*" className="hidden" disabled={isUploading} onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadSecurityImage(p.id, g, f); e.target.value = ''; }} />
+                                  </label>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
 
                       <div className="grid grid-cols-2 gap-2">
@@ -5063,16 +5164,20 @@ export function App() {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                        {([['metalDetectors', 'Metal detectors'], ['cctv', 'CCTV'], ['vipProtection', 'VIP protection'], ['crowdManagement', 'Gate / crowd mgmt']] as const).map(([field, label]) => (
-                          <div key={field}>
-                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">{label}</label>
-                            <div className="flex gap-1.5">
-                              <button type="button" onClick={() => updatePackageSecurity(p.id, field, true)} className={catChip((p.security as any)?.[field] === true)}>Yes</button>
-                              <button type="button" onClick={() => updatePackageSecurity(p.id, field, false)} className={catChip((p.security as any)?.[field] === false)}>No</button>
+                      {/* Facility add-ons — price for each (blank if not offered) */}
+                      <div>
+                        <label className="block text-[10px] text-slate-400 uppercase font-bold mb-2">Add-ons — price for each (leave blank if not offered)</label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {([['metalDetectorsPrice', 'Metal detectors'], ['cctvPrice', 'CCTV'], ['vipProtectionPrice', 'VIP protection'], ['crowdManagementPrice', 'Gate / crowd mgmt']] as const).map(([field, label]) => (
+                            <div key={field}>
+                              <label className="block text-[10px] text-slate-500 mb-1">{label}</label>
+                              <div className="relative">
+                                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 text-sm">₹</span>
+                                <input type="number" min={0} value={(p.security as any)?.[field] ?? ''} onChange={(e) => updatePackageSecurity(p.id, field, e.target.value === '' ? undefined : Number(e.target.value))} placeholder="Price" className="w-full pl-6 pr-2 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
                     </div>
                   )}

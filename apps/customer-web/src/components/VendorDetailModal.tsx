@@ -792,26 +792,43 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                         </div>
                       </div>
                       {pkg.security && (() => {
-                        const s = pkg.security;
-                        const chip = 'text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200';
-                        const incl: [string, boolean | undefined][] = [
-                          ['Metal detectors', s.metalDetectors], ['CCTV', s.cctv], ['VIP protection', s.vipProtection], ['Gate / crowd mgmt', s.crowdManagement],
+                        const s: any = pkg.security;
+                        const inr = (n: any) => (Number(n) === 0 ? 'Included' : `₹${Number(n).toLocaleString('en-IN')}`);
+                        const genders: string[] = s.genders || (s.gender ? [s.gender] : []);
+                        const addons: [string, any][] = [
+                          ['Metal detectors', s.metalDetectorsPrice], ['CCTV', s.cctvPrice], ['VIP protection', s.vipProtectionPrice], ['Gate / crowd mgmt', s.crowdManagementPrice],
                         ];
+                        const offered = addons.filter(([, v]) => typeof v === 'number');
                         return (
-                          <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2" onClick={(e) => e.stopPropagation()}>
+                          <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2.5" onClick={(e) => e.stopPropagation()}>
                             <span className="text-[10px] font-bold text-slate-400 uppercase block">Security details</span>
-                            <div className="flex flex-wrap gap-1.5">
-                              {s.type && <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-200 font-bold">{s.type}</span>}
-                              {s.gender && <span className={chip}>{s.gender}</span>}
-                            </div>
+                            {s.type && <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-200 font-bold inline-block">{s.type}</span>}
+                            {genders.length > 0 && (
+                              <div className="space-y-1">
+                                <span className="text-[10px] font-bold text-slate-500 uppercase block">Staffing</span>
+                                {genders.map((g) => (
+                                  <div key={g} className="flex items-center justify-between gap-2 text-[11px]">
+                                    <span className="flex items-center gap-2 text-slate-300">
+                                      {s.genderImages?.[g] ? <img src={s.genderImages[g]} alt={g} className="w-8 h-8 rounded object-cover border border-slate-700" /> : null}
+                                      {s.genderNames?.[g] || g}
+                                    </span>
+                                    {typeof s.genderPrices?.[g] === 'number' && <span className="text-amber-300 font-semibold">{inr(s.genderPrices[g])}</span>}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
                             <div className="space-y-1 text-[11px] text-slate-300">
                               {s.numGuards ? <div>Guards: <span className="text-white font-semibold">{s.numGuards}</span></div> : null}
                               {s.hoursShifts ? <div>Hours / shifts: <span className="text-white font-semibold">{s.hoursShifts}</span></div> : null}
                             </div>
-                            {incl.some(([, v]) => v !== undefined) && (
-                              <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px]">
-                                {incl.filter(([, v]) => v !== undefined).map(([label, v]) => (
-                                  <span key={label} className="text-slate-400">{label}: <b className={v ? 'text-emerald-400' : 'text-slate-500'}>{v ? 'Yes' : 'No'}</b></span>
+                            {offered.length > 0 && (
+                              <div className="space-y-1">
+                                <span className="text-[10px] font-bold text-slate-500 uppercase block">Add-ons</span>
+                                {offered.map(([label, v]) => (
+                                  <div key={label} className="flex items-center justify-between text-[11px]">
+                                    <span className="text-slate-400">{label}</span>
+                                    <span className="text-amber-300 font-semibold">{inr(v)}</span>
+                                  </div>
                                 ))}
                               </div>
                             )}

@@ -360,6 +360,14 @@ const vendorPackageSchema = new Schema(
       cctv: Boolean,
       vipProtection: Boolean,
       crowdManagement: Boolean,
+      genders: [String],
+      genderNames: Schema.Types.Mixed,
+      genderPrices: Schema.Types.Mixed,
+      genderImages: Schema.Types.Mixed,
+      metalDetectorsPrice: Number,
+      cctvPrice: Number,
+      vipProtectionPrice: Number,
+      crowdManagementPrice: Number,
     },
     // Rental Equipment-only structured details.
     rental: {

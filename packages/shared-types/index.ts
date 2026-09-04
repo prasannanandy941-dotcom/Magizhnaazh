@@ -159,14 +159,25 @@ export const RENTAL_ITEMS = ['Chairs', 'Tables', 'Tents', 'Stage', 'Sofas', 'Car
 
 // Structured details for a Security vendor's package (per guard / per shift).
 export interface SecurityPackageDetails {
+  // legacy single-selects / booleans
   numGuards?: number;
   type?: string; // Guards / Bouncers
-  gender?: string; // Male / Female / Mixed
+  gender?: string;
   hoursShifts?: number;
   metalDetectors?: boolean;
   cctv?: boolean;
   vipProtection?: boolean;
-  crowdManagement?: boolean; // gate / crowd management
+  crowdManagement?: boolean;
+  // Priced structure: each staffing option (by gender) carries a name, price &
+  // photo; the facility add-ons carry a price. Package Total = sum of all these.
+  genders?: string[];
+  genderNames?: Record<string, string>;
+  genderPrices?: Record<string, number>;
+  genderImages?: Record<string, string>;
+  metalDetectorsPrice?: number;
+  cctvPrice?: number;
+  vipProtectionPrice?: number;
+  crowdManagementPrice?: number;
 }
 
 // Option sets for the Security package form.
