@@ -869,11 +869,12 @@ export function App() {
               <Plus className="w-3.5 h-3.5" /> Add item
             </button>
 
-            {/* Photos for this option — shown to customers under it. Restricted to Flowers vendors only. */}
-            {myVendor?.category === 'Flowers' && (
+            {/* Photos ("add profile") for this option — shown to customers under it.
+                Enabled for Flowers and Event Host/Anchor vendors. */}
+            {(myVendor?.category === 'Flowers' || myVendor?.category === 'Event Host/Anchor') && (
               <div className="pt-2 mt-1 border-t border-slate-800">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[10px] text-slate-400 uppercase font-bold">Photos</span>
+                  <span className="text-[10px] text-slate-400 uppercase font-bold">{myVendor?.category === 'Event Host/Anchor' ? 'Profile photo' : 'Photos'}</span>
                   {(offeredOptionImages[opt] || []).map((url) => (
                     <div key={url} className="relative h-14 w-14 rounded-lg overflow-hidden border border-slate-800 bg-slate-950">
                       <img src={url} alt="option" className="w-full h-full object-cover" />
@@ -4043,7 +4044,7 @@ export function App() {
             // Venue's event-services live inside the Halls tab, so it has no
             // separate "Hall Facilities" tab.
             ...(myVendor?.category !== 'Venue' ? [{ key: 'facilities', label: facilitiesSectionLabel(myVendor?.category) }] : []),
-            ...(myVendor?.category !== 'Wedding Planner' ? [{ key: 'packages', label: `${myVendor?.category === 'Venue' ? 'Halls' : 'Packages'}${packages.length ? ` (${packages.length})` : ''}` }] : []),
+            ...(myVendor?.category !== 'Wedding Planner' && myVendor?.category !== 'Event Host/Anchor' ? [{ key: 'packages', label: `${myVendor?.category === 'Venue' ? 'Halls' : 'Packages'}${packages.length ? ` (${packages.length})` : ''}` }] : []),
             ...(myVendor?.category !== 'Security' ? [{ key: 'offers', label: `Offers${deals.length ? ` (${deals.length})` : ''}` }] : []),
             { key: 'availability', label: 'Availability' },
             { key: 'portfolio', label: 'Local Disk Portfolio' },
