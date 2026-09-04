@@ -25,16 +25,26 @@ const SERVICES = {
 app.use(cors());
 app.use(requestLogger('gateway'));
 
-// General limiter across the whole gateway. The monitoring endpoints are
-// polled continuously by the admin dashboard, so they're exempt — otherwise a
-// single open dashboard exhausts the shared budget and every service call
-// starts returning 429s.
+// Behind a reverse proxy (nginx on the VPS, Render's edge on the cloud) the
+// real client IP is in X-Forwarded-For; the socket IP is the proxy's, which is
+// the SAME for every visitor. Trust one proxy hop so req.ip resolves to the
+// actual client — otherwise the rate limiter below keys every request to the
+// proxy's single IP, all users share one bucket, and a little normal traffic
+// 429s the entire app.
+app.set('trust proxy', 1);
+
+// General limiter across the whole gateway, keyed per client IP. The monitoring
+// endpoints are polled continuously by the admin dashboard, so they're exempt —
+// otherwise a single open dashboard exhausts that client's budget. The limit is
+// deliberately generous: the web apps fire several calls on each page load and
+// poll in the background, so a real session makes many legitimate requests.
 app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000,
-    limit: 300,
+    limit: 2000,
     standardHeaders: true,
     legacyHeaders: false,
+    message: { success: false, message: 'Too many requests. Please slow down and try again shortly.' },
     skip: (req) => req.path.startsWith('/api/v1/monitor') || req.path === '/health',
   })
 );
