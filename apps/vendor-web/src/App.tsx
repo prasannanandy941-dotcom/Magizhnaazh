@@ -760,7 +760,7 @@ export function App() {
                   onChange={(e) => updateOptionItem(opt, i, 'name', e.target.value)}
                   placeholder={`${myVendor?.category === 'Security' ? 'Person name' : 'Item name'} (e.g. ${nameExample})`}
                   list={nameSuggestions.length > 0 ? nameListId : undefined}
-                  className="flex-1 min-w-[150px] p-2 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs"
+                  className="flex-1 min-w-0 p-2 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs"
                 />
                 <div className="flex items-center gap-1">
                   <span className="text-slate-400 text-xs">₹</span>
@@ -5474,7 +5474,7 @@ export function App() {
                                                 value={item.name}
                                                 onChange={(e) => updateCateringFoodItem(p.id, f, itemIdx, 'name', e.target.value)}
                                                 placeholder={f === 'Non-Veg' ? 'Item name — e.g. Chicken Biryani' : f === 'Jain' ? 'Item name — e.g. Jain Dal Makhani' : 'Item name — e.g. Paneer Butter Masala'}
-                                                className="flex-1 p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-xs"
+                                                className="flex-1 min-w-0 p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-xs"
                                               />
                                               <div className="flex items-center gap-1 px-2 rounded-lg bg-slate-950 border border-slate-800">
                                                 <span className="text-slate-500 text-xs">₹</span>
@@ -5575,7 +5575,7 @@ export function App() {
                                                 value={item.name}
                                                 onChange={(e) => updateCateringCuisineItem(p.id, c, itemIdx, 'name', e.target.value)}
                                                 placeholder={placeholder}
-                                                className="flex-1 p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-xs"
+                                                className="flex-1 min-w-0 p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-xs"
                                               />
                                               <div className="flex items-center gap-1 px-2 rounded-lg bg-slate-950 border border-slate-800">
                                                 <span className="text-slate-500 text-xs">₹</span>
