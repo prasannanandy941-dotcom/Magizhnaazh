@@ -14,7 +14,9 @@
    tab strip (overflow-x-auto) scrolls sideways, never the whole screen. */
 html, body {
   overscroll-behavior: none;
-  overflow-x: hidden;
+  /* `clip` stops horizontal page scroll WITHOUT creating a scroll container —
+     `hidden` here can lock vertical scrolling in the Android WebView. */
+  overflow-x: clip;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
