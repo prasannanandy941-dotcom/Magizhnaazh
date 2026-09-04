@@ -4261,7 +4261,7 @@ export function App() {
         )}
 
         {/* Navigation Tabs */}
-        <div className="flex items-center gap-4 border-b border-slate-800">
+        <div className="flex items-center gap-4 border-b border-slate-800 overflow-x-auto no-scrollbar">
           {[
             { key: 'dashboard', label: 'Bookings & Quotes' },
             { key: 'reviews', label: `Reviews${reviews.length ? ` (${reviews.length})` : ''}` },
@@ -4277,7 +4277,7 @@ export function App() {
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key as any)}
-              className={`py-3 font-semibold text-xs border-b-2 transition-colors ${
+              className={`shrink-0 whitespace-nowrap py-3 font-semibold text-xs border-b-2 transition-colors ${
                 activeTab === tab.key
                   ? 'border-amber-500 text-amber-400'
                   : 'border-transparent text-slate-100 hover:text-white'
