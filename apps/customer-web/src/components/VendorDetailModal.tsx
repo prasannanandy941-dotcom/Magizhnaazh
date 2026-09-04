@@ -2082,26 +2082,35 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                       })()}
 
                       {vendor.category === 'Rental Equipment' && pkg.rental && (() => {
-                        const rt = pkg.rental;
-                        const chip = 'text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200';
-                        const incl: [string, boolean | undefined][] = [
-                          ['Setup + teardown', rt.setupTeardown], ['Delivery', rt.delivery],
-                        ];
+                        const rt: any = pkg.rental;
+                        const inr = (n: any) => (Number(n) === 0 ? 'Included' : `₹${Number(n).toLocaleString('en-IN')}`);
+                        const items: string[] = rt.items || [];
                         return (
-                          <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2" onClick={(e) => e.stopPropagation()}>
+                          <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2.5" onClick={(e) => e.stopPropagation()}>
                             <span className="text-[10px] font-bold text-slate-400 uppercase block">Rental details</span>
-                            <div className="flex flex-wrap gap-1.5">
-                              {(rt.items || []).map((it) => <span key={`rt-${it}`} className={chip}>{it}</span>)}
-                            </div>
-                            <div className="space-y-1 text-[11px] text-slate-300">
-                              {rt.quantity ? <div>Quantity: <span className="text-white font-semibold">{rt.quantity}</span></div> : null}
-                              {rt.securityDeposit ? <div>Security deposit: <span className="text-white font-semibold">₹{rt.securityDeposit.toLocaleString('en-IN')}</span></div> : null}
-                            </div>
-                            {incl.some(([, v]) => v !== undefined) && (
-                              <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px]">
-                                {incl.filter(([, v]) => v !== undefined).map(([label, v]) => (
-                                  <span key={label} className="text-slate-400">{label}: <b className={v ? 'text-emerald-400' : 'text-slate-500'}>{v ? 'Yes' : 'No'}</b></span>
-                                ))}
+                            {items.length > 0 && (
+                              <div className="space-y-1.5">
+                                {items.map((it) => {
+                                  const qty = rt.itemQuantities?.[it];
+                                  const detail = rt.itemDetails?.[it];
+                                  const price = rt.itemPrices?.[it];
+                                  const img = rt.itemImages?.[it];
+                                  return (
+                                    <div key={it} className="flex items-center justify-between gap-2 text-[11px]">
+                                      <span className="flex items-center gap-2 text-slate-300">
+                                        {img ? <img src={img} alt={it} className="w-8 h-8 rounded object-cover border border-slate-700" /> : null}
+                                        <span>{it}{qty ? ` ×${qty}` : ''}{detail ? ` · ${detail}` : ''}</span>
+                                      </span>
+                                      {typeof price === 'number' && <span className="text-amber-300 font-semibold">{inr(price)}</span>}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                            {typeof rt.deliveryPrice === 'number' && (
+                              <div className="flex items-center justify-between text-[11px]">
+                                <span className="text-slate-400">Delivery</span>
+                                <span className="text-amber-300 font-semibold">{inr(rt.deliveryPrice)}</span>
                               </div>
                             )}
                           </div>

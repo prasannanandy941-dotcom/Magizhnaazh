@@ -3338,14 +3338,62 @@ export function App() {
     }));
 
   // Rental Equipment packages carry structured details.
+  // Rental total = every selected item's price + the delivery price.
+  const rentalTotal = (r?: any): number => {
+    if (!r) return 0;
+    let sum = 0;
+    if (Array.isArray(r.items) && r.itemPrices) {
+      for (const it of r.items) sum += Number(r.itemPrices[it]) || 0;
+    }
+    sum += Number(r.deliveryPrice) || 0;
+    return sum;
+  };
   const updatePackageRental = (pkgId: string, field: string, value: any) =>
-    setPackages((prev) => prev.map((p) => (p.id === pkgId ? { ...p, rental: { ...(p.rental || {}), [field]: value } } : p)));
+    setPackages((prev) => prev.map((p) => {
+      if (p.id !== pkgId) return p;
+      const rental = { ...(p.rental || {}), [field]: value };
+      return { ...p, rental, price: rentalTotal(rental) };
+    }));
   const toggleRentalItem = (pkgId: string, item: string) =>
     setPackages((prev) => prev.map((p) => {
       if (p.id !== pkgId) return p;
       const current: string[] = (p.rental?.items) || [];
       const next = current.includes(item) ? current.filter((x) => x !== item) : [...current, item];
-      return { ...p, rental: { ...(p.rental || {}), items: next } };
+      const rental = { ...(p.rental || {}), items: next };
+      return { ...p, rental, price: rentalTotal(rental) };
+    }));
+  const updateRentalItemField = (pkgId: string, mapField: 'itemQuantities' | 'itemPrices' | 'itemDetails', item: string, value: any) =>
+    setPackages((prev) => prev.map((p) => {
+      if (p.id !== pkgId) return p;
+      const map: Record<string, any> = { ...(((p.rental as any)?.[mapField]) || {}) };
+      if (value === undefined || value === '') delete map[item]; else map[item] = value;
+      const rental = { ...(p.rental || {}), [mapField]: map };
+      return { ...p, rental, price: rentalTotal(rental) };
+    }));
+  const [uploadingRentalImg, setUploadingRentalImg] = useState<string | null>(null);
+  const uploadRentalImage = async (pkgId: string, item: string, file: File) => {
+    if (!token) return;
+    setUploadingRentalImg(`${pkgId}:${item}`);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch(`${GATEWAY_URL}/api/v1/uploads`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd });
+      const data = await res.json().catch(() => ({}));
+      const fileUrl = data?.data?.fileUrl || data?.url || URL.createObjectURL(file);
+      setPackages((prev) => prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const cur = p.rental || {};
+        return { ...p, rental: { ...cur, itemImages: { ...((cur as any).itemImages || {}), [item]: fileUrl } } };
+      }));
+    } catch { /* best effort */ } finally { setUploadingRentalImg(null); }
+  };
+  const removeRentalImage = (pkgId: string, item: string) =>
+    setPackages((prev) => prev.map((p) => {
+      if (p.id !== pkgId) return p;
+      const cur = p.rental || {};
+      const m = { ...((cur as any).itemImages || {}) };
+      delete m[item];
+      return { ...p, rental: { ...cur, itemImages: m } };
     }));
 
   // Utensils for Rent packages carry structured details.
@@ -4938,7 +4986,7 @@ export function App() {
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <label className="block text-[10px] text-slate-400 uppercase font-bold">
-                          {myVendor?.category === 'Catering' ? 'Total amount (₹)' : myVendor?.category === 'Security' ? 'Total amount (₹)' : myVendor?.category === 'Venue' ? 'Total amount (₹)' : myVendor?.category === 'Decoration' ? 'Total amount (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Total amount (₹)' : myVendor?.category === 'Media' ? 'Total amount (₹)' : myVendor?.category === 'Transport' ? 'Total amount (₹)' : myVendor?.category === 'Invitation' ? 'Total amount (₹)' : myVendor?.category === 'Printing' ? 'Total amount (₹)' : myVendor?.category === 'Return Gifts' ? 'Total amount (₹)' : myVendor?.category === 'Lighting' || myVendor?.category === 'Lights & Sounds' ? 'Total amount (₹)' : myVendor?.category === 'Pujari/Priest' ? 'Price per ceremony (₹)' : myVendor?.category === 'Entertainment' ? 'Price per act / hour (₹)' : myVendor?.category === 'Music/DJ' ? 'Price per event / hour (₹)' : myVendor?.category === 'Flowers' ? 'Total amount (₹)' : myVendor?.category === 'Mehendi' ? 'Total amount (₹)' : myVendor?.category === 'Event Host/Anchor' ? 'Price per event (₹)' : myVendor?.category === 'Rental Equipment' ? 'Per-day rate (₹)' : myVendor?.category === 'Utensils for Rent' ? 'Total price (₹)' : myVendor?.category === 'Wedding Planner' ? 'Price per package / function (₹)' : myVendor?.category === 'Corporate Event Services' ? 'Price per total event (₹)' : 'Price (₹)'}
+                          {myVendor?.category === 'Catering' ? 'Total amount (₹)' : myVendor?.category === 'Security' ? 'Total amount (₹)' : myVendor?.category === 'Venue' ? 'Total amount (₹)' : myVendor?.category === 'Decoration' ? 'Total amount (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Total amount (₹)' : myVendor?.category === 'Media' ? 'Total amount (₹)' : myVendor?.category === 'Transport' ? 'Total amount (₹)' : myVendor?.category === 'Invitation' ? 'Total amount (₹)' : myVendor?.category === 'Printing' ? 'Total amount (₹)' : myVendor?.category === 'Return Gifts' ? 'Total amount (₹)' : myVendor?.category === 'Lighting' || myVendor?.category === 'Lights & Sounds' ? 'Total amount (₹)' : myVendor?.category === 'Pujari/Priest' ? 'Price per ceremony (₹)' : myVendor?.category === 'Entertainment' ? 'Price per act / hour (₹)' : myVendor?.category === 'Music/DJ' ? 'Price per event / hour (₹)' : myVendor?.category === 'Flowers' ? 'Total amount (₹)' : myVendor?.category === 'Mehendi' ? 'Total amount (₹)' : myVendor?.category === 'Event Host/Anchor' ? 'Price per event (₹)' : myVendor?.category === 'Rental Equipment' ? 'Total amount (₹)' : myVendor?.category === 'Utensils for Rent' ? 'Total price (₹)' : myVendor?.category === 'Wedding Planner' ? 'Price per package / function (₹)' : myVendor?.category === 'Corporate Event Services' ? 'Price per total event (₹)' : 'Price (₹)'}
                         </label>
                         {myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 && (
                           <span className="text-[10px] text-amber-400 font-bold">
@@ -8963,41 +9011,70 @@ export function App() {
 
                       {/* Rental Equipment: structured spec (replaces capacity + generic price tiers). */}
                       {myVendor?.category === 'Rental Equipment' && (
-                        <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/40 p-3">
-                          <p className="text-[10px] text-amber-400 uppercase font-bold">Rental details</p>
+                        <div className="space-y-4 rounded-xl border border-slate-800 bg-slate-950/40 p-3.5">
+                          <div className="flex items-center justify-between">
+                            <p className="text-[10px] text-amber-400 uppercase font-bold">Rental details &amp; Pricing</p>
+                            {rentalTotal(p.rental) > 0 && (
+                              <span className="text-[10px] text-amber-400 font-bold bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-full font-mono">
+                                Total: ₹{rentalTotal(p.rental).toLocaleString('en-IN')}
+                              </span>
+                            )}
+                          </div>
 
-                          <div>
-                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Items</label>
+                          {/* Items — select, then set qty / price / detail / photo per item */}
+                          <div className="space-y-2">
+                            <label className="block text-[10px] text-slate-400 uppercase font-bold">Items (select to set quantity, price &amp; upload photo)</label>
                             <div className="flex flex-wrap gap-2">
                               {RENTAL_ITEMS.map((it) => (
                                 <button type="button" key={it} onClick={() => toggleRentalItem(p.id, it)} className={catChip((p.rental?.items || []).includes(it))}>{it}</button>
                               ))}
                             </div>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <label className="block text-[10px] text-slate-500 mb-1">Quantity</label>
-                              <input type="number" min={0} value={p.rental?.quantity ?? ''} onChange={(e) => updatePackageRental(p.id, 'quantity', e.target.value === '' ? undefined : Number(e.target.value))}
-                                placeholder="e.g. 100" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
-                            </div>
-                            <div>
-                              <label className="block text-[10px] text-slate-500 mb-1">Security deposit (₹)</label>
-                              <input type="number" min={0} value={p.rental?.securityDeposit ?? ''} onChange={(e) => updatePackageRental(p.id, 'securityDeposit', e.target.value === '' ? undefined : Number(e.target.value))}
-                                placeholder="e.g. 5000" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-2">
-                            {([['setupTeardown', 'Setup + teardown included'], ['delivery', 'Delivery']] as const).map(([field, label]) => (
-                              <div key={field}>
-                                <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">{label}</label>
-                                <div className="flex gap-1.5">
-                                  <button type="button" onClick={() => updatePackageRental(p.id, field, true)} className={catChip((p.rental as any)?.[field] === true)}>Yes</button>
-                                  <button type="button" onClick={() => updatePackageRental(p.id, field, false)} className={catChip((p.rental as any)?.[field] === false)}>No</button>
+                            {(p.rental?.items || []).map((it) => {
+                              const isUploading = uploadingRentalImg === `${p.id}:${it}`;
+                              const imgUrl = p.rental?.itemImages?.[it];
+                              return (
+                                <div key={it} className="p-3 rounded-xl border border-amber-500/30 bg-amber-950/10 space-y-2.5">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-xs font-bold text-amber-300">{it}</span>
+                                    <button type="button" onClick={() => toggleRentalItem(p.id, it)} className="text-slate-400 hover:text-rose-400 text-xs">✕ Remove</button>
+                                  </div>
+                                  <div className="grid grid-cols-3 gap-2">
+                                    <div>
+                                      <label className="block text-[10px] text-slate-400 mb-1">How many</label>
+                                      <input type="number" min={0} value={p.rental?.itemQuantities?.[it] ?? ''} onChange={(e) => updateRentalItemField(p.id, 'itemQuantities', it, e.target.value === '' ? undefined : Number(e.target.value))} placeholder="e.g. 100" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                                    </div>
+                                    <div>
+                                      <label className="block text-[10px] text-slate-400 mb-1">Price (₹)</label>
+                                      <input type="number" min={0} value={p.rental?.itemPrices?.[it] ?? ''} onChange={(e) => updateRentalItemField(p.id, 'itemPrices', it, e.target.value === '' ? undefined : Number(e.target.value))} placeholder="e.g. 5000" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                                    </div>
+                                    <div>
+                                      <label className="block text-[10px] text-slate-400 mb-1">Size / detail</label>
+                                      <input type="text" value={p.rental?.itemDetails?.[it] ?? ''} onChange={(e) => updateRentalItemField(p.id, 'itemDetails', it, e.target.value)} placeholder="optional" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <label className="block text-[10px] text-slate-400 mb-1">Upload photo</label>
+                                    <div className="flex items-center gap-2.5">
+                                      {imgUrl ? (<div className="relative"><img src={imgUrl} alt={it} className="w-16 h-12 rounded-lg object-cover border border-slate-700" /><button type="button" onClick={() => removeRentalImage(p.id, it)} className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px]">✕</button></div>) : null}
+                                      <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold cursor-pointer border border-slate-700">
+                                        {isUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 text-amber-400" />}
+                                        {imgUrl ? 'Change photo' : 'Upload photo'}
+                                        <input type="file" accept="image/*" className="hidden" disabled={isUploading} onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadRentalImage(p.id, it, f); e.target.value = ''; }} />
+                                      </label>
+                                    </div>
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
+                              );
+                            })}
+                          </div>
+
+                          {/* Delivery — price */}
+                          <div className="w-1/2">
+                            <label className="block text-[10px] text-slate-500 mb-1">Delivery price (₹)</label>
+                            <div className="relative">
+                              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 text-sm">₹</span>
+                              <input type="number" min={0} value={p.rental?.deliveryPrice ?? ''} onChange={(e) => updatePackageRental(p.id, 'deliveryPrice', e.target.value === '' ? undefined : Number(e.target.value))} placeholder="Blank if free" className="w-full pl-6 pr-2 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                            </div>
                           </div>
                         </div>
                       )}

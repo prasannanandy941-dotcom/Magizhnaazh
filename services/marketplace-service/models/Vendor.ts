@@ -372,6 +372,11 @@ const vendorPackageSchema = new Schema(
     // Rental Equipment-only structured details.
     rental: {
       items: [String],
+      itemQuantities: Schema.Types.Mixed,
+      itemPrices: Schema.Types.Mixed,
+      itemDetails: Schema.Types.Mixed,
+      itemImages: Schema.Types.Mixed,
+      deliveryPrice: Number,
       quantity: Number,
       setupTeardown: Boolean,
       delivery: Boolean,

@@ -148,10 +148,17 @@ export const UTENSILS_VESSEL_TYPES = ['Cooking vessels', 'Serving', 'Plates & tu
 // Structured details for a Rental Equipment vendor's package (per item, per day).
 export interface RentalPackageDetails {
   items?: string[]; // Chairs / Tables / Tents / Stage / Sofas / Carpets / Coolers / Fans / Generators
+  // Per-item: how many, price (₹), an optional size/detail, and a photo.
+  itemQuantities?: Record<string, number>;
+  itemPrices?: Record<string, number>;
+  itemDetails?: Record<string, string>; // e.g. cooler size
+  itemImages?: Record<string, string>;
+  deliveryPrice?: number; // price for delivery
+  // legacy (kept for back-compat)
   quantity?: number;
-  setupTeardown?: boolean; // setup + teardown included
+  setupTeardown?: boolean;
   delivery?: boolean;
-  securityDeposit?: number; // ₹
+  securityDeposit?: number;
 }
 
 // Option set for the Rental Equipment package form.
