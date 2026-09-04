@@ -5196,11 +5196,6 @@ export function App() {
                     <div className="space-y-4 rounded-xl border border-slate-800 bg-slate-950/40 p-3.5">
                       <div className="flex items-center justify-between">
                         <p className="text-[10px] text-amber-400 uppercase font-bold">Security details &amp; Pricing</p>
-                        {securityTotal(p.security) > 0 && (
-                          <span className="text-[10px] text-amber-400 font-bold bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-full font-mono">
-                            Total: ₹{securityTotal(p.security).toLocaleString('en-IN')}
-                          </span>
-                        )}
                       </div>
 
                       <div>
@@ -6638,11 +6633,6 @@ export function App() {
                             <p className="text-[10px] text-amber-400 uppercase font-bold flex items-center gap-1.5">
                               <Car className="w-3.5 h-3.5" /> Vehicle &amp; Trip Details
                             </p>
-                            {transportTotal(p.transport) > 0 && (
-                              <span className="text-[10px] text-amber-400 font-bold bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-full">
-                                Total: ₹{transportTotal(p.transport).toLocaleString('en-IN')}
-                              </span>
-                            )}
                           </div>
 
                           {/* 1. Tier and Pricing Basis (Per day / Per km) with price options */}
@@ -7154,11 +7144,6 @@ export function App() {
                             <p className="text-[10px] text-amber-400 uppercase font-bold flex items-center gap-1.5">
                               <Mail className="w-3.5 h-3.5" /> Invitation Details &amp; Pricing
                             </p>
-                            {invitationTotal(p.invitation) > 0 && (
-                              <span className="text-[10px] text-amber-400 font-bold bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-full">
-                                Total: ₹{invitationTotal(p.invitation).toLocaleString('en-IN')}
-                              </span>
-                            )}
                           </div>
 
                           {/* Tier & 1. Design (Custom / Template) with only price option */}
@@ -7455,11 +7440,6 @@ export function App() {
                             <p className="text-[10px] text-amber-400 uppercase font-bold flex items-center gap-1.5">
                               <Printer className="w-3.5 h-3.5" /> Printing Specifications &amp; Pricing
                             </p>
-                            {printingTotal(p.printing) > 0 && (
-                              <span className="text-[10px] text-amber-400 font-bold bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-full">
-                                Total: ₹{printingTotal(p.printing).toLocaleString('en-IN')}
-                              </span>
-                            )}
                           </div>
 
                           {/* 1. Products (Banners, Albums, Standees, Photo frames, Thank-you cards - Flex removed) */}
@@ -7796,11 +7776,6 @@ export function App() {
                             <p className="text-[10px] text-amber-400 uppercase font-bold flex items-center gap-1.5">
                               <Gift className="w-3.5 h-3.5" /> Return Gift Specifications &amp; Pricing
                             </p>
-                            {returnGiftsTotal(p.returnGifts) > 0 && (
-                              <span className="text-[10px] text-amber-400 font-bold bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-full">
-                                Total: ₹{returnGiftsTotal(p.returnGifts).toLocaleString('en-IN')}
-                              </span>
-                            )}
                           </div>
 
                           <div>
@@ -8067,11 +8042,6 @@ export function App() {
                         <div className="space-y-4 rounded-xl border border-slate-800 bg-slate-950/40 p-3.5">
                           <div className="flex items-center justify-between">
                             <p className="text-[10px] text-amber-400 uppercase font-bold">Act details &amp; Pricing</p>
-                            {entertainmentTotal(p.entertainment) > 0 && (
-                              <span className="text-[10px] text-amber-400 font-bold bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-full font-mono">
-                                Total: ₹{entertainmentTotal(p.entertainment).toLocaleString('en-IN')}
-                              </span>
-                            )}
                           </div>
 
                           {/* Act types — select, set price & upload photo per act */}
@@ -8195,11 +8165,6 @@ export function App() {
                             <p className="text-[10px] text-amber-400 uppercase font-bold flex items-center gap-1.5">
                               Lights &amp; Sounds details &amp; Pricing
                             </p>
-                            {lightingTotal(p.lighting) > 0 && (
-                              <span className="text-[10px] text-amber-400 font-bold bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-full">
-                                Total: ₹{lightingTotal(p.lighting).toLocaleString('en-IN')}
-                              </span>
-                            )}
                           </div>
 
                           <div>
@@ -8439,11 +8404,6 @@ export function App() {
                             <p className="text-[10px] text-amber-400 uppercase font-bold flex items-center gap-1.5">
                               Flower details &amp; Pricing
                             </p>
-                            {flowersTotal(p.flowers) > 0 && (
-                              <span className="text-[10px] text-amber-400 font-bold bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-full font-mono">
-                                Total: ₹{flowersTotal(p.flowers).toLocaleString('en-IN')}
-                              </span>
-                            )}
                           </div>
 
                           {/* 1. IMAGE 1: VARIETY / TIER & FLOWERS KIND */}
@@ -8922,11 +8882,6 @@ export function App() {
                         <div className="space-y-4 rounded-xl border border-slate-800 bg-slate-950/40 p-3.5">
                           <div className="flex items-center justify-between">
                             <p className="text-[10px] text-amber-400 uppercase font-bold">Mehendi details &amp; Pricing</p>
-                            {mehendiTotal(p.mehendi) > 0 && (
-                              <span className="text-[10px] text-amber-400 font-bold bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-full font-mono">
-                                Total: ₹{mehendiTotal(p.mehendi).toLocaleString('en-IN')}
-                              </span>
-                            )}
                           </div>
 
                           {/* TIER — select, set price & upload a photo per tier */}
@@ -9107,11 +9062,6 @@ export function App() {
                         <div className="space-y-4 rounded-xl border border-slate-800 bg-slate-950/40 p-3.5">
                           <div className="flex items-center justify-between">
                             <p className="text-[10px] text-amber-400 uppercase font-bold">Rental details &amp; Pricing</p>
-                            {rentalTotal(p.rental) > 0 && (
-                              <span className="text-[10px] text-amber-400 font-bold bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-full font-mono">
-                                Total: ₹{rentalTotal(p.rental).toLocaleString('en-IN')}
-                              </span>
-                            )}
                           </div>
 
                           {/* Items — select, then set qty / price / detail / photo per item */}
