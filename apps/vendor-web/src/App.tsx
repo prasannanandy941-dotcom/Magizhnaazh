@@ -9185,28 +9185,6 @@ export function App() {
                             </div>
                           </div>
 
-                          {/* Calculation Summary Box */}
-                          <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between text-xs flex-wrap gap-2">
-                            <div className="text-slate-400">
-                              <span>Vessels: </span>
-                              <span className="text-slate-200 font-semibold font-mono">
-                                ₹{Object.values(p.utensils?.vesselTypePrices || {}).reduce((a: number, b: any) => a + (Number(b) || 0), 0).toLocaleString('en-IN')}
-                              </span>
-                              {p.utensils?.basePrice ? (
-                                <>
-                                  <span> + Base: </span>
-                                  <span className="text-slate-200 font-semibold font-mono">₹{Number(p.utensils?.basePrice).toLocaleString('en-IN')}</span>
-                                </>
-                              ) : null}
-                              <span> + Delivery: </span>
-                              <span className="text-slate-200 font-semibold font-mono">
-                                ₹{(Number(p.utensils?.deliveryPickupPrice) || 0).toLocaleString('en-IN')}
-                              </span>
-                            </div>
-                            <div className="text-amber-400 font-bold font-mono text-sm">
-                              = Total: ₹{(p.price || utensilsTotal(p.utensils) || 0).toLocaleString('en-IN')}
-                            </div>
-                          </div>
                         </div>
                       )}
 
