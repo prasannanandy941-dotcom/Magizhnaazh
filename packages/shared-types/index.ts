@@ -313,13 +313,20 @@ export const MUSIC_DJ_VENUE_TYPES = ['Indoor', 'Outdoor'] as const;
 
 // Structured details for an Entertainment vendor's package (per act / per hour).
 export interface EntertainmentPackageDetails {
-  actType?: string; // Fireworks / Celebrity / Live band / Dance troupe / Magician / Folk artists
+  actType?: string; // legacy single-select
   equipmentIncluded?: boolean;
   travelIncluded?: boolean;
+  // Priced: each selected act carries its own price + photo; package Total =
+  // sum of all act prices + equipment price + travel price.
+  actTypes?: string[];
+  actTypePrices?: Record<string, number>;
+  actTypeImages?: Record<string, string>;
+  equipmentPrice?: number;
+  travelPrice?: number;
 }
 
 // Option set for the Entertainment package form.
-export const ENTERTAINMENT_ACT_TYPES = ['Fireworks', 'Celebrity', 'Live band', 'Dance troupe', 'Magician', 'Folk artists'] as const;
+export const ENTERTAINMENT_ACT_TYPES = ['Fireworks', 'Celebrity', 'Live band', 'Dance troupe', 'Magician', 'Folk artists', 'Karagattam', 'Oyilattam', 'Poikal Kuthirai', 'Thappattam'] as const;
 
 // Structured details for a Return Gifts vendor's package.
 export interface ReturnGiftsPackageDetails {

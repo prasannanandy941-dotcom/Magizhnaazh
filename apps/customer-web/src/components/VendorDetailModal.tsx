@@ -1735,24 +1735,34 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                       })()}
 
                       {vendor.category === 'Entertainment' && pkg.entertainment && (() => {
-                        const en = pkg.entertainment;
-                        const incl: [string, boolean | undefined][] = [
-                          ['Equipment', en.equipmentIncluded], ['Travel', en.travelIncluded],
-                        ];
+                        const en: any = pkg.entertainment;
+                        const inr = (n: any) => (Number(n) === 0 ? 'Included' : `₹${Number(n).toLocaleString('en-IN')}`);
+                        const acts: string[] = en.actTypes || (en.actType ? [en.actType] : []);
+                        const addons: [string, any][] = [['Equipment', en.equipmentPrice], ['Travel', en.travelPrice]];
+                        const offered = addons.filter(([, v]) => typeof v === 'number');
                         return (
-                          <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2" onClick={(e) => e.stopPropagation()}>
+                          <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2.5" onClick={(e) => e.stopPropagation()}>
                             <span className="text-[10px] font-bold text-slate-400 uppercase block">Act details</span>
-                            <div className="flex flex-wrap gap-1.5">
-                              {en.actType && <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-200 font-bold">{en.actType}</span>}
-                            </div>
-                            <div className="space-y-1 text-[11px] text-slate-300">
-                              {pkg.capacityPersons ? <div>Performers: <span className="text-white font-semibold">{pkg.capacityPersons}</span></div> : null}
-                              {pkg.durationHours ? <div>Duration: <span className="text-white font-semibold">{pkg.durationHours} hrs</span></div> : null}
-                            </div>
-                            {incl.some(([, v]) => v !== undefined) && (
-                              <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px]">
-                                {incl.filter(([, v]) => v !== undefined).map(([label, v]) => (
-                                  <span key={label} className="text-slate-400">{label}: <b className={v ? 'text-emerald-400' : 'text-slate-500'}>{v ? 'Yes' : 'No'}</b></span>
+                            {acts.length > 0 && (
+                              <div className="space-y-1">
+                                {acts.map((a) => (
+                                  <div key={a} className="flex items-center justify-between gap-2 text-[11px]">
+                                    <span className="flex items-center gap-2 text-slate-300">
+                                      {en.actTypeImages?.[a] ? <img src={en.actTypeImages[a]} alt={a} className="w-8 h-8 rounded object-cover border border-slate-700" /> : null}
+                                      {a}
+                                    </span>
+                                    {typeof en.actTypePrices?.[a] === 'number' && <span className="text-amber-300 font-semibold">{inr(en.actTypePrices[a])}</span>}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            {offered.length > 0 && (
+                              <div className="space-y-1">
+                                {offered.map(([label, v]) => (
+                                  <div key={label} className="flex items-center justify-between text-[11px]">
+                                    <span className="text-slate-400">{label}</span>
+                                    <span className="text-amber-300 font-semibold">{inr(v)}</span>
+                                  </div>
                                 ))}
                               </div>
                             )}

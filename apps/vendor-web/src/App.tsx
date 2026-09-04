@@ -2737,8 +2737,64 @@ export function App() {
     );
 
   // Entertainment packages carry structured act details.
+  // Entertainment total = every selected act's price + equipment + travel price.
+  const entertainmentTotal = (e?: any): number => {
+    if (!e) return 0;
+    let sum = 0;
+    if (Array.isArray(e.actTypes) && e.actTypePrices) {
+      for (const a of e.actTypes) sum += Number(e.actTypePrices[a]) || 0;
+    }
+    sum += Number(e.equipmentPrice) || 0;
+    sum += Number(e.travelPrice) || 0;
+    return sum;
+  };
   const updatePackageEntertainment = (pkgId: string, field: string, value: any) =>
-    setPackages((prev) => prev.map((p) => (p.id === pkgId ? { ...p, entertainment: { ...(p.entertainment || {}), [field]: value } } : p)));
+    setPackages((prev) => prev.map((p) => {
+      if (p.id !== pkgId) return p;
+      const entertainment = { ...(p.entertainment || {}), [field]: value };
+      return { ...p, entertainment, price: entertainmentTotal(entertainment) };
+    }));
+  const toggleEntertainmentAct = (pkgId: string, act: string) =>
+    setPackages((prev) => prev.map((p) => {
+      if (p.id !== pkgId) return p;
+      const cur: string[] = (p.entertainment?.actTypes) || [];
+      const next = cur.includes(act) ? cur.filter((x) => x !== act) : [...cur, act];
+      const entertainment = { ...(p.entertainment || {}), actTypes: next };
+      return { ...p, entertainment, price: entertainmentTotal(entertainment) };
+    }));
+  const updateEntertainmentActPrice = (pkgId: string, act: string, price?: number) =>
+    setPackages((prev) => prev.map((p) => {
+      if (p.id !== pkgId) return p;
+      const map: Record<string, number> = { ...((p.entertainment?.actTypePrices) || {}) };
+      if (price === undefined) delete map[act]; else map[act] = price;
+      const entertainment = { ...(p.entertainment || {}), actTypePrices: map };
+      return { ...p, entertainment, price: entertainmentTotal(entertainment) };
+    }));
+  const [uploadingEntertainmentImg, setUploadingEntertainmentImg] = useState<string | null>(null);
+  const uploadEntertainmentImage = async (pkgId: string, act: string, file: File) => {
+    if (!token) return;
+    setUploadingEntertainmentImg(`${pkgId}:${act}`);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch(`${GATEWAY_URL}/api/v1/uploads`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd });
+      const data = await res.json().catch(() => ({}));
+      const fileUrl = data?.data?.fileUrl || data?.url || URL.createObjectURL(file);
+      setPackages((prev) => prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const cur = p.entertainment || {};
+        return { ...p, entertainment: { ...cur, actTypeImages: { ...((cur as any).actTypeImages || {}), [act]: fileUrl } } };
+      }));
+    } catch { /* best effort */ } finally { setUploadingEntertainmentImg(null); }
+  };
+  const removeEntertainmentImage = (pkgId: string, act: string) =>
+    setPackages((prev) => prev.map((p) => {
+      if (p.id !== pkgId) return p;
+      const cur = p.entertainment || {};
+      const m = { ...((cur as any).actTypeImages || {}) };
+      delete m[act];
+      return { ...p, entertainment: { ...cur, actTypeImages: m } };
+    }));
 
   // Music/DJ packages carry structured details.
   const updatePackageMusicDj = (pkgId: string, field: string, value: any) =>
@@ -4986,7 +5042,7 @@ export function App() {
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <label className="block text-[10px] text-slate-400 uppercase font-bold">
-                          {myVendor?.category === 'Catering' ? 'Total amount (₹)' : myVendor?.category === 'Security' ? 'Total amount (₹)' : myVendor?.category === 'Venue' ? 'Total amount (₹)' : myVendor?.category === 'Decoration' ? 'Total amount (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Total amount (₹)' : myVendor?.category === 'Media' ? 'Total amount (₹)' : myVendor?.category === 'Transport' ? 'Total amount (₹)' : myVendor?.category === 'Invitation' ? 'Total amount (₹)' : myVendor?.category === 'Printing' ? 'Total amount (₹)' : myVendor?.category === 'Return Gifts' ? 'Total amount (₹)' : myVendor?.category === 'Lighting' || myVendor?.category === 'Lights & Sounds' ? 'Total amount (₹)' : myVendor?.category === 'Pujari/Priest' ? 'Price per ceremony (₹)' : myVendor?.category === 'Entertainment' ? 'Price per act / hour (₹)' : myVendor?.category === 'Music/DJ' ? 'Price per event / hour (₹)' : myVendor?.category === 'Flowers' ? 'Total amount (₹)' : myVendor?.category === 'Mehendi' ? 'Total amount (₹)' : myVendor?.category === 'Event Host/Anchor' ? 'Price per event (₹)' : myVendor?.category === 'Rental Equipment' ? 'Total amount (₹)' : myVendor?.category === 'Utensils for Rent' ? 'Total price (₹)' : myVendor?.category === 'Wedding Planner' ? 'Price per package / function (₹)' : myVendor?.category === 'Corporate Event Services' ? 'Price per total event (₹)' : 'Price (₹)'}
+                          {myVendor?.category === 'Catering' ? 'Total amount (₹)' : myVendor?.category === 'Security' ? 'Total amount (₹)' : myVendor?.category === 'Venue' ? 'Total amount (₹)' : myVendor?.category === 'Decoration' ? 'Total amount (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Total amount (₹)' : myVendor?.category === 'Media' ? 'Total amount (₹)' : myVendor?.category === 'Transport' ? 'Total amount (₹)' : myVendor?.category === 'Invitation' ? 'Total amount (₹)' : myVendor?.category === 'Printing' ? 'Total amount (₹)' : myVendor?.category === 'Return Gifts' ? 'Total amount (₹)' : myVendor?.category === 'Lighting' || myVendor?.category === 'Lights & Sounds' ? 'Total amount (₹)' : myVendor?.category === 'Pujari/Priest' ? 'Price per ceremony (₹)' : myVendor?.category === 'Entertainment' ? 'Total amount (₹)' : myVendor?.category === 'Music/DJ' ? 'Price per event / hour (₹)' : myVendor?.category === 'Flowers' ? 'Total amount (₹)' : myVendor?.category === 'Mehendi' ? 'Total amount (₹)' : myVendor?.category === 'Event Host/Anchor' ? 'Price per event (₹)' : myVendor?.category === 'Rental Equipment' ? 'Total amount (₹)' : myVendor?.category === 'Utensils for Rent' ? 'Total price (₹)' : myVendor?.category === 'Wedding Planner' ? 'Price per package / function (₹)' : myVendor?.category === 'Corporate Event Services' ? 'Price per total event (₹)' : 'Price (₹)'}
                         </label>
                         {myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 && (
                           <span className="text-[10px] text-amber-400 font-bold">
@@ -5106,10 +5162,10 @@ export function App() {
                         </div>
                       )}
                     </div>
-                    {myVendor?.category !== 'Security' && myVendor?.category !== 'Catering' && myVendor?.category !== 'Decoration' && myVendor?.category !== 'Media' && myVendor?.category !== 'Transport' && myVendor?.category !== 'Invitation' && myVendor?.category !== 'Printing' && myVendor?.category !== 'Return Gifts' && myVendor?.category !== 'Music/DJ' && myVendor?.category !== 'Lighting' && myVendor?.category !== 'Lights & Sounds' && myVendor?.category !== 'Flowers' && myVendor?.category !== 'Mehendi' && myVendor?.category !== 'Event Host/Anchor' && myVendor?.category !== 'Rental Equipment' && myVendor?.category !== 'Utensils for Rent' && myVendor?.category !== 'Wedding Planner' && myVendor?.category !== 'Corporate Event Services' && (
+                    {myVendor?.category !== 'Security' && myVendor?.category !== 'Catering' && myVendor?.category !== 'Decoration' && myVendor?.category !== 'Media' && myVendor?.category !== 'Transport' && myVendor?.category !== 'Invitation' && myVendor?.category !== 'Printing' && myVendor?.category !== 'Return Gifts' && myVendor?.category !== 'Music/DJ' && myVendor?.category !== 'Lighting' && myVendor?.category !== 'Lights & Sounds' && myVendor?.category !== 'Flowers' && myVendor?.category !== 'Mehendi' && myVendor?.category !== 'Event Host/Anchor' && myVendor?.category !== 'Rental Equipment' && myVendor?.category !== 'Utensils for Rent' && myVendor?.category !== 'Wedding Planner' && myVendor?.category !== 'Corporate Event Services' && myVendor?.category !== 'Entertainment' && (
                       <div>
                         <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
-                          {myVendor?.category === 'Pujari/Priest' ? 'No. of persons' : myVendor?.category === 'Entertainment' ? 'Number of performers' : 'Capacity (persons)'}
+                          {myVendor?.category === 'Pujari/Priest' ? 'No. of persons' : 'Capacity (persons)'}
                         </label>
                         <input
                           type="number"
@@ -5120,7 +5176,7 @@ export function App() {
                         />
                       </div>
                     )}
-                    {myVendor?.category !== 'Security' && myVendor?.category !== 'Catering' && myVendor?.category !== 'Decoration' && myVendor?.category !== 'Media' && myVendor?.category !== 'Transport' && myVendor?.category !== 'Invitation' && myVendor?.category !== 'Printing' && myVendor?.category !== 'Return Gifts' && myVendor?.category !== 'Music/DJ' && myVendor?.category !== 'Lighting' && myVendor?.category !== 'Lights & Sounds' && myVendor?.category !== 'Flowers' && myVendor?.category !== 'Mehendi' && myVendor?.category !== 'Event Host/Anchor' && myVendor?.category !== 'Rental Equipment' && myVendor?.category !== 'Utensils for Rent' && myVendor?.category !== 'Wedding Planner' && myVendor?.category !== 'Corporate Event Services' && (
+                    {myVendor?.category !== 'Security' && myVendor?.category !== 'Catering' && myVendor?.category !== 'Decoration' && myVendor?.category !== 'Media' && myVendor?.category !== 'Transport' && myVendor?.category !== 'Invitation' && myVendor?.category !== 'Printing' && myVendor?.category !== 'Return Gifts' && myVendor?.category !== 'Music/DJ' && myVendor?.category !== 'Lighting' && myVendor?.category !== 'Lights & Sounds' && myVendor?.category !== 'Flowers' && myVendor?.category !== 'Mehendi' && myVendor?.category !== 'Event Host/Anchor' && myVendor?.category !== 'Rental Equipment' && myVendor?.category !== 'Utensils for Rent' && myVendor?.category !== 'Wedding Planner' && myVendor?.category !== 'Corporate Event Services' && myVendor?.category !== 'Entertainment' && (
                       <div>
                         <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
                           Duration (hours)
@@ -8008,26 +8064,63 @@ export function App() {
 
                       {/* Entertainment: structured act spec (replaces generic price tiers). */}
                       {myVendor?.category === 'Entertainment' && (
-                        <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/40 p-3">
-                          <p className="text-[10px] text-amber-400 uppercase font-bold">Act details</p>
-                          <p className="text-[10px] text-slate-500">Number of performers is the "Number of performers" field above; duration is the "Duration (hours)" field.</p>
-
-                          <div>
-                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Act Type</label>
-                            <div className="flex flex-wrap gap-2">
-                              {ENTERTAINMENT_ACT_TYPES.map((a) => (
-                                <button type="button" key={a} onClick={() => updatePackageEntertainment(p.id, 'actType', a)} className={catChip(p.entertainment?.actType === a)}>{a}</button>
-                              ))}
-                            </div>
+                        <div className="space-y-4 rounded-xl border border-slate-800 bg-slate-950/40 p-3.5">
+                          <div className="flex items-center justify-between">
+                            <p className="text-[10px] text-amber-400 uppercase font-bold">Act details &amp; Pricing</p>
+                            {entertainmentTotal(p.entertainment) > 0 && (
+                              <span className="text-[10px] text-amber-400 font-bold bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-full font-mono">
+                                Total: ₹{entertainmentTotal(p.entertainment).toLocaleString('en-IN')}
+                              </span>
+                            )}
                           </div>
 
+                          {/* Act types — select, set price & upload photo per act */}
+                          <div className="space-y-2">
+                            <label className="block text-[10px] text-slate-400 uppercase font-bold">Act type (select to set price &amp; upload photo)</label>
+                            <div className="flex flex-wrap gap-2">
+                              {ENTERTAINMENT_ACT_TYPES.map((a) => (
+                                <button type="button" key={a} onClick={() => toggleEntertainmentAct(p.id, a)} className={catChip((p.entertainment?.actTypes || []).includes(a))}>{a}</button>
+                              ))}
+                            </div>
+                            {(p.entertainment?.actTypes || []).map((a) => {
+                              const isUploading = uploadingEntertainmentImg === `${p.id}:${a}`;
+                              const imgUrl = p.entertainment?.actTypeImages?.[a];
+                              return (
+                                <div key={a} className="p-3 rounded-xl border border-amber-500/30 bg-amber-950/10 space-y-2.5">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-xs font-bold text-amber-300">{a}</span>
+                                    <button type="button" onClick={() => toggleEntertainmentAct(p.id, a)} className="text-slate-400 hover:text-rose-400 text-xs">✕ Remove</button>
+                                  </div>
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                    <div>
+                                      <label className="block text-[10px] text-slate-400 mb-1 font-semibold">Price (₹)</label>
+                                      <input type="number" min={0} value={p.entertainment?.actTypePrices?.[a] ?? ''} onChange={(e) => updateEntertainmentActPrice(p.id, a, e.target.value === '' ? undefined : Number(e.target.value))} placeholder="e.g. 15000" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                                    </div>
+                                    <div>
+                                      <label className="block text-[10px] text-slate-400 mb-1">Upload photo</label>
+                                      <div className="flex items-center gap-2.5">
+                                        {imgUrl ? (<div className="relative"><img src={imgUrl} alt={a} className="w-16 h-12 rounded-lg object-cover border border-slate-700" /><button type="button" onClick={() => removeEntertainmentImage(p.id, a)} className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px]">✕</button></div>) : null}
+                                        <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold cursor-pointer border border-slate-700">
+                                          {isUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 text-amber-400" />}
+                                          {imgUrl ? 'Change photo' : 'Upload photo'}
+                                          <input type="file" accept="image/*" className="hidden" disabled={isUploading} onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadEntertainmentImage(p.id, a, f); e.target.value = ''; }} />
+                                        </label>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {/* Equipment & Travel — price fields */}
                           <div className="grid grid-cols-2 gap-2">
-                            {([['equipmentIncluded', 'Equipment included'], ['travelIncluded', 'Travel included']] as const).map(([field, label]) => (
+                            {([['equipmentPrice', 'Equipment (₹)'], ['travelPrice', 'Travel (₹)']] as const).map(([field, label]) => (
                               <div key={field}>
-                                <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">{label}</label>
-                                <div className="flex gap-1.5">
-                                  <button type="button" onClick={() => updatePackageEntertainment(p.id, field, true)} className={catChip((p.entertainment as any)?.[field] === true)}>Yes</button>
-                                  <button type="button" onClick={() => updatePackageEntertainment(p.id, field, false)} className={catChip((p.entertainment as any)?.[field] === false)}>No</button>
+                                <label className="block text-[10px] text-slate-500 mb-1">{label}</label>
+                                <div className="relative">
+                                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 text-sm">₹</span>
+                                  <input type="number" min={0} value={(p.entertainment as any)?.[field] ?? ''} onChange={(e) => updatePackageEntertainment(p.id, field, e.target.value === '' ? undefined : Number(e.target.value))} placeholder="Blank if N/A" className="w-full pl-6 pr-2 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
                                 </div>
                               </div>
                             ))}
