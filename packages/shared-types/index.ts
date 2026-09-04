@@ -206,14 +206,34 @@ export const MEHENDI_TIERS = ['Guest-simple', 'Bridal', 'Arabic', 'Rajasthani'] 
 export const MEHENDI_TYPES = ['Bridal', 'Guest', 'Arabic', 'Rajasthani', 'Glitter'] as const;
 export const MEHENDI_INTRICACY = ['Simple', 'Full hands + feet'] as const;
 
+export interface FlowersCustomItem {
+  id?: string;
+  name: string;
+  price?: number;
+  image?: string;
+}
+
 // Structured details for a Flowers vendor's package (per item / per function).
 export interface FlowersPackageDetails {
   variety?: string; // Marigold / Rose / Imported (also the tier)
+  varieties?: string[]; // Selected varieties
+  varietyPrices?: Record<string, number>; // Price for each variety
+  varietyImages?: Record<string, string>; // Uploaded image for each variety
+  customVarieties?: FlowersCustomItem[]; // Custom varieties/items added by vendor with price & image upload
   items?: string[]; // Garlands (maalai) / Car decor / Mandap / Bouquet / Jaimala / Hair flowers / Rangoli
+  itemPrices?: Record<string, number>; // Price for each item
+  itemImages?: Record<string, string>; // Uploaded image for each item
+  customItems?: FlowersCustomItem[]; // Custom items added by vendor
   flowerKind?: string; // Fresh / Artificial
+  flowerKindPrices?: Record<string, number>;
+  flowerKindImages?: Record<string, string>;
   quantity?: number;
+  unitPrice?: number; // Price per unit
+  quantityPrice?: number; // Quantity total price
   deliveryTiming?: string; // free text
+  deliveryTimingPrice?: number;
   whichFunction?: string; // free text
+  whichFunctionPrice?: number;
 }
 
 // Option sets for the Flowers package form.

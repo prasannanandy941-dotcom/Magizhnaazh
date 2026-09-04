@@ -2872,9 +2872,313 @@ export function App() {
       })
     );
 
+  // Auto-total for a Flowers package:
+  // - Variety prices: sum of varietyPrices for selected varieties + custom varieties prices
+  // - Flower kind prices: flowerKindPrices for selected flowerKind
+  // - Item prices: sum of itemPrices for selected items + custom items prices
+  // - Quantity: if unitPrice > 0 -> unitPrice * (quantity || 1); else quantityPrice || 0
+  // - Delivery timing price: deliveryTimingPrice || 0
+  // - Which function price: whichFunctionPrice || 0
+  const flowersTotal = (fl?: any): number => {
+    if (!fl) return 0;
+    let sum = 0;
+
+    // Variety prices (existing selected varieties)
+    const selectedVarieties: string[] = Array.isArray(fl.varieties)
+      ? fl.varieties
+      : fl.variety ? [fl.variety] : [];
+    if (fl.varietyPrices && typeof fl.varietyPrices === 'object') {
+      for (const v of selectedVarieties) {
+        sum += Number(fl.varietyPrices[v]) || 0;
+      }
+    }
+    // Custom varieties added
+    if (Array.isArray(fl.customVarieties)) {
+      for (const cv of fl.customVarieties) {
+        sum += Number(cv?.price) || 0;
+      }
+    }
+
+    // Flower kind price (if any)
+    if (fl.flowerKind && fl.flowerKindPrices && typeof fl.flowerKindPrices === 'object') {
+      sum += Number(fl.flowerKindPrices[fl.flowerKind]) || 0;
+    }
+
+    // Item prices (existing selected items)
+    const selectedItems: string[] = Array.isArray(fl.items) ? fl.items : [];
+    if (fl.itemPrices && typeof fl.itemPrices === 'object') {
+      for (const it of selectedItems) {
+        sum += Number(fl.itemPrices[it]) || 0;
+      }
+    }
+    // Custom items added
+    if (Array.isArray(fl.customItems)) {
+      for (const ci of fl.customItems) {
+        sum += Number(ci?.price) || 0;
+      }
+    }
+
+    // Types of price from Image 3: Quantity
+    const qty = Number(fl.quantity) || 0;
+    const unitPrice = Number(fl.unitPrice) || 0;
+    if (unitPrice > 0) {
+      sum += qty > 0 ? unitPrice * qty : unitPrice;
+    } else if (fl.quantityPrice) {
+      sum += Number(fl.quantityPrice) || 0;
+    }
+
+    // Delivery timing price
+    sum += Number(fl.deliveryTimingPrice) || 0;
+
+    // Which function price
+    sum += Number(fl.whichFunctionPrice) || 0;
+
+    return sum;
+  };
+
+  const [uploadingFlowersImg, setUploadingFlowersImg] = useState<string | null>(null);
+
+  const uploadFlowersImage = async (
+    pkgId: string,
+    target: 'variety' | 'item' | 'flowerKind' | 'customVariety' | 'customItem',
+    key: string | number,
+    file: File
+  ) => {
+    if (!token) return;
+    setUploadingFlowersImg(`${pkgId}:${target}:${key}`);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch(`${GATEWAY_URL}/api/v1/uploads`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+      const data = await res.json().catch(() => ({}));
+      let fileUrl = data?.data?.fileUrl || data?.url;
+      if (!fileUrl) {
+        fileUrl = URL.createObjectURL(file);
+      }
+      setPackages((prev) =>
+        prev.map((p) => {
+          if (p.id !== pkgId) return p;
+          const cur = p.flowers || {};
+          let nextFl = { ...cur };
+          if (target === 'variety') {
+            nextFl.varietyImages = { ...(cur.varietyImages || {}), [key]: fileUrl };
+          } else if (target === 'item') {
+            nextFl.itemImages = { ...(cur.itemImages || {}), [key]: fileUrl };
+          } else if (target === 'flowerKind') {
+            nextFl.flowerKindImages = { ...(cur.flowerKindImages || {}), [key]: fileUrl };
+          } else if (target === 'customVariety') {
+            const cvs = [...(cur.customVarieties || [])];
+            const idx = Number(key);
+            if (cvs[idx]) cvs[idx] = { ...cvs[idx], image: fileUrl };
+            nextFl.customVarieties = cvs;
+          } else if (target === 'customItem') {
+            const cis = [...(cur.customItems || [])];
+            const idx = Number(key);
+            if (cis[idx]) cis[idx] = { ...cis[idx], image: fileUrl };
+            nextFl.customItems = cis;
+          }
+          return { ...p, flowers: nextFl };
+        })
+      );
+    } catch {
+      /* best effort upload */
+    } finally {
+      setUploadingFlowersImg(null);
+    }
+  };
+
+  const removeFlowersImage = (
+    pkgId: string,
+    target: 'variety' | 'item' | 'flowerKind' | 'customVariety' | 'customItem',
+    key: string | number
+  ) => {
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const cur = p.flowers || {};
+        let nextFl = { ...cur };
+        if (target === 'variety') {
+          const m = { ...(cur.varietyImages || {}) };
+          delete m[key as string];
+          nextFl.varietyImages = m;
+        } else if (target === 'item') {
+          const m = { ...(cur.itemImages || {}) };
+          delete m[key as string];
+          nextFl.itemImages = m;
+        } else if (target === 'flowerKind') {
+          const m = { ...(cur.flowerKindImages || {}) };
+          delete m[key as string];
+          nextFl.flowerKindImages = m;
+        } else if (target === 'customVariety') {
+          const cvs = [...(cur.customVarieties || [])];
+          const idx = Number(key);
+          if (cvs[idx]) cvs[idx] = { ...cvs[idx], image: undefined };
+          nextFl.customVarieties = cvs;
+        } else if (target === 'customItem') {
+          const cis = [...(cur.customItems || [])];
+          const idx = Number(key);
+          if (cis[idx]) cis[idx] = { ...cis[idx], image: undefined };
+          nextFl.customItems = cis;
+        }
+        return { ...p, flowers: nextFl };
+      })
+    );
+  };
+
   // Flowers packages carry structured details.
   const updatePackageFlowers = (pkgId: string, field: string, value: any) =>
-    setPackages((prev) => prev.map((p) => (p.id === pkgId ? { ...p, flowers: { ...(p.flowers || {}), [field]: value } } : p)));
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const nextFl = { ...(p.flowers || {}), [field]: value };
+        const calc = flowersTotal(nextFl);
+        return {
+          ...p,
+          flowers: nextFl,
+          price: calc > 0 ? calc : (p.price || 0),
+        };
+      })
+    );
+
+  const toggleFlowersVariety = (pkgId: string, variety: string) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const current: string[] = p.flowers?.varieties || (p.flowers?.variety ? [p.flowers.variety] : []);
+        const next = current.includes(variety) ? current.filter((x) => x !== variety) : [...current, variety];
+        const nextFl = {
+          ...(p.flowers || {}),
+          varieties: next,
+          variety: next[0] || undefined,
+        };
+        const calc = flowersTotal(nextFl);
+        return { ...p, flowers: nextFl, price: calc > 0 ? calc : (p.price || 0) };
+      })
+    );
+
+  const updateFlowersVarietyPrice = (pkgId: string, variety: string, price?: number) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const cur = p.flowers || {};
+        const nextPrices = { ...(cur.varietyPrices || {}) };
+        if (price === undefined || isNaN(price)) {
+          delete nextPrices[variety];
+        } else {
+          nextPrices[variety] = price;
+        }
+        const nextFl = { ...cur, varietyPrices: nextPrices };
+        const calc = flowersTotal(nextFl);
+        return { ...p, flowers: nextFl, price: calc > 0 ? calc : (p.price || 0) };
+      })
+    );
+
+  const addFlowersCustomVariety = (pkgId: string) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const cur = p.flowers?.customVarieties || [];
+        const nextFl = {
+          ...(p.flowers || {}),
+          customVarieties: [...cur, { name: '', price: undefined, image: undefined }],
+        };
+        return { ...p, flowers: nextFl };
+      })
+    );
+
+  const updateFlowersCustomVariety = (pkgId: string, index: number, field: 'name' | 'price', value: any) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const list = [...(p.flowers?.customVarieties || [])];
+        if (!list[index]) return p;
+        list[index] = { ...list[index], [field]: field === 'price' ? (value === '' || value === undefined ? undefined : Number(value)) : value };
+        const nextFl = { ...(p.flowers || {}), customVarieties: list };
+        const calc = flowersTotal(nextFl);
+        return { ...p, flowers: nextFl, price: calc > 0 ? calc : (p.price || 0) };
+      })
+    );
+
+  const removeFlowersCustomVariety = (pkgId: string, index: number) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const list = (p.flowers?.customVarieties || []).filter((_, i) => i !== index);
+        const nextFl = { ...(p.flowers || {}), customVarieties: list };
+        const calc = flowersTotal(nextFl);
+        return { ...p, flowers: nextFl, price: calc > 0 ? calc : (p.price || 0) };
+      })
+    );
+
+  const toggleFlowersItem = (pkgId: string, item: string) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const current: string[] = p.flowers?.items || [];
+        const next = current.includes(item) ? current.filter((x) => x !== item) : [...current, item];
+        const nextFl = { ...(p.flowers || {}), items: next };
+        const calc = flowersTotal(nextFl);
+        return { ...p, flowers: nextFl, price: calc > 0 ? calc : (p.price || 0) };
+      })
+    );
+
+  const updateFlowersItemPrice = (pkgId: string, item: string, price?: number) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const cur = p.flowers || {};
+        const nextPrices = { ...(cur.itemPrices || {}) };
+        if (price === undefined || isNaN(price)) {
+          delete nextPrices[item];
+        } else {
+          nextPrices[item] = price;
+        }
+        const nextFl = { ...cur, itemPrices: nextPrices };
+        const calc = flowersTotal(nextFl);
+        return { ...p, flowers: nextFl, price: calc > 0 ? calc : (p.price || 0) };
+      })
+    );
+
+  const addFlowersCustomItem = (pkgId: string) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const cur = p.flowers?.customItems || [];
+        const nextFl = {
+          ...(p.flowers || {}),
+          customItems: [...cur, { name: '', price: undefined, image: undefined }],
+        };
+        return { ...p, flowers: nextFl };
+      })
+    );
+
+  const updateFlowersCustomItem = (pkgId: string, index: number, field: 'name' | 'price', value: any) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const list = [...(p.flowers?.customItems || [])];
+        if (!list[index]) return p;
+        list[index] = { ...list[index], [field]: field === 'price' ? (value === '' || value === undefined ? undefined : Number(value)) : value };
+        const nextFl = { ...(p.flowers || {}), customItems: list };
+        const calc = flowersTotal(nextFl);
+        return { ...p, flowers: nextFl, price: calc > 0 ? calc : (p.price || 0) };
+      })
+    );
+
+  const removeFlowersCustomItem = (pkgId: string, index: number) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const list = (p.flowers?.customItems || []).filter((_, i) => i !== index);
+        const nextFl = { ...(p.flowers || {}), customItems: list };
+        const calc = flowersTotal(nextFl);
+        return { ...p, flowers: nextFl, price: calc > 0 ? calc : (p.price || 0) };
+      })
+    );
 
   // Mehendi packages carry structured details.
   const updatePackageMehendi = (pkgId: string, field: string, value: any) =>
@@ -2968,13 +3272,6 @@ export function App() {
       const current: string[] = (p.eventHost?.languages) || [];
       const next = current.includes(lang) ? current.filter((x) => x !== lang) : [...current, lang];
       return { ...p, eventHost: { ...(p.eventHost || {}), languages: next } };
-    }));
-  const toggleFlowersItem = (pkgId: string, item: string) =>
-    setPackages((prev) => prev.map((p) => {
-      if (p.id !== pkgId) return p;
-      const current: string[] = (p.flowers?.items) || [];
-      const next = current.includes(item) ? current.filter((x) => x !== item) : [...current, item];
-      return { ...p, flowers: { ...(p.flowers || {}), items: next } };
     }));
 
   // Photos of a package / hall — uploaded to the shared storage endpoint and
@@ -7806,52 +8103,546 @@ export function App() {
 
                       {/* Flowers: structured spec (replaces capacity/duration + generic price tiers). */}
                       {myVendor?.category === 'Flowers' && (
-                        <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/40 p-3">
-                          <p className="text-[10px] text-amber-400 uppercase font-bold">Flower details</p>
+                        <div className="space-y-4 rounded-xl border border-slate-800 bg-slate-950/40 p-3.5">
+                          {/* Header with Total amount badge */}
+                          <div className="flex items-center justify-between">
+                            <p className="text-[10px] text-amber-400 uppercase font-bold flex items-center gap-1.5">
+                              Flower details &amp; Pricing
+                            </p>
+                            {flowersTotal(p.flowers) > 0 && (
+                              <span className="text-[10px] text-amber-400 font-bold bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-full font-mono">
+                                Total: ₹{flowersTotal(p.flowers).toLocaleString('en-IN')}
+                              </span>
+                            )}
+                          </div>
 
-                          <div className="grid grid-cols-2 gap-3">
+                          {/* 1. IMAGE 1: VARIETY / TIER & FLOWERS KIND */}
+                          <div className="space-y-3 pt-1">
                             <div>
-                              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Variety / Tier</label>
+                              <div className="flex items-center justify-between mb-1.5">
+                                <label className="block text-[10px] text-slate-400 uppercase font-bold">
+                                  Variety / Tier (Select options to configure price &amp; upload photo)
+                                </label>
+                                <button
+                                  type="button"
+                                  onClick={() => addFlowersCustomVariety(p.id)}
+                                  className="text-[11px] text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-1"
+                                >
+                                  <Plus className="w-3 h-3" /> Add item
+                                </button>
+                              </div>
                               <div className="flex flex-wrap gap-2">
-                                {FLOWERS_VARIETIES.map((v) => (
-                                  <button type="button" key={v} onClick={() => updatePackageFlowers(p.id, 'variety', v)} className={catChip(p.flowers?.variety === v)}>{v}</button>
-                                ))}
+                                {FLOWERS_VARIETIES.map((v) => {
+                                  const isSelected = (p.flowers?.varieties || (p.flowers?.variety ? [p.flowers.variety] : [])).includes(v);
+                                  return (
+                                    <button
+                                      type="button"
+                                      key={v}
+                                      onClick={() => toggleFlowersVariety(p.id, v)}
+                                      className={catChip(isSelected)}
+                                    >
+                                      {v}
+                                    </button>
+                                  );
+                                })}
                               </div>
                             </div>
-                            <div>
-                              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Flowers</label>
+
+                            {/* Configuration cards for selected existing varieties */}
+                            {(p.flowers?.varieties || (p.flowers?.variety ? [p.flowers.variety] : [])).map((v) => {
+                              const priceVal = p.flowers?.varietyPrices?.[v];
+                              const imgUrl = p.flowers?.varietyImages?.[v];
+                              const isUploading = uploadingFlowersImg === `${p.id}:variety:${v}`;
+
+                              return (
+                                <div key={v} className="p-3 rounded-xl border border-amber-500/30 bg-amber-950/10 space-y-2.5">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-xs font-bold text-amber-300">{v}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleFlowersVariety(p.id, v)}
+                                      className="text-slate-400 hover:text-rose-400 text-xs flex items-center gap-1"
+                                    >
+                                      ✕ Remove
+                                    </button>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                    <div>
+                                      <label className="block text-[10px] text-slate-400 mb-1 font-semibold">
+                                        Price for {v.toLowerCase()} (₹)
+                                      </label>
+                                      <input
+                                        type="number"
+                                        min={0}
+                                        value={priceVal ?? ''}
+                                        onChange={(e) => updateFlowersVarietyPrice(p.id, v, e.target.value === '' ? undefined : Number(e.target.value))}
+                                        placeholder="e.g. 5000"
+                                        className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-[10px] text-slate-400 mb-1">
+                                        Upload image of {v.toLowerCase()}
+                                      </label>
+                                      <div className="flex items-center gap-2.5">
+                                        {imgUrl ? (
+                                          <div className="relative group">
+                                            <img src={imgUrl} alt={v} className="w-16 h-12 rounded-lg object-cover border border-slate-700" />
+                                            <button
+                                              type="button"
+                                              onClick={() => removeFlowersImage(p.id, 'variety', v)}
+                                              className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px] shadow"
+                                            >
+                                              ✕
+                                            </button>
+                                          </div>
+                                        ) : null}
+                                        <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold cursor-pointer border border-slate-700 transition-colors">
+                                          {isUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 text-amber-400" />}
+                                          {imgUrl ? 'Change photo' : `Upload ${v} photo`}
+                                          <input
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            disabled={isUploading}
+                                            onChange={(e) => {
+                                              const f = e.target.files?.[0];
+                                              if (f) uploadFlowersImage(p.id, 'variety', v, f);
+                                              e.target.value = '';
+                                            }}
+                                          />
+                                        </label>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+
+                            {/* Configuration cards for custom added varieties */}
+                            {(p.flowers?.customVarieties || []).map((cv, cIdx) => {
+                              const isUploading = uploadingFlowersImg === `${p.id}:customVariety:${cIdx}`;
+                              return (
+                                <div key={`cv-${cIdx}`} className="p-3 rounded-xl border border-amber-500/30 bg-amber-950/10 space-y-2.5">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-xs font-bold text-amber-300">
+                                      Custom Item #{cIdx + 1} {cv.name ? `— ${cv.name}` : ''}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => removeFlowersCustomVariety(p.id, cIdx)}
+                                      className="text-slate-400 hover:text-rose-400 text-xs flex items-center gap-1"
+                                    >
+                                      ✕ Remove
+                                    </button>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                                    <div>
+                                      <label className="block text-[10px] text-slate-400 mb-1 font-semibold">Item name</label>
+                                      <input
+                                        type="text"
+                                        value={cv.name || ''}
+                                        onChange={(e) => updateFlowersCustomVariety(p.id, cIdx, 'name', e.target.value)}
+                                        placeholder="e.g. Jasmine / Orchid"
+                                        className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-[10px] text-slate-400 mb-1 font-semibold">Price (₹)</label>
+                                      <input
+                                        type="number"
+                                        min={0}
+                                        value={cv.price ?? ''}
+                                        onChange={(e) => updateFlowersCustomVariety(p.id, cIdx, 'price', e.target.value)}
+                                        placeholder="e.g. 2000"
+                                        className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-[10px] text-slate-400 mb-1">Upload image</label>
+                                      <div className="flex items-center gap-2.5">
+                                        {cv.image ? (
+                                          <div className="relative group">
+                                            <img src={cv.image} alt={cv.name || 'item'} className="w-16 h-12 rounded-lg object-cover border border-slate-700" />
+                                            <button
+                                              type="button"
+                                              onClick={() => removeFlowersImage(p.id, 'customVariety', cIdx)}
+                                              className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px] shadow"
+                                            >
+                                              ✕
+                                            </button>
+                                          </div>
+                                        ) : null}
+                                        <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold cursor-pointer border border-slate-700 transition-colors">
+                                          {isUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 text-amber-400" />}
+                                          {cv.image ? 'Change photo' : 'Upload photo'}
+                                          <input
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            disabled={isUploading}
+                                            onChange={(e) => {
+                                              const f = e.target.files?.[0];
+                                              if (f) uploadFlowersImage(p.id, 'customVariety', cIdx, f);
+                                              e.target.value = '';
+                                            }}
+                                          />
+                                        </label>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+
+                            {/* FLOWERS (Fresh / Artificial) */}
+                            <div className="pt-2 border-t border-slate-800/80">
+                              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1.5">Flowers</label>
                               <div className="flex flex-wrap gap-2">
                                 {FLOWERS_KINDS.map((k) => (
-                                  <button type="button" key={k} onClick={() => updatePackageFlowers(p.id, 'flowerKind', k)} className={catChip(p.flowers?.flowerKind === k)}>{k}</button>
+                                  <button
+                                    type="button"
+                                    key={k}
+                                    onClick={() => updatePackageFlowers(p.id, 'flowerKind', p.flowers?.flowerKind === k ? undefined : k)}
+                                    className={catChip(p.flowers?.flowerKind === k)}
+                                  >
+                                    {k}
+                                  </button>
                                 ))}
                               </div>
                             </div>
                           </div>
 
-                          <div>
-                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Items</label>
+                          {/* 2. IMAGE 2: ITEMS WITH PRICE AND UPLOAD IMAGE */}
+                          <div className="space-y-3 pt-2 border-t border-slate-800/80">
+                            <div className="flex items-center justify-between mb-1.5">
+                              <label className="block text-[10px] text-slate-400 uppercase font-bold">
+                                Items (Select to configure price &amp; upload image)
+                              </label>
+                              <button
+                                type="button"
+                                onClick={() => addFlowersCustomItem(p.id)}
+                                className="text-[11px] text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-1"
+                              >
+                                <Plus className="w-3 h-3" /> Add item
+                              </button>
+                            </div>
                             <div className="flex flex-wrap gap-2">
                               {FLOWERS_ITEMS.map((it) => (
-                                <button type="button" key={it} onClick={() => toggleFlowersItem(p.id, it)} className={catChip((p.flowers?.items || []).includes(it))}>{it}</button>
+                                <button
+                                  type="button"
+                                  key={it}
+                                  onClick={() => toggleFlowersItem(p.id, it)}
+                                  className={catChip((p.flowers?.items || []).includes(it))}
+                                >
+                                  {it}
+                                </button>
                               ))}
+                            </div>
+
+                            {/* Configuration cards for selected items */}
+                            {(p.flowers?.items || []).map((it) => {
+                              const priceVal = p.flowers?.itemPrices?.[it];
+                              const imgUrl = p.flowers?.itemImages?.[it];
+                              const isUploading = uploadingFlowersImg === `${p.id}:item:${it}`;
+
+                              return (
+                                <div key={it} className="p-3 rounded-xl border border-amber-500/30 bg-amber-950/10 space-y-2.5">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-xs font-bold text-amber-300">{it}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleFlowersItem(p.id, it)}
+                                      className="text-slate-400 hover:text-rose-400 text-xs flex items-center gap-1"
+                                    >
+                                      ✕ Remove
+                                    </button>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                    <div>
+                                      <label className="block text-[10px] text-slate-400 mb-1 font-semibold">
+                                        Price for {it.toLowerCase()} (₹)
+                                      </label>
+                                      <input
+                                        type="number"
+                                        min={0}
+                                        value={priceVal ?? ''}
+                                        onChange={(e) => updateFlowersItemPrice(p.id, it, e.target.value === '' ? undefined : Number(e.target.value))}
+                                        placeholder="e.g. 3500"
+                                        className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-[10px] text-slate-400 mb-1">
+                                        Upload image of {it.toLowerCase()}
+                                      </label>
+                                      <div className="flex items-center gap-2.5">
+                                        {imgUrl ? (
+                                          <div className="relative group">
+                                            <img src={imgUrl} alt={it} className="w-16 h-12 rounded-lg object-cover border border-slate-700" />
+                                            <button
+                                              type="button"
+                                              onClick={() => removeFlowersImage(p.id, 'item', it)}
+                                              className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px] shadow"
+                                            >
+                                              ✕
+                                            </button>
+                                          </div>
+                                        ) : null}
+                                        <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold cursor-pointer border border-slate-700 transition-colors">
+                                          {isUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 text-amber-400" />}
+                                          {imgUrl ? 'Change photo' : `Upload ${it} photo`}
+                                          <input
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            disabled={isUploading}
+                                            onChange={(e) => {
+                                              const f = e.target.files?.[0];
+                                              if (f) uploadFlowersImage(p.id, 'item', it, f);
+                                              e.target.value = '';
+                                            }}
+                                          />
+                                        </label>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+
+                            {/* Configuration cards for custom added items */}
+                            {(p.flowers?.customItems || []).map((ci, cIdx) => {
+                              const isUploading = uploadingFlowersImg === `${p.id}:customItem:${cIdx}`;
+                              return (
+                                <div key={`ci-${cIdx}`} className="p-3 rounded-xl border border-amber-500/30 bg-amber-950/10 space-y-2.5">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-xs font-bold text-amber-300">
+                                      Custom Item #{cIdx + 1} {ci.name ? `— ${ci.name}` : ''}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => removeFlowersCustomItem(p.id, cIdx)}
+                                      className="text-slate-400 hover:text-rose-400 text-xs flex items-center gap-1"
+                                    >
+                                      ✕ Remove
+                                    </button>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                                    <div>
+                                      <label className="block text-[10px] text-slate-400 mb-1 font-semibold">Item name</label>
+                                      <input
+                                        type="text"
+                                        value={ci.name || ''}
+                                        onChange={(e) => updateFlowersCustomItem(p.id, cIdx, 'name', e.target.value)}
+                                        placeholder="e.g. Floral backdrop / Rose petal shower"
+                                        className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-[10px] text-slate-400 mb-1 font-semibold">Price (₹)</label>
+                                      <input
+                                        type="number"
+                                        min={0}
+                                        value={ci.price ?? ''}
+                                        onChange={(e) => updateFlowersCustomItem(p.id, cIdx, 'price', e.target.value)}
+                                        placeholder="e.g. 4000"
+                                        className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-[10px] text-slate-400 mb-1">Upload image</label>
+                                      <div className="flex items-center gap-2.5">
+                                        {ci.image ? (
+                                          <div className="relative group">
+                                            <img src={ci.image} alt={ci.name || 'item'} className="w-16 h-12 rounded-lg object-cover border border-slate-700" />
+                                            <button
+                                              type="button"
+                                              onClick={() => removeFlowersImage(p.id, 'customItem', cIdx)}
+                                              className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px] shadow"
+                                            >
+                                              ✕
+                                            </button>
+                                          </div>
+                                        ) : null}
+                                        <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold cursor-pointer border border-slate-700 transition-colors">
+                                          {isUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 text-amber-400" />}
+                                          {ci.image ? 'Change photo' : 'Upload photo'}
+                                          <input
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            disabled={isUploading}
+                                            onChange={(e) => {
+                                              const f = e.target.files?.[0];
+                                              if (f) uploadFlowersImage(p.id, 'customItem', cIdx, f);
+                                              e.target.value = '';
+                                            }}
+                                          />
+                                        </label>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {/* 3. IMAGE 3: TYPES OF PRICE (QUANTITY, DELIVERY TIMING, WHICH FUNCTION) */}
+                          <div className="pt-2 border-t border-slate-800/80 space-y-2.5">
+                            <label className="block text-[10px] text-slate-400 uppercase font-bold">
+                              Types of Price (Quantity, Delivery Timing, Function)
+                            </label>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                              {/* Quantity & Unit Price */}
+                              <div className="p-3 rounded-xl border border-slate-800 bg-slate-900/40 space-y-2">
+                                <label className="block text-[10px] text-slate-400 uppercase font-bold">Quantity &amp; Price</label>
+                                <div>
+                                  <label className="block text-[10px] text-slate-500 mb-1">Quantity</label>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    value={p.flowers?.quantity ?? ''}
+                                    onChange={(e) => updatePackageFlowers(p.id, 'quantity', e.target.value === '' ? undefined : Number(e.target.value))}
+                                    placeholder="e.g. 10"
+                                    className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] text-slate-400 font-semibold mb-1">Price per unit (₹)</label>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    value={p.flowers?.unitPrice ?? ''}
+                                    onChange={(e) => updatePackageFlowers(p.id, 'unitPrice', e.target.value === '' ? undefined : Number(e.target.value))}
+                                    placeholder="e.g. 500"
+                                    className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm font-mono"
+                                  />
+                                </div>
+                                {Number(p.flowers?.quantity) > 0 && Number(p.flowers?.unitPrice) > 0 && (
+                                  <p className="text-[10px] text-amber-400 font-mono">
+                                    Total = ₹{(Number(p.flowers?.quantity) * Number(p.flowers?.unitPrice)).toLocaleString('en-IN')}
+                                  </p>
+                                )}
+                              </div>
+
+                              {/* Delivery Timing & Price */}
+                              <div className="p-3 rounded-xl border border-slate-800 bg-slate-900/40 space-y-2">
+                                <label className="block text-[10px] text-slate-400 uppercase font-bold">Delivery Timing</label>
+                                <div>
+                                  <label className="block text-[10px] text-slate-500 mb-1">Delivery timing</label>
+                                  <input
+                                    type="text"
+                                    value={p.flowers?.deliveryTiming ?? ''}
+                                    onChange={(e) => updatePackageFlowers(p.id, 'deliveryTiming', e.target.value)}
+                                    placeholder="e.g. Morning 6 AM"
+                                    className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] text-slate-400 font-semibold mb-1">Delivery timing price (₹)</label>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    value={p.flowers?.deliveryTimingPrice ?? ''}
+                                    onChange={(e) => updatePackageFlowers(p.id, 'deliveryTimingPrice', e.target.value === '' ? undefined : Number(e.target.value))}
+                                    placeholder="e.g. 500"
+                                    className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm font-mono"
+                                  />
+                                </div>
+                              </div>
+
+                              {/* Which Function & Price */}
+                              <div className="p-3 rounded-xl border border-slate-800 bg-slate-900/40 space-y-2">
+                                <label className="block text-[10px] text-slate-400 uppercase font-bold">Function / Ceremony</label>
+                                <div>
+                                  <label className="block text-[10px] text-slate-500 mb-1">Which function</label>
+                                  <input
+                                    type="text"
+                                    value={p.flowers?.whichFunction ?? ''}
+                                    onChange={(e) => updatePackageFlowers(p.id, 'whichFunction', e.target.value)}
+                                    placeholder="e.g. Muhurtham"
+                                    className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] text-slate-400 font-semibold mb-1">Function price (₹)</label>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    value={p.flowers?.whichFunctionPrice ?? ''}
+                                    onChange={(e) => updatePackageFlowers(p.id, 'whichFunctionPrice', e.target.value === '' ? undefined : Number(e.target.value))}
+                                    placeholder="e.g. 2000"
+                                    className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm font-mono"
+                                  />
+                                </div>
+                              </div>
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-3 gap-2">
-                            <div>
-                              <label className="block text-[10px] text-slate-500 mb-1">Quantity</label>
-                              <input type="number" min={0} value={p.flowers?.quantity ?? ''} onChange={(e) => updatePackageFlowers(p.id, 'quantity', e.target.value === '' ? undefined : Number(e.target.value))}
-                                placeholder="e.g. 10" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                          {/* 4. ADD TOGETHER AMOUNT: CALCULATION SUMMARY BOX */}
+                          <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between text-xs flex-wrap gap-2">
+                            <div className="text-slate-400 flex flex-wrap items-center gap-1.5">
+                              {/* Variety sum */}
+                              <span>Varieties: </span>
+                              <span className="text-slate-200 font-semibold font-mono">
+                                ₹{(
+                                  (p.flowers?.varieties || (p.flowers?.variety ? [p.flowers.variety] : []))
+                                    .reduce((acc: number, v: string) => acc + (Number(p.flowers?.varietyPrices?.[v]) || 0), 0) +
+                                  (p.flowers?.customVarieties || []).reduce((acc: number, cv: any) => acc + (Number(cv.price) || 0), 0)
+                                ).toLocaleString('en-IN')}
+                              </span>
+
+                              {/* Items sum */}
+                              <span> + Items: </span>
+                              <span className="text-slate-200 font-semibold font-mono">
+                                ₹{(
+                                  (p.flowers?.items || [])
+                                    .reduce((acc: number, it: string) => acc + (Number(p.flowers?.itemPrices?.[it]) || 0), 0) +
+                                  (p.flowers?.customItems || []).reduce((acc: number, ci: any) => acc + (Number(ci.price) || 0), 0)
+                                ).toLocaleString('en-IN')}
+                              </span>
+
+                              {/* Quantity sum */}
+                              {((Number(p.flowers?.unitPrice) || 0) > 0 || (Number(p.flowers?.quantityPrice) || 0) > 0) && (
+                                <>
+                                  <span> + Qty: </span>
+                                  <span className="text-slate-200 font-semibold font-mono">
+                                    ₹{(
+                                      (Number(p.flowers?.unitPrice) || 0) > 0
+                                        ? (Number(p.flowers?.quantity) || 1) * Number(p.flowers?.unitPrice)
+                                        : Number(p.flowers?.quantityPrice) || 0
+                                    ).toLocaleString('en-IN')}
+                                  </span>
+                                </>
+                              )}
+
+                              {/* Delivery timing */}
+                              {(Number(p.flowers?.deliveryTimingPrice) || 0) > 0 && (
+                                <>
+                                  <span> + Delivery: </span>
+                                  <span className="text-slate-200 font-semibold font-mono">
+                                    ₹{(Number(p.flowers?.deliveryTimingPrice) || 0).toLocaleString('en-IN')}
+                                  </span>
+                                </>
+                              )}
+
+                              {/* Function price */}
+                              {(Number(p.flowers?.whichFunctionPrice) || 0) > 0 && (
+                                <>
+                                  <span> + Function: </span>
+                                  <span className="text-slate-200 font-semibold font-mono">
+                                    ₹{(Number(p.flowers?.whichFunctionPrice) || 0).toLocaleString('en-IN')}
+                                  </span>
+                                </>
+                              )}
                             </div>
-                            <div>
-                              <label className="block text-[10px] text-slate-500 mb-1">Delivery timing</label>
-                              <input type="text" value={p.flowers?.deliveryTiming ?? ''} onChange={(e) => updatePackageFlowers(p.id, 'deliveryTiming', e.target.value)}
-                                placeholder="e.g. Morning 6 AM" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
-                            </div>
-                            <div>
-                              <label className="block text-[10px] text-slate-500 mb-1">Which function</label>
-                              <input type="text" value={p.flowers?.whichFunction ?? ''} onChange={(e) => updatePackageFlowers(p.id, 'whichFunction', e.target.value)}
-                                placeholder="e.g. Muhurtham" className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                            <div className="text-amber-400 font-bold font-mono text-sm">
+                              = Total Amount: ₹{(p.price || flowersTotal(p.flowers) || 0).toLocaleString('en-IN')}
                             </div>
                           </div>
                         </div>

@@ -292,11 +292,32 @@ const vendorPackageSchema = new Schema(
     // Flowers-only structured details.
     flowers: {
       variety: String,
+      varieties: [String],
+      varietyPrices: Schema.Types.Mixed,
+      varietyImages: Schema.Types.Mixed,
+      customVarieties: [{
+        name: String,
+        price: Number,
+        image: String,
+      }],
       items: [String],
+      itemPrices: Schema.Types.Mixed,
+      itemImages: Schema.Types.Mixed,
+      customItems: [{
+        name: String,
+        price: Number,
+        image: String,
+      }],
       flowerKind: String,
+      flowerKindPrices: Schema.Types.Mixed,
+      flowerKindImages: Schema.Types.Mixed,
       quantity: Number,
+      unitPrice: Number,
+      quantityPrice: Number,
       deliveryTiming: String,
+      deliveryTimingPrice: Number,
       whichFunction: String,
+      whichFunctionPrice: Number,
     },
     // Mehendi-only structured details. Plain nested (has a `type` field).
     mehendi: {

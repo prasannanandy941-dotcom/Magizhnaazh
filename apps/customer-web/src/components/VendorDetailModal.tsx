@@ -1836,18 +1836,141 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                       {vendor.category === 'Flowers' && pkg.flowers && (() => {
                         const fl = pkg.flowers;
                         const chip = 'text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200';
+                        const selectedVars: string[] = Array.isArray(fl.varieties)
+                          ? fl.varieties
+                          : fl.variety ? [fl.variety] : [];
+                        const customVars = Array.isArray(fl.customVarieties) ? fl.customVarieties : [];
+                        const selectedItems: string[] = Array.isArray(fl.items) ? fl.items : [];
+                        const customItems = Array.isArray(fl.customItems) ? fl.customItems : [];
+
                         return (
-                          <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2" onClick={(e) => e.stopPropagation()}>
-                            <span className="text-[10px] font-bold text-slate-400 uppercase block">Flower details</span>
-                            <div className="flex flex-wrap gap-1.5">
-                              {fl.variety && <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-200 font-bold">{fl.variety}</span>}
-                              {fl.flowerKind && <span className={chip}>{fl.flowerKind}</span>}
-                              {(fl.items || []).map((it) => <span key={`fi-${it}`} className={chip}>{it}</span>)}
-                            </div>
-                            <div className="space-y-1 text-[11px] text-slate-300">
-                              {fl.quantity ? <div>Quantity: <span className="text-white font-semibold">{fl.quantity}</span></div> : null}
-                              {fl.deliveryTiming ? <div>Delivery timing: <span className="text-white font-semibold">{fl.deliveryTiming}</span></div> : null}
-                              {fl.whichFunction ? <div>Function: <span className="text-white font-semibold">{fl.whichFunction}</span></div> : null}
+                          <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2.5" onClick={(e) => e.stopPropagation()}>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase block">Flower details &amp; Offerings</span>
+
+                            {/* Variety & Custom Items with photos and prices */}
+                            {(selectedVars.length > 0 || customVars.length > 0) && (
+                              <div className="space-y-1.5">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase block">Varieties / Tiers</span>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                  {selectedVars.map((v) => {
+                                    const price = fl.varietyPrices?.[v];
+                                    const img = fl.varietyImages?.[v];
+                                    return (
+                                      <div key={`fv-${v}`} className="flex items-start gap-2.5 p-2 rounded-xl bg-slate-950/60 border border-slate-800">
+                                        {img ? (
+                                          <img src={img} alt={v} className="w-12 h-12 rounded-lg object-cover border border-slate-700 shrink-0" />
+                                        ) : (
+                                          <div className="w-12 h-12 rounded-lg bg-slate-800 flex items-center justify-center text-amber-400 shrink-0">
+                                            <Sparkles className="w-5 h-5 text-amber-400" />
+                                          </div>
+                                        )}
+                                        <div className="flex-1 min-w-0 text-[11px]">
+                                          <div className="font-bold text-white truncate">{v}</div>
+                                          {price ? <div className="text-amber-400 font-semibold text-[11px]">₹{price.toLocaleString('en-IN')}</div> : null}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                  {customVars.map((cv, idx) => (
+                                    <div key={`fcv-${idx}`} className="flex items-start gap-2.5 p-2 rounded-xl bg-slate-950/60 border border-slate-800">
+                                      {cv.image ? (
+                                        <img src={cv.image} alt={cv.name || 'item'} className="w-12 h-12 rounded-lg object-cover border border-slate-700 shrink-0" />
+                                      ) : (
+                                        <div className="w-12 h-12 rounded-lg bg-slate-800 flex items-center justify-center text-amber-400 shrink-0">
+                                          <Sparkles className="w-5 h-5 text-amber-400" />
+                                        </div>
+                                      )}
+                                      <div className="flex-1 min-w-0 text-[11px]">
+                                        <div className="font-bold text-white truncate">{cv.name || `Custom Variety #${idx + 1}`}</div>
+                                        {cv.price ? <div className="text-amber-400 font-semibold text-[11px]">₹{cv.price.toLocaleString('en-IN')}</div> : null}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Flower Kind (Fresh / Artificial) */}
+                            {fl.flowerKind && (
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase">Flower Type:</span>
+                                <span className={chip}>{fl.flowerKind}</span>
+                              </div>
+                            )}
+
+                            {/* Items with photos and prices */}
+                            {(selectedItems.length > 0 || customItems.length > 0) && (
+                              <div className="space-y-1.5 pt-1">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase block">Items Offered</span>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                  {selectedItems.map((it) => {
+                                    const price = fl.itemPrices?.[it];
+                                    const img = fl.itemImages?.[it];
+                                    return (
+                                      <div key={`fi-${it}`} className="flex items-start gap-2.5 p-2 rounded-xl bg-slate-950/60 border border-slate-800">
+                                        {img ? (
+                                          <img src={img} alt={it} className="w-12 h-12 rounded-lg object-cover border border-slate-700 shrink-0" />
+                                        ) : (
+                                          <div className="w-12 h-12 rounded-lg bg-slate-800 flex items-center justify-center text-amber-400 shrink-0">
+                                            <Sparkles className="w-5 h-5 text-amber-400" />
+                                          </div>
+                                        )}
+                                        <div className="flex-1 min-w-0 text-[11px]">
+                                          <div className="font-bold text-white truncate">{it}</div>
+                                          {price ? <div className="text-amber-400 font-semibold text-[11px]">₹{price.toLocaleString('en-IN')}</div> : null}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                  {customItems.map((ci, idx) => (
+                                    <div key={`fci-${idx}`} className="flex items-start gap-2.5 p-2 rounded-xl bg-slate-950/60 border border-slate-800">
+                                      {ci.image ? (
+                                        <img src={ci.image} alt={ci.name || 'item'} className="w-12 h-12 rounded-lg object-cover border border-slate-700 shrink-0" />
+                                      ) : (
+                                        <div className="w-12 h-12 rounded-lg bg-slate-800 flex items-center justify-center text-amber-400 shrink-0">
+                                          <Sparkles className="w-5 h-5 text-amber-400" />
+                                        </div>
+                                      )}
+                                      <div className="flex-1 min-w-0 text-[11px]">
+                                        <div className="font-bold text-white truncate">{ci.name || `Custom Item #${idx + 1}`}</div>
+                                        {ci.price ? <div className="text-amber-400 font-semibold text-[11px]">₹{ci.price.toLocaleString('en-IN')}</div> : null}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Service, Quantity & Delivery details */}
+                            <div className="space-y-1 text-[11px] text-slate-300 pt-1 border-t border-slate-800/80">
+                              {fl.quantity ? (
+                                <div>
+                                  Quantity: <span className="text-white font-semibold">{fl.quantity}</span>
+                                  {fl.unitPrice ? (
+                                    <span className="text-amber-400 font-semibold ml-1.5">
+                                      (@ ₹{fl.unitPrice.toLocaleString('en-IN')}/unit = ₹{(fl.quantity * fl.unitPrice).toLocaleString('en-IN')})
+                                    </span>
+                                  ) : fl.quantityPrice ? (
+                                    <span className="text-amber-400 font-semibold ml-1.5">(₹{fl.quantityPrice.toLocaleString('en-IN')})</span>
+                                  ) : null}
+                                </div>
+                              ) : null}
+                              {fl.deliveryTiming ? (
+                                <div>
+                                  Delivery timing: <span className="text-white font-semibold">{fl.deliveryTiming}</span>
+                                  {fl.deliveryTimingPrice ? (
+                                    <span className="text-amber-400 font-semibold ml-1.5">(₹{fl.deliveryTimingPrice.toLocaleString('en-IN')})</span>
+                                  ) : null}
+                                </div>
+                              ) : null}
+                              {fl.whichFunction ? (
+                                <div>
+                                  Function: <span className="text-white font-semibold">{fl.whichFunction}</span>
+                                  {fl.whichFunctionPrice ? (
+                                    <span className="text-amber-400 font-semibold ml-1.5">(₹{fl.whichFunctionPrice.toLocaleString('en-IN')})</span>
+                                  ) : null}
+                                </div>
+                              ) : null}
                             </div>
                           </div>
                         );
