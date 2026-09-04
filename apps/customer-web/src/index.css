@@ -17,6 +17,24 @@ html, body {
   text-size-adjust: 100%;
 }
 
+/* Lighter, softer gold across the app (default amber read as too bright). */
+.text-amber-200 { color: #f6ebc8 !important; }
+.text-amber-300 { color: #f2e2ac !important; }
+.text-amber-400 { color: #ecd58c !important; }
+.text-amber-500 { color: #e3c477 !important; }
+.fill-amber-400 { fill: #ecd58c !important; }
+.bg-amber-400 { background-color: #ecd58c !important; }
+.bg-amber-500 { background-color: #e3c477 !important; }
+.border-amber-400 { border-color: #e3c477 !important; }
+.border-amber-500 { border-color: #d6b768 !important; }
+.from-amber-300 { --tw-gradient-from: #f2e2ac !important; }
+.from-amber-400 { --tw-gradient-from: #ecd58c !important; }
+.from-amber-500 { --tw-gradient-from: #e3c477 !important; }
+.to-amber-400 { --tw-gradient-to: #ecd58c !important; }
+.to-amber-500 { --tw-gradient-to: #e3c477 !important; }
+.to-amber-600 { --tw-gradient-to: #d9a441 !important; }
+.to-orange-600 { --tw-gradient-to: #dda85c !important; }
+
 /* Native date/time controls sit on dark fields — tell the browser so it paints
    the calendar glyph, placeholder and picker popup for a dark background.
    Without this the icon/text render near-black and vanish on mobile WebView.
