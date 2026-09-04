@@ -9,6 +9,15 @@
 :root { color-scheme: dark; }
 .auth-light { color-scheme: light; }
 
+/* Keep the mobile screen fixed: no rubber-band/over-scroll bounce, and no
+   pull-to-refresh/scroll-chaining that shifts the whole viewport. Only normal
+   in-content vertical scrolling remains. */
+html, body {
+  overscroll-behavior: none;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 /* ---------------------------------------------------------------------------
    Light theme scoped to the vendor Sign In / Register screen (AuthGate root
    carries `.auth-light`). The screen is otherwise built from dark slate
