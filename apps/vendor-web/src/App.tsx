@@ -4793,7 +4793,7 @@ export function App() {
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <label className="block text-[10px] text-slate-400 uppercase font-bold">
-                          {myVendor?.category === 'Catering' ? 'Total amount (₹)' : myVendor?.category === 'Security' ? 'Price per guard / shift (₹)' : myVendor?.category === 'Venue' ? 'Total amount (₹)' : myVendor?.category === 'Decoration' ? 'Total amount (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Total amount (₹)' : myVendor?.category === 'Media' ? 'Total amount (₹)' : myVendor?.category === 'Transport' ? 'Total amount (₹)' : myVendor?.category === 'Invitation' ? 'Total amount (₹)' : myVendor?.category === 'Printing' ? 'Total amount (₹)' : myVendor?.category === 'Return Gifts' ? 'Total amount (₹)' : myVendor?.category === 'Lighting' || myVendor?.category === 'Lights & Sounds' ? 'Total amount (₹)' : myVendor?.category === 'Pujari/Priest' ? 'Price per ceremony (₹)' : myVendor?.category === 'Entertainment' ? 'Price per act / hour (₹)' : myVendor?.category === 'Music/DJ' ? 'Price per event / hour (₹)' : myVendor?.category === 'Flowers' ? 'Price per item / function (₹)' : myVendor?.category === 'Mehendi' ? 'Price per bride (₹)' : myVendor?.category === 'Event Host/Anchor' ? 'Price per event (₹)' : myVendor?.category === 'Rental Equipment' ? 'Per-day rate (₹)' : myVendor?.category === 'Utensils for Rent' ? 'Total price (₹)' : myVendor?.category === 'Wedding Planner' ? 'Price per package / function (₹)' : myVendor?.category === 'Corporate Event Services' ? 'Price per total event (₹)' : 'Price (₹)'}
+                          {myVendor?.category === 'Catering' ? 'Total amount (₹)' : myVendor?.category === 'Security' ? 'Price per guard / shift (₹)' : myVendor?.category === 'Venue' ? 'Total amount (₹)' : myVendor?.category === 'Decoration' ? 'Total amount (₹)' : myVendor?.category === 'Makeup & Beauty' ? 'Total amount (₹)' : myVendor?.category === 'Media' ? 'Total amount (₹)' : myVendor?.category === 'Transport' ? 'Total amount (₹)' : myVendor?.category === 'Invitation' ? 'Total amount (₹)' : myVendor?.category === 'Printing' ? 'Total amount (₹)' : myVendor?.category === 'Return Gifts' ? 'Total amount (₹)' : myVendor?.category === 'Lighting' || myVendor?.category === 'Lights & Sounds' ? 'Total amount (₹)' : myVendor?.category === 'Pujari/Priest' ? 'Price per ceremony (₹)' : myVendor?.category === 'Entertainment' ? 'Price per act / hour (₹)' : myVendor?.category === 'Music/DJ' ? 'Price per event / hour (₹)' : myVendor?.category === 'Flowers' ? 'Total amount (₹)' : myVendor?.category === 'Mehendi' ? 'Price per bride (₹)' : myVendor?.category === 'Event Host/Anchor' ? 'Price per event (₹)' : myVendor?.category === 'Rental Equipment' ? 'Per-day rate (₹)' : myVendor?.category === 'Utensils for Rent' ? 'Total price (₹)' : myVendor?.category === 'Wedding Planner' ? 'Price per package / function (₹)' : myVendor?.category === 'Corporate Event Services' ? 'Price per total event (₹)' : 'Price (₹)'}
                         </label>
                         {myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 && (
                           <span className="text-[10px] text-amber-400 font-bold">
@@ -8584,67 +8584,6 @@ export function App() {
                             </div>
                           </div>
 
-                          {/* 4. ADD TOGETHER AMOUNT: CALCULATION SUMMARY BOX */}
-                          <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between text-xs flex-wrap gap-2">
-                            <div className="text-slate-400 flex flex-wrap items-center gap-1.5">
-                              {/* Variety sum */}
-                              <span>Varieties: </span>
-                              <span className="text-slate-200 font-semibold font-mono">
-                                ₹{(
-                                  (p.flowers?.varieties || (p.flowers?.variety ? [p.flowers.variety] : []))
-                                    .reduce((acc: number, v: string) => acc + (Number(p.flowers?.varietyPrices?.[v]) || 0), 0) +
-                                  (p.flowers?.customVarieties || []).reduce((acc: number, cv: any) => acc + (Number(cv.price) || 0), 0)
-                                ).toLocaleString('en-IN')}
-                              </span>
-
-                              {/* Items sum */}
-                              <span> + Items: </span>
-                              <span className="text-slate-200 font-semibold font-mono">
-                                ₹{(
-                                  (p.flowers?.items || [])
-                                    .reduce((acc: number, it: string) => acc + (Number(p.flowers?.itemPrices?.[it]) || 0), 0) +
-                                  (p.flowers?.customItems || []).reduce((acc: number, ci: any) => acc + (Number(ci.price) || 0), 0)
-                                ).toLocaleString('en-IN')}
-                              </span>
-
-                              {/* Quantity sum */}
-                              {((Number(p.flowers?.unitPrice) || 0) > 0 || (Number(p.flowers?.quantityPrice) || 0) > 0) && (
-                                <>
-                                  <span> + Qty: </span>
-                                  <span className="text-slate-200 font-semibold font-mono">
-                                    ₹{(
-                                      (Number(p.flowers?.unitPrice) || 0) > 0
-                                        ? (Number(p.flowers?.quantity) || 1) * Number(p.flowers?.unitPrice)
-                                        : Number(p.flowers?.quantityPrice) || 0
-                                    ).toLocaleString('en-IN')}
-                                  </span>
-                                </>
-                              )}
-
-                              {/* Delivery timing */}
-                              {(Number(p.flowers?.deliveryTimingPrice) || 0) > 0 && (
-                                <>
-                                  <span> + Delivery: </span>
-                                  <span className="text-slate-200 font-semibold font-mono">
-                                    ₹{(Number(p.flowers?.deliveryTimingPrice) || 0).toLocaleString('en-IN')}
-                                  </span>
-                                </>
-                              )}
-
-                              {/* Function price */}
-                              {(Number(p.flowers?.whichFunctionPrice) || 0) > 0 && (
-                                <>
-                                  <span> + Function: </span>
-                                  <span className="text-slate-200 font-semibold font-mono">
-                                    ₹{(Number(p.flowers?.whichFunctionPrice) || 0).toLocaleString('en-IN')}
-                                  </span>
-                                </>
-                              )}
-                            </div>
-                            <div className="text-amber-400 font-bold font-mono text-sm">
-                              = Total Amount: ₹{(p.price || flowersTotal(p.flowers) || 0).toLocaleString('en-IN')}
-                            </div>
-                          </div>
                         </div>
                       )}
 
