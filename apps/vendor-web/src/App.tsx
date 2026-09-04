@@ -869,31 +869,39 @@ export function App() {
               <Plus className="w-3.5 h-3.5" /> Add item
             </button>
 
-            {/* Photos ("add profile") for this option — shown to customers under it.
-                Enabled for Flowers and Event Host/Anchor vendors. */}
-            {(myVendor?.category === 'Flowers' || myVendor?.category === 'Event Host/Anchor') && (
+            {/* Photos / profile document for this option — shown to customers under it.
+                Flowers = photos; Event Host/Anchor = a profile photo OR document (PDF/DOC). */}
+            {(myVendor?.category === 'Flowers' || myVendor?.category === 'Event Host/Anchor') && (() => {
+              const isHost = myVendor?.category === 'Event Host/Anchor';
+              const isImg = (u: string) => /\.(png|jpe?g|gif|svg|webp|bmp|avif)(\?|#|$)/i.test(u);
+              return (
               <div className="pt-2 mt-1 border-t border-slate-800">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[10px] text-slate-400 uppercase font-bold">{myVendor?.category === 'Event Host/Anchor' ? 'Profile photo' : 'Photos'}</span>
+                  <span className="text-[10px] text-slate-400 uppercase font-bold">{isHost ? 'Profile / Document' : 'Photos'}</span>
                   {(offeredOptionImages[opt] || []).map((url) => (
-                    <div key={url} className="relative h-14 w-14 rounded-lg overflow-hidden border border-slate-800 bg-slate-950">
-                      <img src={url} alt="option" className="w-full h-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => removeOptionImage(opt, url)}
-                        className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-slate-950/80 text-slate-300 hover:text-rose-400 flex items-center justify-center"
-                        title="Remove photo"
-                      >
-                        <X className="w-2.5 h-2.5" />
-                      </button>
-                    </div>
+                    isImg(url) ? (
+                      <div key={url} className="relative h-14 w-14 rounded-lg overflow-hidden border border-slate-800 bg-slate-950">
+                        <img src={url} alt="option" className="w-full h-full object-cover" />
+                        <button type="button" onClick={() => removeOptionImage(opt, url)} className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-slate-950/80 text-slate-300 hover:text-rose-400 flex items-center justify-center" title="Remove">
+                          <X className="w-2.5 h-2.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div key={url} className="relative flex items-center gap-1.5 h-14 pl-2 pr-6 rounded-lg border border-slate-800 bg-slate-950">
+                        <FileText className="w-5 h-5 text-amber-400 shrink-0" />
+                        <a href={url} target="_blank" rel="noreferrer" className="text-[10px] text-slate-300 hover:text-white underline max-w-[90px] truncate">View document</a>
+                        <button type="button" onClick={() => removeOptionImage(opt, url)} className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-slate-950/80 text-slate-300 hover:text-rose-400 flex items-center justify-center" title="Remove">
+                          <X className="w-2.5 h-2.5" />
+                        </button>
+                      </div>
+                    )
                   ))}
                   <label className="cursor-pointer flex items-center gap-1 text-[11px] px-2.5 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white font-bold hover:bg-slate-700">
                     {uploadingOptionPhoto === opt ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-                    Add photo
+                    {isHost ? 'Add profile / document' : 'Add photo'}
                     <input
                       type="file"
-                      accept="image/*"
+                      accept={isHost ? '.pdf,.doc,.docx,.ppt,.pptx,image/*' : 'image/*'}
                       className="hidden"
                       disabled={uploadingOptionPhoto === opt}
                       onChange={(e) => { const f = e.target.files?.[0]; if (f) handleOptionPhotoUpload(opt, f); e.target.value = ''; }}
@@ -901,7 +909,8 @@ export function App() {
                   </label>
                 </div>
               </div>
-            )}
+              );
+            })()}
           </div>
         )}
       </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Star, MapPin, Check, ShieldCheck, Upload, Calendar as CalendarIcon, MessageSquare, Send, CreditCard, Sparkles, Camera, Bus, Flame, Gift, ListChecks, Phone, Clock, Plus, Maximize2, Car, Mail, Printer } from 'lucide-react';
+import { X, Star, MapPin, Check, ShieldCheck, Upload, Calendar as CalendarIcon, MessageSquare, Send, CreditCard, Sparkles, Camera, Bus, Flame, Gift, ListChecks, Phone, Clock, Plus, Maximize2, Car, Mail, Printer, FileText } from 'lucide-react';
 import { Vendor, Review, getVendorTrustBadges, getLiveDeals, bestDealForAmount, AVAILABILITY_SLOTS, isSlotBooked, openSlots, offeredSlotIds } from '../../../../packages/shared-types';
 import { fetchVendorById, uploadReferenceImage, fetchVendorReviews } from '../api';
 import { PortfolioGrid } from './Portfolio';
@@ -589,13 +589,26 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                     {optionImages.length > 0 && (
                       <div className="flex gap-2 overflow-x-auto pb-1 mb-3">
                         {optionImages.map((url) => (
-                          <img
-                            key={url}
-                            src={url}
-                            alt={o}
-                            onClick={() => setLightboxImage(url)}
-                            className="h-24 w-32 object-cover rounded-lg border border-slate-800 cursor-pointer hover:border-indigo-400 shrink-0"
-                          />
+                          /\.(png|jpe?g|gif|svg|webp|bmp|avif)(\?|#|$)/i.test(url) ? (
+                            <img
+                              key={url}
+                              src={url}
+                              alt={o}
+                              onClick={() => setLightboxImage(url)}
+                              className="h-24 w-32 object-cover rounded-lg border border-slate-800 cursor-pointer hover:border-indigo-400 shrink-0"
+                            />
+                          ) : (
+                            <a
+                              key={url}
+                              href={url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="h-24 w-32 flex flex-col items-center justify-center gap-1 rounded-lg border border-slate-800 bg-slate-900/60 text-slate-300 hover:border-indigo-400 hover:text-white shrink-0"
+                            >
+                              <FileText className="w-7 h-7 text-amber-400" />
+                              <span className="text-[10px] font-semibold">View profile</span>
+                            </a>
+                          )
                         ))}
                       </div>
                     )}
