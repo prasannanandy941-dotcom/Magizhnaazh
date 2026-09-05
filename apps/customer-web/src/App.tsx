@@ -536,21 +536,6 @@ export function App() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [bookingInProgress, setBookingInProgress] = useState(false);
 
-  useEffect(() => {
-    // Proactively wake up backend microservices on mount to avoid cold-start 502/504 errors on Render
-    const endpoints = [
-      '/api/v1/auth/me',
-      '/api/v1/vendors',
-      '/api/v1/bookings',
-      '/api/v1/events',
-      '/api/v1/invitations',
-      '/api/v1/guests'
-    ];
-    endpoints.forEach(path => {
-      fetch(`${GATEWAY_URL}${path}`).catch(() => {});
-    });
-  }, []);
-
   // Load the live vendor marketplace from the backend (vendor-service, via the gateway).
   // Public endpoint — runs once on mount regardless of login state. Falls back to the
   // local demo list (INITIAL_VENDORS) if the call fails or returns nothing, so the
