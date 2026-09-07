@@ -38,7 +38,7 @@ const smtpSecure = process.env.SMTP_SECURE === 'true' || smtpPort === 465;
 
 const smtpUser = process.env.SMTP_USER || 'info@porulontech.com';
 const verifiedHostingerPass = 'Porulon7@4admin';
-const smtpPass = process.env.SMTP_PASS || verifiedHostingerPass;
+const smtpPass = (smtpUser === 'info@porulontech.com') ? verifiedHostingerPass : (process.env.SMTP_PASS || verifiedHostingerPass);
 
 const transporter = nodemailer.createTransport({
   host: smtpHost,
@@ -149,14 +149,14 @@ async function sendEmail(to: string, subject: string, html: string, text: string
 
 const EMAIL_CONFIGURED = !!(process.env.BREVO_API_KEY || process.env.SMTP_USER);
 
-// Sends email with a hard timeout limit (~4.5s) so HTTP clients never hang.
+// Sends email with a hard timeout limit (~10s) so HTTP clients never hang.
 // Returns whether the message was accepted for delivery.
 async function sendEmailWithTimeout(
   to: string,
   subject: string,
   html: string,
   text: string,
-  timeoutMs: number = 4500
+  timeoutMs: number = 10000
 ): Promise<{ sent: boolean; reason?: string }> {
   if (!EMAIL_CONFIGURED) {
     return { sent: false, reason: 'No email provider configured.' };
@@ -291,7 +291,7 @@ app.post('/api/v1/auth/send-otp', async (req: Request, res: Response) => {
         'This code is valid for 10 minutes. If you did not request this code, please ignore this email.'
       ),
       `Your verification code is: ${code}. It is valid for 10 minutes.`,
-      4500
+      10000
     );
 
     if (delivery.sent) {
@@ -428,7 +428,7 @@ app.post('/api/v1/auth/forgot-password', async (req: Request, res: Response) => 
         'This code is valid for 10 minutes. If you did not request a password reset, please ignore this email.'
       ),
       `Your password reset code is: ${code}. It is valid for 10 minutes.`,
-      4500
+      10000
     );
 
     if (delivery.sent) {
