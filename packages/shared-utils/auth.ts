@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import { Request, Response, NextFunction } from 'express';
 import { Role } from '../shared-types';
 
@@ -14,6 +15,18 @@ function getJwtSecret(): string {
     throw new Error('JWT_SECRET is not set. Copy .env.example to .env and set a shared secret.');
   }
   return secret;
+}
+
+// A short, non-reversible fingerprint of the runtime JWT secret. Logged so we can
+// confirm every service is verifying with the SAME secret (matching .env files do
+// not guarantee matching *runtime* env if a process was started before a sync).
+// It reveals nothing about the secret itself.
+function secretFingerprint(): string {
+  try {
+    return crypto.createHash('sha256').update(getJwtSecret()).digest('hex').slice(0, 10);
+  } catch {
+    return 'MISSING';
+  }
 }
 
 export function signToken(payload: AuthTokenPayload): string {
@@ -36,7 +49,15 @@ declare global {
  * Verifies the Authorization: Bearer token independently in each service
  * (stateless JWT, shared secret) rather than trusting gateway-forwarded headers.
  */
+let loggedFingerprint = false;
+
 export function authMiddleware(required = true) {
+  // Log the runtime secret fingerprint once per service process, so the logs show
+  // whether the signing service (auth) and the verifying service share a secret.
+  if (!loggedFingerprint) {
+    loggedFingerprint = true;
+    console.log(`[auth] JWT secret fingerprint at startup: ${secretFingerprint()}`);
+  }
   return (req: Request, res: Response, next: NextFunction) => {
     const header = req.headers.authorization;
     const token = header?.startsWith('Bearer ') ? header.slice(7) : undefined;
@@ -51,8 +72,14 @@ export function authMiddleware(required = true) {
     try {
       req.user = verifyToken(token);
       next();
-    } catch {
-      return res.status(401).json({ success: false, message: 'Invalid or expired token.' });
+    } catch (err: any) {
+      // Surface the real reason (invalid signature vs expired vs malformed) plus the
+      // verifying secret's fingerprint — swallowing this is what made the failure
+      // impossible to diagnose.
+      console.warn(
+        `[auth] token rejected on ${req.method} ${req.originalUrl}: ${err?.name || 'Error'} — ${err?.message || 'verify failed'} (verify secret ${secretFingerprint()})`
+      );
+      return res.status(401).json({ success: false, message: 'Invalid or expired token.', code: err?.name });
     }
   };
 }
