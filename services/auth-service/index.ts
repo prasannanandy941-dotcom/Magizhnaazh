@@ -26,8 +26,14 @@ app.use(express.json());
 app.use(requestLogger('auth-service'));
 registerHealthRoute(app, 'auth-service');
 
-const smtpHost = process.env.SMTP_HOST || 'smtp.ethereal.email';
-const smtpPort = Number(process.env.SMTP_PORT) || 587;
+let rawSmtpHost = (process.env.SMTP_HOST || 'smtp.hostinger.com').trim();
+// 'mail.porulontech.com' is an internal cPanel/hPanel alias that does not resolve in public DNS.
+// Porulontech mail is hosted on Hostinger (MX mx1.hostinger.com), whose canonical public SMTP is smtp.hostinger.com.
+if (rawSmtpHost === 'mail.porulontech.com' || rawSmtpHost === 'smtp.ethereal.email') {
+  rawSmtpHost = 'smtp.hostinger.com';
+}
+const smtpHost = rawSmtpHost;
+const smtpPort = Number(process.env.SMTP_PORT) || 465;
 const smtpSecure = process.env.SMTP_SECURE === 'true' || smtpPort === 465;
 
 const transporter = nodemailer.createTransport({
@@ -49,7 +55,7 @@ const transporter = nodemailer.createTransport({
 // Fallback transporter on alternative port (e.g. 587 if 465 is default, or 465 if 587 is default)
 const fallbackPort = smtpPort === 465 ? 587 : 465;
 const fallbackTransporter = nodemailer.createTransport({
-  host: smtpHost,
+  host: 'smtp.hostinger.com',
   port: fallbackPort,
   secure: fallbackPort === 465,
   auth: {
