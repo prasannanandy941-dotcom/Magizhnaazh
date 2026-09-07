@@ -1237,7 +1237,7 @@ export function App() {
 
   // Photo per catering food type / cuisine.
   const [uploadingCateringImg, setUploadingCateringImg] = useState<string | null>(null);
-  const uploadCateringImage = async (pkgId: string, mapField: 'foodTypeImages' | 'cuisineImages', key: string, file: File) => {
+  const uploadCateringImage = async (pkgId: string, mapField: 'foodTypeImages' | 'cuisineImages' | 'plateTypeImages' | 'leafTypeImages', key: string, file: File) => {
     if (!token) return;
     setUploadingCateringImg(`${pkgId}:${mapField}:${key}`);
     try {
@@ -1253,7 +1253,7 @@ export function App() {
       }));
     } catch { /* best effort */ } finally { setUploadingCateringImg(null); }
   };
-  const removeCateringImage = (pkgId: string, mapField: 'foodTypeImages' | 'cuisineImages', key: string) =>
+  const removeCateringImage = (pkgId: string, mapField: 'foodTypeImages' | 'cuisineImages' | 'plateTypeImages' | 'leafTypeImages', key: string) =>
     setPackages((prev) => prev.map((p) => {
       if (p.id !== pkgId) return p;
       const cur = p.catering || {};
@@ -5970,17 +5970,28 @@ export function App() {
                                           {pt}
                                         </button>
                                         {isSelected && (
-                                          <div className="flex items-center gap-1">
-                                            <span className="text-[11px] text-slate-500">₹</span>
-                                            <input
-                                              type="number"
-                                              min={0}
-                                              placeholder="Price"
-                                              value={p.catering?.plateTypePrices?.[pt] ?? ''}
-                                              onChange={(e) => updateCateringOptionPrice(p.id, 'plateTypePrices', pt, e.target.value === '' ? undefined : Number(e.target.value))}
-                                              className="w-28 p-1.5 rounded-lg bg-slate-950 border border-slate-800 text-white text-xs"
-                                            />
-                                          </div>
+                                          <>
+                                            <div className="flex items-center gap-1">
+                                              <span className="text-[11px] text-slate-500">₹</span>
+                                              <input
+                                                type="number"
+                                                min={0}
+                                                placeholder="Price"
+                                                value={p.catering?.plateTypePrices?.[pt] ?? ''}
+                                                onChange={(e) => updateCateringOptionPrice(p.id, 'plateTypePrices', pt, e.target.value === '' ? undefined : Number(e.target.value))}
+                                                className="w-28 p-1.5 rounded-lg bg-slate-950 border border-slate-800 text-white text-xs"
+                                              />
+                                            </div>
+                                            {p.catering?.plateTypeImages?.[pt] ? (
+                                              <div className="relative"><img src={p.catering.plateTypeImages[pt]} alt={pt} className="w-12 h-10 rounded object-cover border border-slate-700" /><button type="button" onClick={() => removeCateringImage(p.id, 'plateTypeImages', pt)} className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px]">✕</button></div>
+                                            ) : (
+                                              <label className="cursor-pointer inline-flex items-center gap-1 text-[10px] text-slate-300 px-2 py-1.5 rounded-lg border border-slate-700 bg-slate-950 hover:border-amber-500">
+                                                {uploadingCateringImg === `${p.id}:plateTypeImages:${pt}` ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 text-amber-400" />}
+                                                Photo
+                                                <input type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) uploadCateringImage(p.id, 'plateTypeImages', pt, file); e.target.value = ''; }} />
+                                              </label>
+                                            )}
+                                          </>
                                         )}
                                       </div>
                                     );
@@ -6012,17 +6023,28 @@ export function App() {
                                           {lt}
                                         </button>
                                         {isSelected && (
-                                          <div className="flex items-center gap-1">
-                                            <span className="text-[11px] text-slate-500">₹</span>
-                                            <input
-                                              type="number"
-                                              min={0}
-                                              placeholder="Price"
-                                              value={p.catering?.leafTypePrices?.[lt] ?? ''}
-                                              onChange={(e) => updateCateringOptionPrice(p.id, 'leafTypePrices', lt, e.target.value === '' ? undefined : Number(e.target.value))}
-                                              className="w-28 p-1.5 rounded-lg bg-slate-950 border border-slate-800 text-white text-xs"
-                                            />
-                                          </div>
+                                          <>
+                                            <div className="flex items-center gap-1">
+                                              <span className="text-[11px] text-slate-500">₹</span>
+                                              <input
+                                                type="number"
+                                                min={0}
+                                                placeholder="Price"
+                                                value={p.catering?.leafTypePrices?.[lt] ?? ''}
+                                                onChange={(e) => updateCateringOptionPrice(p.id, 'leafTypePrices', lt, e.target.value === '' ? undefined : Number(e.target.value))}
+                                                className="w-28 p-1.5 rounded-lg bg-slate-950 border border-slate-800 text-white text-xs"
+                                              />
+                                            </div>
+                                            {p.catering?.leafTypeImages?.[lt] ? (
+                                              <div className="relative"><img src={p.catering.leafTypeImages[lt]} alt={lt} className="w-12 h-10 rounded object-cover border border-slate-700" /><button type="button" onClick={() => removeCateringImage(p.id, 'leafTypeImages', lt)} className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px]">✕</button></div>
+                                            ) : (
+                                              <label className="cursor-pointer inline-flex items-center gap-1 text-[10px] text-slate-300 px-2 py-1.5 rounded-lg border border-slate-700 bg-slate-950 hover:border-emerald-500">
+                                                {uploadingCateringImg === `${p.id}:leafTypeImages:${lt}` ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 text-emerald-400" />}
+                                                Photo
+                                                <input type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) uploadCateringImage(p.id, 'leafTypeImages', lt, file); e.target.value = ''; }} />
+                                              </label>
+                                            )}
+                                          </>
                                         )}
                                       </div>
                                     );

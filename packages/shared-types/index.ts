@@ -614,8 +614,10 @@ export interface CateringPackageDetails {
   serviceStyle?: string; // Buffet / Seated / Banana-leaf
   plateTypes?: string[]; // Paper Plate, Thermocol Plate, Steel Plates, Ceramic Plates
   plateTypePrices?: Record<string, number>; // price per selected buffet plate type
+  plateTypeImages?: Record<string, string>; // a photo per selected buffet plate type
   leafType?: string; // Natural Banana Leaf / Artificial Leaf
   leafTypePrices?: Record<string, number>; // price per selected seated banana-leaf type
+  leafTypeImages?: Record<string, string>; // a photo per selected seated banana-leaf type
   welcomeDrinks?: boolean;
   welcomeDrinkItems?: CateringFoodItem[]; // Drink name and price
   servingStaff?: boolean; // serving staff included

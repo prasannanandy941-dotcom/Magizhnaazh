@@ -902,6 +902,20 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                                   {(c.serviceStyle === 'Seated' || c.serviceStyle === 'Banana-leaf') && c.leafType && (
                                     <span className="text-emerald-300"> ({c.leafType}{c.leafTypePrices?.[c.leafType] ? ` ₹${Number(c.leafTypePrices[c.leafType]).toLocaleString('en-IN')}` : ''})</span>
                                   )}
+                                  {(() => {
+                                    const imgs = (c.serviceStyle === 'Buffet' ? c.plateTypeImages : c.leafTypeImages) || {};
+                                    const entries = Object.entries(imgs).filter(([, u]) => !!u);
+                                    return entries.length > 0 ? (
+                                      <div className="flex flex-wrap gap-2 mt-1.5">
+                                        {entries.map(([k, u]) => (
+                                          <div key={k} className="text-center">
+                                            <img src={u as string} alt={k} className="w-16 h-12 rounded object-cover border border-slate-700" />
+                                            <span className="block text-[9px] text-slate-400 mt-0.5 max-w-[64px] truncate">{k}</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    ) : null;
+                                  })()}
                                 </div>
                               ) : null}
                               {(c.liveCounters || []).length > 0 ? <div>Live counters: {c.liveCounters!.join(', ')}</div> : null}
