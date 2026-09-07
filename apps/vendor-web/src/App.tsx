@@ -5940,8 +5940,8 @@ export function App() {
                               </div>
                             )}
 
-                            {/* When Banana-leaf is selected: Leaf Type */}
-                            {p.catering?.serviceStyle === 'Banana-leaf' && (
+                            {/* When Seated is selected: Banana Leaf Type */}
+                            {p.catering?.serviceStyle === 'Seated' && (
                               <div className="mt-3 p-3 rounded-xl border border-emerald-500/30 bg-emerald-950/20 space-y-2">
                                 <div className="flex items-center gap-1.5">
                                   <span className="w-2 h-2 rounded-full bg-emerald-400" />
@@ -5949,7 +5949,7 @@ export function App() {
                                     Banana Leaf Type
                                   </label>
                                 </div>
-                                <p className="text-[10px] text-slate-400">Choose the leaf option used for banana-leaf service:</p>
+                                <p className="text-[10px] text-slate-400">Choose the leaf option used for seated banana-leaf service:</p>
                                 <div className="flex flex-wrap gap-2 pt-1">
                                   {BANANA_LEAF_TYPES.map((lt) => {
                                     const isSelected = p.catering?.leafType === lt;

@@ -896,7 +896,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                                   {c.serviceStyle === 'Buffet' && (c.plateTypes || []).length > 0 && (
                                     <span className="text-amber-300"> ({c.plateTypes!.join(', ')})</span>
                                   )}
-                                  {c.serviceStyle === 'Banana-leaf' && c.leafType && (
+                                  {(c.serviceStyle === 'Seated' || c.serviceStyle === 'Banana-leaf') && c.leafType && (
                                     <span className="text-emerald-300"> ({c.leafType})</span>
                                   )}
                                 </div>

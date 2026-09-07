@@ -628,7 +628,7 @@ export const CATERING_FOOD_TYPES = ['Veg', 'Non-Veg', 'Jain'] as const;
 export const CATERING_CUISINES = ['South Indian', 'Chettinad', 'North Indian', 'Continental'] as const;
 export const CATERING_COURSES = ['Starters', 'Mains', 'Desserts'] as const;
 export const CATERING_LIVE_COUNTERS = ['Chaat', 'Ice Cream'] as const;
-export const CATERING_SERVICE_STYLES = ['Buffet', 'Seated', 'Banana-leaf'] as const;
+export const CATERING_SERVICE_STYLES = ['Buffet', 'Seated'] as const;
 export const BUFFET_PLATE_TYPES = ['Paper Plate', 'Thermocol Plate', 'Steel Plates', 'Ceramic Plates'] as const;
 export const BANANA_LEAF_TYPES = ['Natural Banana Leaf', 'Artificial Leaf'] as const;
 
