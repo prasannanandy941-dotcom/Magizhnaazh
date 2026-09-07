@@ -304,59 +304,85 @@ export const CanvaInvitationDesigner: React.FC<CanvaInvitationDesignerProps> = (
           </div>
 
           <div
-            style={{ backgroundColor }}
-            className="w-[380px] sm:w-[400px] h-[600px] rounded-3xl shadow-2xl relative overflow-hidden border-2 border-slate-700/60 p-6 flex flex-col justify-between"
+            style={{
+              background: `radial-gradient(120% 80% at 50% 0%, rgba(255,255,255,0.10), rgba(255,255,255,0) 55%), linear-gradient(165deg, ${backgroundColor} 0%, rgba(0,0,0,0.55) 100%), ${backgroundColor}`,
+            }}
+            className="w-[380px] sm:w-[400px] h-[600px] rounded-3xl shadow-2xl relative overflow-hidden ring-1 ring-amber-200/20"
           >
-            {elements.map((el) => {
-              const isSelected = selectedElId === el.id;
+            {/* Ornamental gold frame — layered borders + corner flourishes, purely
+                decorative so it never intercepts clicks on the editable elements. */}
+            <div className="pointer-events-none absolute inset-3 rounded-[20px] border border-amber-200/45" />
+            <div className="pointer-events-none absolute inset-[18px] rounded-2xl border border-amber-200/15" />
+            <span className="pointer-events-none absolute top-2.5 left-3.5 text-amber-200/70 text-sm leading-none">✦</span>
+            <span className="pointer-events-none absolute top-2.5 right-3.5 text-amber-200/70 text-sm leading-none">✦</span>
+            <span className="pointer-events-none absolute bottom-2.5 left-3.5 text-amber-200/70 text-sm leading-none">✦</span>
+            <span className="pointer-events-none absolute bottom-2.5 right-3.5 text-amber-200/70 text-sm leading-none">✦</span>
+            {/* Top monogram emblem */}
+            <div className="pointer-events-none absolute top-7 left-1/2 -translate-x-1/2 text-amber-200/85 text-2xl leading-none">❦</div>
 
-              if (el.type === 'text') {
-                return (
-                  <div
-                    key={el.id}
-                    onClick={() => setSelectedElId(el.id)}
-                    style={{
-                      fontFamily: el.fontFamily || 'sans-serif',
-                      fontSize: `${el.fontSize || 16}px`,
-                      color: el.color || '#ffffff',
-                    }}
-                    title="Click to edit this text"
-                    className={`group/el relative cursor-pointer transition-all leading-tight font-semibold w-fit ${
-                      isSelected
-                        ? 'ring-2 ring-indigo-400 ring-offset-2 ring-offset-slate-950 p-1 rounded-lg'
-                        : 'p-1 rounded-lg border border-dashed border-transparent hover:border-slate-500'
-                    }`}
-                  >
-                    {el.content}
-                    {!isSelected && (
-                      <Pencil className="w-3 h-3 absolute -top-2 -right-2 text-slate-950 bg-slate-200 rounded-full p-0.5 opacity-0 group-hover/el:opacity-100 transition-opacity" />
-                    )}
-                  </div>
-                );
-              }
+            {/* Content column — elements stay in order and remain individually
+                clickable to edit, but are now centered and elegantly spaced. */}
+            <div className="relative h-full flex flex-col items-center justify-center gap-4 px-10 py-16 text-center">
+              {elements.map((el, i) => {
+                const isSelected = selectedElId === el.id;
 
-              if (el.type === 'qr') {
-                const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=0&data=${encodeURIComponent(el.content || '')}`;
-                return (
-                  <div
-                    key={el.id}
-                    onClick={() => setSelectedElId(el.id)}
-                    className={`w-28 h-28 mx-auto bg-white p-2 rounded-2xl shadow-xl flex flex-col items-center justify-center cursor-pointer ${
-                      isSelected ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-950' : ''
-                    }`}
-                  >
-                    <img
-                      src={qrImageUrl}
-                      alt="RSVP QR code"
-                      className="w-20 h-20 object-contain"
-                    />
-                    <span className="text-[9px] font-bold text-slate-950 uppercase mt-1">Scan for RSVP</span>
-                  </div>
-                );
-              }
+                if (el.type === 'text') {
+                  return (
+                    <React.Fragment key={el.id}>
+                      {/* A little gold flourish under the opening line (the header). */}
+                      {i === 1 && (
+                        <div className="pointer-events-none flex items-center justify-center gap-2 text-amber-200/60 -my-1">
+                          <span className="h-px w-10 bg-gradient-to-r from-transparent to-amber-200/50" />
+                          <span className="text-[10px] leading-none">◆</span>
+                          <span className="h-px w-10 bg-gradient-to-l from-transparent to-amber-200/50" />
+                        </div>
+                      )}
+                      <div
+                        onClick={() => setSelectedElId(el.id)}
+                        style={{
+                          fontFamily: el.fontFamily || 'sans-serif',
+                          fontSize: `${el.fontSize || 16}px`,
+                          color: el.color || '#ffffff',
+                        }}
+                        title="Click to edit this text"
+                        className={`group/el relative cursor-pointer transition-all leading-tight font-semibold max-w-full tracking-wide ${
+                          isSelected
+                            ? 'ring-2 ring-indigo-400 ring-offset-2 ring-offset-slate-950/50 px-2 py-1 rounded-lg'
+                            : 'px-2 py-1 rounded-lg border border-dashed border-transparent hover:border-amber-200/40'
+                        }`}
+                      >
+                        {el.content}
+                        {!isSelected && (
+                          <Pencil className="w-3 h-3 absolute -top-2 -right-2 text-slate-950 bg-amber-200 rounded-full p-0.5 opacity-0 group-hover/el:opacity-100 transition-opacity" />
+                        )}
+                      </div>
+                    </React.Fragment>
+                  );
+                }
 
-              return null;
-            })}
+                if (el.type === 'qr') {
+                  const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=0&data=${encodeURIComponent(el.content || '')}`;
+                  return (
+                    <div
+                      key={el.id}
+                      onClick={() => setSelectedElId(el.id)}
+                      className={`w-28 h-28 bg-white p-2 rounded-2xl shadow-xl flex flex-col items-center justify-center cursor-pointer ${
+                        isSelected ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-950' : ''
+                      }`}
+                    >
+                      <img
+                        src={qrImageUrl}
+                        alt="RSVP QR code"
+                        className="w-20 h-20 object-contain"
+                      />
+                      <span className="text-[9px] font-bold text-slate-950 uppercase mt-1">Scan for RSVP</span>
+                    </div>
+                  );
+                }
+
+                return null;
+              })}
+            </div>
           </div>
         </div>
       </div>
