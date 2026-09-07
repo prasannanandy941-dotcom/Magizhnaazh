@@ -549,7 +549,9 @@ export const DECORATION_FLOWER_TYPES = ['Fresh', 'Artificial'] as const;
 // Structured hall details for a Venue vendor's package (priced per session).
 // Hall name = packageName, seating capacity = capacityPersons (reused).
 export interface VenuePackageDetails {
-  sessions?: string[]; // Morning / Evening / Full Day (priced per session)
+  sessions?: string[]; // Morning / Afternoon / Evening / Full Day (priced per session)
+  sessionDates?: Record<string, string[]>; // Dates available per session: { Morning: ['YYYY-MM-DD'], ... }
+  availableDates?: string[]; // Flattened list of available dates for this hall
   hallType?: string; // AC / Non-AC
   hallTypePrice?: number; // price for the chosen hall type
   hallClass?: string; // Premium / Normal
@@ -580,7 +582,7 @@ export const VENUE_FEATURES = [
 ] as const;
 
 // Option sets for the Venue package form.
-export const VENUE_SESSIONS = ['Morning', 'Evening', 'Full Day'] as const;
+export const VENUE_SESSIONS = ['Morning', 'Afternoon', 'Evening', 'Full Day'] as const;
 export const VENUE_HALL_TYPES = ['AC', 'Non-AC'] as const;
 export const VENUE_HALL_CLASSES = ['Premium', 'Normal'] as const;
 export const VENUE_CATERING_POLICIES = ['In-house only', 'External allowed'] as const;

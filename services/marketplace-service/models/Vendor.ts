@@ -67,6 +67,8 @@ const vendorPackageSchema = new Schema(
         valetService: Boolean,
         featurePrices: Schema.Types.Mixed,
         featureImages: Schema.Types.Mixed,
+        sessionDates: Schema.Types.Mixed,
+        availableDates: [String],
       },
       default: undefined,
       _id: false,

@@ -1728,6 +1728,62 @@ export function App() {
       const next = current.includes(session) ? current.filter((x) => x !== session) : [...current, session];
       return { ...p, venue: { ...(p.venue || {}), sessions: next } };
     }));
+
+  // Track pending date input per venue package session: `${pkgId}-${session}`
+  const [venueDateInputs, setVenueDateInputs] = useState<Record<string, string>>({});
+
+  const addVenueSessionDate = (pkgId: string, session: string, date: string) => {
+    if (!date) return;
+    setPackages((prev) => prev.map((p) => {
+      if (p.id !== pkgId) return p;
+      const sessionDates = { ...(p.venue?.sessionDates || {}) };
+      const currentDates: string[] = sessionDates[session] || [];
+      if (currentDates.includes(date)) return p;
+      const nextDates = [...currentDates, date].sort();
+      sessionDates[session] = nextDates;
+      const allDates = Array.from(new Set(Object.values(sessionDates).flat())).sort();
+      return {
+        ...p,
+        venue: {
+          ...(p.venue || {}),
+          sessionDates,
+          availableDates: allDates,
+        },
+      };
+    }));
+
+    // Also sync to the vendor's overall availability calendar
+    const slotIdMap: Record<string, string> = {
+      'Morning': 'morning',
+      'Afternoon': 'afternoon',
+      'Evening': 'evening',
+      'Full Day': 'fullday',
+    };
+    const slotId = slotIdMap[session] || 'morning';
+    setAvailableDates((prev) => (prev.includes(date) ? prev : [...prev, date].sort()));
+    setAvailableSlots((prev) => {
+      const existing = prev[date] || [];
+      return { ...prev, [date]: existing.includes(slotId) ? existing : [...existing, slotId] };
+    });
+  };
+
+  const removeVenueSessionDate = (pkgId: string, session: string, date: string) => {
+    setPackages((prev) => prev.map((p) => {
+      if (p.id !== pkgId) return p;
+      const sessionDates = { ...(p.venue?.sessionDates || {}) };
+      const currentDates: string[] = sessionDates[session] || [];
+      sessionDates[session] = currentDates.filter((d) => d !== date);
+      const allDates = Array.from(new Set(Object.values(sessionDates).flat())).sort();
+      return {
+        ...p,
+        venue: {
+          ...(p.venue || {}),
+          sessionDates,
+          availableDates: allDates,
+        },
+      };
+    }));
+  };
   // Price for one "Yes" hall feature (parking, powerBackup, …), stored in the
   // venue.featurePrices map keyed by the feature field name.
   const setVenueFeaturePrice = (pkgId: string, field: string, value: number | undefined) =>
@@ -6217,6 +6273,88 @@ export function App() {
                               ))}
                             </div>
                           </div>
+
+                          {/* When sessions (Morning, Afternoon, Evening, Full Day) are selected, show date availability option (Image 1) */}
+                          {(p.venue?.sessions || []).length > 0 && (
+                            <div className="space-y-3 pt-2 border-t border-slate-800/80">
+                              <label className="block text-[10px] text-amber-400 uppercase font-bold">
+                                Available dates for sessions
+                              </label>
+                              <div className="space-y-3">
+                                {(p.venue?.sessions || []).map((session) => {
+                                  const dates: string[] = p.venue?.sessionDates?.[session] || [];
+                                  const inputKey = `${p.id}-${session}`;
+                                  return (
+                                    <div key={session} className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2">
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                                          <CalendarDays className="w-3.5 h-3.5 text-amber-400" />
+                                          {session} Session
+                                        </span>
+                                        <span className="text-[10px] text-slate-500">
+                                          {dates.length} date{dates.length === 1 ? '' : 's'} added
+                                        </span>
+                                      </div>
+
+                                      {/* Image 1: Add an available date */}
+                                      <div className="flex items-end gap-2">
+                                        <div className="flex-1">
+                                          <label className="block text-xs text-slate-400 mb-1">Add an available date</label>
+                                          <div className="relative">
+                                            <input
+                                              type="date"
+                                              value={venueDateInputs[inputKey] || ''}
+                                              onChange={(e) => setVenueDateInputs((prev) => ({ ...prev, [inputKey]: e.target.value }))}
+                                              onClick={(e) => { try { (e.currentTarget as any).showPicker?.(); } catch { /* not supported */ } }}
+                                              className="date-input-amber w-full p-2.5 pr-10 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs focus:outline-none focus:border-amber-500"
+                                            />
+                                            <CalendarDays className="w-4 h-4 text-amber-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                          </div>
+                                        </div>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const d = venueDateInputs[inputKey];
+                                            if (d) {
+                                              addVenueSessionDate(p.id, session, d);
+                                              setVenueDateInputs((prev) => ({ ...prev, [inputKey]: '' }));
+                                            }
+                                          }}
+                                          className="px-3 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white font-bold text-xs flex items-center gap-1.5 hover:bg-slate-700 transition-colors"
+                                        >
+                                          <Plus className="w-3.5 h-3.5" /> Add
+                                        </button>
+                                      </div>
+
+                                      {/* List of dates added for this session */}
+                                      {dates.length > 0 ? (
+                                        <div className="flex flex-wrap gap-1.5 pt-1">
+                                          {dates.map((d) => (
+                                            <span
+                                              key={d}
+                                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-xs text-emerald-200"
+                                            >
+                                              {new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                              <button
+                                                type="button"
+                                                onClick={() => removeVenueSessionDate(p.id, session, d)}
+                                                className="text-slate-400 hover:text-rose-400 font-bold text-xs leading-none ml-0.5"
+                                                title={`Remove ${d}`}
+                                              >
+                                                ×
+                                              </button>
+                                            </span>
+                                          ))}
+                                        </div>
+                                      ) : (
+                                        <p className="text-[10px] text-slate-500">No dates added yet for {session}. Add open dates above.</p>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
 
                           <div className="grid grid-cols-2 gap-3">
                             <div>
