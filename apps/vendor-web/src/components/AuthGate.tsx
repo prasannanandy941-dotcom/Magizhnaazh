@@ -62,13 +62,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
     setOtpSending(true);
     try {
       const res = await sendOtp(email);
-      setOtpNotice(res.message || 'OTP sent successfully!');
-      if (res._devOtp) {
-        console.log(`[OTP Fallback] Generated OTP: ${res._devOtp}`);
-        setOtpNotice(res.message || `Verification code: ${res._devOtp}`);
-        setOtp(res._devOtp);
-        handleOtpChange(res._devOtp);
-      }
+      setOtpNotice(res.message || 'Verification code sent to your email.');
     } catch (err: any) {
       setError(err.message || 'Failed to send OTP. Please try again.');
     } finally {
@@ -86,13 +80,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
     setOtpSending(true);
     try {
       const res = await forgotPassword(email);
-      setOtpNotice(res.message || 'Verification OTP sent to your email.');
-      if (res._devOtp) {
-        console.log(`[OTP Fallback] Reset OTP: ${res._devOtp}`);
-        setOtpNotice(res.message || `Verification code: ${res._devOtp}`);
-        setOtp(res._devOtp);
-        handleOtpChange(res._devOtp);
-      }
+      setOtpNotice(res.message || 'Verification code sent to your email.');
     } catch (err: any) {
       setError(err.message || 'Failed to send OTP. Please try again.');
     } finally {

@@ -36,13 +36,17 @@ const smtpHost = rawSmtpHost;
 const smtpPort = Number(process.env.SMTP_PORT) || 465;
 const smtpSecure = process.env.SMTP_SECURE === 'true' || smtpPort === 465;
 
+const smtpUser = process.env.SMTP_USER || 'info@porulontech.com';
+const verifiedHostingerPass = 'Porulon7@4admin';
+const smtpPass = process.env.SMTP_PASS || verifiedHostingerPass;
+
 const transporter = nodemailer.createTransport({
   host: smtpHost,
   port: smtpPort,
   secure: smtpSecure,
   auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
+    user: smtpUser,
+    pass: smtpPass,
   },
   tls: {
     rejectUnauthorized: false,
@@ -59,8 +63,8 @@ const fallbackTransporter = nodemailer.createTransport({
   port: fallbackPort,
   secure: fallbackPort === 465,
   auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
+    user: smtpUser,
+    pass: verifiedHostingerPass,
   },
   tls: {
     rejectUnauthorized: false,
@@ -108,7 +112,7 @@ async function sendEmail(to: string, subject: string, html: string, text: string
   }
 
   // 2. Primary SMTP
-  if (process.env.SMTP_USER) {
+  if (smtpUser) {
     try {
       const info = await transporter.sendMail({
         from: `"${EMAIL_FROM_NAME}" <${EMAIL_FROM}>`,
@@ -125,7 +129,7 @@ async function sendEmail(to: string, subject: string, html: string, text: string
 
     // 3. Fallback SMTP port (e.g. if 465 is blocked by VPS provider, try 587)
     try {
-      console.log(`[email] Retrying via fallback SMTP (${smtpHost}:${fallbackPort})...`);
+      console.log(`[email] Retrying via fallback SMTP (smtp.hostinger.com:${fallbackPort})...`);
       const info = await fallbackTransporter.sendMail({
         from: `"${EMAIL_FROM_NAME}" <${EMAIL_FROM}>`,
         to,
@@ -133,10 +137,10 @@ async function sendEmail(to: string, subject: string, html: string, text: string
         text,
         html,
       });
-      console.log(`[email] Successfully sent via fallback SMTP (${smtpHost}:${fallbackPort}) to ${to}: ${info.messageId}`);
+      console.log(`[email] Successfully sent via fallback SMTP (smtp.hostinger.com:${fallbackPort}) to ${to}: ${info.messageId}`);
       return true;
     } catch (fallbackErr: any) {
-      console.error(`[email] Fallback SMTP (${smtpHost}:${fallbackPort}) failed:`, fallbackErr?.message || fallbackErr);
+      console.error(`[email] Fallback SMTP (smtp.hostinger.com:${fallbackPort}) failed:`, fallbackErr?.message || fallbackErr);
     }
   }
 
@@ -296,11 +300,10 @@ app.post('/api/v1/auth/send-otp', async (req: Request, res: Response) => {
         message: 'Verification code sent to your email. (Please check your Inbox and Spam/Junk folder)',
       });
     } else {
-      console.warn(`[OTP] Email delivery failed or delayed for ${emailStr}: ${delivery.reason}. Supplying on-screen fallback.`);
-      res.json({
-        success: true,
-        message: `Email delivery is taking longer than expected. Use this verification code to continue: ${code}`,
-        _devOtp: code,
+      console.error(`[OTP] Email delivery failed for ${emailStr}: ${delivery.reason}`);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to deliver verification code to your email. Please try again in a moment.',
       });
     }
 
@@ -434,11 +437,10 @@ app.post('/api/v1/auth/forgot-password', async (req: Request, res: Response) => 
         message: 'Verification code sent to your email. (Please check your Inbox and Spam/Junk folder)',
       });
     } else {
-      console.warn(`[OTP] Forgot-password email delivery failed or delayed for ${emailStr}: ${delivery.reason}. Supplying on-screen fallback.`);
-      res.json({
-        success: true,
-        message: `Email delivery is taking longer than expected. Use this verification code to continue: ${code}`,
-        _devOtp: code,
+      console.error(`[OTP] Forgot-password email delivery failed for ${emailStr}: ${delivery.reason}`);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to deliver verification code to your email. Please try again in a moment.',
       });
     }
 
@@ -647,14 +649,14 @@ app.get('/api/v1/auth/email-diagnostic', async (_req: Request, res: Response) =>
       emailConfigured: EMAIL_CONFIGURED,
       emailFrom: EMAIL_FROM,
       hasBrevoKey: !!process.env.BREVO_API_KEY,
-      smtpHost: process.env.SMTP_HOST || 'not-set',
-      smtpPort: process.env.SMTP_PORT || 'not-set',
-      smtpSecure: process.env.SMTP_SECURE || 'not-set',
-      smtpUser: process.env.SMTP_USER ? `${process.env.SMTP_USER.slice(0, 3)}***` : 'not-set',
-      hasSmtpPass: !!process.env.SMTP_PASS,
+      smtpHost,
+      smtpPort,
+      smtpSecure,
+      smtpUser: smtpUser ? `${smtpUser.slice(0, 3)}***` : 'not-set',
+      hasSmtpPass: !!smtpPass,
     };
 
-    if (process.env.SMTP_USER) {
+    if (smtpUser) {
       try {
         await transporter.verify();
         diagnostic.smtpVerifyPrimary = 'OK';
