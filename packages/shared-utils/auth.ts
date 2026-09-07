@@ -30,7 +30,10 @@ function secretFingerprint(): string {
 }
 
 export function signToken(payload: AuthTokenPayload): string {
-  return jwt.sign(payload, getJwtSecret(), { expiresIn: (process.env.JWT_EXPIRES_IN || '2h') as any });
+  // Default to a 7-day session so tokens don't expire mid-use. A very short
+  // lifetime (the old 2h default) silently logs users out and — before the
+  // client learned to re-auth on 401 — left them stuck with a dead token.
+  return jwt.sign(payload, getJwtSecret(), { expiresIn: (process.env.JWT_EXPIRES_IN || '7d') as any });
 }
 
 export function verifyToken(token: string): AuthTokenPayload {

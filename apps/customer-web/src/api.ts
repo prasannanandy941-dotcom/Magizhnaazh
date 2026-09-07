@@ -180,9 +180,34 @@ async function authedFetch<T>(path: string, options: RequestInit = {}): Promise<
     },
   });
   if (!res.ok) {
+    // Session expired or otherwise invalid: the token we sent no longer verifies.
+    // Clear it and bounce to a fresh login instead of letting the app keep sending
+    // a dead token forever (which shows "Invalid or expired token" on every action
+    // with no way out). Only act when we actually sent a token, to avoid loops on
+    // ordinary "authentication required" responses for anonymous calls.
+    if (res.status === 401 && token) {
+      handleExpiredSession();
+    }
     throw new ApiError(json.message || 'Request failed.', res.status, json.code);
   }
   return json as T;
+}
+
+// Clears the stored session once and reloads to the logged-out (login) screen.
+// Guarded so concurrent 401s don't trigger multiple reloads.
+let sessionExpiryHandled = false;
+function handleExpiredSession(): void {
+  if (sessionExpiryHandled) return;
+  sessionExpiryHandled = true;
+  try {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem('user');
+    sessionStorage.setItem('sessionExpired', '1');
+  } catch {
+    /* ignore storage errors */
+  }
+  // Reload so the app boots into its logged-out state and shows the login screen.
+  if (typeof window !== 'undefined') window.location.reload();
 }
 
 // Public, unauthenticated request helper — for endpoints anyone can view or submit
