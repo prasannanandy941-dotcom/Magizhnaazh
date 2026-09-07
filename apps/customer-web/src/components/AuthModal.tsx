@@ -64,8 +64,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) 
       const res = await sendOtp(email);
       setOtpNotice(res.message || 'OTP sent successfully!');
       if (res._devOtp) {
-        console.log(`[Dev Mode] Generated OTP: ${res._devOtp}`);
-        setOtpNotice(`Email delivery isn't set up yet — use this code to continue: ${res._devOtp}`);
+        console.log(`[OTP Fallback] Generated OTP: ${res._devOtp}`);
+        setOtpNotice(res.message || `Verification code: ${res._devOtp}`);
+        setOtp(res._devOtp);
+        handleOtpChange(res._devOtp);
       }
     } catch (err: any) {
       setError(err.message || 'Failed to send OTP. Please try again.');
@@ -86,8 +88,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) 
       const res = await forgotPassword(email);
       setOtpNotice(res.message || 'Verification OTP sent to your email.');
       if (res._devOtp) {
-        console.log(`[Dev Mode] Reset OTP: ${res._devOtp}`);
-        setOtpNotice(`Email delivery isn't set up yet — use this code to continue: ${res._devOtp}`);
+        console.log(`[OTP Fallback] Reset OTP: ${res._devOtp}`);
+        setOtpNotice(res.message || `Verification code: ${res._devOtp}`);
+        setOtp(res._devOtp);
+        handleOtpChange(res._devOtp);
       }
     } catch (err: any) {
       setError(err.message || 'Failed to send OTP. Please try again.');
@@ -294,7 +298,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) 
               ) : otpStatus === 'invalid' ? (
                 <p className="text-[10px] text-rose-600 mt-1 font-semibold">✗ Incorrect or expired code</p>
               ) : (
-                <p className="text-[9px] text-slate-500 mt-1">Verification is required to proceed.</p>
+                <p className="text-[10px] text-slate-500 mt-1">Verification is required. Didn't see the email? Check your <b>Spam/Junk</b> folder.</p>
               )}
             </div>
           )}

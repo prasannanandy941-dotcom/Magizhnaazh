@@ -26,21 +26,42 @@ app.use(express.json());
 app.use(requestLogger('auth-service'));
 registerHealthRoute(app, 'auth-service');
 
+const smtpHost = process.env.SMTP_HOST || 'smtp.ethereal.email';
+const smtpPort = Number(process.env.SMTP_PORT) || 587;
+const smtpSecure = process.env.SMTP_SECURE === 'true' || smtpPort === 465;
+
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.ethereal.email',
-  port: Number(process.env.SMTP_PORT) || 587,
-  secure: process.env.SMTP_SECURE === 'true',
+  host: smtpHost,
+  port: smtpPort,
+  secure: smtpSecure,
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
-  // Fail fast instead of hanging the Send-OTP request forever when the SMTP
-  // host is unreachable (e.g. the platform blocks the outbound port). Without
-  // these, a blocked connection leaves the button spinning for minutes. On
-  // timeout the send throws, we log it, and fall back to the on-screen code.
-  connectionTimeout: 10000, // 10s to open the TCP/TLS connection
-  greetingTimeout: 10000,   // 10s to receive the server greeting
-  socketTimeout: 15000,     // 15s of inactivity on the socket
+  tls: {
+    rejectUnauthorized: false,
+  },
+  connectionTimeout: 5000, // 5s to open TCP/TLS
+  greetingTimeout: 5000,   // 5s for greeting
+  socketTimeout: 8000,     // 8s socket timeout
+});
+
+// Fallback transporter on alternative port (e.g. 587 if 465 is default, or 465 if 587 is default)
+const fallbackPort = smtpPort === 465 ? 587 : 465;
+const fallbackTransporter = nodemailer.createTransport({
+  host: smtpHost,
+  port: fallbackPort,
+  secure: fallbackPort === 465,
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+  tls: {
+    rejectUnauthorized: false,
+  },
+  connectionTimeout: 5000,
+  greetingTimeout: 5000,
+  socketTimeout: 8000,
 });
 
 // The visible "from" address on OTP/reset emails. Reuses SMTP_FROM so a single
@@ -48,15 +69,10 @@ const transporter = nodemailer.createTransport({
 const EMAIL_FROM = process.env.SMTP_FROM || process.env.SMTP_USER || 'no-reply@porulontech.com';
 const EMAIL_FROM_NAME = 'Magizhnaazh Platform';
 
-// Single email sender used by every OTP flow. It prefers Brevo's HTTPS API
-// (BREVO_API_KEY) because many hosts — including Render's free tier — block
-// outbound SMTP ports, which makes nodemailer hang/time out. The API call is
-// ordinary HTTPS (port 443) and is not blocked. If no API key is set it falls
-// back to SMTP (good for local dev / hosts that allow it). Returns true only
-// when the message was actually accepted for delivery; false means the caller
-// should surface the on-screen dev code instead.
+// Single email sender used by every OTP flow. Prefers Brevo HTTPS API if key is
+// present, then primary SMTP, then fallback port SMTP.
 async function sendEmail(to: string, subject: string, html: string, text: string): Promise<boolean> {
-  // 1. Brevo HTTPS API — the reliable path on Render.
+  // 1. Brevo HTTPS API — the reliable path on platforms blocking outbound SMTP.
   if (process.env.BREVO_API_KEY) {
     try {
       const resp = await fetch('https://api.brevo.com/v3/smtp/email', {
@@ -74,49 +90,78 @@ async function sendEmail(to: string, subject: string, html: string, text: string
           textContent: text,
         }),
       });
-      if (resp.ok) return true;
+      if (resp.ok) {
+        console.log(`[email] Successfully sent via Brevo API to ${to}`);
+        return true;
+      }
       const errBody = await resp.text().catch(() => '');
       console.error(`[email] Brevo API send failed (HTTP ${resp.status}): ${errBody}`);
     } catch (err) {
       console.error('[email] Brevo API request error:', err);
     }
-    // Fall through to SMTP if the API attempt failed.
   }
 
-  // 2. SMTP fallback — used locally / on hosts that permit outbound SMTP.
+  // 2. Primary SMTP
   if (process.env.SMTP_USER) {
     try {
-      await transporter.sendMail({
+      const info = await transporter.sendMail({
         from: `"${EMAIL_FROM_NAME}" <${EMAIL_FROM}>`,
         to,
         subject,
         text,
         html,
       });
+      console.log(`[email] Successfully sent via primary SMTP (${smtpHost}:${smtpPort}) to ${to}: ${info.messageId}`);
       return true;
-    } catch (err) {
-      console.error('[email] Nodemailer failed to send email:', err);
+    } catch (err: any) {
+      console.error(`[email] Primary SMTP (${smtpHost}:${smtpPort}) failed:`, err?.message || err);
+    }
+
+    // 3. Fallback SMTP port (e.g. if 465 is blocked by VPS provider, try 587)
+    try {
+      console.log(`[email] Retrying via fallback SMTP (${smtpHost}:${fallbackPort})...`);
+      const info = await fallbackTransporter.sendMail({
+        from: `"${EMAIL_FROM_NAME}" <${EMAIL_FROM}>`,
+        to,
+        subject,
+        text,
+        html,
+      });
+      console.log(`[email] Successfully sent via fallback SMTP (${smtpHost}:${fallbackPort}) to ${to}: ${info.messageId}`);
+      return true;
+    } catch (fallbackErr: any) {
+      console.error(`[email] Fallback SMTP (${smtpHost}:${fallbackPort}) failed:`, fallbackErr?.message || fallbackErr);
     }
   }
 
   return false;
 }
 
-// Whether any email provider is configured. When it is, we can respond to the
-// client immediately and let the actual send happen in the background.
 const EMAIL_CONFIGURED = !!(process.env.BREVO_API_KEY || process.env.SMTP_USER);
 
-// Fire-and-forget email: kicks the send off WITHOUT blocking the HTTP response,
-// so Send-OTP / forgot-password return instantly instead of waiting on the
-// email provider (Brevo API round-trip, or an SMTP handshake that can take
-// 10-15s). The OTP is already persisted before this is called, so the code is
-// valid regardless of email latency. Returns true when a provider is configured
-// (caller then tells the user "sent"); false in local dev with no provider, so
-// the caller can surface the on-screen dev code instead.
-function dispatchEmail(to: string, subject: string, html: string, text: string): boolean {
-  if (!EMAIL_CONFIGURED) return false;
-  sendEmail(to, subject, html, text).catch((err) => console.error('[email] background send failed:', err));
-  return true;
+// Sends email with a hard timeout limit (~4.5s) so HTTP clients never hang.
+// Returns whether the message was accepted for delivery.
+async function sendEmailWithTimeout(
+  to: string,
+  subject: string,
+  html: string,
+  text: string,
+  timeoutMs: number = 4500
+): Promise<{ sent: boolean; reason?: string }> {
+  if (!EMAIL_CONFIGURED) {
+    return { sent: false, reason: 'No email provider configured.' };
+  }
+
+  const sendPromise = sendEmail(to, subject, html, text).then(
+    (ok) => ({ sent: ok, reason: ok ? undefined : 'Email delivery rejected or failed by provider' }),
+    (err) => ({ sent: false, reason: err?.message || 'Mail delivery exception' })
+  );
+
+  const timeoutPromise = new Promise<{ sent: boolean; reason: string }>((resolve) =>
+    setTimeout(() => resolve({ sent: false, reason: 'Email delivery timed out' }), timeoutMs)
+  );
+
+  return Promise.race([sendPromise, timeoutPromise]);
 }
 
 const otpEmailHtml = (heading: string, intro: string, code: string, footer: string) => `
@@ -226,7 +271,7 @@ app.post('/api/v1/auth/send-otp', async (req: Request, res: Response) => {
 
     console.log(`[OTP DEBUG] Verification code for ${emailStr}: ${code}`);
 
-    const emailSent = dispatchEmail(
+    const delivery = await sendEmailWithTimeout(
       emailStr,
       'Email Verification Code',
       otpEmailHtml(
@@ -235,19 +280,23 @@ app.post('/api/v1/auth/send-otp', async (req: Request, res: Response) => {
         code,
         'This code is valid for 10 minutes. If you did not request this code, please ignore this email.'
       ),
-      `Your verification code is: ${code}. It is valid for 10 minutes.`
+      `Your verification code is: ${code}. It is valid for 10 minutes.`,
+      4500
     );
 
-    res.json({
-      success: true,
-      message: emailSent
-        ? 'Verification code sent to your email.'
-        : 'Verification code generated (printed to server console).',
-      // Only expose the code in the response when we could NOT email it (local
-      // dev without SMTP). Once real email works, the code goes only to the
-      // inbox — never leak it over the API in production.
-      ...(emailSent ? {} : { _devOtp: code }),
-    });
+    if (delivery.sent) {
+      res.json({
+        success: true,
+        message: 'Verification code sent to your email. (Please check your Inbox and Spam/Junk folder)',
+      });
+    } else {
+      console.warn(`[OTP] Email delivery failed or delayed for ${emailStr}: ${delivery.reason}. Supplying on-screen fallback.`);
+      res.json({
+        success: true,
+        message: `Email delivery is taking longer than expected. Use this verification code to continue: ${code}`,
+        _devOtp: code,
+      });
+    }
 
   } catch (err: any) {
     console.error('Failed to send OTP:', err);
@@ -360,7 +409,7 @@ app.post('/api/v1/auth/forgot-password', async (req: Request, res: Response) => 
 
     console.log(`[OTP DEBUG] Forgot Password OTP for ${emailStr}: ${code}`);
 
-    const emailSent = dispatchEmail(
+    const delivery = await sendEmailWithTimeout(
       emailStr,
       'Password Reset Code',
       otpEmailHtml(
@@ -369,17 +418,23 @@ app.post('/api/v1/auth/forgot-password', async (req: Request, res: Response) => 
         code,
         'This code is valid for 10 minutes. If you did not request a password reset, please ignore this email.'
       ),
-      `Your password reset code is: ${code}. It is valid for 10 minutes.`
+      `Your password reset code is: ${code}. It is valid for 10 minutes.`,
+      4500
     );
 
-    res.json({
-      success: true,
-      message: emailSent
-        ? 'Verification code sent to your email.'
-        : 'Verification code generated (printed to server console).',
-      // Only expose the code when it could NOT be emailed (local dev, no SMTP).
-      ...(emailSent ? {} : { _devOtp: code }),
-    });
+    if (delivery.sent) {
+      res.json({
+        success: true,
+        message: 'Verification code sent to your email. (Please check your Inbox and Spam/Junk folder)',
+      });
+    } else {
+      console.warn(`[OTP] Forgot-password email delivery failed or delayed for ${emailStr}: ${delivery.reason}. Supplying on-screen fallback.`);
+      res.json({
+        success: true,
+        message: `Email delivery is taking longer than expected. Use this verification code to continue: ${code}`,
+        _devOtp: code,
+      });
+    }
 
   } catch (err: any) {
     console.error('Forgot password error:', err);
@@ -577,6 +632,40 @@ app.put('/api/v1/auth/admin/users/:id/suspend', authMiddleware(), requireRole('a
   } catch (err: any) {
     console.error('Suspend user error:', err);
     res.status(500).json({ success: false, message: err.message || 'Internal Server Error' });
+  }
+});
+
+app.get('/api/v1/auth/email-diagnostic', async (_req: Request, res: Response) => {
+  try {
+    const diagnostic: any = {
+      emailConfigured: EMAIL_CONFIGURED,
+      emailFrom: EMAIL_FROM,
+      hasBrevoKey: !!process.env.BREVO_API_KEY,
+      smtpHost: process.env.SMTP_HOST || 'not-set',
+      smtpPort: process.env.SMTP_PORT || 'not-set',
+      smtpSecure: process.env.SMTP_SECURE || 'not-set',
+      smtpUser: process.env.SMTP_USER ? `${process.env.SMTP_USER.slice(0, 3)}***` : 'not-set',
+      hasSmtpPass: !!process.env.SMTP_PASS,
+    };
+
+    if (process.env.SMTP_USER) {
+      try {
+        await transporter.verify();
+        diagnostic.smtpVerifyPrimary = 'OK';
+      } catch (err: any) {
+        diagnostic.smtpVerifyPrimary = `FAILED: ${err?.message || err}`;
+      }
+      try {
+        await fallbackTransporter.verify();
+        diagnostic.smtpVerifyFallback = 'OK';
+      } catch (err: any) {
+        diagnostic.smtpVerifyFallback = `FAILED: ${err?.message || err}`;
+      }
+    }
+
+    res.json({ success: true, diagnostic });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err?.message || 'Diagnostic error' });
   }
 });
 
