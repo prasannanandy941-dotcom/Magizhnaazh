@@ -613,7 +613,9 @@ export interface CateringPackageDetails {
   liveCounterItems?: Record<string, CateringFoodItem[]>; // item names and rates per live counter (Chaat, Ice Cream)
   serviceStyle?: string; // Buffet / Seated / Banana-leaf
   plateTypes?: string[]; // Paper Plate, Thermocol Plate, Steel Plates, Ceramic Plates
+  plateTypePrices?: Record<string, number>; // price per selected buffet plate type
   leafType?: string; // Natural Banana Leaf / Artificial Leaf
+  leafTypePrices?: Record<string, number>; // price per selected seated banana-leaf type
   welcomeDrinks?: boolean;
   welcomeDrinkItems?: CateringFoodItem[]; // Drink name and price
   servingStaff?: boolean; // serving staff included

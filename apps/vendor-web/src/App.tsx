@@ -1006,6 +1006,17 @@ export function App() {
         if (it && typeof it === 'object') sum += Number(it.price) || 0;
       }
     }
+    // Buffet plate-type prices — only the currently selected plate types count.
+    if (c.plateTypePrices && typeof c.plateTypePrices === 'object') {
+      const selected: string[] = Array.isArray(c.plateTypes) ? c.plateTypes : [];
+      for (const [k, v] of Object.entries(c.plateTypePrices)) {
+        if (selected.includes(k)) sum += Number(v) || 0;
+      }
+    }
+    // Seated banana-leaf price — only the currently selected leaf type counts.
+    if (c.leafTypePrices && typeof c.leafTypePrices === 'object' && c.leafType) {
+      sum += Number((c.leafTypePrices as Record<string, number>)[c.leafType]) || 0;
+    }
     return sum;
   };
 
@@ -1558,12 +1569,36 @@ export function App() {
         if (p.id !== pkgId) return p;
         const current = p.catering?.plateTypes || [];
         const next = current.includes(pt) ? current.filter((x) => x !== pt) : [...current, pt];
+        const nextCatering = { ...(p.catering || {}), plateTypes: next };
+        const calc = cateringTotal(nextCatering);
         return {
           ...p,
-          catering: {
-            ...(p.catering || {}),
-            plateTypes: next,
-          },
+          price: calc > 0 ? calc : (p.price || 0),
+          catering: nextCatering,
+        };
+      })
+    );
+
+  // Set the price for one buffet plate type / seated leaf type (a value in the
+  // plateTypePrices / leafTypePrices map) and recompute the package total.
+  const updateCateringOptionPrice = (
+    pkgId: string,
+    mapField: 'plateTypePrices' | 'leafTypePrices',
+    key: string,
+    value: number | undefined
+  ) =>
+    setPackages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const currentMap: Record<string, number> = { ...((p.catering as any)?.[mapField] || {}) };
+        if (value === undefined) delete currentMap[key];
+        else currentMap[key] = value;
+        const nextCatering = { ...(p.catering || {}), [mapField]: currentMap };
+        const calc = cateringTotal(nextCatering);
+        return {
+          ...p,
+          price: calc > 0 ? calc : (p.price || 0),
+          catering: nextCatering,
         };
       })
     );
@@ -5921,19 +5956,33 @@ export function App() {
                                     Plate Types for Buffet
                                   </label>
                                 </div>
-                                <p className="text-[10px] text-slate-400">Choose the plate options provided with the buffet service:</p>
-                                <div className="flex flex-wrap gap-2 pt-1">
+                                <p className="text-[10px] text-slate-400">Choose the plate options provided with the buffet service, and set a price for each:</p>
+                                <div className="space-y-2 pt-1">
                                   {BUFFET_PLATE_TYPES.map((pt) => {
                                     const isSelected = (p.catering?.plateTypes || []).includes(pt);
                                     return (
-                                      <button
-                                        type="button"
-                                        key={pt}
-                                        onClick={() => toggleCateringPlateType(p.id, pt)}
-                                        className={catChip(isSelected)}
-                                      >
-                                        {pt}
-                                      </button>
+                                      <div key={pt} className="flex items-center gap-2">
+                                        <button
+                                          type="button"
+                                          onClick={() => toggleCateringPlateType(p.id, pt)}
+                                          className={catChip(isSelected)}
+                                        >
+                                          {pt}
+                                        </button>
+                                        {isSelected && (
+                                          <div className="flex items-center gap-1">
+                                            <span className="text-[11px] text-slate-500">₹</span>
+                                            <input
+                                              type="number"
+                                              min={0}
+                                              placeholder="Price"
+                                              value={p.catering?.plateTypePrices?.[pt] ?? ''}
+                                              onChange={(e) => updateCateringOptionPrice(p.id, 'plateTypePrices', pt, e.target.value === '' ? undefined : Number(e.target.value))}
+                                              className="w-28 p-1.5 rounded-lg bg-slate-950 border border-slate-800 text-white text-xs"
+                                            />
+                                          </div>
+                                        )}
+                                      </div>
                                     );
                                   })}
                                 </div>
@@ -5949,19 +5998,33 @@ export function App() {
                                     Banana Leaf Type
                                   </label>
                                 </div>
-                                <p className="text-[10px] text-slate-400">Choose the leaf option used for seated banana-leaf service:</p>
-                                <div className="flex flex-wrap gap-2 pt-1">
+                                <p className="text-[10px] text-slate-400">Choose the leaf option used for seated banana-leaf service, and set its price:</p>
+                                <div className="space-y-2 pt-1">
                                   {BANANA_LEAF_TYPES.map((lt) => {
                                     const isSelected = p.catering?.leafType === lt;
                                     return (
-                                      <button
-                                        type="button"
-                                        key={lt}
-                                        onClick={() => updatePackageCatering(p.id, 'leafType', p.catering?.leafType === lt ? undefined : lt)}
-                                        className={catChip(isSelected)}
-                                      >
-                                        {lt}
-                                      </button>
+                                      <div key={lt} className="flex items-center gap-2">
+                                        <button
+                                          type="button"
+                                          onClick={() => updatePackageCatering(p.id, 'leafType', p.catering?.leafType === lt ? undefined : lt)}
+                                          className={catChip(isSelected)}
+                                        >
+                                          {lt}
+                                        </button>
+                                        {isSelected && (
+                                          <div className="flex items-center gap-1">
+                                            <span className="text-[11px] text-slate-500">₹</span>
+                                            <input
+                                              type="number"
+                                              min={0}
+                                              placeholder="Price"
+                                              value={p.catering?.leafTypePrices?.[lt] ?? ''}
+                                              onChange={(e) => updateCateringOptionPrice(p.id, 'leafTypePrices', lt, e.target.value === '' ? undefined : Number(e.target.value))}
+                                              className="w-28 p-1.5 rounded-lg bg-slate-950 border border-slate-800 text-white text-xs"
+                                            />
+                                          </div>
+                                        )}
+                                      </div>
                                     );
                                   })}
                                 </div>

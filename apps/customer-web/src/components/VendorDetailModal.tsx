@@ -894,10 +894,13 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                                 <div>
                                   Service style: <span className="text-white font-semibold">{c.serviceStyle}</span>
                                   {c.serviceStyle === 'Buffet' && (c.plateTypes || []).length > 0 && (
-                                    <span className="text-amber-300"> ({c.plateTypes!.join(', ')})</span>
+                                    <span className="text-amber-300"> ({c.plateTypes!.map((pt) => {
+                                      const pr = c.plateTypePrices?.[pt];
+                                      return pr ? `${pt} ₹${Number(pr).toLocaleString('en-IN')}` : pt;
+                                    }).join(', ')})</span>
                                   )}
                                   {(c.serviceStyle === 'Seated' || c.serviceStyle === 'Banana-leaf') && c.leafType && (
-                                    <span className="text-emerald-300"> ({c.leafType})</span>
+                                    <span className="text-emerald-300"> ({c.leafType}{c.leafTypePrices?.[c.leafType] ? ` ₹${Number(c.leafTypePrices[c.leafType]).toLocaleString('en-IN')}` : ''})</span>
                                   )}
                                 </div>
                               ) : null}
