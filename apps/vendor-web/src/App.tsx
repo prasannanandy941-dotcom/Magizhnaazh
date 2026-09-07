@@ -382,6 +382,12 @@ export function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, token]);
 
+  useEffect(() => {
+    if (myVendor?.category === 'Venue' && activeTab === 'availability') {
+      setActiveTab('dashboard');
+    }
+  }, [myVendor?.category, activeTab]);
+
   const handleReplySubmit = async (reviewId: string) => {
     if (!token) return;
     setReplySaving(true);
@@ -4346,7 +4352,8 @@ export function App() {
             ...(myVendor?.category !== 'Venue' ? [{ key: 'facilities', label: facilitiesSectionLabel(myVendor?.category) }] : []),
             ...(myVendor?.category !== 'Wedding Planner' && myVendor?.category !== 'Event Host/Anchor' ? [{ key: 'packages', label: `${myVendor?.category === 'Venue' ? 'Halls' : 'Packages'}${packages.length ? ` (${packages.length})` : ''}` }] : []),
             ...(myVendor?.category !== 'Security' ? [{ key: 'offers', label: `Offers${deals.length ? ` (${deals.length})` : ''}` }] : []),
-            { key: 'availability', label: 'Availability' },
+            // Venue availability is managed directly under each hall/session
+            ...(myVendor?.category !== 'Venue' ? [{ key: 'availability', label: 'Availability' }] : []),
             { key: 'portfolio', label: 'Local Disk Portfolio' },
             { key: 'profile', label: 'Business Profile' },
           ].map((tab) => (
@@ -9745,7 +9752,7 @@ export function App() {
         )}
 
         {/* Availability Tab */}
-        {activeTab === 'availability' && (
+        {activeTab === 'availability' && myVendor?.category !== 'Venue' && (
           <div className="max-w-2xl space-y-5">
           {/* Calendar sync — subscribe bookings into Google/Apple/Outlook. */}
           <div className="glass-card p-6 rounded-3xl border border-indigo-500/30 bg-indigo-500/5 space-y-3">
