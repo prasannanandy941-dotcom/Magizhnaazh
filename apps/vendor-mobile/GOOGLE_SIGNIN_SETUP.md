@@ -19,7 +19,7 @@ The code is already wired up. You only need to do the steps below.
 
 ## Step 1 — Log in to EAS and start a development build
 
-In the `apps/mobile` folder:
+In the `apps/vendor-mobile` folder:
 
 ```
 npx eas-cli login
@@ -48,7 +48,7 @@ npx eas-cli credentials
 1. Go to **Google Cloud Console → APIs & Services → Credentials**.
 2. **+ Create Credentials → OAuth client ID → Application type: Android**.
 3. Fill in:
-   - **Package name:** `com.porulontech.magizhnaazh`
+   - **Package name:** `com.porulontech.magizhnaazhvendor`  ← the VENDOR app's package (not the customer app's `com.porulontech.magizhnaazh`)
    - **SHA-1 certificate fingerprint:** the SHA-1 from Step 2
 4. **Create**. Copy the new **Android client ID** (`…apps.googleusercontent.com`).
 
@@ -58,7 +58,7 @@ npx eas-cli credentials
 
 ## Step 4 — Paste the Android client ID into the app
 
-Open `apps/mobile/src/config.ts` and set:
+Open `apps/vendor-mobile/src/config.ts` and set:
 
 ```ts
 export const GOOGLE_ANDROID_CLIENT_ID = 'PASTE-YOUR-ANDROID-CLIENT-ID-HERE.apps.googleusercontent.com';
