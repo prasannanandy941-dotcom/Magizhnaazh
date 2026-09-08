@@ -419,7 +419,7 @@ export interface PriestPackageDetails {
 
 // Option sets for the Pujari/Priest package form.
 export const PRIEST_CEREMONY_TYPES = ['Wedding', 'Engagement', 'Griha Pravesh', 'Naming'] as const;
-export const PRIEST_LANGUAGES = ['Tamil', 'Sanskrit', 'Hindi'] as const;
+export const PRIEST_LANGUAGES = ['Tamil', 'Sanskrit', 'Hindi', 'Telugu'] as const;
 
 // Structured details for a Transport vendor's package (per vehicle).
 export interface TransportPackageDetails {
