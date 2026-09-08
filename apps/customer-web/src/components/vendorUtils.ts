@@ -1,32 +1,49 @@
 import { Vendor } from '../../../../packages/shared-types';
 
+// A working cover photo per vendor category, shown when a vendor hasn't uploaded
+// their own photo. Every category has one so no card is ever blank. (All URLs
+// verified to load; the old per-category fallbacks had some dead Unsplash links,
+// e.g. the Pujari image, which left cards empty.)
+const CATEGORY_COVER: Record<string, string> = {
+  Catering: 'photo-1680993032090-1ef7ea9b51e5',
+  Venue: 'photo-1519167758481-83f550bb49b3',
+  Decoration: 'photo-1533174072545-7a4b6ad7a6c3',
+  'Makeup & Beauty': 'photo-1478146896981-b80fe463b330',
+  Media: 'photo-1519741497674-611481863552',
+  Transport: 'photo-1549317661-bd32c8ce0db2',
+  'Pujari/Priest': 'photo-1604608672516-f1b9b1d37076',
+  Invitation: 'photo-1632610992723-82d7c212f6d7',
+  Printing: 'photo-1503694978374-8a2fa686963a',
+  'Return Gifts': 'photo-1549465220-1a8b9238cd48',
+  Entertainment: 'photo-1563841930606-67e2bce48b78',
+  'Music/DJ': 'photo-1487412947147-5cebf100ffc2',
+  'Lights & Sounds': 'photo-1576514129883-2f1d47a65da6',
+  Lighting: 'photo-1576514129883-2f1d47a65da6',
+  Flowers: 'photo-1469371670807-013ccf25f16a',
+  Mehendi: 'photo-1732118400647-a81e3b37be87',
+  'Event Host/Anchor': 'photo-1702562546665-4632bdb96e04',
+  Security: 'photo-1566245024852-04fbf7842ce9',
+  Cleaning: 'photo-1580842402762-6f5868c17412',
+  'Rental Equipment': 'photo-1695393386569-cf141ff2c552',
+  'Utensils for Rent': 'photo-1675376616537-c8aa9ddc9977',
+  'Wedding Planner': 'photo-1568847811512-803314424fdc',
+  'Corporate Event Services': 'photo-1540575467063-178a50c2df87',
+  Other: 'photo-1529636798458-92182e662485',
+};
+
+// The category cover as a full URL. Exported so callers can also use it as an
+// <img onError> fallback (a guaranteed-working, category-appropriate image).
+export function categoryCoverImage(category?: string): string {
+  const id = CATEGORY_COVER[category || 'Other'] || CATEGORY_COVER.Other;
+  return `https://images.unsplash.com/${id}?w=800`;
+}
+
 export function getVendorCoverImage(vendor: Vendor): string {
-  const images = vendor.galleryImages || [];
-  const defaultVenueImage = 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=800';
-  
-  const hasOnlyDefaultImage = images.length === 0 || 
-    (images.length === 1 && (images[0] === defaultVenueImage || images[0].includes('photo-1519167758481-83f550bb49b3')));
-    
-  if (hasOnlyDefaultImage && vendor.category !== 'Venue') {
-    const fallbacks: Record<string, string> = {
-      Catering: 'https://images.unsplash.com/photo-1555244162-803834f70033?w=800',
-      Media: 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=800',
-      Transport: 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=800',
-      'Pujari/Priest': 'https://images.unsplash.com/photo-1609137144813-2dbe488ae650?w=800',
-      Invitation: 'https://images.unsplash.com/photo-1632610992723-82d7c212f6d7?w=800',
-      Printing: 'https://images.unsplash.com/photo-1503694978374-8a2fa686963a?w=800',
-      Flowers: 'https://images.unsplash.com/photo-1469371670807-013ccf25f16a?w=800',
-      Mehendi: 'https://images.unsplash.com/photo-1732118400647-a81e3b37be87?w=800',
-      'Event Host/Anchor': 'https://images.unsplash.com/photo-1702562546665-4632bdb96e04?w=800',
-      Security: 'https://images.unsplash.com/photo-1566245024852-04fbf7842ce9?w=800',
-      Cleaning: 'https://images.unsplash.com/photo-1580842402762-6f5868c17412?w=800',
-      'Rental Equipment': 'https://images.unsplash.com/photo-1695393386569-cf141ff2c552?w=800',
-      'Utensils for Rent': 'https://images.unsplash.com/photo-1695393386569-cf141ff2c552?w=800',
-      'Wedding Planner': 'https://images.unsplash.com/photo-1568847811512-803314424fdc?w=800',
-      'Corporate Event Services': 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800',
-    };
-    return fallbacks[vendor.category] || defaultVenueImage;
-  }
-  
-  return images[0] || defaultVenueImage;
+  const images = (vendor.galleryImages || []).filter(Boolean);
+  // A photo the vendor actually uploaded lives on our own storage, never on
+  // unsplash. Any unsplash.com URL here is an auto-assigned placeholder (some of
+  // which are dead links), so skip those and fall back to the category cover.
+  const realUpload = images.find((u) => !u.includes('images.unsplash.com'));
+  if (realUpload) return realUpload;
+  return categoryCoverImage(vendor.category);
 }

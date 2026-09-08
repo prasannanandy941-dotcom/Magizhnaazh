@@ -18,7 +18,7 @@ import { PriestChips } from './PriestServices';
 import { GiftChips } from './ReturnGifts';
 import { MusicDjChips } from './MusicDjOptions';
 import { GenericCategoryChips } from './CategoryOptions';
-import { getVendorCoverImage } from './vendorUtils';
+import { getVendorCoverImage, categoryCoverImage } from './vendorUtils';
 
 // Categories with their own bespoke chips component (rendered explicitly
 // below). Every other category falls back to GenericCategoryChips so no
@@ -307,6 +307,12 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
                 <img
                   src={getVendorCoverImage(vendor)}
                   alt={vendor.businessName}
+                  onError={(e) => {
+                    // If even the chosen image fails, drop to the category cover
+                    // (and stop retrying once we're already on it).
+                    const fallback = categoryCoverImage(vendor.category);
+                    if (e.currentTarget.src !== fallback) e.currentTarget.src = fallback;
+                  }}
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                 />
 
