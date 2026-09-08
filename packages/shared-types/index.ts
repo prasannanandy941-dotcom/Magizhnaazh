@@ -414,6 +414,7 @@ export interface PriestPackageDetails {
   priestsPrice?: number; // price for the priests
   durationHours?: number;
   muhurthamConsult?: boolean; // muhurtham consultation
+  muhurthamConsultPrice?: number; // price for muhurtham consultation
 }
 
 // Option sets for the Pujari/Priest package form.

@@ -205,6 +205,7 @@ const vendorPackageSchema = new Schema(
         priestsPrice: Number,
         durationHours: Number,
         muhurthamConsult: Boolean,
+        muhurthamConsultPrice: Number,
       },
       default: undefined,
       _id: false,

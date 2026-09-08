@@ -2321,6 +2321,7 @@ export function App() {
     }
     sum += Number(pr.priestsPrice) || 0;
     sum += Number(pr.samagriPrice) || 0;
+    if (pr.muhurthamConsult === true) sum += Number(pr.muhurthamConsultPrice) || 0;
     return sum;
   };
   const updatePackagePriest = (pkgId: string, field: string, value: any) =>
@@ -7500,6 +7501,12 @@ export function App() {
                                 <button type="button" onClick={() => updatePackagePriest(p.id, 'muhurthamConsult', true)} className={catChip(p.priest?.muhurthamConsult === true)}>Yes</button>
                                 <button type="button" onClick={() => updatePackagePriest(p.id, 'muhurthamConsult', false)} className={catChip(p.priest?.muhurthamConsult === false)}>No</button>
                               </div>
+                              {p.priest?.muhurthamConsult === true && (
+                                <div className="relative mt-2">
+                                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-500 text-sm">₹</span>
+                                  <input type="number" min={0} value={p.priest?.muhurthamConsultPrice ?? ''} onChange={(e) => updatePackagePriest(p.id, 'muhurthamConsultPrice', e.target.value === '' ? undefined : Number(e.target.value))} placeholder="Blank if not charged" className="w-full pl-6 pr-2 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
