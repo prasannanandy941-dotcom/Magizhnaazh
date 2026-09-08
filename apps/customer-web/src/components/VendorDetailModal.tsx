@@ -1806,27 +1806,41 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                       })()}
 
                       {vendor.category === 'Music/DJ' && pkg.musicDj && (() => {
-                        const md = pkg.musicDj;
+                        const md: any = pkg.musicDj;
                         const chip = 'text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200';
-                        const incl: [string, boolean | undefined][] = [
-                          ['Sound system', md.soundSystem], ['Lighting', md.lighting], ['MC / host', md.mcHost], ['Generator', md.generator],
+                        const inr = (n: any) => `₹${Number(n).toLocaleString('en-IN')}`;
+                        const types: string[] = md.types || (md.type ? [md.type] : []);
+                        const incl: [string, boolean | undefined, number | undefined][] = [
+                          ['Sound system', md.soundSystem, md.soundSystemPrice], ['Lighting', md.lighting, md.lightingPrice], ['MC / host', md.mcHost, md.mcHostPrice], ['Generator', md.generator, md.generatorPrice],
                         ];
                         return (
                           <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2" onClick={(e) => e.stopPropagation()}>
                             <span className="text-[10px] font-bold text-slate-400 uppercase block">Music / DJ details</span>
                             <div className="flex flex-wrap gap-1.5">
                               {md.tier && <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-200 font-bold">{md.tier}</span>}
-                              {md.type && <span className={chip}>{md.type}</span>}
                               {md.venueType && <span className={chip}>{md.venueType}</span>}
                             </div>
+                            {types.length > 0 && (
+                              <div className="space-y-1">
+                                {types.map((t) => (
+                                  <div key={t} className="flex items-center justify-between gap-2 text-[11px]">
+                                    <span className="flex items-center gap-2 text-slate-300">
+                                      {md.typeImages?.[t] ? <img src={md.typeImages[t]} alt={t} className="w-8 h-8 rounded object-cover border border-slate-700" /> : null}
+                                      {t}
+                                    </span>
+                                    {typeof md.typePrices?.[t] === 'number' && <span className="text-amber-300 font-semibold">{inr(md.typePrices[t])}</span>}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
                             <div className="space-y-1 text-[11px] text-slate-300">
                               {md.hours ? <div>Hours: <span className="text-white font-semibold">{md.hours}</span></div> : null}
                               {md.numArtists ? <div>Artists: <span className="text-white font-semibold">{md.numArtists}</span></div> : null}
                             </div>
                             {incl.some(([, v]) => v !== undefined) && (
                               <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px]">
-                                {incl.filter(([, v]) => v !== undefined).map(([label, v]) => (
-                                  <span key={label} className="text-slate-400">{label}: <b className={v ? 'text-emerald-400' : 'text-slate-500'}>{v ? 'Yes' : 'No'}</b></span>
+                                {incl.filter(([, v]) => v !== undefined).map(([label, v, price]) => (
+                                  <span key={label} className="text-slate-400">{label}: <b className={v ? 'text-emerald-400' : 'text-slate-500'}>{v ? 'Yes' : 'No'}</b>{v && typeof price === 'number' ? <span className="text-amber-300"> {inr(price)}</span> : null}</span>
                                 ))}
                               </div>
                             )}

@@ -295,6 +295,17 @@ const vendorPackageSchema = new Schema(
       mcHost: Boolean,
       venueType: String,
       generator: Boolean,
+      types: [String],
+      typePrices: { type: Schema.Types.Mixed, default: {} },
+      typeImages: { type: Schema.Types.Mixed, default: {} },
+      soundSystemPrice: Number,
+      soundSystemImage: String,
+      lightingPrice: Number,
+      lightingImage: String,
+      mcHostPrice: Number,
+      mcHostImage: String,
+      generatorPrice: Number,
+      generatorImage: String,
     },
     // Lighting-only structured details.
     lighting: {

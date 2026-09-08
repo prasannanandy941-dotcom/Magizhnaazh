@@ -296,7 +296,7 @@ export const LIGHTING_TYPES = ['Ambient', 'Laser', 'LED walls', 'Up-lighting', '
 // Structured details for a Music/DJ vendor's package (per event / per hour).
 export interface MusicDjPackageDetails {
   tier?: string; // Basic / Premium
-  type?: string; // DJ / Live band / Nadhaswaram / Sangeet setup
+  type?: string; // legacy single-select
   hours?: number; // number of hours
   soundSystem?: boolean; // sound system + speakers included
   lighting?: boolean; // lighting included
@@ -304,6 +304,15 @@ export interface MusicDjPackageDetails {
   mcHost?: boolean; // MC / host included
   venueType?: string; // Indoor / Outdoor
   generator?: boolean;
+  // Priced structure: each selected type carries a price + photo; each "Yes"
+  // feature carries a price + photo. Package Total = sum of all of them.
+  types?: string[]; // DJ / Live band / Nadhaswaram / Sangeet setup
+  typePrices?: Record<string, number>;
+  typeImages?: Record<string, string>;
+  soundSystemPrice?: number; soundSystemImage?: string;
+  lightingPrice?: number; lightingImage?: string;
+  mcHostPrice?: number; mcHostImage?: string;
+  generatorPrice?: number; generatorImage?: string;
 }
 
 // Option sets for the Music/DJ package form.

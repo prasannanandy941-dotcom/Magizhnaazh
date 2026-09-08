@@ -2962,8 +2962,83 @@ export function App() {
     }));
 
   // Music/DJ packages carry structured details.
+  const MUSIC_DJ_FEATURES = [
+    { field: 'soundSystem', price: 'soundSystemPrice', image: 'soundSystemImage' },
+    { field: 'lighting', price: 'lightingPrice', image: 'lightingImage' },
+    { field: 'mcHost', price: 'mcHostPrice', image: 'mcHostImage' },
+    { field: 'generator', price: 'generatorPrice', image: 'generatorImage' },
+  ] as const;
+  const musicDjTotal = (m?: any): number => {
+    if (!m) return 0;
+    let sum = 0;
+    if (Array.isArray(m.types) && m.typePrices) {
+      for (const t of m.types) sum += Number(m.typePrices[t]) || 0;
+    }
+    for (const f of MUSIC_DJ_FEATURES) {
+      if (m[f.field] === true) sum += Number(m[f.price]) || 0;
+    }
+    return sum;
+  };
   const updatePackageMusicDj = (pkgId: string, field: string, value: any) =>
-    setPackages((prev) => prev.map((p) => (p.id === pkgId ? { ...p, musicDj: { ...(p.musicDj || {}), [field]: value } } : p)));
+    setPackages((prev) => prev.map((p) => {
+      if (p.id !== pkgId) return p;
+      const musicDj = { ...(p.musicDj || {}), [field]: value };
+      const calc = musicDjTotal(musicDj);
+      return { ...p, musicDj, price: calc > 0 ? calc : (p.price || 0) };
+    }));
+  const toggleMusicDjType = (pkgId: string, t: string) =>
+    setPackages((prev) => prev.map((p) => {
+      if (p.id !== pkgId) return p;
+      const cur: string[] = (p.musicDj?.types) || [];
+      const next = cur.includes(t) ? cur.filter((x) => x !== t) : [...cur, t];
+      const musicDj = { ...(p.musicDj || {}), types: next };
+      const calc = musicDjTotal(musicDj);
+      return { ...p, musicDj, price: calc > 0 ? calc : (p.price || 0) };
+    }));
+  const setMusicDjTypePrice = (pkgId: string, t: string, price?: number) =>
+    setPackages((prev) => prev.map((p) => {
+      if (p.id !== pkgId) return p;
+      const map: Record<string, number> = { ...((p.musicDj?.typePrices) || {}) };
+      if (price === undefined) delete map[t]; else map[t] = price;
+      const musicDj = { ...(p.musicDj || {}), typePrices: map };
+      const calc = musicDjTotal(musicDj);
+      return { ...p, musicDj, price: calc > 0 ? calc : (p.price || 0) };
+    }));
+  const [uploadingMusicDjImg, setUploadingMusicDjImg] = useState<string | null>(null);
+  // slot is either "type:<name>" (goes into typeImages) or a single-image field
+  // name like "soundSystemImage".
+  const uploadMusicDjImage = async (pkgId: string, slot: string, file: File) => {
+    if (!token) return;
+    setUploadingMusicDjImg(`${pkgId}:${slot}`);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch(`${GATEWAY_URL}/api/v1/uploads`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd });
+      const data = await res.json().catch(() => ({}));
+      const fileUrl = data?.data?.fileUrl || data?.url || URL.createObjectURL(file);
+      setPackages((prev) => prev.map((p) => {
+        if (p.id !== pkgId) return p;
+        const cur: any = p.musicDj || {};
+        if (slot.startsWith('type:')) {
+          const key = slot.slice(5);
+          return { ...p, musicDj: { ...cur, typeImages: { ...(cur.typeImages || {}), [key]: fileUrl } } };
+        }
+        return { ...p, musicDj: { ...cur, [slot]: fileUrl } };
+      }));
+    } catch { /* best effort */ } finally { setUploadingMusicDjImg(null); }
+  };
+  const removeMusicDjImage = (pkgId: string, slot: string) =>
+    setPackages((prev) => prev.map((p) => {
+      if (p.id !== pkgId) return p;
+      const cur: any = p.musicDj || {};
+      if (slot.startsWith('type:')) {
+        const key = slot.slice(5);
+        const m = { ...(cur.typeImages || {}) };
+        delete m[key];
+        return { ...p, musicDj: { ...cur, typeImages: m } };
+      }
+      return { ...p, musicDj: { ...cur, [slot]: undefined } };
+    }));
 
   // Auto-total for a Lighting / Lights & Sounds package:
   // - Lighting type prices: sum of typePrices for selected lightingTypes
@@ -8508,12 +8583,39 @@ export function App() {
                           </div>
 
                           <div>
-                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Type</label>
-                            <div className="flex flex-wrap gap-2">
-                              {MUSIC_DJ_TYPES.map((t) => (
-                                <button type="button" key={t} onClick={() => updatePackageMusicDj(p.id, 'type', t)} className={catChip(p.musicDj?.type === t)}>{t}</button>
-                              ))}
+                            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Type <span className="text-slate-500 normal-case font-normal">— select, then set price / photo</span></label>
+                            <div className="flex flex-wrap gap-2 mb-2">
+                              {MUSIC_DJ_TYPES.map((t) => selChip(t, (p.musicDj?.types || []).includes(t), () => toggleMusicDjType(p.id, t)))}
                             </div>
+                            {(p.musicDj?.types || []).map((t) => {
+                              const isUploading = uploadingMusicDjImg === `${p.id}:type:${t}`;
+                              const imgUrl = p.musicDj?.typeImages?.[t];
+                              return (
+                                <div key={t} className="mb-2 p-3 rounded-xl border border-amber-500/20 bg-amber-950/10 space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-xs font-bold text-amber-300">{t}</span>
+                                    <button type="button" onClick={() => toggleMusicDjType(p.id, t)} className="text-slate-400 hover:text-rose-400 text-xs">✕ Remove</button>
+                                  </div>
+                                  <div className="relative">
+                                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 text-sm">₹</span>
+                                    <input type="number" min={0} value={p.musicDj?.typePrices?.[t] ?? ''} onChange={(e) => setMusicDjTypePrice(p.id, t, e.target.value === '' ? undefined : Number(e.target.value))} placeholder="Price" className="w-full pl-6 pr-2 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    {imgUrl && (
+                                      <div className="relative">
+                                        <img src={imgUrl} alt={t} className="w-12 h-10 rounded object-cover border border-slate-700" />
+                                        <button type="button" onClick={() => removeMusicDjImage(p.id, `type:${t}`)} className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px]">✕</button>
+                                      </div>
+                                    )}
+                                    <label className="cursor-pointer inline-flex items-center gap-1 text-[11px] text-slate-300 px-2 py-1.5 rounded-lg border border-slate-800 bg-slate-900 hover:border-amber-500">
+                                      {isUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 text-amber-400" />}
+                                      {imgUrl ? 'Change photo' : 'Upload photo'}
+                                      <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadMusicDjImage(p.id, `type:${t}`, f); e.target.value = ''; }} />
+                                    </label>
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
 
                           <div className="grid grid-cols-2 gap-2">
@@ -8529,16 +8631,40 @@ export function App() {
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                            {([['soundSystem', 'Sound system + speakers'], ['lighting', 'Lighting included'], ['mcHost', 'MC / host'], ['generator', 'Generator']] as const).map(([field, label]) => (
-                              <div key={field}>
-                                <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">{label}</label>
-                                <div className="flex gap-1.5">
-                                  <button type="button" onClick={() => updatePackageMusicDj(p.id, field, true)} className={catChip((p.musicDj as any)?.[field] === true)}>Yes</button>
-                                  <button type="button" onClick={() => updatePackageMusicDj(p.id, field, false)} className={catChip((p.musicDj as any)?.[field] === false)}>No</button>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {MUSIC_DJ_FEATURES.map(({ field, price, image }) => {
+                              const label = { soundSystem: 'Sound system + speakers', lighting: 'Lighting included', mcHost: 'MC / host', generator: 'Generator' }[field];
+                              const isYes = (p.musicDj as any)?.[field] === true;
+                              const imgUrl = (p.musicDj as any)?.[image] as string | undefined;
+                              return (
+                                <div key={field} className="p-2 rounded-lg border border-slate-800 bg-slate-950/40">
+                                  <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">{label}</label>
+                                  <div className="flex gap-1.5">
+                                    <button type="button" onClick={() => updatePackageMusicDj(p.id, field, true)} className={catChip(isYes)}>Yes</button>
+                                    <button type="button" onClick={() => updatePackageMusicDj(p.id, field, false)} className={catChip((p.musicDj as any)?.[field] === false)}>No</button>
+                                  </div>
+                                  {isYes && (
+                                    <div className="mt-2 flex items-center gap-2 flex-wrap">
+                                      <div className="flex items-center gap-1 px-2 rounded-lg bg-slate-950 border border-slate-800">
+                                        <span className="text-slate-500 text-xs">₹</span>
+                                        <input type="number" min={0} value={(p.musicDj as any)?.[price] ?? ''} onChange={(e) => updatePackageMusicDj(p.id, price, e.target.value === '' ? undefined : Number(e.target.value))} placeholder="Price" className="w-20 py-2 bg-transparent text-white text-xs focus:outline-none" />
+                                      </div>
+                                      {imgUrl && (
+                                        <div className="relative">
+                                          <img src={imgUrl} alt={label} className="w-10 h-10 rounded-lg object-cover border border-slate-800" />
+                                          <button type="button" onClick={() => removeMusicDjImage(p.id, image)} className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-rose-500 text-white flex items-center justify-center text-[10px]">✕</button>
+                                        </div>
+                                      )}
+                                      <label className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:border-amber-500 text-[11px] font-bold cursor-pointer">
+                                        {uploadingMusicDjImg === `${p.id}:${image}` ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
+                                        {imgUrl ? 'Replace' : 'Upload'}
+                                        <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadMusicDjImage(p.id, image, f); e.target.value = ''; }} />
+                                      </label>
+                                    </div>
+                                  )}
                                 </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         </div>
                       )}
