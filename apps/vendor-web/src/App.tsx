@@ -1726,6 +1726,31 @@ export function App() {
   const catChip = (active: boolean) =>
     `px-2.5 py-1 rounded-lg text-xs font-semibold border transition-colors ${active ? 'bg-amber-500 text-slate-950 border-amber-500' : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-600'}`;
 
+  // A multi-select option chip. Clicking the body only SELECTS (never deselects,
+  // so you can't turn an option off by accident while adding another). Once
+  // selected, a ✕ appears on the chip to remove it. `onToggle` is the existing
+  // add/remove toggler — we call it to select (when off) or to remove (the ✕).
+  const selChip = (label: string, selected: boolean, onToggle: () => void) => (
+    <span
+      key={label}
+      onClick={() => { if (!selected) onToggle(); }}
+      className={`${catChip(selected)} inline-flex items-center gap-1 select-none ${selected ? '' : 'cursor-pointer'}`}
+    >
+      {label}
+      {selected && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onToggle(); }}
+          className="ml-0.5 -mr-1 w-4 h-4 rounded-full bg-slate-950/25 text-slate-900 hover:bg-rose-500 hover:text-white flex items-center justify-center text-[10px] leading-none font-bold"
+          aria-label={`Remove ${label}`}
+          title={`Remove ${label}`}
+        >
+          ✕
+        </button>
+      )}
+    </span>
+  );
+
   // Venue packages carry structured hall details (sessions, AC/Non-AC, class,
   // amenities). Same shape of helpers as catering.
   const updatePackageVenue = (pkgId: string, field: string, value: any) =>
@@ -5352,7 +5377,7 @@ export function App() {
                         <label className="block text-[10px] text-slate-400 uppercase font-bold">Gender (select to set name, price &amp; upload photo)</label>
                         <div className="flex flex-wrap gap-2">
                           {SECURITY_GENDERS.map((g) => (
-                            <button type="button" key={g} onClick={() => toggleSecurityGender(p.id, g)} className={catChip((p.security?.genders || []).includes(g))}>{g}</button>
+                            selChip(g, (p.security?.genders || []).includes(g), () => toggleSecurityGender(p.id, g))
                           ))}
                         </div>
                         {(p.security?.genders || []).map((g) => {
@@ -5501,7 +5526,7 @@ export function App() {
                             <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Food Type</label>
                             <div className="flex flex-wrap gap-2">
                               {CATERING_FOOD_TYPES.map((f) => (
-                                <button type="button" key={f} onClick={() => toggleCateringOption(p.id, 'foodTypes', f)} className={catChip((p.catering?.foodTypes || []).includes(f))}>{f}</button>
+                                selChip(f, (p.catering?.foodTypes || []).includes(f), () => toggleCateringOption(p.id, 'foodTypes', f))
                               ))}
                             </div>
 
@@ -5600,7 +5625,7 @@ export function App() {
                             <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Cuisine</label>
                             <div className="flex flex-wrap gap-2">
                               {CATERING_CUISINES.map((c) => (
-                                <button type="button" key={c} onClick={() => toggleCateringOption(p.id, 'cuisines', c)} className={catChip((p.catering?.cuisines || []).includes(c))}>{c}</button>
+                                selChip(c, (p.catering?.cuisines || []).includes(c), () => toggleCateringOption(p.id, 'cuisines', c))
                               ))}
                             </div>
 
@@ -5870,7 +5895,7 @@ export function App() {
                             <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Live Counters</label>
                             <div className="flex flex-wrap gap-2">
                               {CATERING_LIVE_COUNTERS.map((lc) => (
-                                <button type="button" key={lc} onClick={() => toggleCateringOption(p.id, 'liveCounters', lc)} className={catChip((p.catering?.liveCounters || []).includes(lc))}>{lc}</button>
+                                selChip(lc, (p.catering?.liveCounters || []).includes(lc), () => toggleCateringOption(p.id, 'liveCounters', lc))
                               ))}
                             </div>
 
@@ -6283,7 +6308,7 @@ export function App() {
                             <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Sessions offered (priced per session)</label>
                             <div className="flex flex-wrap gap-2">
                               {VENUE_SESSIONS.map((s) => (
-                                <button type="button" key={s} onClick={() => toggleVenueSession(p.id, s)} className={catChip((p.venue?.sessions || []).includes(s))}>{s}</button>
+                                selChip(s, (p.venue?.sessions || []).includes(s), () => toggleVenueSession(p.id, s))
                               ))}
                             </div>
                           </div>
@@ -6529,7 +6554,7 @@ export function App() {
                             <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Theme <span className="text-slate-500 normal-case font-normal">— select, then set price / image</span></label>
                             <div className="flex flex-wrap gap-2">
                               {DECORATION_THEMES.map((t) => (
-                                <button type="button" key={t} onClick={() => toggleDecorationOption(p.id, 'themes', t)} className={catChip((p.decoration?.themes || []).includes(t))}>{t}</button>
+                                selChip(t, (p.decoration?.themes || []).includes(t), () => toggleDecorationOption(p.id, 'themes', t))
                               ))}
                             </div>
                             {(p.decoration?.themes || []).length > 0 && (
@@ -6543,7 +6568,7 @@ export function App() {
                             <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Areas covered <span className="text-slate-500 normal-case font-normal">— select, then set price / image</span></label>
                             <div className="flex flex-wrap gap-2">
                               {DECORATION_AREAS.map((a) => (
-                                <button type="button" key={a} onClick={() => toggleDecorationOption(p.id, 'areas', a)} className={catChip((p.decoration?.areas || []).includes(a))}>{a}</button>
+                                selChip(a, (p.decoration?.areas || []).includes(a), () => toggleDecorationOption(p.id, 'areas', a))
                               ))}
                             </div>
                             {(p.decoration?.areas || []).length > 0 && (
@@ -6648,7 +6673,7 @@ export function App() {
                             <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Function type <span className="text-slate-500 normal-case font-normal">— select, then set price / image</span></label>
                             <div className="flex flex-wrap gap-2">
                               {MAKEUP_TYPES.map((t) => (
-                                <button type="button" key={t} onClick={() => toggleMakeupType(p.id, t)} className={catChip((p.makeup?.makeupTypes || []).includes(t))}>{t}</button>
+                                selChip(t, (p.makeup?.makeupTypes || []).includes(t), () => toggleMakeupType(p.id, t))
                               ))}
                             </div>
                             {(p.makeup?.makeupTypes || []).length > 0 && (
@@ -6773,7 +6798,7 @@ export function App() {
                             <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Style <span className="text-slate-500 normal-case font-normal">— select, then set price / image</span></label>
                             <div className="flex flex-wrap gap-2">
                               {MEDIA_STYLES.map((s) => (
-                                <button type="button" key={s} onClick={() => toggleMediaStyle(p.id, s)} className={catChip((p.media?.styles || []).includes(s))}>{s}</button>
+                                selChip(s, (p.media?.styles || []).includes(s), () => toggleMediaStyle(p.id, s))
                               ))}
                             </div>
                             {(p.media?.styles || []).length > 0 && (
@@ -7436,7 +7461,7 @@ export function App() {
                             <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Language</label>
                             <div className="flex flex-wrap gap-2">
                               {PRIEST_LANGUAGES.map((l) => (
-                                <button type="button" key={l} onClick={() => togglePriestLanguage(p.id, l)} className={catChip((p.priest?.languages || []).includes(l))}>{l}</button>
+                                selChip(l, (p.priest?.languages || []).includes(l), () => togglePriestLanguage(p.id, l))
                               ))}
                             </div>
                           </div>
@@ -8392,7 +8417,7 @@ export function App() {
                             <label className="block text-[10px] text-slate-400 uppercase font-bold">Act type (select to set price &amp; upload photo)</label>
                             <div className="flex flex-wrap gap-2">
                               {ENTERTAINMENT_ACT_TYPES.map((a) => (
-                                <button type="button" key={a} onClick={() => toggleEntertainmentAct(p.id, a)} className={catChip((p.entertainment?.actTypes || []).includes(a))}>{a}</button>
+                                selChip(a, (p.entertainment?.actTypes || []).includes(a), () => toggleEntertainmentAct(p.id, a))
                               ))}
                             </div>
                             {(p.entertainment?.actTypes || []).map((a) => {
@@ -9232,7 +9257,7 @@ export function App() {
                             <label className="block text-[10px] text-slate-400 uppercase font-bold">Tier (select to set price &amp; upload photo)</label>
                             <div className="flex flex-wrap gap-2">
                               {MEHENDI_TIERS.map((t) => (
-                                <button type="button" key={t} onClick={() => toggleMehendiChip(p.id, 'tiers', t)} className={catChip((p.mehendi?.tiers || []).includes(t))}>{t}</button>
+                                selChip(t, (p.mehendi?.tiers || []).includes(t), () => toggleMehendiChip(p.id, 'tiers', t))
                               ))}
                             </div>
                             {(p.mehendi?.tiers || []).map((t) => {
@@ -9271,7 +9296,7 @@ export function App() {
                             <label className="block text-[10px] text-slate-400 uppercase font-bold">Design intricacy (select to set price &amp; upload photo)</label>
                             <div className="flex flex-wrap gap-2">
                               {MEHENDI_INTRICACY.map((i) => (
-                                <button type="button" key={i} onClick={() => toggleMehendiChip(p.id, 'intricacies', i)} className={catChip((p.mehendi?.intricacies || []).includes(i))}>{i}</button>
+                                selChip(i, (p.mehendi?.intricacies || []).includes(i), () => toggleMehendiChip(p.id, 'intricacies', i))
                               ))}
                             </div>
                             {(p.mehendi?.intricacies || []).map((i) => {
@@ -9368,7 +9393,7 @@ export function App() {
                             <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Language(s)</label>
                             <div className="flex flex-wrap gap-2">
                               {EVENT_HOST_LANGUAGES.map((l) => (
-                                <button type="button" key={l} onClick={() => toggleEventHostLanguage(p.id, l)} className={catChip((p.eventHost?.languages || []).includes(l))}>{l}</button>
+                                selChip(l, (p.eventHost?.languages || []).includes(l), () => toggleEventHostLanguage(p.id, l))
                               ))}
                             </div>
                           </div>
@@ -9412,7 +9437,7 @@ export function App() {
                             <label className="block text-[10px] text-slate-400 uppercase font-bold">Items (select to set quantity, price &amp; upload photo)</label>
                             <div className="flex flex-wrap gap-2">
                               {RENTAL_ITEMS.map((it) => (
-                                <button type="button" key={it} onClick={() => toggleRentalItem(p.id, it)} className={catChip((p.rental?.items || []).includes(it))}>{it}</button>
+                                selChip(it, (p.rental?.items || []).includes(it), () => toggleRentalItem(p.id, it))
                               ))}
                             </div>
                             {(p.rental?.items || []).map((it) => {
