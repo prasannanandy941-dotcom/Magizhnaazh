@@ -89,6 +89,10 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'rating' | 'price_low' | 'price_high'>('rating');
   const [activeFacilities, setActiveFacilities] = useState<string[]>([]);
+  // Selected sub-category option chips (e.g. Catering → Veg / Non-Veg). Clicking
+  // a chip filters the vendor list to vendors that offer that option (matched
+  // against vendor.offeredOptions) instead of opening a photo gallery.
+  const [activeOptions, setActiveOptions] = useState<string[]>([]);
 
   const toggleFacility = (key: string) => {
     setActiveFacilities((prev) =>
@@ -96,9 +100,16 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
     );
   };
 
+  const toggleOption = (label: string) => {
+    setActiveOptions((prev) =>
+      prev.includes(label) ? prev.filter((k) => k !== label) : [...prev, label]
+    );
+  };
+
   const handleCategoryChange = (cat: string) => {
     setSelectedCategory(cat);
     if (cat !== 'Venue') setActiveFacilities([]);
+    setActiveOptions([]);
   };
 
   const filteredVendors = filterVenuesByFacilities(
@@ -108,7 +119,15 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
         v.businessName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         v.description.toLowerCase().includes(searchQuery.toLowerCase());
       const matchCity = selectedCity === 'All' || v.location.city.toLowerCase() === selectedCity.toLowerCase();
-      return matchCat && matchSearch && matchCity;
+      // Sub-category option filter: keep only vendors that offer every selected
+      // option. offeredOptions holds the labels the vendor ticked (Veg, Non-Veg,
+      // theme names, etc.), matching the chip labels shown for the category.
+      const matchOptions =
+        activeOptions.length === 0 ||
+        activeOptions.every((opt) =>
+          (v.offeredOptions || []).some((o) => o === opt || o.startsWith(`${opt} — `))
+        );
+      return matchCat && matchSearch && matchCity && matchOptions;
     }),
     activeFacilities
   ).sort((a, b) => {
@@ -201,22 +220,34 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
         </>
       )}
 
-      {selectedCategory === 'Catering' && <CateringMenuChips />}
+      {selectedCategory === 'Catering' && <CateringMenuChips onSelect={(_id, label) => toggleOption(label)} isSelected={(label) => activeOptions.includes(label)} />}
 
-      {selectedCategory === 'Decoration' && <DecorationChips />}
+      {selectedCategory === 'Decoration' && <DecorationChips onSelect={(_id, label) => toggleOption(label)} isSelected={(label) => activeOptions.includes(label)} />}
 
-      {selectedCategory === 'Makeup & Beauty' && <MakeupChips />}
+      {selectedCategory === 'Makeup & Beauty' && <MakeupChips onSelect={(_id, label) => toggleOption(label)} isSelected={(label) => activeOptions.includes(label)} />}
 
-      {selectedCategory === 'Transport' && <TransportChips />}
+      {selectedCategory === 'Transport' && <TransportChips onSelect={(_id, label) => toggleOption(label)} isSelected={(label) => activeOptions.includes(label)} />}
 
-      {selectedCategory === 'Pujari/Priest' && <PriestChips />}
+      {selectedCategory === 'Pujari/Priest' && <PriestChips onSelect={(_id, label) => toggleOption(label)} isSelected={(label) => activeOptions.includes(label)} />}
 
-      {selectedCategory === 'Return Gifts' && <GiftChips />}
+      {selectedCategory === 'Return Gifts' && <GiftChips onSelect={(_id, label) => toggleOption(label)} isSelected={(label) => activeOptions.includes(label)} />}
 
-      {selectedCategory === 'Music/DJ' && <MusicDjChips />}
+      {selectedCategory === 'Music/DJ' && <MusicDjChips onSelect={(_id, label) => toggleOption(label)} isSelected={(label) => activeOptions.includes(label)} />}
 
       {selectedCategory !== 'All' && !BESPOKE_CATEGORIES.has(selectedCategory) && (
-        <GenericCategoryChips category={selectedCategory as VendorCategory} />
+        <GenericCategoryChips category={selectedCategory as VendorCategory} onSelect={(_id, label) => toggleOption(label)} isSelected={(label) => activeOptions.includes(label)} />
+      )}
+
+      {activeOptions.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 mb-6 -mt-2">
+          <span className="text-[11px] text-slate-500">Filtering by:</span>
+          {activeOptions.map((opt) => (
+            <button key={opt} type="button" onClick={() => toggleOption(opt)} className="inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded-full bg-indigo-600/20 border border-indigo-500 text-white">
+              {opt} <span className="text-slate-300">✕</span>
+            </button>
+          ))}
+          <button type="button" onClick={() => setActiveOptions([])} className="text-[11px] text-slate-400 hover:text-white underline">Clear</button>
+        </div>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

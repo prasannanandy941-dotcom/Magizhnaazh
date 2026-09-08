@@ -277,9 +277,9 @@ export const PriestChips: React.FC<{
           <button
             key={c.id}
             type="button"
-            onClick={() => { setOpenId(c.id); onSelect?.(c.id, c.title); }}
+            onClick={() => { if (onSelect) { onSelect(c.id, c.title); } else { setOpenId(c.id); } }}
             className={`group flex items-center gap-1.5 text-xs px-3.5 py-1.5 rounded-full border transition-colors ${
-              isSelected?.(c.id)
+              isSelected?.(c.title)
                 ? 'border-indigo-500 bg-indigo-600/20 text-white'
                 : 'border-slate-800 bg-slate-900 text-slate-300 hover:text-white hover:border-amber-500/50'
             }`}

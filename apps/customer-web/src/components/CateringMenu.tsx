@@ -447,9 +447,9 @@ export const CateringMenuChips: React.FC<{
             <button
               key={cat.id}
               type="button"
-              onClick={() => { setOpenIndex(idx); onSelect?.(cat.id, cat.title); }}
+              onClick={() => { if (onSelect) { onSelect(cat.id, cat.title); } else { setOpenIndex(idx); } }}
               className={`group flex items-center gap-1.5 text-xs px-3.5 py-1.5 rounded-full border transition-colors ${
-                isSelected?.(cat.id)
+                isSelected?.(cat.title)
                   ? 'border-indigo-500 bg-indigo-600/20 text-white'
                   : 'border-slate-800 bg-slate-900 text-slate-300 hover:text-white hover:border-amber-500/50'
               }`}

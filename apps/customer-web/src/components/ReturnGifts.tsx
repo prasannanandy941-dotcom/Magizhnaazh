@@ -267,9 +267,9 @@ export const GiftChips: React.FC<{
           <button
             key={g.id}
             type="button"
-            onClick={() => { setOpenId(g.id); onSelect?.(g.id, g.title); }}
+            onClick={() => { if (onSelect) { onSelect(g.id, g.title); } else { setOpenId(g.id); } }}
             className={`group flex items-center gap-1.5 text-xs px-3.5 py-1.5 rounded-full border transition-colors ${
-              isSelected?.(g.id)
+              isSelected?.(g.title)
                 ? 'border-indigo-500 bg-indigo-600/20 text-white'
                 : 'border-slate-800 bg-slate-900 text-slate-300 hover:text-white hover:border-emerald-500/50'
             }`}

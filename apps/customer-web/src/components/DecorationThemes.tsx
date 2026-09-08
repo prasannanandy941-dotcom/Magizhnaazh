@@ -299,9 +299,9 @@ export const DecorationChips: React.FC<{
           <button
             key={t.id}
             type="button"
-            onClick={() => { setOpenId(t.id); onSelect?.(t.id, t.title); }}
+            onClick={() => { if (onSelect) { onSelect(t.id, t.title); } else { setOpenId(t.id); } }}
             className={`group flex items-center gap-1.5 text-xs px-3.5 py-1.5 rounded-full border transition-colors ${
-              isSelected?.(t.id)
+              isSelected?.(t.title)
                 ? 'border-indigo-500 bg-indigo-600/20 text-white'
                 : 'border-slate-800 bg-slate-900 text-slate-300 hover:text-white hover:border-pink-500/50'
             }`}

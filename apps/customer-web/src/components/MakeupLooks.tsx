@@ -295,9 +295,9 @@ export const MakeupChips: React.FC<{
           <button
             key={l.id}
             type="button"
-            onClick={() => { setOpenId(l.id); onSelect?.(l.id, l.title); }}
+            onClick={() => { if (onSelect) { onSelect(l.id, l.title); } else { setOpenId(l.id); } }}
             className={`group flex items-center gap-1.5 text-xs px-3.5 py-1.5 rounded-full border transition-colors ${
-              isSelected?.(l.id)
+              isSelected?.(l.title)
                 ? 'border-indigo-500 bg-indigo-600/20 text-white'
                 : 'border-slate-800 bg-slate-900 text-slate-300 hover:text-white hover:border-rose-500/50'
             }`}
