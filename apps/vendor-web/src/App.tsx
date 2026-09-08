@@ -5335,10 +5335,30 @@ export function App() {
                             Sum: ₹{lightingTotal(p.lighting).toLocaleString('en-IN')}
                           </span>
                         )}
+                        {myVendor?.category === 'Corporate Event Services' && corporateTotal(p.corporate) > 0 && (
+                          <span className="text-[10px] text-amber-400 font-bold">
+                            Sum: ₹{corporateTotal(p.corporate).toLocaleString('en-IN')}
+                          </span>
+                        )}
+                        {myVendor?.category === 'Entertainment' && entertainmentTotal(p.entertainment) > 0 && (
+                          <span className="text-[10px] text-amber-400 font-bold">
+                            Sum: ₹{entertainmentTotal(p.entertainment).toLocaleString('en-IN')}
+                          </span>
+                        )}
+                        {myVendor?.category === 'Music/DJ' && musicDjTotal(p.musicDj) > 0 && (
+                          <span className="text-[10px] text-amber-400 font-bold">
+                            Sum: ₹{musicDjTotal(p.musicDj).toLocaleString('en-IN')}
+                          </span>
+                        )}
+                        {myVendor?.category === 'Pujari/Priest' && priestTotal(p.priest) > 0 && (
+                          <span className="text-[10px] text-amber-400 font-bold">
+                            Sum: ₹{priestTotal(p.priest).toLocaleString('en-IN')}
+                          </span>
+                        )}
                       </div>
                       <input
                         type="number"
-                        value={p.price || (myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 ? cateringTotal(p.catering) : myVendor?.category === 'Venue' && venueTotal(p.venue) > 0 ? venueTotal(p.venue) : myVendor?.category === 'Decoration' && decorationTotal(p.decoration) > 0 ? decorationTotal(p.decoration) : myVendor?.category === 'Makeup & Beauty' && makeupTotal(p.makeup) > 0 ? makeupTotal(p.makeup) : myVendor?.category === 'Media' && mediaTotal(p.media) > 0 ? mediaTotal(p.media) : myVendor?.category === 'Transport' && transportTotal(p.transport) > 0 ? transportTotal(p.transport) : myVendor?.category === 'Invitation' && invitationTotal(p.invitation) > 0 ? invitationTotal(p.invitation) : myVendor?.category === 'Printing' && printingTotal(p.printing) > 0 ? printingTotal(p.printing) : myVendor?.category === 'Return Gifts' && returnGiftsTotal(p.returnGifts) > 0 ? returnGiftsTotal(p.returnGifts) : (myVendor?.category === 'Lighting' || myVendor?.category === 'Lights & Sounds') && lightingTotal(p.lighting) > 0 ? lightingTotal(p.lighting) : '')}
+                        value={p.price || (myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 ? cateringTotal(p.catering) : myVendor?.category === 'Venue' && venueTotal(p.venue) > 0 ? venueTotal(p.venue) : myVendor?.category === 'Decoration' && decorationTotal(p.decoration) > 0 ? decorationTotal(p.decoration) : myVendor?.category === 'Makeup & Beauty' && makeupTotal(p.makeup) > 0 ? makeupTotal(p.makeup) : myVendor?.category === 'Media' && mediaTotal(p.media) > 0 ? mediaTotal(p.media) : myVendor?.category === 'Transport' && transportTotal(p.transport) > 0 ? transportTotal(p.transport) : myVendor?.category === 'Invitation' && invitationTotal(p.invitation) > 0 ? invitationTotal(p.invitation) : myVendor?.category === 'Printing' && printingTotal(p.printing) > 0 ? printingTotal(p.printing) : myVendor?.category === 'Return Gifts' && returnGiftsTotal(p.returnGifts) > 0 ? returnGiftsTotal(p.returnGifts) : (myVendor?.category === 'Lighting' || myVendor?.category === 'Lights & Sounds') && lightingTotal(p.lighting) > 0 ? lightingTotal(p.lighting) : myVendor?.category === 'Corporate Event Services' && corporateTotal(p.corporate) > 0 ? corporateTotal(p.corporate) : myVendor?.category === 'Entertainment' && entertainmentTotal(p.entertainment) > 0 ? entertainmentTotal(p.entertainment) : myVendor?.category === 'Music/DJ' && musicDjTotal(p.musicDj) > 0 ? musicDjTotal(p.musicDj) : myVendor?.category === 'Pujari/Priest' && priestTotal(p.priest) > 0 ? priestTotal(p.priest) : '')}
                         onChange={(e) => updatePackageField(p.id, 'price', e.target.value)}
                         placeholder={myVendor?.category === 'Catering' ? (cateringTotal(p.catering) ? String(cateringTotal(p.catering)) : 'e.g. 35000') : myVendor?.category === 'Transport' ? (transportTotal(p.transport) ? String(transportTotal(p.transport)) : 'e.g. 15000') : myVendor?.category === 'Invitation' ? (invitationTotal(p.invitation) ? String(invitationTotal(p.invitation)) : 'e.g. 12000') : myVendor?.category === 'Printing' ? (printingTotal(p.printing) ? String(printingTotal(p.printing)) : 'e.g. 8000') : myVendor?.category === 'Return Gifts' ? (returnGiftsTotal(p.returnGifts) ? String(returnGiftsTotal(p.returnGifts)) : 'e.g. 15000') : (myVendor?.category === 'Lighting' || myVendor?.category === 'Lights & Sounds') ? (lightingTotal(p.lighting) ? String(lightingTotal(p.lighting)) : 'e.g. 20000') : myVendor?.category === 'Security' ? '2000' : '150000'}
                         className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm"
@@ -5386,6 +5406,26 @@ export function App() {
                       {(myVendor?.category === 'Lighting' || myVendor?.category === 'Lights & Sounds') && lightingTotal(p.lighting) > 0 && (
                         <div className="mt-1.5 text-[10px] text-slate-400">
                           <span>Auto-added from lighting types, area covered, power backup &amp; setup: <b className="text-amber-300">₹{lightingTotal(p.lighting).toLocaleString('en-IN')}</b>. Edit the box to override.</span>
+                        </div>
+                      )}
+                      {myVendor?.category === 'Corporate Event Services' && corporateTotal(p.corporate) > 0 && (
+                        <div className="mt-1.5 text-[10px] text-slate-400">
+                          <span>Auto-added from base event price &amp; add-ons: <b className="text-amber-300">₹{corporateTotal(p.corporate).toLocaleString('en-IN')}</b>. Edit the box to override.</span>
+                        </div>
+                      )}
+                      {myVendor?.category === 'Entertainment' && entertainmentTotal(p.entertainment) > 0 && (
+                        <div className="mt-1.5 text-[10px] text-slate-400">
+                          <span>Auto-added from acts, equipment &amp; travel: <b className="text-amber-300">₹{entertainmentTotal(p.entertainment).toLocaleString('en-IN')}</b>. Edit the box to override.</span>
+                        </div>
+                      )}
+                      {myVendor?.category === 'Music/DJ' && musicDjTotal(p.musicDj) > 0 && (
+                        <div className="mt-1.5 text-[10px] text-slate-400">
+                          <span>Auto-added from types &amp; features: <b className="text-amber-300">₹{musicDjTotal(p.musicDj).toLocaleString('en-IN')}</b>. Edit the box to override.</span>
+                        </div>
+                      )}
+                      {myVendor?.category === 'Pujari/Priest' && priestTotal(p.priest) > 0 && (
+                        <div className="mt-1.5 text-[10px] text-slate-400">
+                          <span>Auto-added from ceremonies, priests, samagri &amp; muhurtham: <b className="text-amber-300">₹{priestTotal(p.priest).toLocaleString('en-IN')}</b>. Edit the box to override.</span>
                         </div>
                       )}
                       {myVendor?.category === 'Catering' && cateringTotal(p.catering) > 0 && (
