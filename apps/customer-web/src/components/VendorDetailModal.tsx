@@ -10,7 +10,7 @@ import { PriestGrid } from './PriestServices';
 import { GiftGrid } from './ReturnGifts';
 import { GenericCategoryGrid } from './CategoryOptions';
 import { CustomRequestBox } from './CateringMenu';
-import { getVendorCoverImage } from './vendorUtils';
+import { getVendorCoverImage, categoryCoverImage } from './vendorUtils';
 import { GoldSparkles } from './GoldSparkles';
 
 // Category-appropriate name for the "Services" tab (the vendor's list of
@@ -455,7 +455,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
           {activeTab === 'overview' && (
             <div className="space-y-6">
               <div className="h-72 w-full rounded-2xl overflow-hidden bg-slate-900 relative">
-                <img src={selectedImage} alt={vendor.businessName} className="w-full h-full object-cover" />
+                <img src={selectedImage} alt={vendor.businessName} onError={(e) => { const fb = categoryCoverImage(vendor.category); if (e.currentTarget.src !== fb) e.currentTarget.src = fb; }} className="w-full h-full object-cover" />
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -2374,7 +2374,15 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                         picked ? 'border-emerald-500 ring-2 ring-emerald-500/40' : 'border-slate-800 hover:border-indigo-500'
                       }`}
                     >
-                      <img src={img} alt={`Gallery ${idx}`} className="w-full h-full object-cover" />
+                      <img
+                        src={img}
+                        alt={`Gallery ${idx}`}
+                        onError={(e) => {
+                          const fb = categoryCoverImage(vendor.category);
+                          if (e.currentTarget.src !== fb) e.currentTarget.src = fb;
+                        }}
+                        className="w-full h-full object-cover"
+                      />
 
                       {picked && (
                         <span className="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-bold shadow">
@@ -2799,6 +2807,10 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
               src={lightboxImage}
               alt={`${vendor.businessName} photo`}
               onClick={(e) => e.stopPropagation()}
+              onError={(e) => {
+                const fb = categoryCoverImage(vendor.category);
+                if (e.currentTarget.src !== fb) e.currentTarget.src = fb;
+              }}
               className="max-w-full max-h-[90vh] rounded-xl object-contain shadow-2xl"
             />
           )}
