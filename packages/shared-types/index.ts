@@ -533,10 +533,14 @@ export interface DecorationPackageDetails {
   flowerPrices?: Record<string, number>; // price per flower kind
   flowerImages?: Record<string, string>; // image per flower kind
   coupleSofa?: boolean; // couple sofa / seating included
+  coupleSofaPrice?: number; // price for couple sofa / seating
+  coupleSofaImage?: string; // uploaded couple sofa / seating image
   mandapType?: string; // free text, e.g. "Traditional wooden mandap"
   mandapPrice?: number; // price for the mandap
   mandapImage?: string; // uploaded mandap image
   lighting?: boolean; // lighting included
+  lightingPrice?: number; // price for lighting
+  lightingImage?: string; // uploaded lighting image
   functionsCovered?: number; // number of functions covered
 }
 

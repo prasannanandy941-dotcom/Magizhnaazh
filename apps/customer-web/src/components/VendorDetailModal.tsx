@@ -1199,14 +1199,16 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                         const d = pkg.decoration;
                         const chip = 'text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200';
                         const inr = (n?: number) => (n ? ` — ₹${n.toLocaleString('en-IN')}` : '');
-                        const incl: [string, boolean | undefined][] = [
-                          ['Couple sofa', d.coupleSofa], ['Lighting', d.lighting],
+                        const incl: [string, boolean | undefined, number | undefined][] = [
+                          ['Couple sofa', d.coupleSofa, d.coupleSofaPrice], ['Lighting', d.lighting, d.lightingPrice],
                         ];
                         const imgs: [string, string][] = [
                           ...(d.themes || []).filter((t) => d.themeImages?.[t]).map((t) => [t, d.themeImages![t]] as [string, string]),
                           ...(d.areas || []).filter((a) => d.areaImages?.[a]).map((a) => [a, d.areaImages![a]] as [string, string]),
                           ...(d.flowers && d.flowerImages?.[d.flowers] ? [[d.flowers, d.flowerImages[d.flowers]] as [string, string]] : []),
                           ...(d.mandapImage ? [['Mandap', d.mandapImage] as [string, string]] : []),
+                          ...(d.coupleSofa && d.coupleSofaImage ? [['Couple sofa', d.coupleSofaImage] as [string, string]] : []),
+                          ...(d.lighting && d.lightingImage ? [['Lighting', d.lightingImage] as [string, string]] : []),
                         ];
                         return (
                           <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2" onClick={(e) => e.stopPropagation()}>
@@ -1227,8 +1229,8 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                             )}
                             {incl.some(([, v]) => v !== undefined) && (
                               <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px]">
-                                {incl.filter(([, v]) => v !== undefined).map(([label, v]) => (
-                                  <span key={label} className="text-slate-400">{label}: <b className={v ? 'text-emerald-400' : 'text-slate-500'}>{v ? 'Yes' : 'No'}</b></span>
+                                {incl.filter(([, v]) => v !== undefined).map(([label, v, price]) => (
+                                  <span key={label} className="text-slate-400">{label}: <b className={v ? 'text-emerald-400' : 'text-slate-500'}>{v ? 'Yes' : 'No'}</b>{v ? inr(price) : ''}</span>
                                 ))}
                               </div>
                             )}

@@ -1043,6 +1043,9 @@ export function App() {
   const decorationTotal = (d?: any): number => {
     if (!d) return 0;
     let sum = Number(d.mandapPrice) || 0;
+    // Couple sofa / lighting prices count only when that option is set to "Yes".
+    if (d.coupleSofa === true) sum += Number(d.coupleSofaPrice) || 0;
+    if (d.lighting === true) sum += Number(d.lightingPrice) || 0;
     for (const map of [d.themePrices, d.areaPrices, d.flowerPrices]) {
       if (map && typeof map === 'object') {
         for (const val of Object.values(map)) sum += Number(val) || 0;
@@ -1876,6 +1879,8 @@ export function App() {
         setPackages((prev) => prev.map((p) => {
           if (p.id !== pkgId) return p;
           if (group === 'mandap') return { ...p, decoration: { ...(p.decoration || {}), mandapImage: url } };
+          if (group === 'coupleSofa') return { ...p, decoration: { ...(p.decoration || {}), coupleSofaImage: url } };
+          if (group === 'lighting') return { ...p, decoration: { ...(p.decoration || {}), lightingImage: url } };
           const imgs = { ...((p.decoration as any)?.[mapField] || {}) };
           imgs[key] = url;
           return { ...p, decoration: { ...(p.decoration || {}), [mapField]: imgs } };
@@ -1892,6 +1897,8 @@ export function App() {
       if (p.id !== pkgId) return p;
       const [group, key] = slot.split(':');
       if (group === 'mandap') return { ...p, decoration: { ...(p.decoration || {}), mandapImage: undefined } };
+      if (group === 'coupleSofa') return { ...p, decoration: { ...(p.decoration || {}), coupleSofaImage: undefined } };
+      if (group === 'lighting') return { ...p, decoration: { ...(p.decoration || {}), lightingImage: undefined } };
       const mapField = group === 'theme' ? 'themeImages' : group === 'area' ? 'areaImages' : 'flowerImages';
       const imgs = { ...((p.decoration as any)?.[mapField] || {}) };
       delete imgs[key];
@@ -6588,16 +6595,46 @@ export function App() {
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-2 gap-2">
-                            {([['coupleSofa', 'Couple sofa / seating'], ['lighting', 'Lighting included']] as const).map(([field, label]) => (
-                              <div key={field}>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {([['coupleSofa', 'Couple sofa / seating'], ['lighting', 'Lighting included']] as const).map(([field, label]) => {
+                              const isYes = (p.decoration as any)?.[field] === true;
+                              const priceField = `${field}Price`;
+                              const imageField = `${field}Image`;
+                              const imgUrl = (p.decoration as any)?.[imageField] as string | undefined;
+                              return (
+                              <div key={field} className="p-2 rounded-lg border border-slate-800 bg-slate-950/40">
                                 <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">{label}</label>
                                 <div className="flex gap-1.5">
-                                  <button type="button" onClick={() => updatePackageDecoration(p.id, field, true)} className={catChip((p.decoration as any)?.[field] === true)}>Yes</button>
+                                  <button type="button" onClick={() => updatePackageDecoration(p.id, field, true)} className={catChip(isYes)}>Yes</button>
                                   <button type="button" onClick={() => updatePackageDecoration(p.id, field, false)} className={catChip((p.decoration as any)?.[field] === false)}>No</button>
                                 </div>
+                                {isYes && (
+                                  <div className="mt-2 flex items-center gap-2 flex-wrap">
+                                    <div className="flex items-center gap-1 px-2 rounded-lg bg-slate-950 border border-slate-800">
+                                      <span className="text-slate-500 text-xs">₹</span>
+                                      <input type="number" min={0} value={(p.decoration as any)?.[priceField] ?? ''} onChange={(e) => updatePackageDecoration(p.id, priceField, e.target.value === '' ? undefined : Number(e.target.value))}
+                                        placeholder="Price" className="w-20 py-2 bg-transparent text-white text-xs focus:outline-none" />
+                                    </div>
+                                    {imgUrl && (
+                                      <div className="relative">
+                                        <img src={imgUrl} alt={label} className="w-10 h-10 rounded-lg object-cover border border-slate-800" />
+                                        <button type="button" onClick={() => removeDecorImage(p.id, `${field}:`)}
+                                          className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-slate-800 text-slate-300 hover:text-rose-400 flex items-center justify-center" aria-label="Remove image">
+                                          <X className="w-2.5 h-2.5" />
+                                        </button>
+                                      </div>
+                                    )}
+                                    <label className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:border-slate-700 text-[11px] font-bold cursor-pointer transition-colors">
+                                      {uploadingDecorImg === `${p.id}:${field}:` ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
+                                      {imgUrl ? 'Replace' : 'Upload'}
+                                      <input type="file" accept="image/*" className="hidden" disabled={!!uploadingDecorImg}
+                                        onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadDecorImage(p.id, `${field}:`, f); e.target.value = ''; }} />
+                                    </label>
+                                  </div>
+                                )}
                               </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         </div>
                       )}
