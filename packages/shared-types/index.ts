@@ -322,7 +322,9 @@ export interface EntertainmentPackageDetails {
   actTypePrices?: Record<string, number>;
   actTypeImages?: Record<string, string>;
   equipmentPrice?: number;
+  equipmentDetails?: string; // what equipment is provided (sound, lights, stage, …)
   travelPrice?: number;
+  travelKm?: number; // how many km of travel the price covers
 }
 
 // Option set for the Entertainment package form.

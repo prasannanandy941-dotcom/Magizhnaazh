@@ -8458,17 +8458,27 @@ export function App() {
                             })}
                           </div>
 
-                          {/* Equipment & Travel — price fields */}
-                          <div className="grid grid-cols-2 gap-2">
-                            {([['equipmentPrice', 'Equipment (₹)'], ['travelPrice', 'Travel (₹)']] as const).map(([field, label]) => (
-                              <div key={field}>
-                                <label className="block text-[10px] text-slate-500 mb-1">{label}</label>
-                                <div className="relative">
-                                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 text-sm">₹</span>
-                                  <input type="number" min={0} value={(p.entertainment as any)?.[field] ?? ''} onChange={(e) => updatePackageEntertainment(p.id, field, e.target.value === '' ? undefined : Number(e.target.value))} placeholder="Blank if N/A" className="w-full pl-6 pr-2 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
-                                </div>
+                          {/* Equipment & Travel — what's provided + price / distance */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-[10px] text-slate-500 mb-1">Equipment provided</label>
+                              <input type="text" value={p.entertainment?.equipmentDetails ?? ''} onChange={(e) => updatePackageEntertainment(p.id, 'equipmentDetails', e.target.value || undefined)} placeholder="e.g. Sound system, stage lights, mics" className="w-full mb-2 px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                              <div className="relative">
+                                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 text-sm">₹</span>
+                                <input type="number" min={0} value={p.entertainment?.equipmentPrice ?? ''} onChange={(e) => updatePackageEntertainment(p.id, 'equipmentPrice', e.target.value === '' ? undefined : Number(e.target.value))} placeholder="Equipment price (blank if N/A)" className="w-full pl-6 pr-2 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
                               </div>
-                            ))}
+                            </div>
+                            <div>
+                              <label className="block text-[10px] text-slate-500 mb-1">Travel distance covered</label>
+                              <div className="relative mb-2">
+                                <input type="number" min={0} value={p.entertainment?.travelKm ?? ''} onChange={(e) => updatePackageEntertainment(p.id, 'travelKm', e.target.value === '' ? undefined : Number(e.target.value))} placeholder="e.g. 50" className="w-full pr-9 pl-2.5 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 text-xs">km</span>
+                              </div>
+                              <div className="relative">
+                                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 text-sm">₹</span>
+                                <input type="number" min={0} value={p.entertainment?.travelPrice ?? ''} onChange={(e) => updatePackageEntertainment(p.id, 'travelPrice', e.target.value === '' ? undefined : Number(e.target.value))} placeholder="Travel price (blank if N/A)" className="w-full pl-6 pr-2 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-sm" />
+                              </div>
+                            </div>
                           </div>
                         </div>
                       )}

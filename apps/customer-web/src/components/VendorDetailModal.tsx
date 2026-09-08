@@ -826,9 +826,9 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                               <div className="space-y-1">
                                 <span className="text-[10px] font-bold text-slate-500 uppercase block">Add-ons</span>
                                 {offered.map(([label, v]) => (
-                                  <div key={label} className="flex items-center justify-between text-[11px]">
+                                  <div key={label} className="flex items-center justify-between gap-3 text-[11px]">
                                     <span className="text-slate-400">{label}</span>
-                                    <span className="text-amber-300 font-semibold">{inr(v)}</span>
+                                    {typeof v === 'number' && <span className="text-amber-300 font-semibold whitespace-nowrap">{inr(v)}</span>}
                                   </div>
                                 ))}
                               </div>
@@ -1768,8 +1768,13 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                         const en: any = pkg.entertainment;
                         const inr = (n: any) => (Number(n) === 0 ? 'Included' : `₹${Number(n).toLocaleString('en-IN')}`);
                         const acts: string[] = en.actTypes || (en.actType ? [en.actType] : []);
-                        const addons: [string, any][] = [['Equipment', en.equipmentPrice], ['Travel', en.travelPrice]];
-                        const offered = addons.filter(([, v]) => typeof v === 'number');
+                        const addons: [string, any][] = [
+                          [`Equipment${en.equipmentDetails ? ` — ${en.equipmentDetails}` : ''}`, en.equipmentPrice],
+                          [`Travel${en.travelKm ? ` (${en.travelKm} km)` : ''}`, en.travelPrice],
+                        ];
+                        // Show a row if it has a price OR the vendor described it
+                        // (equipment list / travel distance) even without a price.
+                        const offered = addons.filter(([label, v]) => typeof v === 'number' || / — | \(/.test(label));
                         return (
                           <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2.5" onClick={(e) => e.stopPropagation()}>
                             <span className="text-[10px] font-bold text-slate-400 uppercase block">Act details</span>
@@ -1789,9 +1794,9 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                             {offered.length > 0 && (
                               <div className="space-y-1">
                                 {offered.map(([label, v]) => (
-                                  <div key={label} className="flex items-center justify-between text-[11px]">
+                                  <div key={label} className="flex items-center justify-between gap-3 text-[11px]">
                                     <span className="text-slate-400">{label}</span>
-                                    <span className="text-amber-300 font-semibold">{inr(v)}</span>
+                                    {typeof v === 'number' && <span className="text-amber-300 font-semibold whitespace-nowrap">{inr(v)}</span>}
                                   </div>
                                 ))}
                               </div>

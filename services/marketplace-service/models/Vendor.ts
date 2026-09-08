@@ -279,7 +279,9 @@ const vendorPackageSchema = new Schema(
       actTypePrices: Schema.Types.Mixed,
       actTypeImages: Schema.Types.Mixed,
       equipmentPrice: Number,
+      equipmentDetails: String,
       travelPrice: Number,
+      travelKm: Number,
     },
     // Music/DJ-only structured details. Plain nested (has a `type` field, which
     // must be declared as `type: { type: String }` — see invitation above).
