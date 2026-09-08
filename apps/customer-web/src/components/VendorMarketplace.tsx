@@ -122,18 +122,39 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
       // Sub-category option filter: keep only vendors that offer every selected
       // option. offeredOptions holds the labels the vendor ticked (Veg, Non-Veg,
       // theme names, etc.), matching the chip labels shown for the category.
+      // Pool of everything this vendor "offers" — their explicit tags plus the
+      // structured options they filled in their package (catering food types,
+      // decoration themes/areas, makeup types, venue sessions/hall) — so a chip
+      // matches a vendor who declared it anywhere, not only via an explicit tag.
       const optionPool = [
         ...(v.offeredOptions || []),
-        // Also honour structured package data so a caterer who ticked Veg/Non-Veg
-        // (or cuisines) in their package matches even without an explicit tag.
         ...((v.packages || []) as any[]).flatMap((p) => [
           ...((p.catering?.foodTypes as string[]) || []),
           ...((p.catering?.cuisines as string[]) || []),
+          ...((p.decoration?.themes as string[]) || []),
+          ...((p.decoration?.areas as string[]) || []),
+          ...(p.decoration?.flowers ? [p.decoration.flowers as string] : []),
+          ...((p.makeup?.makeupTypes as string[]) || []),
+          ...((p.venue?.sessions as string[]) || []),
+          ...(p.venue?.hallType ? [p.venue.hallType as string] : []),
+          ...(p.venue?.hallClass ? [p.venue.hallClass as string] : []),
         ]),
       ];
+      // Match a chip if a pool entry equals it, is a "<chip> — detail" variant, or
+      // shares a whole word (so package "Royal" matches chip "Royal Mandap",
+      // "Bridal" matches "Bridal Makeup", "Traditional" matches "South Indian
+      // Traditional") — bridging the package vs. marketplace label sets. Splitting
+      // on spaces only (not hyphens) keeps "Non-Veg" one token, so "Veg" never
+      // matches "Non-Veg".
+      const words = (s: string) => s.toLowerCase().split(/[\s&/,]+/).filter(Boolean);
+      const chipMatches = (opt: string, o: string) => {
+        if (o === opt || o.startsWith(`${opt} — `)) return true;
+        const pw = words(o);
+        return words(opt).some((w) => pw.includes(w));
+      };
       const matchOptions =
         activeOptions.length === 0 ||
-        activeOptions.every((opt) => optionPool.some((o) => o === opt || o.startsWith(`${opt} — `)));
+        activeOptions.every((opt) => optionPool.some((o) => chipMatches(opt, o)));
       return matchCat && matchSearch && matchCity && matchOptions;
     }),
     activeFacilities
