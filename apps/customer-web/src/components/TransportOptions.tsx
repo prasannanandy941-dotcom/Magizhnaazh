@@ -299,18 +299,26 @@ export const TransportGrid: React.FC<{
   selected?: string[];
   onToggle?: (title: string) => void;
   onPickTier?: (label: string) => void;
-}> = ({ options = STANDARD_TRANSPORT, selected, onToggle, onPickTier }) => {
+  restrictTo?: string[];
+}> = ({ options = STANDARD_TRANSPORT, selected, onToggle, onPickTier, restrictTo }) => {
   const [openId, setOpenId] = useState<string | null>(null);
-  const open = options.find((o) => o.id === openId) || null;
+  const shown = restrictTo
+    ? options.filter((o) => restrictTo.some((r) => r === o.title || r.startsWith(`${o.title} — `)))
+    : options;
+  const open = shown.find((o) => o.id === openId) || null;
   const optionSelected = (title: string) => !!selected?.some((o) => o === title || o.startsWith(`${title} — `));
+
+  if (shown.length === 0) {
+    return <p className="text-sm text-slate-400 py-8 text-center">This vendor hasn't listed their services yet.</p>;
+  }
 
   return (
     <div>
       <p className="text-sm text-slate-300 mb-4">
-        Transport options — <span className="text-sky-300 font-semibold">{options.length} services</span>, each with vehicle-class pricing.
+        Transport options — <span className="text-sky-300 font-semibold">{shown.length} services</span>, each with vehicle-class pricing.
       </p>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-        {options.map((o) => {
+        {shown.map((o) => {
           const isSelected = optionSelected(o.title);
           return (
             <div

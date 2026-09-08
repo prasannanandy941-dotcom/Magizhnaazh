@@ -293,18 +293,26 @@ export const GiftGrid: React.FC<{
   selected?: string[];
   onToggle?: (title: string) => void;
   onPickTier?: (label: string) => void;
-}> = ({ gifts = STANDARD_GIFTS, selected, onToggle, onPickTier }) => {
+  restrictTo?: string[];
+}> = ({ gifts = STANDARD_GIFTS, selected, onToggle, onPickTier, restrictTo }) => {
   const [openId, setOpenId] = useState<string | null>(null);
-  const open = gifts.find((g) => g.id === openId) || null;
+  const shown = restrictTo
+    ? gifts.filter((g) => restrictTo.some((r) => r === g.title || r.startsWith(`${g.title} — `)))
+    : gifts;
+  const open = shown.find((g) => g.id === openId) || null;
   const giftSelected = (title: string) => !!selected?.some((o) => o === title || o.startsWith(`${title} — `));
+
+  if (shown.length === 0) {
+    return <p className="text-sm text-slate-400 py-8 text-center">This vendor hasn't listed their services yet.</p>;
+  }
 
   return (
     <div>
       <p className="text-sm text-slate-300 mb-4">
-        Return gifts by type &amp; budget — <span className="text-emerald-300 font-semibold">{gifts.length} categories</span>, priced per piece.
+        Return gifts by type &amp; budget — <span className="text-emerald-300 font-semibold">{shown.length} categories</span>, priced per piece.
       </p>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-        {gifts.map((g) => {
+        {shown.map((g) => {
           const isSelected = giftSelected(g.title);
           return (
             <div

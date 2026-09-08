@@ -321,18 +321,26 @@ export const MakeupGrid: React.FC<{
   selected?: string[];
   onToggle?: (title: string) => void;
   onPickTier?: (label: string) => void;
-}> = ({ looks = STANDARD_MAKEUP, selected, onToggle, onPickTier }) => {
+  restrictTo?: string[];
+}> = ({ looks = STANDARD_MAKEUP, selected, onToggle, onPickTier, restrictTo }) => {
   const [openId, setOpenId] = useState<string | null>(null);
-  const open = looks.find((l) => l.id === openId) || null;
+  const shown = restrictTo
+    ? looks.filter((l) => restrictTo.some((r) => r === l.title || r.startsWith(`${l.title} — `)))
+    : looks;
+  const open = shown.find((l) => l.id === openId) || null;
   const lookSelected = (title: string) => !!selected?.some((o) => o === title || o.startsWith(`${title} — `));
+
+  if (shown.length === 0) {
+    return <p className="text-sm text-slate-400 py-8 text-center">This vendor hasn't listed their services yet.</p>;
+  }
 
   return (
     <div>
       <p className="text-sm text-slate-300 mb-4">
-        Makeup by occasion &amp; finish — <span className="text-rose-300 font-semibold">{looks.length} looks</span>, each with Classic / HD / Airbrush pricing.
+        Makeup by occasion &amp; finish — <span className="text-rose-300 font-semibold">{shown.length} looks</span>, each with Classic / HD / Airbrush pricing.
       </p>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-        {looks.map((l) => {
+        {shown.map((l) => {
           const isSelected = lookSelected(l.title);
           return (
             <div

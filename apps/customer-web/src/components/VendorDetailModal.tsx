@@ -720,13 +720,13 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
           )}
 
 
-          {activeTab === 'themes' && <DecorationGrid selected={selectedOptions} onToggle={toggleTheme} onPickTier={pickThemeTier} />}
+          {activeTab === 'themes' && <DecorationGrid selected={selectedOptions} onToggle={toggleTheme} onPickTier={pickThemeTier} restrictTo={vendor.offeredOptions || []} />}
 
-          {activeTab === 'looks' && <MakeupGrid selected={selectedOptions} onToggle={toggleTheme} onPickTier={pickThemeTier} />}
+          {activeTab === 'looks' && <MakeupGrid selected={selectedOptions} onToggle={toggleTheme} onPickTier={pickThemeTier} restrictTo={vendor.offeredOptions || []} />}
 
-          {activeTab === 'fleet' && <TransportGrid selected={selectedOptions} onToggle={toggleTheme} onPickTier={pickThemeTier} />}
+          {activeTab === 'fleet' && <TransportGrid selected={selectedOptions} onToggle={toggleTheme} onPickTier={pickThemeTier} restrictTo={vendor.offeredOptions || []} />}
 
-          {activeTab === 'ceremonies' && <PriestGrid selected={selectedOptions} onToggle={toggleTheme} onPickTier={pickThemeTier} />}
+          {activeTab === 'ceremonies' && <PriestGrid selected={selectedOptions} onToggle={toggleTheme} onPickTier={pickThemeTier} restrictTo={vendor.offeredOptions || []} />}
 
           {activeTab === 'gifts' && (
             <div className="space-y-4">
@@ -746,7 +746,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                   )}
                 </div>
               )}
-              <GiftGrid selected={selectedOptions} onToggle={toggleTheme} onPickTier={pickThemeTier} />
+              <GiftGrid selected={selectedOptions} onToggle={toggleTheme} onPickTier={pickThemeTier} restrictTo={vendor.offeredOptions || []} />
             </div>
           )}
 

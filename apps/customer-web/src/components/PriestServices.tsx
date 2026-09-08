@@ -303,19 +303,27 @@ export const PriestGrid: React.FC<{
   selected?: string[];
   onToggle?: (title: string) => void;
   onPickTier?: (label: string) => void;
-}> = ({ ceremonies = STANDARD_PRIEST, selected, onToggle, onPickTier }) => {
+  restrictTo?: string[];
+}> = ({ ceremonies = STANDARD_PRIEST, selected, onToggle, onPickTier, restrictTo }) => {
   const [openId, setOpenId] = useState<string | null>(null);
-  const open = ceremonies.find((c) => c.id === openId) || null;
+  const shown = restrictTo
+    ? ceremonies.filter((c) => restrictTo.some((r) => r === c.title || r.startsWith(`${c.title} — `)))
+    : ceremonies;
+  const open = shown.find((c) => c.id === openId) || null;
   const ceremonySelected = (title: string) => !!selected?.some((o) => o === title || o.startsWith(`${title} — `));
+
+  if (shown.length === 0) {
+    return <p className="text-sm text-slate-400 py-8 text-center">This vendor hasn't listed their services yet.</p>;
+  }
 
   return (
     <div>
       <p className="text-sm text-slate-300 mb-1">
-        Ceremonies conducted — <span className="text-amber-300 font-semibold">{ceremonies.length} functions</span>, each with service-level pricing.
+        Ceremonies conducted — <span className="text-amber-300 font-semibold">{shown.length} functions</span>, each with service-level pricing.
       </p>
       <p className="text-[11px] text-slate-500 mb-4">Traditions: {PRIEST_TRADITIONS}</p>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-        {ceremonies.map((c) => {
+        {shown.map((c) => {
           const isSelected = ceremonySelected(c.title);
           return (
             <div

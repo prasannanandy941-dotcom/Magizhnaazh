@@ -325,20 +325,28 @@ export const DecorationGrid: React.FC<{
   selected?: string[];
   onToggle?: (title: string) => void;
   onPickTier?: (label: string) => void;
-}> = ({ themes = STANDARD_DECORATION, selected, onToggle, onPickTier }) => {
+  restrictTo?: string[];
+}> = ({ themes = STANDARD_DECORATION, selected, onToggle, onPickTier, restrictTo }) => {
   const [openId, setOpenId] = useState<string | null>(null);
-  const open = themes.find((t) => t.id === openId) || null;
+  const shown = restrictTo
+    ? themes.filter((t) => restrictTo.some((r) => r === t.title || r.startsWith(`${t.title} — `)))
+    : themes;
+  const open = shown.find((t) => t.id === openId) || null;
   // A theme counts as selected whether the customer picked the plain theme or a
   // specific budget tier ("Royal Mandap — Premium (…)").
   const themeSelected = (title: string) => !!selected?.some((o) => o === title || o.startsWith(`${title} — `));
 
+  if (shown.length === 0) {
+    return <p className="text-sm text-slate-400 py-8 text-center">This vendor hasn't listed their services yet.</p>;
+  }
+
   return (
     <div>
       <p className="text-sm text-slate-300 mb-4">
-        Decoration by tradition &amp; budget — <span className="text-pink-300 font-semibold">{themes.length} themes</span>, each with Economy / Premium / Luxury options.
+        Decoration by tradition &amp; budget — <span className="text-pink-300 font-semibold">{shown.length} themes</span>, each with Economy / Premium / Luxury options.
       </p>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-        {themes.map((t) => {
+        {shown.map((t) => {
           const isSelected = themeSelected(t.title);
           return (
             <div
