@@ -1465,7 +1465,12 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                               {pr.numPriests ? <div className="text-slate-300">Priests: <span className="text-white font-semibold">{pr.numPriests}</span></div> : null}
                               {typeof pr.priestsPrice === 'number' ? <div className="flex items-center justify-between"><span className="text-slate-400">Priests</span><span className="text-amber-300 font-semibold">{inr(pr.priestsPrice)}</span></div> : null}
                               {typeof pr.samagriPrice === 'number' ? <div className="flex items-center justify-between"><span className="text-slate-400">Pooja items (samagri)</span><span className="text-amber-300 font-semibold">{inr(pr.samagriPrice)}</span></div> : null}
-                              {pr.muhurthamConsult !== undefined ? <div className="text-slate-400">Muhurtham consult: <b className={pr.muhurthamConsult ? 'text-emerald-400' : 'text-slate-500'}>{pr.muhurthamConsult ? 'Yes' : 'No'}</b>{pr.muhurthamConsult && pr.muhurthamConsultPrice ? <span className="text-amber-300">{inr(pr.muhurthamConsultPrice)}</span> : null}</div> : null}
+                              {pr.muhurthamConsult !== undefined ? (
+                                <div className="flex items-center justify-between">
+                                  <span className="text-slate-400">Muhurtham consult <b className={pr.muhurthamConsult ? 'text-emerald-400' : 'text-slate-500'}>{pr.muhurthamConsult ? 'Yes' : 'No'}</b></span>
+                                  {pr.muhurthamConsult && pr.muhurthamConsultPrice ? <span className="text-amber-300 font-semibold">{inr(pr.muhurthamConsultPrice)}</span> : null}
+                                </div>
+                              ) : null}
                             </div>
                           </div>
                         );
