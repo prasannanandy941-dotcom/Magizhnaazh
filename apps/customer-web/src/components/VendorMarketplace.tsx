@@ -122,11 +122,18 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
       // Sub-category option filter: keep only vendors that offer every selected
       // option. offeredOptions holds the labels the vendor ticked (Veg, Non-Veg,
       // theme names, etc.), matching the chip labels shown for the category.
+      const optionPool = [
+        ...(v.offeredOptions || []),
+        // Also honour structured package data so a caterer who ticked Veg/Non-Veg
+        // (or cuisines) in their package matches even without an explicit tag.
+        ...((v.packages || []) as any[]).flatMap((p) => [
+          ...((p.catering?.foodTypes as string[]) || []),
+          ...((p.catering?.cuisines as string[]) || []),
+        ]),
+      ];
       const matchOptions =
         activeOptions.length === 0 ||
-        activeOptions.every((opt) =>
-          (v.offeredOptions || []).some((o) => o === opt || o.startsWith(`${opt} — `))
-        );
+        activeOptions.every((opt) => optionPool.some((o) => o === opt || o.startsWith(`${opt} — `)));
       return matchCat && matchSearch && matchCity && matchOptions;
     }),
     activeFacilities
@@ -247,6 +254,21 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
             </button>
           ))}
           <button type="button" onClick={() => setActiveOptions([])} className="text-[11px] text-slate-400 hover:text-white underline">Clear</button>
+        </div>
+      )}
+
+      {filteredVendors.length === 0 && (
+        <div className="text-center py-16 text-slate-400">
+          <p className="text-sm">
+            {activeOptions.length > 0
+              ? `No ${selectedCategory !== 'All' ? selectedCategory + ' ' : ''}vendors offer ${activeOptions.join(' + ')} yet.`
+              : 'No vendors match your filters.'}
+          </p>
+          {activeOptions.length > 0 && (
+            <button type="button" onClick={() => setActiveOptions([])} className="mt-2 text-xs text-indigo-300 hover:text-indigo-200 underline">
+              Clear option filters
+            </button>
+          )}
         </div>
       )}
 
