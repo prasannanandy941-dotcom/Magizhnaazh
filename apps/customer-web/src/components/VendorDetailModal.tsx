@@ -564,6 +564,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
               onToggle={toggleOption}
               optionItems={vendor.offeredOptionItems}
               offeredOptionImages={vendor.offeredOptionImages}
+              restrictTo={vendor.offeredOptions || []}
             />
           )}
 

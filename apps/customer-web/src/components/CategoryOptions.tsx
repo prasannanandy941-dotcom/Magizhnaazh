@@ -262,14 +262,21 @@ export const GenericCategoryGrid: React.FC<{
   // tapped so customers see this vendor's actual dishes/services with rates.
   optionItems?: Record<string, OfferedOptionItem[]>;
   offeredOptionImages?: Record<string, string[]>;
-}> = ({ category, selected, onToggle, optionItems, offeredOptionImages }) => {
-  const options = optionsForCategory(category);
+  // When provided, show ONLY the options this vendor actually offers (matched by
+  // label, or a "label — detail" variant) instead of every preset for the
+  // category. An empty list means the vendor hasn't listed anything.
+  restrictTo?: string[];
+}> = ({ category, selected, onToggle, optionItems, offeredOptionImages, restrictTo }) => {
+  const all = optionsForCategory(category);
+  const options = restrictTo
+    ? all.filter((o) => restrictTo.some((r) => r === o.title || r.startsWith(`${o.title} — `)))
+    : all;
   const [openId, setOpenId] = useState<string | null>(null);
   const openOption = options.find((o) => o.id === openId) || null;
   const Icon = CATEGORY_ICON[category] ?? Tag;
 
   if (options.length === 0) {
-    return <p className="text-xs text-slate-500">No preset options for "{category}" yet.</p>;
+    return <p className="text-sm text-slate-400 py-8 text-center">This vendor hasn't listed their services yet.</p>;
   }
 
   return (
