@@ -1226,9 +1226,6 @@ export function App() {
         <AuthModal onClose={() => setShowAuthModal(false)} onAuthSuccess={handleAuthSuccess} />
       )}
 
-      <footer className="relative z-10 border-t border-[#6b2140]/50 py-6 text-center text-xs text-[#cf9bb3]">
-        © 2026 Magizhnaazh Customer Event Planner Portal — Port 3000
-      </footer>
     </div>
   );
 }
