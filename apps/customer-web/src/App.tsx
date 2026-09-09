@@ -629,8 +629,10 @@ export function App() {
   // or the user isn't authenticated yet, so the UI never looks empty.
   useEffect(() => {
     if (!user) {
-      setEvents([FALLBACK_EVENT]);
-      setActiveEvent(FALLBACK_EVENT);
+      // Signed out: show no events (no Felix & Priya demo) — the dashboard
+      // prompts them to sign in / create their own instead.
+      setEvents([]);
+      setActiveEvent(EMPTY_EVENT);
       return;
     }
 
