@@ -138,10 +138,10 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center gap-3">
           <button
             onClick={openEventWizard}
-            className="shine-sweep hidden sm:flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#d4af37] via-[#c9a648] to-[#e85d8a] hover:from-[#f0c869] hover:to-[#f2a6c4] text-[#1a0a14] font-bold text-sm shadow-lg shadow-[#d4af37]/25 transition-all hover:scale-105"
+            className="shine-sweep hidden sm:flex items-center gap-1.5 whitespace-nowrap px-3 py-2 rounded-lg bg-gradient-to-r from-[#d4af37] via-[#c9a648] to-[#e85d8a] hover:from-[#f0c869] hover:to-[#f2a6c4] text-[#1a0a14] font-bold text-xs shadow-lg shadow-[#d4af37]/25 transition-all hover:scale-105"
           >
-            <Sparkles className="w-4 h-4" />
-            + Create Event
+            <Sparkles className="w-3.5 h-3.5" />
+            Create Event
           </button>
 
           <button
