@@ -39,9 +39,12 @@ export const SmartBudgetPlanner: React.FC<SmartBudgetPlannerProps> = ({
 
   // A vendor has "confirmed the order" once it reaches any of these stages.
   const CONFIRMED_STATUSES = new Set<Booking['status']>(['confirmed', 'in_progress', 'completed']);
-  const confirmedBookings = myBookings.filter(
-    (b) => b.eventId === event.id && CONFIRMED_STATUSES.has(b.status)
-  );
+  // "Pending" = an order placed but not yet paid/confirmed — shown in the spend
+  // breakdown so the customer can see upcoming vendor spend, not only money paid.
+  const PENDING_STATUSES = new Set<Booking['status']>(['pending_payment', 'negotiation', 'quote_sent']);
+  const forThisEvent = myBookings.filter((b) => b.eventId === event.id);
+  const confirmedBookings = forThisEvent.filter((b) => CONFIRMED_STATUSES.has(b.status));
+  const pendingBookings = forThisEvent.filter((b) => PENDING_STATUSES.has(b.status));
 
   // "Spent" is the money actually PAID to vendors so far (the advance the
   // customer has handed over), not the full agreed order value. Only real money
@@ -60,7 +63,7 @@ export const SmartBudgetPlanner: React.FC<SmartBudgetPlannerProps> = ({
   // Which real, confirmed vendor orders make up the spend — shown when the
   // customer taps the "Actual Spent" tile to drill in.
   const [spendExpanded, setSpendExpanded] = useState(false);
-  const spendByCategory = confirmedBookings.reduce<
+  const spendByCategory = [...confirmedBookings, ...pendingBookings].reduce<
     Record<string, {
       vendorName: string;
       bookingNumber: string;
@@ -68,21 +71,25 @@ export const SmartBudgetPlanner: React.FC<SmartBudgetPlannerProps> = ({
       paid: number;
       remaining: number;
       items: { label: string; amount: number }[];
+      pending: boolean;
     }[]>
   >((acc, b) => {
-    // Per-booking money split: the agreed total, how much the customer has
+    // Per-booking money split: the agreed/quoted total, how much the customer has
     // actually paid so far (advance), and the balance still owed. remaining is
-    // derived from the agreed total minus what's paid so it always ties out even
-    // if the stored remainingAmount is stale.
+    // derived from the total minus what's paid so it always ties out even if the
+    // stored remainingAmount is stale.
+    const pending = PENDING_STATUSES.has(b.status);
+    const amount = b.agreedPrice || (b as any).price || 0;
     const paid = b.advanceAmountPaid || 0;
     (acc[b.vendorCategory] ||= []).push({
       vendorName: b.vendorName,
       bookingNumber: b.bookingNumber,
-      amount: b.agreedPrice,
+      amount,
       paid,
-      remaining: Math.max(0, b.agreedPrice - paid),
+      remaining: Math.max(0, amount - paid),
       // Vendor-entered itemisation of what the money was spent on, if any.
       items: b.spendItems || [],
+      pending,
     });
     return acc;
   }, {});
@@ -205,16 +212,20 @@ export const SmartBudgetPlanner: React.FC<SmartBudgetPlannerProps> = ({
           {!bookingsLoaded ? (
             <p className="text-xs text-slate-400">Loading your bookings...</p>
           ) : Object.keys(spendByCategory).length === 0 ? (
-            <p className="text-xs text-slate-500">No confirmed vendor orders yet — once a vendor confirms your booking, its amount shows here.</p>
+            <p className="text-xs text-slate-500">No vendor orders yet — once you book a vendor (or pay an advance), it shows here.</p>
           ) : (
             <div className="space-y-4">
               {Object.entries(spendByCategory).map(([category, entries]) => {
-                const catTotal = entries.reduce((acc, e) => acc + e.paid, 0);
+                const catPaid = entries.reduce((acc, e) => acc + e.paid, 0);
+                const catBooked = entries.reduce((acc, e) => acc + e.amount, 0);
                 return (
                   <div key={category}>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs font-bold text-indigo-300 uppercase">{category}</span>
-                      <span className="text-xs font-bold text-amber-400">₹{catTotal.toLocaleString('en-IN')}</span>
+                      <span className="text-xs font-bold text-amber-400">
+                        ₹{catPaid.toLocaleString('en-IN')} paid
+                        <span className="text-slate-500 font-normal"> / ₹{catBooked.toLocaleString('en-IN')} booked</span>
+                      </span>
                     </div>
                     <ul className="space-y-1.5">
                       {entries.map((e) => (
@@ -222,6 +233,7 @@ export const SmartBudgetPlanner: React.FC<SmartBudgetPlannerProps> = ({
                           <div className="flex items-center justify-between">
                             <span className="text-slate-200">
                               {e.vendorName} <span className="text-slate-500">({e.bookingNumber})</span>
+                              {e.pending && <span className="ml-1.5 text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">Pending payment</span>}
                             </span>
                             <span className="text-right">
                               <span className="text-[10px] text-slate-500 block leading-none">Booking total</span>
