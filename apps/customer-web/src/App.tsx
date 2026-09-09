@@ -516,7 +516,19 @@ export function App() {
   const [feedbackList, setFeedbackList] = useState<EventFeedback[]>(INITIAL_FEEDBACK);
 
   const [selectedVendorForModal, setSelectedVendorForModal] = useState<Vendor | null>(null);
-  const [wishlist, setWishlist] = useState<string[]>(['vnd-1', 'vnd-3']);
+  // Starts empty — the badge only counts vendors the customer actually saves.
+  // Persisted per browser so picks survive a reload.
+  const [wishlist, setWishlist] = useState<string[]>(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('wishlist') || '[]');
+      return Array.isArray(saved) ? saved.filter((x) => typeof x === 'string') : [];
+    } catch {
+      return [];
+    }
+  });
+  useEffect(() => {
+    try { localStorage.setItem('wishlist', JSON.stringify(wishlist)); } catch { /* ignore */ }
+  }, [wishlist]);
   const [selectedCompareIds, setSelectedCompareIds] = useState<string[]>([]);
   const [showCompareModal, setShowCompareModal] = useState(false);
   const [showWishlistModal, setShowWishlistModal] = useState(false);
