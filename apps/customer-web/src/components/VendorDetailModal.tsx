@@ -794,7 +794,8 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                       </div>
                       {pkg.security && (() => {
                         const s: any = pkg.security;
-                        const inr = (n: any) => (Number(n) === 0 ? 'Included' : `₹${Number(n).toLocaleString('en-IN')}`);
+                        // Customer side: per-item prices are hidden — only the package total shows a price.
+                        const inr = (_n?: any) => '';
                         const genders: string[] = s.genders || (s.gender ? [s.gender] : []);
                         const addons: [string, any][] = [
                           ['Metal detectors', s.metalDetectorsPrice], ['CCTV', s.cctvPrice], ['VIP protection', s.vipProtectionPrice], ['Gate / crowd mgmt', s.crowdManagementPrice],
@@ -895,13 +896,10 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                                 <div>
                                   Service style: <span className="text-white font-semibold">{c.serviceStyle}</span>
                                   {c.serviceStyle === 'Buffet' && (c.plateTypes || []).length > 0 && (
-                                    <span className="text-amber-300"> ({c.plateTypes!.map((pt) => {
-                                      const pr = c.plateTypePrices?.[pt];
-                                      return pr ? `${pt} ₹${Number(pr).toLocaleString('en-IN')}` : pt;
-                                    }).join(', ')})</span>
+                                    <span className="text-amber-300"> ({c.plateTypes!.join(', ')})</span>
                                   )}
                                   {(c.serviceStyle === 'Seated' || c.serviceStyle === 'Banana-leaf') && c.leafType && (
-                                    <span className="text-emerald-300"> ({c.leafType}{c.leafTypePrices?.[c.leafType] ? ` ₹${Number(c.leafTypePrices[c.leafType]).toLocaleString('en-IN')}` : ''})</span>
+                                    <span className="text-emerald-300"> ({c.leafType})</span>
                                   )}
                                   {(() => {
                                     const imgs = (c.serviceStyle === 'Buffet' ? c.plateTypeImages : c.leafTypeImages) || {};
@@ -943,9 +941,6 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                                         {list.map((it, idx) => (
                                           <div key={idx} className="flex items-center justify-between text-[11px] bg-slate-950/70 px-2.5 py-1.5 rounded-lg border border-slate-800/70">
                                             <span className="text-slate-200 font-medium">{it.name}</span>
-                                            {it.price !== undefined && it.price > 0 && (
-                                              <span className="font-bold text-amber-400">₹{it.price.toLocaleString('en-IN')}</span>
-                                            )}
                                           </div>
                                         ))}
                                       </div>
@@ -974,9 +969,6 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                                         {list.map((it, idx) => (
                                           <div key={idx} className="flex items-center justify-between text-[11px] bg-slate-950/70 px-2.5 py-1.5 rounded-lg border border-slate-800/70">
                                             <span className="text-slate-200 font-medium">{it.name}</span>
-                                            {it.price !== undefined && it.price > 0 && (
-                                              <span className="font-bold text-amber-400">₹{it.price.toLocaleString('en-IN')}</span>
-                                            )}
                                           </div>
                                         ))}
                                       </div>
@@ -1011,9 +1003,6 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                                               )}
                                               <span className="text-slate-200 font-medium truncate">{it.name || 'Dish'}</span>
                                             </div>
-                                            {it.price !== undefined && it.price > 0 && (
-                                              <span className="font-bold text-amber-400 shrink-0">₹{it.price.toLocaleString('en-IN')}</span>
-                                            )}
                                           </div>
                                         ))}
                                       </div>
@@ -1048,9 +1037,6 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                                               )}
                                               <span className="text-slate-200 font-medium truncate">{it.name}</span>
                                             </div>
-                                            {it.price !== undefined && it.price > 0 && (
-                                              <span className="font-bold text-amber-400 shrink-0">₹{it.price.toLocaleString('en-IN')}</span>
-                                            )}
                                           </div>
                                         ))}
                                       </div>
@@ -1066,7 +1052,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                                 <div className="flex flex-wrap gap-1.5">
                                   {c.welcomeDrinkItems!.filter((d) => d.name && d.name.trim()).map((d, di) => (
                                     <span key={di} className="text-[11px] px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 text-slate-200">
-                                      {d.name} {d.price !== undefined && d.price > 0 ? <b className="text-amber-400 font-bold ml-1">₹{d.price.toLocaleString('en-IN')}</b> : ''}
+                                      {d.name}
                                     </span>
                                   ))}
                                 </div>
@@ -1153,7 +1139,8 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                       {vendor.category === 'Venue' && pkg.venue && (() => {
                         const v = pkg.venue;
                         const chip = 'text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200';
-                        const inr = (n?: number) => (n ? ` — ₹${n.toLocaleString('en-IN')}` : '');
+                        // Customer side: per-item prices are hidden — only the package total shows a price.
+                        const inr = (_n?: number) => '';
                         const amenities: [string, boolean | undefined, string][] = [
                           ['Parking', v.parking, 'parking'], ['Power backup', v.powerBackup, 'powerBackup'], ['Bridal/green room', v.bridalRoom, 'bridalRoom'],
                           ['Stage', v.stageIncluded, 'stageIncluded'], ['Valet', v.valetService, 'valetService'],
@@ -1199,7 +1186,8 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                       {vendor.category === 'Decoration' && pkg.decoration && (() => {
                         const d = pkg.decoration;
                         const chip = 'text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200';
-                        const inr = (n?: number) => (n ? ` — ₹${n.toLocaleString('en-IN')}` : '');
+                        // Customer side: per-item prices are hidden — only the package total shows a price.
+                        const inr = (_n?: number) => '';
                         const incl: [string, boolean | undefined, number | undefined][] = [
                           ['Couple sofa', d.coupleSofa, d.coupleSofaPrice], ['Lighting', d.lighting, d.lightingPrice],
                         ];
@@ -1242,7 +1230,8 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                       {vendor.category === 'Makeup & Beauty' && pkg.makeup && (() => {
                         const m = pkg.makeup;
                         const chip = 'text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200';
-                        const inr = (n?: number) => (n ? ` — ₹${n.toLocaleString('en-IN')}` : '');
+                        // Customer side: per-item prices are hidden — only the package total shows a price.
+                        const inr = (_n?: number) => '';
                         const incl: [string, boolean | undefined, number | undefined][] = [
                           ['Draping', m.draping, m.drapingPrice], ['Trial session', m.trialSession, undefined], ['Travel to venue', m.travelToVenue, m.travelPrice],
                         ];
@@ -1277,7 +1266,8 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                       {vendor.category === 'Media' && pkg.media && (() => {
                         const m = pkg.media;
                         const chip = 'text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200';
-                        const inr = (n?: number) => (n ? ` — ₹${n.toLocaleString('en-IN')}` : '');
+                        // Customer side: per-item prices are hidden — only the package total shows a price.
+                        const inr = (_n?: number) => '';
                         const featureLabels: [string, boolean | undefined, string][] = [
                           ['Pre-wedding', m.preWedding, 'preWedding'], ['Drone', m.drone, 'drone'], ['Teaser', m.teaser, 'teaser'], ['4K film', m.film4k, 'film4k'],
                         ];
@@ -1336,8 +1326,6 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                             <div className="flex flex-wrap gap-1.5">
                               {t.tier && <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-200 font-bold">{t.tier}</span>}
                               {t.pricingBasis && <span className={chip}>{t.pricingBasis}</span>}
-                              {t.perDayPrice && <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-amber-300">₹{t.perDayPrice.toLocaleString('en-IN')}/day</span>}
-                              {t.perKmPrice && <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-amber-300">₹{t.perKmPrice.toLocaleString('en-IN')}/km</span>}
                               {useList.map((u) => <span key={u} className={chip}>For {u}</span>)}
                             </div>
 
@@ -1363,8 +1351,6 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                                           <div className="text-xs font-bold text-white truncate">{v}</div>
                                           <div className="text-[10px] text-slate-400">
                                             {seats ? `${seats} seats` : ''}
-                                            {seats && price ? ' · ' : ''}
-                                            {price ? <span className="text-amber-400 font-semibold">₹{price.toLocaleString('en-IN')}</span> : null}
                                           </div>
                                         </div>
                                       </div>
@@ -1379,29 +1365,16 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                               {t.numVehicles ? <div>No. of vehicles: <span className="text-white font-semibold">{t.numVehicles}</span></div> : null}
                               {t.seatsPerVehicle ? <div>Seats / vehicle: <span className="text-white font-semibold">{t.seatsPerVehicle}</span></div> : null}
                               {t.kmHoursIncluded ? <div>Km / hours included: <span className="text-white font-semibold">{t.kmHoursIncluded}</span></div> : null}
-                              {t.kmHoursPrice ? <div>Package price: <span className="text-amber-400 font-bold">₹{t.kmHoursPrice.toLocaleString('en-IN')}</span></div> : null}
                             </div>
 
                             {/* Use options breakdown */}
-                            {(t.baraatHours || t.usePrices?.Baraat || t.guestsPersons || t.usePrices?.Guests || t.usePrices?.Couple) && (
+                            {(t.baraatHours || t.guestsPersons) && (
                               <div className="p-2 rounded-xl bg-slate-950/40 border border-slate-800 space-y-1 text-[11px]">
-                                {t.baraatHours || t.usePrices?.Baraat ? (
-                                  <div className="flex justify-between">
-                                    <span className="text-slate-400">Baraat ({t.baraatHours ? `${t.baraatHours} hrs` : 'Standard'}):</span>
-                                    {t.usePrices?.Baraat ? <span className="text-amber-300 font-semibold">₹{t.usePrices.Baraat.toLocaleString('en-IN')}</span> : null}
-                                  </div>
+                                {t.baraatHours ? (
+                                  <div className="text-slate-400">Baraat ({t.baraatHours} hrs)</div>
                                 ) : null}
-                                {t.guestsPersons || t.usePrices?.Guests ? (
-                                  <div className="flex justify-between">
-                                    <span className="text-slate-400">Guests ({t.guestsPersons ? `${t.guestsPersons} persons` : 'All'}):</span>
-                                    {t.usePrices?.Guests ? <span className="text-amber-300 font-semibold">₹{t.usePrices.Guests.toLocaleString('en-IN')}</span> : null}
-                                  </div>
-                                ) : null}
-                                {t.usePrices?.Couple ? (
-                                  <div className="flex justify-between">
-                                    <span className="text-slate-400">Couple Transport:</span>
-                                    <span className="text-amber-300 font-semibold">₹{t.usePrices.Couple.toLocaleString('en-IN')}</span>
-                                  </div>
+                                {t.guestsPersons ? (
+                                  <div className="text-slate-400">Guests ({t.guestsPersons} persons)</div>
                                 ) : null}
                               </div>
                             )}
@@ -1411,13 +1384,11 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                               {t.driverFuel !== undefined && (
                                 <span className="text-slate-400">
                                   Driver + fuel: <b className={t.driverFuel ? 'text-emerald-400' : 'text-slate-500'}>{t.driverFuel ? 'Yes' : 'No'}</b>
-                                  {t.driverFuel && t.driverFuelPrice ? <span className="text-amber-300 ml-1">(+₹{t.driverFuelPrice.toLocaleString('en-IN')})</span> : null}
                                 </span>
                               )}
                               {t.carDecoration !== undefined && (
                                 <span className="text-slate-400">
                                   Car decoration: <b className={t.carDecoration ? 'text-emerald-400' : 'text-slate-500'}>{t.carDecoration ? 'Yes' : 'No'}</b>
-                                  {t.carDecoration && t.carDecorationPrice ? <span className="text-amber-300 ml-1">(+₹{t.carDecorationPrice.toLocaleString('en-IN')})</span> : null}
                                 </span>
                               )}
                             </div>
@@ -1431,7 +1402,6 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                                 <div className="text-[11px]">
                                   <span className="text-slate-400 block font-semibold">Decoration style:</span>
                                   <span className="text-slate-200">{t.carDecorationType || 'Custom floral'}</span>
-                                  {t.carDecorationPrice ? <span className="text-amber-300 font-semibold block">₹{t.carDecorationPrice.toLocaleString('en-IN')}</span> : null}
                                 </div>
                               </div>
                             )}
@@ -1442,7 +1412,8 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                       {vendor.category === 'Pujari/Priest' && pkg.priest && (() => {
                         const pr: any = pkg.priest;
                         const chip = 'text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200';
-                        const inr = (n: any) => (Number(n) === 0 ? 'Included' : `₹${Number(n).toLocaleString('en-IN')}`);
+                        // Customer side: per-item prices are hidden — only the package total shows a price.
+                        const inr = (_n?: any) => '';
                         const ceremonies: string[] = pr.ceremonyTypePrices ? Object.keys(pr.ceremonyTypePrices) : (pr.ceremonyType ? [pr.ceremonyType] : []);
                         return (
                           <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2.5" onClick={(e) => e.stopPropagation()}>
@@ -1483,7 +1454,6 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                         const typeList = Array.isArray(iv.types) && iv.types.length > 0
                           ? iv.types
                           : (iv.type ? [iv.type] : []);
-                        const designPrice = iv.design && iv.designPrices?.[iv.design];
                         const addOnList = (iv.addOns || []).map((a) => (a === 'Caricature' ? 'Invitation call by person' : a));
 
                         return (
@@ -1493,15 +1463,10 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                               {iv.tier && <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-200 font-bold">{iv.tier}</span>}
                               {iv.design && (
                                 <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-amber-300">
-                                  {iv.design} design {designPrice ? `(₹${designPrice.toLocaleString('en-IN')})` : ''}
+                                  {iv.design} design
                                 </span>
                               )}
                               {(iv.languages || []).map((l) => <span key={`il-${l}`} className={chip}>{l}</span>)}
-                              {iv.languagePrice ? (
-                                <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-amber-300">
-                                  Translation/Languages: ₹{iv.languagePrice.toLocaleString('en-IN')}
-                                </span>
-                              ) : null}
                             </div>
 
                             {/* Types with sample images & rates */}
@@ -1510,7 +1475,6 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                                 <span className="text-[10px] font-bold text-slate-400 uppercase block">Invitation Types</span>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                   {typeList.map((t) => {
-                                    const price = iv.typePrices?.[t];
                                     const img = iv.typeImages?.[t];
                                     return (
                                       <div key={t} className="flex items-center gap-2 p-2 rounded-xl bg-slate-950/60 border border-slate-800">
@@ -1523,11 +1487,6 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                                         )}
                                         <div className="flex-1 min-w-0">
                                           <div className="text-xs font-bold text-white truncate">{t}</div>
-                                          {price ? (
-                                            <div className="text-[10px] text-amber-400 font-semibold">
-                                              ₹{price.toLocaleString('en-IN')}
-                                            </div>
-                                          ) : null}
                                         </div>
                                       </div>
                                     );
@@ -1536,19 +1495,14 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                               </div>
                             )}
 
-                            {/* Add-ons with prices */}
+                            {/* Add-ons */}
                             {addOnList.length > 0 && (
                               <div className="space-y-1 pt-1 text-[11px]">
                                 <span className="text-[10px] font-bold text-slate-400 uppercase block">Add-ons</span>
                                 <div className="flex flex-wrap gap-2">
-                                  {addOnList.map((a) => {
-                                    const price = iv.addOnPrices?.[a] ?? (a === 'Invitation call by person' ? iv.addOnPrices?.['Caricature'] : undefined);
-                                    return (
-                                      <span key={a} className="text-slate-300">
-                                        {a} {price ? <b className="text-amber-300 font-semibold">(₹{price.toLocaleString('en-IN')})</b> : <b className="text-emerald-400">(Included)</b>}
-                                      </span>
-                                    );
-                                  })}
+                                  {addOnList.map((a) => (
+                                    <span key={a} className="text-slate-300">{a}</span>
+                                  ))}
                                 </div>
                               </div>
                             )}
@@ -1558,7 +1512,6 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                               {iv.quantity ? (
                                 <div>
                                   Printed cards: <span className="text-white font-semibold">{iv.quantity} pcs</span>
-                                  {iv.quantityPrice ? <span className="text-amber-400 font-semibold ml-1.5">(₹{iv.quantityPrice.toLocaleString('en-IN')})</span> : null}
                                 </div>
                               ) : null}
                               {iv.revisions ? <div>Design revisions: <span className="text-white font-semibold">{iv.revisions}</span></div> : null}
@@ -1586,7 +1539,6 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                                   {productList.map((pName) => {
                                     const pType = pr.productTypes?.[pName];
                                     const pSize = pr.productSizes?.[pName];
-                                    const pPrice = pr.productPrices?.[pName];
                                     const pImg = pr.productImages?.[pName];
 
                                     return (
@@ -1602,7 +1554,6 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                                           <div className="font-bold text-white truncate">{pName}</div>
                                           {pType && <div className="text-slate-400 text-[10px] truncate">Type: {pType}</div>}
                                           {pSize && <div className="text-slate-400 text-[10px] truncate">Size: {pSize}</div>}
-                                          {pPrice ? <div className="text-amber-400 font-semibold text-[11px]">₹{pPrice.toLocaleString('en-IN')}</div> : null}
                                         </div>
                                       </div>
                                     );
@@ -1617,7 +1568,6 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                                 <span className="text-[10px] font-bold text-slate-400 uppercase block">Material / Finish</span>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                   {pr.finishes!.map((f) => {
-                                    const fPrice = pr.finishPrices?.[f];
                                     const fImg = pr.finishImages?.[f];
 
                                     return (
@@ -1631,7 +1581,6 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                                         )}
                                         <div className="flex-1 min-w-0 text-[11px]">
                                           <div className="font-semibold text-slate-200 truncate">{f}</div>
-                                          {fPrice ? <div className="text-amber-400 font-semibold text-[10px]">₹{fPrice.toLocaleString('en-IN')}</div> : null}
                                         </div>
                                       </div>
                                     );
@@ -1645,9 +1594,6 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                               <div className="pt-1 text-[11px]">
                                 <div className="flex items-center gap-2">
                                   <span className="text-slate-400">Design included: <b className={pr.designIncluded ? 'text-emerald-400' : 'text-slate-500'}>{pr.designIncluded ? 'Yes' : 'No'}</b></span>
-                                  {pr.designIncluded && pr.designPrice ? (
-                                    <span className="text-amber-300 font-semibold">(₹{pr.designPrice.toLocaleString('en-IN')})</span>
-                                  ) : null}
                                 </div>
                                 {pr.designIncluded && pr.designDescription ? (
                                   <div className="text-slate-300 text-[10px] mt-0.5">{pr.designDescription}</div>
@@ -1691,7 +1637,6 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                   {giftList.map((gName) => {
                                     const detail = rg.giftItemDetails?.[gName];
-                                    const price = rg.giftPrices?.[gName];
                                     const img = rg.giftImages?.[gName];
 
                                     return (
@@ -1706,7 +1651,6 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                                         <div className="flex-1 min-w-0 text-[11px]">
                                           <div className="font-bold text-white truncate">{gName}</div>
                                           {detail && <div className="text-slate-400 text-[10px] truncate">{detail}</div>}
-                                          {price ? <div className="text-amber-400 font-semibold text-[11px]">₹{price.toLocaleString('en-IN')}</div> : null}
                                         </div>
                                       </div>
                                     );
@@ -1720,13 +1664,11 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                               {rg.countOfGifts ? (
                                 <div>
                                   Count of gifts: <span className="text-white font-semibold">{rg.countOfGifts} pcs</span>
-                                  {rg.countPrice ? <span className="text-amber-400 font-semibold ml-1.5">(₹{rg.countPrice.toLocaleString('en-IN')})</span> : null}
                                 </div>
                               ) : null}
                               {rg.packagingType ? (
                                 <div>
                                   Packaging: <span className="text-white font-semibold">{rg.packagingType}</span>
-                                  {rg.packagingPrice ? <span className="text-amber-400 font-semibold ml-1.5">(₹{rg.packagingPrice.toLocaleString('en-IN')})</span> : null}
                                 </div>
                               ) : null}
                               {rg.minQuantity ? <div>Minimum quantity: <span className="text-white font-semibold">{rg.minQuantity}</span></div> : null}
@@ -1741,11 +1683,6 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                                   <span className="text-amber-300 font-semibold flex items-center gap-1">
                                     <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Customization Available
                                   </span>
-                                  {rg.customizationPrice ? (
-                                    <span className="text-amber-400 font-bold">₹{rg.customizationPrice.toLocaleString('en-IN')}</span>
-                                  ) : (
-                                    <span className="text-emerald-400 font-bold">Free</span>
-                                  )}
                                 </div>
                                 <label className="block text-[10px] text-slate-400">Enter Name / Event date to print on gifts:</label>
                                 <input
@@ -1766,7 +1703,8 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
 
                       {vendor.category === 'Entertainment' && pkg.entertainment && (() => {
                         const en: any = pkg.entertainment;
-                        const inr = (n: any) => (Number(n) === 0 ? 'Included' : `₹${Number(n).toLocaleString('en-IN')}`);
+                        // Customer side: per-item prices are hidden — only the package total shows a price.
+                        const inr = (_n?: any) => '';
                         const acts: string[] = en.actTypes || (en.actType ? [en.actType] : []);
                         const addons: [string, any][] = [
                           [`Equipment${en.equipmentDetails ? ` — ${en.equipmentDetails}` : ''}`, en.equipmentPrice],
@@ -1808,7 +1746,8 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                       {vendor.category === 'Music/DJ' && pkg.musicDj && (() => {
                         const md: any = pkg.musicDj;
                         const chip = 'text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200';
-                        const inr = (n: any) => `₹${Number(n).toLocaleString('en-IN')}`;
+                        // Customer side: per-item prices are hidden — only the package total shows a price.
+                        const inr = (_n?: any) => '';
                         const types: string[] = md.types || (md.type ? [md.type] : []);
                         const incl: [string, boolean | undefined, number | undefined][] = [
                           ['Sound system', md.soundSystem, md.soundSystemPrice], ['Lighting', md.lighting, md.lightingPrice], ['MC / host', md.mcHost, md.mcHostPrice], ['Generator', md.generator, md.generatorPrice],
@@ -1868,7 +1807,6 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                   {types.map((lName) => {
                                     const itemVal = lt.typeItems?.[lName];
-                                    const price = lt.typePrices?.[lName];
                                     const img = lt.typeImages?.[lName];
 
                                     return (
@@ -1883,7 +1821,6 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                                         <div className="flex-1 min-w-0 text-[11px]">
                                           <div className="font-bold text-white truncate">{lName}</div>
                                           {itemVal && <div className="text-slate-400 text-[10px] truncate">{itemVal}</div>}
-                                          {price ? <div className="text-amber-400 font-semibold text-[11px]">₹{price.toLocaleString('en-IN')}</div> : null}
                                         </div>
                                       </div>
                                     );
@@ -1897,7 +1834,6 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                               {lt.areaCovered ? (
                                 <div>
                                   Area covered: <span className="text-white font-semibold">{lt.areaCovered}</span>
-                                  {lt.areaCoveredPrice ? <span className="text-amber-400 font-semibold ml-1.5">(₹{lt.areaCoveredPrice.toLocaleString('en-IN')})</span> : null}
                                 </div>
                               ) : null}
                               {lt.numFixtures ? <div>Fixtures: <span className="text-white font-semibold">{lt.numFixtures}</span></div> : null}
@@ -1908,13 +1844,11 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                               {lt.powerBackup !== undefined && (
                                 <div className="flex items-center justify-between">
                                   <span className="text-slate-400">Power backup: <b className={lt.powerBackup ? 'text-emerald-400' : 'text-slate-500'}>{lt.powerBackup ? 'Included' : 'No'}</b></span>
-                                  {lt.powerBackup && lt.powerBackupPrice ? <span className="text-amber-400 font-semibold">₹{lt.powerBackupPrice.toLocaleString('en-IN')}</span> : null}
                                 </div>
                               )}
                               {lt.setupTeardown !== undefined && (
                                 <div className="flex items-center justify-between">
                                   <span className="text-slate-400">Setup + teardown: <b className={lt.setupTeardown ? 'text-emerald-400' : 'text-slate-500'}>{lt.setupTeardown ? 'Included' : 'No'}</b></span>
-                                  {lt.setupTeardown && lt.setupTeardownPrice ? <span className="text-amber-400 font-semibold">₹{lt.setupTeardownPrice.toLocaleString('en-IN')}</span> : null}
                                 </div>
                               )}
                             </div>
@@ -1942,7 +1876,6 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                                 <span className="text-[10px] font-bold text-slate-400 uppercase block">Varieties / Tiers</span>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                   {selectedVars.map((v) => {
-                                    const price = fl.varietyPrices?.[v];
                                     const img = fl.varietyImages?.[v];
                                     return (
                                       <div key={`fv-${v}`} className="flex items-start gap-2.5 p-2 rounded-xl bg-slate-950/60 border border-slate-800">
@@ -1955,7 +1888,6 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                                         )}
                                         <div className="flex-1 min-w-0 text-[11px]">
                                           <div className="font-bold text-white truncate">{v}</div>
-                                          {price ? <div className="text-amber-400 font-semibold text-[11px]">₹{price.toLocaleString('en-IN')}</div> : null}
                                         </div>
                                       </div>
                                     );
@@ -1971,7 +1903,6 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                                       )}
                                       <div className="flex-1 min-w-0 text-[11px]">
                                         <div className="font-bold text-white truncate">{cv.name || `Custom Variety #${idx + 1}`}</div>
-                                        {cv.price ? <div className="text-amber-400 font-semibold text-[11px]">₹{cv.price.toLocaleString('en-IN')}</div> : null}
                                       </div>
                                     </div>
                                   ))}
@@ -1993,7 +1924,6 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                                 <span className="text-[10px] font-bold text-slate-400 uppercase block">Items Offered</span>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                   {selectedItems.map((it) => {
-                                    const price = fl.itemPrices?.[it];
                                     const img = fl.itemImages?.[it];
                                     return (
                                       <div key={`fi-${it}`} className="flex items-start gap-2.5 p-2 rounded-xl bg-slate-950/60 border border-slate-800">
@@ -2006,7 +1936,6 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                                         )}
                                         <div className="flex-1 min-w-0 text-[11px]">
                                           <div className="font-bold text-white truncate">{it}</div>
-                                          {price ? <div className="text-amber-400 font-semibold text-[11px]">₹{price.toLocaleString('en-IN')}</div> : null}
                                         </div>
                                       </div>
                                     );
@@ -2022,7 +1951,6 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                                       )}
                                       <div className="flex-1 min-w-0 text-[11px]">
                                         <div className="font-bold text-white truncate">{ci.name || `Custom Item #${idx + 1}`}</div>
-                                        {ci.price ? <div className="text-amber-400 font-semibold text-[11px]">₹{ci.price.toLocaleString('en-IN')}</div> : null}
                                       </div>
                                     </div>
                                   ))}
@@ -2035,29 +1963,16 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                               {fl.quantity ? (
                                 <div>
                                   Quantity: <span className="text-white font-semibold">{fl.quantity}</span>
-                                  {fl.unitPrice ? (
-                                    <span className="text-amber-400 font-semibold ml-1.5">
-                                      (@ ₹{fl.unitPrice.toLocaleString('en-IN')}/unit = ₹{(fl.quantity * fl.unitPrice).toLocaleString('en-IN')})
-                                    </span>
-                                  ) : fl.quantityPrice ? (
-                                    <span className="text-amber-400 font-semibold ml-1.5">(₹{fl.quantityPrice.toLocaleString('en-IN')})</span>
-                                  ) : null}
                                 </div>
                               ) : null}
                               {fl.deliveryTiming ? (
                                 <div>
                                   Delivery timing: <span className="text-white font-semibold">{fl.deliveryTiming}</span>
-                                  {fl.deliveryTimingPrice ? (
-                                    <span className="text-amber-400 font-semibold ml-1.5">(₹{fl.deliveryTimingPrice.toLocaleString('en-IN')})</span>
-                                  ) : null}
                                 </div>
                               ) : null}
                               {fl.whichFunction ? (
                                 <div>
                                   Function: <span className="text-white font-semibold">{fl.whichFunction}</span>
-                                  {fl.whichFunctionPrice ? (
-                                    <span className="text-amber-400 font-semibold ml-1.5">(₹{fl.whichFunctionPrice.toLocaleString('en-IN')})</span>
-                                  ) : null}
                                 </div>
                               ) : null}
                             </div>
@@ -2067,7 +1982,8 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
 
                       {vendor.category === 'Mehendi' && pkg.mehendi && (() => {
                         const mh: any = pkg.mehendi;
-                        const inr = (n: any) => (Number(n) === 0 ? 'Included' : `₹${Number(n).toLocaleString('en-IN')}`);
+                        // Customer side: per-item prices are hidden — only the package total shows a price.
+                        const inr = (_n?: any) => '';
                         const tiers: string[] = mh.tiers || (mh.tier ? [mh.tier] : []);
                         const intricacies: string[] = mh.intricacies || (mh.intricacy ? [mh.intricacy] : []);
                         const types: string[] = mh.typePrices ? Object.keys(mh.typePrices) : (mh.type ? [mh.type] : []);
@@ -2142,7 +2058,8 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
 
                       {vendor.category === 'Rental Equipment' && pkg.rental && (() => {
                         const rt: any = pkg.rental;
-                        const inr = (n: any) => (Number(n) === 0 ? 'Included' : `₹${Number(n).toLocaleString('en-IN')}`);
+                        // Customer side: per-item prices are hidden — only the package total shows a price.
+                        const inr = (_n?: any) => '';
                         const items: string[] = rt.items || [];
                         return (
                           <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2.5" onClick={(e) => e.stopPropagation()}>
@@ -2190,40 +2107,21 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                             {u.vesselTypePrices && Object.keys(u.vesselTypePrices).length > 0 && (
                               <div className="space-y-1">
                                 <span className="text-[10px] font-bold text-slate-500 uppercase block">Vessel types</span>
-                                {Object.entries(u.vesselTypePrices).map(([type, price]) => (
-                                  <div key={type} className="flex items-center justify-between text-[11px]">
+                                {Object.keys(u.vesselTypePrices).map((type) => (
+                                  <div key={type} className="text-[11px]">
                                     <span className="text-slate-400">{type}</span>
-                                    <span className="text-amber-300 font-semibold">{price === 0 ? 'Included' : `₹${Number(price).toLocaleString('en-IN')}`}</span>
                                   </div>
                                 ))}
                               </div>
                             )}
 
                             <div className="space-y-1 text-[11px]">
-                              {u.basePrice != null && u.basePrice > 0 ? (
-                                <div className="flex items-center justify-between">
-                                  <span className="text-slate-400">Base rental:</span>
-                                  <span className="text-amber-300 font-semibold">₹{u.basePrice.toLocaleString('en-IN')}</span>
-                                </div>
-                              ) : null}
                               {u.guestCount ? (
                                 <div className="flex items-center justify-between">
                                   <span className="text-slate-400">Guest count served:</span>
                                   <span className="text-white font-semibold">{u.guestCount}</span>
                                 </div>
                               ) : null}
-                              {u.securityDeposit ? (
-                                <div className="flex items-center justify-between">
-                                  <span className="text-slate-400">Security deposit:</span>
-                                  <span className="text-white font-semibold">₹{u.securityDeposit.toLocaleString('en-IN')}</span>
-                                </div>
-                              ) : null}
-                              {u.deliveryPickupPrice != null && (
-                                <div className="flex items-center justify-between">
-                                  <span className="text-slate-400">Delivery + pickup:</span>
-                                  <span className="text-emerald-400 font-semibold">{u.deliveryPickupPrice === 0 ? 'Free' : `₹${Number(u.deliveryPickupPrice).toLocaleString('en-IN')}`}</span>
-                                </div>
-                              )}
                               {u.cleaningIncluded !== undefined && (
                                 <div className="flex items-center justify-between">
                                   <span className="text-slate-400">Cleaning included:</span>
@@ -2277,19 +2175,12 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                                 <span className="text-amber-300 font-semibold">{c.eventType}</span>
                               </div>
                             )}
-                            {typeof c.basePrice === 'number' && c.basePrice > 0 && (
-                              <div className="flex items-center justify-between text-[11px]">
-                                <span className="text-slate-400">Base Setup</span>
-                                <span className="text-amber-300 font-semibold">₹{c.basePrice.toLocaleString('en-IN')}</span>
-                              </div>
-                            )}
                             {c.eventTypePrices && Object.keys(c.eventTypePrices).length > 0 && (
                               <div className="space-y-1">
                                 <span className="text-[10px] font-bold text-slate-500 uppercase block">Event types</span>
-                                {Object.entries(c.eventTypePrices).map(([type, price]) => (
-                                  <div key={type} className="flex items-center justify-between text-[11px]">
+                                {Object.keys(c.eventTypePrices).map((type) => (
+                                  <div key={type} className="text-[11px]">
                                     <span className="text-slate-400">{type}</span>
-                                    <span className="text-amber-300 font-semibold">{price === 0 ? 'Included' : `₹${Number(price).toLocaleString('en-IN')}`}</span>
                                   </div>
                                 ))}
                               </div>
@@ -2301,10 +2192,9 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                             {offered.length > 0 && (
                               <div className="space-y-1">
                                 <span className="text-[10px] font-bold text-slate-500 uppercase block">Add-ons</span>
-                                {offered.map(([label, v]) => (
-                                  <div key={label} className="flex items-center justify-between text-[11px]">
+                                {offered.map(([label]) => (
+                                  <div key={label} className="text-[11px]">
                                     <span className="text-slate-400">{label}</span>
-                                    <span className="text-amber-300 font-semibold">{v === 0 ? 'Included' : `₹${(v as number).toLocaleString('en-IN')}`}</span>
                                   </div>
                                 ))}
                               </div>
