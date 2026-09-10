@@ -6,7 +6,6 @@ export type VenueFacilities = VendorFacilities;
 
 export const FACILITY_FILTERS = [
   { key: 'acRoom', label: 'AC room', icon: 'ti-snowflake' },
-  { key: 'fansOnly', label: 'Fans only', icon: 'ti-wind' },
   { key: 'vipRoom', label: 'VIP room' },
   { key: 'vipFrontChairs', label: 'VIP front chairs' },
   { key: 'garlands', label: 'Garlands' },
@@ -35,11 +34,6 @@ export const FACILITY_IMAGES: Record<string, string[]> = {
     'photo-1786062841848-18177898b3a7',
     'photo-1780542900375-0cf459e38fbb',
     'photo-1655516433028-9e0e1599cf8b',
-  ].map(IMG),
-  fansOnly: [
-    'photo-1555470100-1728256970aa',
-    'photo-1609519479841-5fd3b2884e17',
-    'photo-1576503963299-fcd31822b523',
   ].map(IMG),
   vipRoom: [
     'photo-1664268075328-e040b499c2e9',
