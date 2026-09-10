@@ -49,6 +49,16 @@ function icsDatePlusOne(d: string): string {
   return `${dt.getUTCFullYear()}${String(dt.getUTCMonth() + 1).padStart(2, '0')}${String(dt.getUTCDate()).padStart(2, '0')}`;
 }
 
+// The date a vendor's payout for an event becomes eligible for settlement:
+// event date + the admin's payout hold period. Returns '' when the date can't
+// be parsed or the hold is 0 (eligible immediately).
+function payoutEligibleOn(eventDate: string, holdDays: number): string {
+  if (!holdDays || holdDays <= 0) return '';
+  const t = Date.parse(eventDate);
+  if (isNaN(t)) return '';
+  return new Date(t + holdDays * 86400000).toISOString();
+}
+
 // Fetch the marketplace vendor record referenced by a booking (or null).
 async function fetchVendor(vendorId: string): Promise<any | null> {
   try {
@@ -382,11 +392,16 @@ app.put('/api/v1/bookings/:id/confirm', authMiddleware(), async (req: Request, r
     const vendorJson = vendorRes.ok ? await vendorRes.json() : null;
     const vendorPolicies = vendorJson?.data?.vendor?.policies;
     const flatAdvance = vendorPolicies?.advanceAmount;
+    const cfg = await getSettings();
     if (typeof flatAdvance === 'number' && flatAdvance > 0) {
-      advance = Math.min(flatAdvance, booking.agreedPrice);
+      // Clamp a flat rupee advance into the platform's [min, max] % guardrail too.
+      const lo = Math.round(booking.agreedPrice * cfg.advanceDepositMinRate);
+      const hi = Math.round(booking.agreedPrice * cfg.advanceDepositMaxRate);
+      advance = Math.min(Math.max(flatAdvance, lo), Math.min(hi, booking.agreedPrice));
     } else {
       const vendorRatePercent = vendorPolicies?.advancePercentage;
-      const advanceRate = typeof vendorRatePercent === 'number' ? vendorRatePercent / 100 : (await getSettings()).advanceDepositRate;
+      const rawRate = typeof vendorRatePercent === 'number' ? vendorRatePercent / 100 : cfg.advanceDepositRate;
+      const advanceRate = Math.min(Math.max(rawRate, cfg.advanceDepositMinRate), cfg.advanceDepositMaxRate);
       advance = Math.round(booking.agreedPrice * advanceRate);
     }
   } catch {
@@ -644,10 +659,12 @@ app.get('/api/v1/settlements', authMiddleware(), async (req: Request, res: Respo
   if (req.user!.role !== 'admin') {
     return res.status(403).json({ success: false, message: 'Admin access required.' });
   }
-  const { commissionRate } = await getSettings();
+  const { commissionRate, vendorPayoutHoldDays } = await getSettings();
   const bookings = await BookingModel.find({ status: { $in: ['confirmed', 'in_progress', 'completed'] } }).sort({ createdAt: -1 }).limit(500);
+  const now = Date.now();
   const settlements = bookings.map((b) => {
     const commission = Math.round(b.agreedPrice * commissionRate);
+    const eligibleOn = payoutEligibleOn(b.eventDate, vendorPayoutHoldDays);
     return {
       bookingId: b.id,
       bookingNumber: b.bookingNumber,
@@ -661,6 +678,8 @@ app.get('/api/v1/settlements', authMiddleware(), async (req: Request, res: Respo
       settlementStatus: b.settlementStatus || 'pending',
       settledAt: b.settledAt || null,
       eventDate: b.eventDate,
+      payoutEligibleOn: eligibleOn,
+      payoutEligible: !eligibleOn || Date.parse(eligibleOn) <= now,
     };
   });
   const totals = settlements.reduce(
@@ -684,6 +703,16 @@ app.put('/api/v1/bookings/:id/settle', authMiddleware(), async (req: Request, re
   const booking = await BookingModel.findOne({ id: req.params.id });
   if (!booking) return res.status(404).json({ success: false, message: 'Booking not found.' });
   const settle = req.body?.settled !== false; // default true
+  if (settle && req.body?.force !== true) {
+    const { vendorPayoutHoldDays } = await getSettings();
+    const eligibleOn = payoutEligibleOn(booking.eventDate, vendorPayoutHoldDays);
+    if (eligibleOn && Date.parse(eligibleOn) > Date.now()) {
+      return res.status(400).json({
+        success: false,
+        message: `Payout is on hold until ${eligibleOn.slice(0, 10)} (event date + ${vendorPayoutHoldDays}-day hold). Send { "force": true } to override.`,
+      });
+    }
+  }
   booking.settlementStatus = settle ? 'settled' : 'pending';
   booking.settledAt = settle ? new Date().toISOString() : undefined;
   await booking.save();
@@ -789,15 +818,25 @@ app.put('/api/v1/settings', authMiddleware(), async (req: Request, res: Response
     return res.status(403).json({ success: false, message: 'Admin access required.' });
   }
 
-  const { commissionRate, advanceDepositRate, gstRate, theme } = req.body;
-  if (commissionRate !== undefined && (isNaN(Number(commissionRate)) || Number(commissionRate) < 0 || Number(commissionRate) > 1)) {
+  const { commissionRate, advanceDepositRate, gstRate, advanceDepositMinRate, advanceDepositMaxRate, vendorPayoutHoldDays, theme } = req.body;
+  const isFraction = (v: any) => !isNaN(Number(v)) && Number(v) >= 0 && Number(v) <= 1;
+  if (commissionRate !== undefined && !isFraction(commissionRate)) {
     return res.status(400).json({ success: false, message: 'commissionRate must be a fraction between 0 and 1 (e.g. 0.1 for 10%).' });
   }
-  if (advanceDepositRate !== undefined && (isNaN(Number(advanceDepositRate)) || Number(advanceDepositRate) < 0 || Number(advanceDepositRate) > 1)) {
+  if (advanceDepositRate !== undefined && !isFraction(advanceDepositRate)) {
     return res.status(400).json({ success: false, message: 'advanceDepositRate must be a fraction between 0 and 1 (e.g. 0.3 for 30%).' });
   }
-  if (gstRate !== undefined && (isNaN(Number(gstRate)) || Number(gstRate) < 0 || Number(gstRate) > 1)) {
+  if (gstRate !== undefined && !isFraction(gstRate)) {
     return res.status(400).json({ success: false, message: 'gstRate must be a fraction between 0 and 1 (e.g. 0.18 for 18%).' });
+  }
+  if (advanceDepositMinRate !== undefined && !isFraction(advanceDepositMinRate)) {
+    return res.status(400).json({ success: false, message: 'advanceDepositMinRate must be a fraction between 0 and 1.' });
+  }
+  if (advanceDepositMaxRate !== undefined && !isFraction(advanceDepositMaxRate)) {
+    return res.status(400).json({ success: false, message: 'advanceDepositMaxRate must be a fraction between 0 and 1.' });
+  }
+  if (vendorPayoutHoldDays !== undefined && (isNaN(Number(vendorPayoutHoldDays)) || Number(vendorPayoutHoldDays) < 0 || Number(vendorPayoutHoldDays) > 365)) {
+    return res.status(400).json({ success: false, message: 'vendorPayoutHoldDays must be a whole number of days between 0 and 365.' });
   }
   if (theme !== undefined && theme !== 'light' && theme !== 'dark') {
     return res.status(400).json({ success: false, message: "theme must be 'light' or 'dark'." });
@@ -809,7 +848,15 @@ app.put('/api/v1/settings', authMiddleware(), async (req: Request, res: Response
   if (commissionRate !== undefined) settings.commissionRate = Number(commissionRate);
   if (advanceDepositRate !== undefined) settings.advanceDepositRate = Number(advanceDepositRate);
   if (gstRate !== undefined) settings.gstRate = Number(gstRate);
+  if (advanceDepositMinRate !== undefined) settings.advanceDepositMinRate = Number(advanceDepositMinRate);
+  if (advanceDepositMaxRate !== undefined) settings.advanceDepositMaxRate = Number(advanceDepositMaxRate);
+  if (vendorPayoutHoldDays !== undefined) settings.vendorPayoutHoldDays = Math.round(Number(vendorPayoutHoldDays));
   if (theme !== undefined) settings.theme = theme;
+  // Keep the guardrail sane: min must not exceed max.
+  if (typeof settings.advanceDepositMinRate === 'number' && typeof settings.advanceDepositMaxRate === 'number'
+      && settings.advanceDepositMinRate > settings.advanceDepositMaxRate) {
+    return res.status(400).json({ success: false, message: 'advanceDepositMinRate cannot be greater than advanceDepositMaxRate.' });
+  }
   settings.updatedAt = new Date().toISOString();
   await settings.save();
 

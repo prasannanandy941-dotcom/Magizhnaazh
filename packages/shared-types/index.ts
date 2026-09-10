@@ -1421,6 +1421,13 @@ export interface PlatformSettings {
   commissionRate: number; // e.g. 0.1 = 10%
   advanceDepositRate: number; // e.g. 0.3 = 30%
   gstRate?: number; // e.g. 0.18 = 18%, used for GST invoices
+  // Guardrails on the advance a vendor may set per booking — the effective
+  // advance rate is clamped into [min, max] when a booking is confirmed.
+  advanceDepositMinRate?: number; // fraction, e.g. 0.1 = 10%
+  advanceDepositMaxRate?: number; // fraction, e.g. 0.6 = 60%
+  // Days after the event date before a vendor's payout becomes eligible for
+  // settlement (0 = settle any time).
+  vendorPayoutHoldDays?: number;
   // Site-wide theme chosen in the admin console. Applied across the admin and
   // customer apps so the light/dark choice stays in sync everywhere.
   theme?: ThemePreference;
