@@ -8,7 +8,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { Vendor, VendorCategory, VENDOR_CATEGORIES, getLiveDeals } from '../../../../packages/shared-types';
 import { STATIC_CITY_GROUPS } from '../../../../packages/shared-utils';
-import { FacilityChips, filterVenuesByFacilities, FacilityImagePreview } from './FacilitiesForm';
+import { FacilityChips, filterVenuesByFacilities } from './FacilitiesForm';
 import { CateringMenuChips } from './CateringMenu';
 import { PortfolioChips } from './Portfolio';
 import { DecorationChips } from './DecorationThemes';
@@ -242,10 +242,7 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
       </div>
 
       {selectedCategory === 'Venue' && (
-        <>
-          <FacilityChips active={activeFacilities} onToggle={toggleFacility} />
-          <FacilityImagePreview active={activeFacilities} />
-        </>
+        <FacilityChips active={activeFacilities} onToggle={toggleFacility} />
       )}
 
       {selectedCategory === 'Catering' && <CateringMenuChips onSelect={(_id, label) => toggleOption(label)} isSelected={(label) => activeOptions.includes(label)} />}
