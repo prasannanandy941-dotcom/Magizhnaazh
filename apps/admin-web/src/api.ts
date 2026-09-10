@@ -358,15 +358,7 @@ export function fetchSettings(token: string): Promise<{ success: boolean; data?:
 
 export function updateSettings(
   token: string,
-  input: {
-    commissionRate?: number;
-    advanceDepositRate?: number;
-    gstRate?: number;
-    advanceDepositMinRate?: number;
-    advanceDepositMaxRate?: number;
-    vendorPayoutHoldDays?: number;
-    theme?: 'light' | 'dark';
-  }
+  input: { commissionRate?: number; advanceDepositRate?: number; gstRate?: number; theme?: 'light' | 'dark' }
 ) {
   return authedFetch('/api/v1/settings', token, { method: 'PUT', body: JSON.stringify(input) });
 }

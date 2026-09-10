@@ -1,34 +1,37 @@
-import React, { useEffect, useState } from 'react';
-import { Loader2, Save, Percent, Wallet, Receipt } from 'lucide-react';
-import { fetchSettings, updateSettings } from '../api';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Loader2, Save } from 'lucide-react';
+import { Booking } from '../../../../packages/shared-types';
+import { fetchSettings, updateSettings, fetchBookings } from '../api';
 
-// Values are kept as strings while editing so a field can be briefly empty
-// mid-type instead of snapping to a number (which caused a leading-zero bug).
+// Bookings that have real money attached (past the enquiry stage).
+const LIVE_STATUSES = new Set(['confirmed', 'in_progress', 'completed']);
+
+const inr = (n: number) => `₹${Math.round(n).toLocaleString('en-IN')}`;
+
 export const SettingsTab: React.FC<{ token: string }> = ({ token }) => {
+  // Kept as strings while editing so a field can be briefly empty mid-type.
   const [commissionPercent, setCommissionPercent] = useState('10');
-  const [gstPercent, setGstPercent] = useState('18');
   const [advancePercent, setAdvancePercent] = useState('30');
-  const [advanceMinPercent, setAdvanceMinPercent] = useState('0');
-  const [advanceMaxPercent, setAdvanceMaxPercent] = useState('100');
-  const [payoutHoldDays, setPayoutHoldDays] = useState('0');
+  const [gstPercent, setGstPercent] = useState('18');
 
+  const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState('');
-  const [error, setError] = useState('');
 
   useEffect(() => {
     (async () => {
-      const res = await fetchSettings(token);
-      const s = res.data?.settings;
+      const [sRes, bRes] = await Promise.all([
+        fetchSettings(token),
+        fetchBookings(token).catch(() => null),
+      ]);
+      const s = sRes.data?.settings;
       if (s) {
         setCommissionPercent(String(Math.round(s.commissionRate * 100)));
         setAdvancePercent(String(Math.round(s.advanceDepositRate * 100)));
         if (typeof s.gstRate === 'number') setGstPercent(String(Math.round(s.gstRate * 100)));
-        if (typeof s.advanceDepositMinRate === 'number') setAdvanceMinPercent(String(Math.round(s.advanceDepositMinRate * 100)));
-        if (typeof s.advanceDepositMaxRate === 'number') setAdvanceMaxPercent(String(Math.round(s.advanceDepositMaxRate * 100)));
-        if (typeof s.vendorPayoutHoldDays === 'number') setPayoutHoldDays(String(s.vendorPayoutHoldDays));
       }
+      setBookings(bRes?.data?.bookings || []);
       setLoading(false);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -37,71 +40,44 @@ export const SettingsTab: React.FC<{ token: string }> = ({ token }) => {
   const handleSave = async () => {
     setSaving(true);
     setNotice('');
-    setError('');
-    const min = Number(advanceMinPercent) || 0;
-    const max = Number(advanceMaxPercent) || 0;
-    if (min > max) {
-      setError('Minimum advance cannot be greater than maximum advance.');
-      setSaving(false);
-      return;
-    }
     try {
       await updateSettings(token, {
         commissionRate: (Number(commissionPercent) || 0) / 100,
-        gstRate: (Number(gstPercent) || 0) / 100,
         advanceDepositRate: (Number(advancePercent) || 0) / 100,
-        advanceDepositMinRate: min / 100,
-        advanceDepositMaxRate: max / 100,
-        vendorPayoutHoldDays: Number(payoutHoldDays) || 0,
+        gstRate: (Number(gstPercent) || 0) / 100,
       });
-      setNotice('Settings saved — new bookings and payouts use these values immediately.');
+      setNotice('Saved — new bookings use these rates immediately.');
     } catch (err: any) {
-      setError(err.message || 'Could not save settings.');
+      setNotice(err.message || 'Could not save settings.');
     } finally {
       setSaving(false);
       setTimeout(() => setNotice(''), 5000);
     }
   };
 
-  // Digits only, no leading zeros, capped at `max`.
-  const clampDigits = (raw: string, max: number): string => {
+  const sanitize = (raw: string): string => {
     const digits = raw.replace(/[^0-9]/g, '').replace(/^0+(?=\d)/, '');
-    if (digits === '') return '';
-    return String(Math.min(max, Number(digits)));
+    return digits === '' ? '' : String(Math.min(100, Number(digits)));
   };
-  const handleFocusClear = (e: React.FocusEvent<HTMLInputElement>) => {
-    e.target.value = '';
-  };
-  const blurFallback = (value: string, setter: React.Dispatch<React.SetStateAction<string>>) => {
-    if (value === '') setter('0');
-  };
+  const focusClear = (e: React.FocusEvent<HTMLInputElement>) => { e.target.value = ''; };
+  const blurFallback = (v: string, set: React.Dispatch<React.SetStateAction<string>>) => { if (v === '') set('0'); };
 
-  const field = (
-    label: string,
-    hint: string,
-    value: string,
-    setter: React.Dispatch<React.SetStateAction<string>>,
-    max: number,
-    suffix: string
-  ) => (
-    <div>
-      <label className="block text-xs font-bold text-slate-400 mb-1.5">{label}</label>
-      <div className="relative">
-        <input
-          type="text"
-          inputMode="numeric"
-          pattern="[0-9]*"
-          value={value}
-          onFocus={handleFocusClear}
-          onChange={(e) => setter(clampDigits(e.target.value, max))}
-          onBlur={() => blurFallback(value, setter)}
-          className="w-full p-3 pr-12 rounded-xl bg-slate-900 border border-slate-800 text-white font-bold text-lg"
-        />
-        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 text-sm font-semibold">{suffix}</span>
-      </div>
-      <p className="text-[11px] text-slate-500 mt-1">{hint}</p>
-    </div>
-  );
+  // What each rule has actually produced across real (non-enquiry) bookings.
+  const live = useMemo(() => {
+    const b = bookings.filter((x) => LIVE_STATUSES.has(x.status));
+    const volume = b.reduce((a, x) => a + (x.agreedPrice || 0), 0);
+    const advances = b.reduce((a, x) => a + (x.advanceAmountPaid || 0), 0);
+    const gst = (Number(gstPercent) || 0) / 100;
+    const gstPortion = gst > 0 ? volume - volume / (1 + gst) : 0;
+    return {
+      count: b.length,
+      vendors: new Set(b.map((x) => x.vendorId)).size,
+      volume,
+      commission: volume * ((Number(commissionPercent) || 0) / 100),
+      advances,
+      gstPortion,
+    };
+  }, [bookings, commissionPercent, gstPercent]);
 
   if (loading) {
     return (
@@ -111,83 +87,101 @@ export const SettingsTab: React.FC<{ token: string }> = ({ token }) => {
     );
   }
 
+  const Rule = ({
+    label, badge, badgeClass, value, setValue, explain, result,
+  }: {
+    label: string;
+    badge: string;
+    badgeClass: string;
+    value: string;
+    setValue: React.Dispatch<React.SetStateAction<string>>;
+    explain: string;
+    result: string;
+  }) => (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2 flex-wrap">
+        <label className="text-xs font-bold text-slate-300">{label}</label>
+        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${badgeClass}`}>{badge}</span>
+      </div>
+      <p className="text-[11px] text-slate-500 leading-relaxed">{explain}</p>
+      <div className="relative">
+        <input
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          value={value}
+          onFocus={focusClear}
+          onChange={(e) => setValue(sanitize(e.target.value))}
+          onBlur={() => blurFallback(value, setValue)}
+          className="w-full p-3 pr-10 rounded-xl bg-slate-900 border border-slate-800 text-white font-bold text-lg"
+        />
+        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 text-sm font-semibold">%</span>
+      </div>
+      <p className="text-[11px] text-emerald-400/90 font-semibold">{result}</p>
+    </div>
+  );
+
   return (
     <div className="space-y-6 max-w-xl">
       <div>
         <h2 className="font-display font-bold text-2xl text-white">Platform Settings</h2>
         <p className="text-slate-400 text-sm mt-1">
-          Money rules the backend applies live to every booking. Grouped by who they affect.
+          Three rules only you can decide. Under each one is what it has produced across your real bookings
+          ({live.count} booking{live.count === 1 ? '' : 's'}, {live.vendors} vendor{live.vendors === 1 ? '' : 's'},
+          {' '}{inr(live.volume)} booked).
         </p>
       </div>
 
-      {/* Commission & Tax */}
-      <div className="glass-card p-6 rounded-3xl border border-slate-800 space-y-5">
-        <h3 className="text-sm font-bold text-white flex items-center gap-2">
-          <Receipt className="w-4 h-4 text-indigo-400" /> Commission &amp; Tax
-        </h3>
-        {field(
-          'Platform Commission Rate',
-          "The platform's cut of each booking. Drives the revenue dashboard and the vendor payout (vendor is paid the total minus this).",
-          commissionPercent,
-          setCommissionPercent,
-          100,
-          '%'
-        )}
-        {field(
-          'GST Rate',
-          'Prices are GST-inclusive; this is used to print the CGST/SGST breakup on booking invoices.',
-          gstPercent,
-          setGstPercent,
-          100,
-          '%'
-        )}
+      <div className="glass-card p-6 rounded-3xl border border-slate-800 space-y-7">
+        <Rule
+          label="Platform Commission Rate"
+          badge="Charged to VENDORS"
+          badgeClass="bg-sky-500/10 text-sky-300 border-sky-500/30"
+          value={commissionPercent}
+          setValue={setCommissionPercent}
+          explain="Your cut of every booking. On a ₹1,00,000 booking the platform keeps this share and the vendor is paid the rest. This is your business model — nobody else can set it."
+          result={`Earned so far: ${inr(live.commission)}`}
+        />
+
+        <div className="border-t border-slate-800/70" />
+
+        <Rule
+          label="Advance Deposit Rate"
+          badge="Paid by CUSTOMERS"
+          badgeClass="bg-amber-500/10 text-amber-300 border-amber-500/30"
+          value={advancePercent}
+          setValue={setAdvancePercent}
+          explain="How much a customer pays upfront when they confirm a booking; the balance is due later. This is the default — a vendor may set their own rate for their listings."
+          result={`Advances collected so far: ${inr(live.advances)}`}
+        />
+
+        <div className="border-t border-slate-800/70" />
+
+        <Rule
+          label="GST Rate"
+          badge="Set by LAW"
+          badgeClass="bg-slate-500/10 text-slate-300 border-slate-500/30"
+          value={gstPercent}
+          setValue={setGstPercent}
+          explain="The government tax rate. Booking prices are treated as GST-inclusive; this is used only to print the CGST/SGST breakup on invoices."
+          result={`Tax portion of booked value: ${inr(live.gstPortion)}`}
+        />
+
+        {notice && <p className="text-xs text-emerald-400 font-semibold">{notice}</p>}
+
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="px-6 py-3 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs shadow-md disabled:opacity-60 flex items-center gap-2"
+        >
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          Save Settings
+        </button>
       </div>
 
-      {/* Customer advance */}
-      <div className="glass-card p-6 rounded-3xl border border-slate-800 space-y-5">
-        <h3 className="text-sm font-bold text-white flex items-center gap-2">
-          <Percent className="w-4 h-4 text-amber-400" /> Customer Advance
-        </h3>
-        {field(
-          'Default Advance Deposit Rate',
-          'How much the customer pays upfront when a booking is confirmed. A vendor can set their own rate; it is clamped to the min/max below.',
-          advancePercent,
-          setAdvancePercent,
-          100,
-          '%'
-        )}
-        <div className="grid grid-cols-2 gap-4">
-          {field('Minimum Advance', 'Floor for any vendor override.', advanceMinPercent, setAdvanceMinPercent, 100, '%')}
-          {field('Maximum Advance', 'Ceiling for any vendor override.', advanceMaxPercent, setAdvanceMaxPercent, 100, '%')}
-        </div>
-      </div>
-
-      {/* Vendor payouts */}
-      <div className="glass-card p-6 rounded-3xl border border-slate-800 space-y-5">
-        <h3 className="text-sm font-bold text-white flex items-center gap-2">
-          <Wallet className="w-4 h-4 text-emerald-400" /> Vendor Payouts
-        </h3>
-        {field(
-          'Payout Hold Period',
-          "Days after the event date before a vendor's payout can be marked settled in the Settlements register. 0 = settle any time.",
-          payoutHoldDays,
-          setPayoutHoldDays,
-          365,
-          'days'
-        )}
-      </div>
-
-      {error && <p className="text-xs text-rose-400 font-semibold">{error}</p>}
-      {notice && <p className="text-xs text-emerald-400 font-semibold">{notice}</p>}
-
-      <button
-        onClick={handleSave}
-        disabled={saving}
-        className="px-6 py-3 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs shadow-md disabled:opacity-60 flex items-center gap-2"
-      >
-        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-        Save Settings
-      </button>
+      <p className="text-[11px] text-slate-500">
+        Want the full money breakdown by vendor, city and month? See the <span className="text-slate-300 font-semibold">Analytics</span> tab.
+      </p>
     </div>
   );
 };
