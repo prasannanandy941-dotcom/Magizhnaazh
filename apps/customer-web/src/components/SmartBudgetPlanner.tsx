@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Event, Vendor, Booking } from '../../../../packages/shared-types';
-import { IndianRupee, AlertTriangle, Sparkles, CheckCircle2, TrendingUp, Filter, Star, MapPin, ChevronDown, Receipt } from 'lucide-react';
-import { calculateVendorScore } from '../../../../packages/shared-utils';
+import { IndianRupee, AlertTriangle, Sparkles, CheckCircle2, TrendingUp, ChevronDown, Receipt } from 'lucide-react';
 import { fetchMyBookings } from '../api';
-import { getVendorCoverImage } from './vendorUtils';
 
 interface SmartBudgetPlannerProps {
   event: Event;
@@ -19,7 +17,6 @@ export const SmartBudgetPlanner: React.FC<SmartBudgetPlannerProps> = ({
   onUpdateEventBudget,
 }) => {
   const [breakdown, setBreakdown] = useState(event.budgetBreakdown);
-  const [activeCategoryFilter, setActiveCategoryFilter] = useState<string>('All');
 
   const totalAllocated = breakdown.reduce((acc, curr) => acc + curr.allocatedAmount, 0);
 
@@ -105,23 +102,6 @@ export const SmartBudgetPlanner: React.FC<SmartBudgetPlannerProps> = ({
     setBreakdown(updated);
     onUpdateEventBudget(updated);
   };
-
-  const recommendedVendors = vendors
-    .map((v) => {
-      const catBudget = breakdown.find((b) => b.category === v.category);
-      const catSpent = spentByCategory[v.category] || 0;
-      const remainingCatBudget = catBudget ? catBudget.allocatedAmount - catSpent : 0;
-      const score = calculateVendorScore(v, remainingCatBudget, event.location.city);
-
-      return {
-        vendor: v,
-        score,
-        remainingCatBudget,
-        fitsBudget: v.startingPrice <= remainingCatBudget || remainingCatBudget === 0,
-      };
-    })
-    .filter((r) => activeCategoryFilter === 'All' || r.vendor.category === activeCategoryFilter)
-    .sort((a, b) => b.score - a.score);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
@@ -340,77 +320,6 @@ export const SmartBudgetPlanner: React.FC<SmartBudgetPlannerProps> = ({
         </div>
       </div>
 
-      <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-800">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-          <div>
-            <h3 className="font-display font-bold text-2xl text-white flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-amber-400" /> Smart Vendor Recommendations
-            </h3>
-            <p className="text-xs text-slate-400 mt-1">
-              Vendors scored based on your category budget allocation, rating, experience, and location compatibility.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0">
-            {['All', 'Venue', 'Catering', 'Media', 'Decoration'].map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategoryFilter(cat)}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
-                  activeCategoryFilter === cat
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {recommendedVendors.map(({ vendor, score, remainingCatBudget, fitsBudget }) => (
-            <div
-              key={vendor.id}
-              onClick={() => onSelectVendor(vendor)}
-              className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-indigo-500/50 transition-all cursor-pointer flex items-center gap-4 group"
-            >
-              <div className="w-20 h-20 rounded-xl overflow-hidden bg-slate-950 shrink-0">
-                <img src={getVendorCoverImage(vendor)} alt={vendor.businessName} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2">
-                  <h4 className="font-bold text-sm text-white truncate group-hover:text-indigo-400 transition-colors">
-                    {vendor.businessName}
-                  </h4>
-                  <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-extrabold text-[11px] shrink-0">
-                    {score}% Match
-                  </span>
-                </div>
-
-                <p className="text-xs text-slate-400 mt-1 flex items-center gap-1">
-                  <MapPin className="w-3 h-3 text-indigo-400" /> {vendor.location.city} • {vendor.category}
-                </p>
-
-                <div className="mt-2 flex items-center justify-between text-xs">
-                  <span className="font-bold text-amber-400">
-                    Starting ₹{vendor.startingPrice.toLocaleString('en-IN')}
-                  </span>
-
-                  {fitsBudget ? (
-                    <span className="text-emerald-400 font-bold text-[11px] flex items-center gap-1">
-                      <CheckCircle2 className="w-3 h-3" /> Within Category Budget
-                    </span>
-                  ) : (
-                    <span className="text-rose-400 text-[11px]">Slightly exceeds budget</span>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 };
