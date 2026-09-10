@@ -1414,7 +1414,6 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                         const chip = 'text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-200';
                         // Customer side: per-item prices are hidden — only the package total shows a price.
                         const inr = (_n?: any) => '';
-                        const ceremonies: string[] = pr.ceremonyTypePrices ? Object.keys(pr.ceremonyTypePrices) : (pr.ceremonyType ? [pr.ceremonyType] : []);
                         return (
                           <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2.5" onClick={(e) => e.stopPropagation()}>
                             <span className="text-[10px] font-bold text-slate-400 uppercase block">Ceremony details</span>
@@ -1422,17 +1421,6 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                               {pr.community && <span className={chip}>{pr.community}</span>}
                               {(pr.languages || []).map((l: string) => <span key={`l-${l}`} className={chip}>{l}</span>)}
                             </div>
-                            {ceremonies.length > 0 && (
-                              <div className="space-y-1">
-                                <span className="text-[10px] font-bold text-slate-500 uppercase block">Ceremonies</span>
-                                {ceremonies.map((c) => (
-                                  <div key={c} className="flex items-center justify-between text-[11px]">
-                                    <span className="text-slate-400">{c}</span>
-                                    {typeof pr.ceremonyTypePrices?.[c] === 'number' && <span className="text-amber-300 font-semibold">{inr(pr.ceremonyTypePrices[c])}</span>}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
                             <div className="space-y-1 text-[11px]">
                               {pr.numPriests ? <div className="text-slate-300">Priests: <span className="text-white font-semibold">{pr.numPriests}</span></div> : null}
                               {typeof pr.priestsPrice === 'number' ? <div className="flex items-center justify-between"><span className="text-slate-400">Priests</span><span className="text-amber-300 font-semibold">{inr(pr.priestsPrice)}</span></div> : null}
