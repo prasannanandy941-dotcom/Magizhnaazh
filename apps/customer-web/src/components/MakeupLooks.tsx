@@ -160,19 +160,17 @@ export const MakeupLookViewer: React.FC<{ look: MakeupLook; onClose: () => void;
       aria-modal="true"
       aria-label={`${look.title} makeup`}
     >
-      <div
-        className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl border border-slate-800 shadow-2xl bg-slate-900 no-scrollbar"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="relative w-full max-w-3xl" onClick={(e) => e.stopPropagation()}>
         <button
           type="button"
           onClick={onClose}
           aria-label="Close"
-          className="absolute top-3 right-3 z-20 w-9 h-9 rounded-full bg-slate-900/90 border border-slate-700 flex items-center justify-center text-slate-200 hover:text-white hover:bg-slate-800 transition-colors shadow-lg"
+          className="absolute -top-3 -right-3 z-30 w-9 h-9 rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center text-slate-200 hover:text-white hover:bg-slate-800 transition-colors shadow-lg"
         >
           <X className="w-4 h-4" />
         </button>
 
+        <div className="max-h-[90vh] overflow-y-auto rounded-2xl border border-slate-800 shadow-2xl bg-slate-900 no-scrollbar">
         <div className="relative">
           <div ref={trackRef} onScroll={onScroll} className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar">
             {images.map((src, i) => (
@@ -270,6 +268,7 @@ export const MakeupLookViewer: React.FC<{ look: MakeupLook; onClose: () => void;
               Added to your booking: {look.title} — {look.tiers[selectedTier].name} package (₹{look.tiers[selectedTier].price.toLocaleString('en-IN')}).
             </p>
           )}
+        </div>
         </div>
       </div>
     </div>
