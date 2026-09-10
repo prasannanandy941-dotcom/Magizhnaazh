@@ -37,289 +37,6 @@ import {
 import { groupCitiesByState, STATIC_CITY_GROUPS } from '../../../packages/shared-utils';
 import { MessageSquare, CheckCircle2 } from 'lucide-react';
 
-const INITIAL_VENDORS: Vendor[] = [
-  {
-    id: 'vnd-1',
-    userId: 'usr-vendor-1',
-    businessName: 'The Leela Palace Grand Ballroom',
-    category: 'Venue',
-    description: 'Luxury sea-facing banquets and grand ballroom in Chennai for royal weddings, grand receptions, and corporate galas.',
-    location: {
-      type: 'Point',
-      coordinates: [80.2707, 13.0827],
-      address: 'Adyar Seaface, MRC Nagar',
-      city: 'Chennai',
-      district: 'Chennai',
-      state: 'Tamil Nadu',
-      pincode: '600028',
-    },
-    startingPrice: 150000,
-    yearsOfExperience: 12,
-    ratingAverage: 4.9,
-    reviewCount: 142,
-    isVerified: true,
-    isSuspended: false,
-    featured: true,
-    galleryImages: [
-      'https://images.unsplash.com/photo-1712314947761-a8d718bd8c32?w=800',
-      'https://images.unsplash.com/photo-1655516433028-9e0e1599cf8b?w=800',
-      'https://images.unsplash.com/photo-1780542900375-0cf459e38fbb?w=800',
-    ],
-    galleryVideos: ['https://videos.pexels.com/video-files/34926867/14794509_640_360_24fps.mp4'],
-    contactEmail: 'events@leelachennai.com',
-    contactPhone: '+91 44 33661234',
-    packages: [
-      { id: 'pkg-1-1', packageName: 'Royal Ballroom Package', price: 150000, description: 'AC Ballroom hall for 600 guests, stage setup, basic lighting.', includedServices: ['Hall Rent', 'Stage Decor', 'Centralized AC', 'VIP Suite'] },
-      { id: 'pkg-1-2', packageName: 'Luxury Ocean View Deck', price: 250000, description: 'Outdoor seaside lawn + grand indoor hall for 1200 guests.', includedServices: ['Ocean Lawn', 'Valet Parking', 'Power Backup', '2 Executive Rooms'] }
-    ],
-    availableDates: ['2026-10-15', '2026-11-20', '2026-12-15'],
-    policies: { cancellation: '50% refund up to 30 days prior', refund: 'Processed in 7 days', advancePercentage: 30 },
-    facilities: {
-      acRoom: true,
-      fansOnly: false,
-      brideGroomRoom: true,
-      guestRoomAttachedWashroom: true,
-      dormitoryHall: false,
-      separateGuestWashroom: true,
-      cookingUtensils: false,
-      waterFilter: true,
-      vipRoom: true,
-      vipFrontChairs: true,
-      garlands: true,
-      catering: 'extra_cost',
-      decoration: 'included',
-      djService: 'not_offered',
-      transport: 'not_offered',
-    },
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'vnd-5',
-    userId: 'usr-vendor-5',
-    businessName: 'Green Meadows Community Hall',
-    category: 'Venue',
-    description: 'Budget-friendly community hall with dormitory-style seating, ideal for large family functions and modest weddings.',
-    location: {
-      type: 'Point',
-      coordinates: [76.9558, 11.0168],
-      address: 'Sathy Road, Ganapathy',
-      city: 'Coimbatore',
-      district: 'Coimbatore',
-      state: 'Tamil Nadu',
-      pincode: '641006',
-    },
-    startingPrice: 25000,
-    yearsOfExperience: 6,
-    ratingAverage: 4.3,
-    reviewCount: 58,
-    isVerified: true,
-    isSuspended: false,
-    featured: false,
-    galleryImages: [
-      'https://images.unsplash.com/photo-1786062841848-18177898b3a7?w=800',
-      'https://images.unsplash.com/photo-1519741497674-611481863552?w=800',
-      'https://images.unsplash.com/photo-1478146059778-26028b07395a?w=800',
-    ],
-    galleryVideos: ['https://videos.pexels.com/video-files/11918060/11918060-sd_640_360_25fps.mp4'],
-    contactEmail: 'bookings@greenmeadowshall.in',
-    contactPhone: '+91 9843112200',
-    packages: [
-      { id: 'pkg-5-1', packageName: 'Community Hall Basic', price: 25000, description: 'Fan-cooled hall for 300 guests with dormitory seating and shared washrooms.', includedServices: ['Hall Rent', 'Basic Lighting', 'Sound System'] }
-    ],
-    availableDates: ['2026-10-20', '2026-11-10'],
-    policies: { cancellation: 'No refund within 15 days', refund: 'Standard', advancePercentage: 20 },
-    facilities: {
-      acRoom: false,
-      fansOnly: true,
-      brideGroomRoom: false,
-      guestRoomAttachedWashroom: false,
-      dormitoryHall: true,
-      separateGuestWashroom: true,
-      cookingUtensils: true,
-      waterFilter: true,
-      vipRoom: true,
-      vipFrontChairs: false,
-      garlands: true,
-      catering: 'not_offered',
-      decoration: 'not_offered',
-      djService: 'extra_cost',
-      transport: 'not_offered',
-    },
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'vnd-6',
-    userId: 'usr-vendor-6',
-    businessName: 'Royal Orchid Convention Centre',
-    category: 'Venue',
-    description: 'Full-service AC convention centre with dedicated bride and groom suites, guest rooms, in-house catering, and DJ setup.',
-    location: {
-      type: 'Point',
-      coordinates: [80.2101, 13.0382],
-      address: 'Anna Nagar West',
-      city: 'Chennai',
-      district: 'Chennai',
-      state: 'Tamil Nadu',
-      pincode: '600040',
-    },
-    startingPrice: 95000,
-    yearsOfExperience: 8,
-    ratingAverage: 4.6,
-    reviewCount: 112,
-    isVerified: true,
-    isSuspended: false,
-    featured: true,
-    galleryImages: [
-      'https://images.unsplash.com/photo-1780542900375-0cf459e38fbb?w=800',
-      'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=800',
-      'https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=800',
-    ],
-    galleryVideos: ['https://videos.pexels.com/video-files/31501465/13430836_640_360_60fps.mp4'],
-    contactEmail: 'info@royalorchidconvention.com',
-    contactPhone: '+91 9840556677',
-    packages: [
-      { id: 'pkg-6-1', packageName: 'All-Inclusive Wedding Package', price: 95000, description: 'AC hall for 800 guests, bride and groom suites, in-house catering and DJ.', includedServices: ['AC Hall', 'Bride/Groom Suite', 'Guest Rooms', 'In-house Catering', 'DJ Setup'] }
-    ],
-    availableDates: ['2026-11-01', '2026-12-05'],
-    policies: { cancellation: '40% refund up to 20 days prior', refund: 'Processed in 10 days', advancePercentage: 30 },
-    facilities: {
-      acRoom: true,
-      fansOnly: false,
-      brideGroomRoom: true,
-      guestRoomAttachedWashroom: true,
-      dormitoryHall: false,
-      separateGuestWashroom: true,
-      cookingUtensils: false,
-      waterFilter: true,
-      vipRoom: false,
-      vipFrontChairs: false,
-      garlands: false,
-      catering: 'included',
-      decoration: 'extra_cost',
-      djService: 'included',
-      transport: 'extra_cost',
-    },
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'vnd-2',
-    userId: 'usr-vendor-2',
-    businessName: 'Grand Chettinad Feast Caterers',
-    category: 'Catering',
-    description: 'Authentic South Indian banana leaf wedding feast, live counters, traditional sweets, and multi-cuisine buffet spreads.',
-    location: {
-      type: 'Point',
-      coordinates: [80.2101, 13.0382],
-      address: '12, MGR Salai, T. Nagar',
-      city: 'Chennai',
-      district: 'Chennai',
-      state: 'Tamil Nadu',
-      pincode: '600017',
-    },
-    startingPrice: 450,
-    yearsOfExperience: 18,
-    ratingAverage: 4.8,
-    reviewCount: 215,
-    isVerified: true,
-    isSuspended: false,
-    featured: true,
-    galleryImages: [
-      'https://images.unsplash.com/photo-1555244162-803834f70033?w=800',
-      'https://images.unsplash.com/photo-1646578515903-67873a5398f9?w=800',
-      'https://images.unsplash.com/photo-1581546085212-f25477a9d4fb?w=800',
-    ],
-    galleryVideos: ['https://videos.pexels.com/video-files/9797433/9797433-sd_640_360_25fps.mp4'],
-    contactEmail: 'contact@chettinadcatering.in',
-    contactPhone: '+91 9444012345',
-    packages: [
-      { id: 'pkg-2-1', packageName: 'Traditional Banana Leaf Meal', price: 450, description: '30-item South Indian traditional feast served on fresh banana leaf.', includedServices: ['Elai Sappadu', 'Live Jigarthanda', 'Welcome Drink', 'Service Staff'] },
-      { id: 'pkg-2-2', packageName: 'Grand Multi-Cuisine Wedding Buffet', price: 750, description: 'South Indian + North Indian + Chinese live counters & dessert bar.', includedServices: ['Live Chaat', 'Italian Pasta Counter', 'Mocktail Bar', 'Uniformed Stewards'] }
-    ],
-    availableDates: ['2026-10-15', '2026-12-15'],
-    policies: { cancellation: '30% advance non-refundable', refund: 'Credit note available', advancePercentage: 25 },
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'vnd-3',
-    userId: 'usr-vendor-3',
-    businessName: 'Candid Tales Photography & Cinema',
-    category: 'Media',
-    description: 'Award-winning candid wedding photographers, traditional photojournalism, cinematic wedding films, and drone coverage.',
-    location: {
-      type: 'Point',
-      coordinates: [80.2496, 13.0604],
-      address: 'Kodambakkam High Road',
-      city: 'Chennai',
-      district: 'Chennai',
-      state: 'Tamil Nadu',
-      pincode: '600034',
-    },
-    startingPrice: 65000,
-    yearsOfExperience: 9,
-    ratingAverage: 4.95,
-    reviewCount: 98,
-    isVerified: true,
-    isSuspended: false,
-    featured: true,
-    galleryImages: [
-      'https://images.unsplash.com/photo-1574397188309-e83dfe918ecb?w=800',
-      'https://images.unsplash.com/photo-1670296047577-36c2c1281a85?w=800',
-      'https://images.unsplash.com/photo-1640290699030-b477f95f13b2?w=800',
-    ],
-    galleryVideos: ['https://videos.pexels.com/video-files/5591916/5591916-sd_640_360_25fps.mp4'],
-    contactEmail: 'hello@candidtales.com',
-    contactPhone: '+91 9840998877',
-    packages: [
-      { id: 'pkg-3-1', packageName: 'Candid & Traditional Combo', price: 65000, description: '2 Candid Photographers, 1 Traditional Photographer, Photobook Album.', includedServices: ['Unlimited High-Res Photos', '1 Premium Canvera Album (50 pages)', 'Pre-wedding Shoot'], durationHours: 10 },
-      { id: 'pkg-3-2', packageName: 'Pre-Wedding Story Shoot', price: 25000, description: 'Half-day outdoor pre-wedding concept shoot with styling and edits.', includedServices: ['1 Candid Photographer', '80 Retouched Photos', '1 Location + Props', 'Reel-ready Edits'], durationHours: 5 },
-      { id: 'pkg-3-3', packageName: 'Cinematic Film + Drone', price: 95000, description: 'Full-day cinematic wedding film with 4K drone aerial coverage.', includedServices: ['2 Cinematographers', '4K Drone Coverage', '3-4 min Teaser Film', 'Full-length Wedding Film'], durationHours: 12 },
-      { id: 'pkg-3-4', packageName: 'Reception Coverage', price: 40000, description: 'Evening reception candid + traditional coverage with same-day highlights.', includedServices: ['2 Photographers', 'Stage & Guest Coverage', 'Same-Day Highlight Reel', '300+ Edited Photos'], durationHours: 6 },
-      { id: 'pkg-3-5', packageName: 'Live Streaming (Multi-Cam)', price: 22000, description: 'Broadcast the wedding live so relatives can watch from anywhere on mobile.', includedServices: ['3-Camera Live Mixing', 'YouTube / Zoom / Meet Link', 'Full-HD Stream', 'Recorded Copy'], durationHours: 6 },
-      { id: 'pkg-3-6', packageName: 'LED Wall Screens', price: 40000, description: 'Large LED screens at the venue so every guest sees the ceremony up close.', includedServices: ['2 × P3 LED Walls', 'Live Camera Feed to Screen', 'On-site Technician', 'Setup & Dismantle'], durationHours: 8 },
-    ],
-    availableDates: ['2026-11-05', '2026-12-15'],
-    policies: { cancellation: 'Standard', refund: 'Standard', advancePercentage: 40 },
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'vnd-4',
-    userId: 'usr-vendor-4',
-    businessName: 'Flora Dreams Floral & Theme Decorators',
-    category: 'Decoration',
-    description: 'Transforming wedding halls and event venues with fresh flowers, royal mandap designs, crystal chandeliers, and LED backdrops.',
-    location: {
-      type: 'Point',
-      coordinates: [76.9558, 11.0168],
-      address: 'RS Puram Main Road',
-      city: 'Coimbatore',
-      district: 'Coimbatore',
-      state: 'Tamil Nadu',
-      pincode: '641002',
-    },
-    startingPrice: 40000,
-    yearsOfExperience: 10,
-    ratingAverage: 4.7,
-    reviewCount: 76,
-    isVerified: true,
-    isSuspended: false,
-    featured: false,
-    galleryImages: [
-      'https://images.unsplash.com/photo-1605553426886-c0a99033fda0?w=800',
-      'https://images.unsplash.com/photo-1640355105827-2aa98e908a7b?w=800',
-      'https://images.unsplash.com/photo-1762709118823-7fe9c9afa8ff?w=800',
-    ],
-    galleryVideos: ['https://videos.pexels.com/video-files/13038199/13038199-sd_640_360_25fps.mp4'],
-    contactEmail: 'contact@floradreams.in',
-    contactPhone: '+91 9443011223',
-    packages: [
-      { id: 'pkg-4-1', packageName: 'Traditional Temple Mandap', price: 40000, description: 'Marigold & Jasmine flower mandap setup with wooden pillars.', includedServices: ['Mandap Decor', 'Entrance Arch', 'Stage Backdrop'] }
-    ],
-    availableDates: ['2026-10-15', '2026-12-15'],
-    policies: { cancellation: 'Non-refundable advance', refund: 'None', advancePercentage: 35 },
-    createdAt: new Date().toISOString(),
-  },
-];
-
 // Friendly phrasing for the booking-status-change toast — fires whenever a
 // vendor moves one of the customer's bookings forward (accepts a quote,
 // marks it in progress, completes it, etc).
@@ -353,59 +70,22 @@ const EMPTY_EVENT: Event = {
   createdAt: new Date().toISOString(),
 };
 
-const FALLBACK_EVENT: Event = {
-  id: 'evt-101',
-  userId: 'usr-customer-1',
-  title: 'Felix & Priya Wedding Celebration',
-  eventType: 'Wedding',
-  date: '2026-12-15',
-  location: {
-    city: 'Chennai',
-    venueName: 'The Leela Palace Grand Ballroom',
-    address: 'MRC Nagar, Chennai',
-  },
-  guestCount: 500,
-  totalBudget: 800000,
-  spentBudget: 295000,
-  status: 'planning',
-  budgetBreakdown: [
-    { id: 'b-1', category: 'Venue', allocatedPercentage: 25, allocatedAmount: 200000, actualSpent: 150000 },
-    { id: 'b-2', category: 'Catering', allocatedPercentage: 25, allocatedAmount: 200000, actualSpent: 0 },
-    { id: 'b-3', category: 'Decoration', allocatedPercentage: 12, allocatedAmount: 96000, actualSpent: 80000 },
-    { id: 'b-4', category: 'Media', allocatedPercentage: 10, allocatedAmount: 80000, actualSpent: 65000 },
-    { id: 'b-5', category: 'Makeup & Beauty', allocatedPercentage: 5, allocatedAmount: 40000, actualSpent: 0 },
-    { id: 'b-6', category: 'Transport', allocatedPercentage: 5, allocatedAmount: 40000, actualSpent: 0 },
-    { id: 'b-7', category: 'Invitation', allocatedPercentage: 3, allocatedAmount: 24000, actualSpent: 0 },
-    { id: 'b-8', category: 'Return Gifts', allocatedPercentage: 5, allocatedAmount: 40000, actualSpent: 0 },
-    { id: 'b-9', category: 'Other', allocatedPercentage: 10, allocatedAmount: 80000, actualSpent: 0 },
-  ],
-  tasks: [
-    { id: 't-1', title: 'Book Wedding Venue', category: 'Venue', completed: true, dueDate: '2026-09-01', priority: 'high' },
-    { id: 't-2', title: 'Finalize Feast Caterer Menu', category: 'Catering', completed: false, dueDate: '2026-09-15', priority: 'high' },
-    { id: 't-3', title: 'Book Photographer & Cinematic Videographer', category: 'Media', completed: true, dueDate: '2026-09-20', priority: 'high' },
-  ],
-  schedule: [
-    { id: 's-1', time: '07:00 AM', activity: 'Groom & Bride Prep / Makeup', location: 'Green Room' },
-    { id: 's-2', time: '09:00 AM', activity: 'Muhurtham & Sacred Ceremony', location: 'Grand Mandap' },
-    { id: 's-3', time: '12:30 PM', activity: 'Grand Traditional Banana Leaf Feast', location: 'Dining Hall' },
-  ],
-  bookedVendorIds: ['vnd-1', 'vnd-3'],
-  createdAt: new Date().toISOString(),
-};
-
-const INITIAL_INVITATION: Invitation = {
-  id: 'inv-101',
-  eventId: 'evt-101',
-  inviteToken: 'wed-felix-2026',
+// Blank invitation used until the real, backend-persisted one loads (or an
+// event is created). No token, so the "Share Web RSVP Link" button knows
+// there's no real link to share yet.
+const EMPTY_INVITATION: Invitation = {
+  id: '',
+  eventId: '',
+  inviteToken: '',
   templateId: 'tmpl-royal-wedding',
-  eventTitle: 'Felix & Priya Wedding Celebration',
-  hostName: 'Felix & Family',
-  date: '2026-12-15',
+  eventTitle: '',
+  hostName: '',
+  date: '',
   time: '10:00 AM',
-  venueName: 'The Leela Palace Grand Ballroom',
-  venueAddress: 'Adyar Seaface, MRC Nagar, Chennai',
-  mapLocationUrl: 'https://maps.google.com/?q=The+Leela+Palace+Chennai',
-  message: 'We request the honor of your presence to celebrate the grand wedding of Felix & Priya.',
+  venueName: '',
+  venueAddress: '',
+  mapLocationUrl: '',
+  message: '',
   canvasData: {
     width: 400,
     height: 600,
@@ -413,16 +93,6 @@ const INITIAL_INVITATION: Invitation = {
     elements: INVITATION_TEMPLATES[0].elements,
   },
   createdAt: new Date().toISOString(),
-};
-
-// Shown when there's no active event yet — an invitation with no token, so the
-// "Share Web RSVP Link" button knows there's no real link to share.
-const EMPTY_INVITATION: Invitation = {
-  ...INITIAL_INVITATION,
-  id: '',
-  eventId: '',
-  inviteToken: '',
-  eventTitle: '',
 };
 
 // Builds canvas elements personalised to a specific event, so a new
@@ -440,7 +110,7 @@ function buildEventCanvasData(event: Event, token?: string): Invitation['canvasD
   } catch {
     /* keep the raw date string if it can't be parsed */
   }
-  const time = INITIAL_INVITATION.time;
+  const time = EMPTY_INVITATION.time;
   const venue =
     [event.location.venueName, event.location.address || event.location.city].filter(Boolean).join(', ') || 'Venue TBD';
   const occasion = event.eventType
@@ -476,16 +146,6 @@ function buildEventMessage(event: Event): string {
   return `We request the pleasure of your company at ${event.title}${occasion}.`;
 }
 
-const INITIAL_GUESTS: Guest[] = [
-  { id: 'g-1', eventId: 'evt-101', name: 'Dr. R. Venkatraman', email: 'venkat@gmail.com', phone: '+91 9840112233', group: 'Groom Family', status: 'accepted', adultsCount: 2, childrenCount: 1, dietaryPreference: 'Veg', needsTransport: true, needsAccommodation: true, invitedAt: new Date().toISOString() },
-  { id: 'g-2', eventId: 'evt-101', name: 'Suresh & Anitha Kumar', email: 'suresh@yahoo.com', phone: '+91 9840223344', group: 'Bride Family', status: 'accepted', adultsCount: 2, childrenCount: 0, dietaryPreference: 'Veg', needsTransport: false, needsAccommodation: false, invitedAt: new Date().toISOString() },
-  { id: 'g-3', eventId: 'evt-101', name: 'Karthik Raja', email: 'karthik@tech.com', phone: '+91 9840334455', group: 'College Friends', status: 'invited', adultsCount: 1, childrenCount: 0, dietaryPreference: 'Non-Veg', needsTransport: false, needsAccommodation: false, invitedAt: new Date().toISOString() },
-];
-
-const INITIAL_FEEDBACK: EventFeedback[] = [
-  { id: 'fb-1', eventId: 'evt-101', feedbackToken: 'wed-felix-2026', guestName: 'Kavitha S.', overallRating: 5, venueRating: 5, cateringRating: 5, decorationRating: 5, comments: 'The banana leaf feast and ocean deck venue were truly magnificent!', createdAt: new Date().toISOString() },
-];
-
 function deduplicateVendors(list: Vendor[]): Vendor[] {
   const seenIds = new Set<string>();
   const seenNameCats = new Set<string>();
@@ -506,14 +166,14 @@ function deduplicateVendors(list: Vendor[]): Vendor[] {
 
 export function App() {
   const [activeTab, setActiveTab] = useState<string>('marketplace');
-  const [vendors, setVendors] = useState<Vendor[]>(() => deduplicateVendors(INITIAL_VENDORS));
+  const [vendors, setVendors] = useState<Vendor[]>([]);
   const [vendorsLoading, setVendorsLoading] = useState(false);
   const [events, setEvents] = useState<Event[]>([]);
   const [eventsLoading, setEventsLoading] = useState(false);
   const [activeEvent, setActiveEvent] = useState<Event>(EMPTY_EVENT);
-  const [invitation, setInvitation] = useState<Invitation>(INITIAL_INVITATION);
-  const [guests, setGuests] = useState<Guest[]>(INITIAL_GUESTS);
-  const [feedbackList, setFeedbackList] = useState<EventFeedback[]>(INITIAL_FEEDBACK);
+  const [invitation, setInvitation] = useState<Invitation>(EMPTY_INVITATION);
+  const [guests, setGuests] = useState<Guest[]>([]);
+  const [feedbackList, setFeedbackList] = useState<EventFeedback[]>([]);
 
   const [selectedVendorForModal, setSelectedVendorForModal] = useState<Vendor | null>(null);
   // Starts empty — the badge only counts vendors the customer actually saves.
@@ -549,9 +209,8 @@ export function App() {
   const [bookingInProgress, setBookingInProgress] = useState(false);
 
   // Load the live vendor marketplace from the backend (vendor-service, via the gateway).
-  // Public endpoint — runs once on mount regardless of login state. Falls back to the
-  // local demo list (INITIAL_VENDORS) if the call fails or returns nothing, so the
-  // marketplace is never empty.
+  // Public endpoint — runs once on mount regardless of login state. The marketplace
+  // stays empty until the backend responds.
   useEffect(() => {
     let cancelled = false;
     setVendorsLoading(true);
@@ -625,8 +284,8 @@ export function App() {
   }, []);
 
   // Load this user's real events from the backend (event-budget-service, via the gateway)
-  // whenever they're logged in. Falls back to the local demo event if the call fails
-  // or the user isn't authenticated yet, so the UI never looks empty.
+  // whenever they're logged in. Shows no events (never a demo event) when the user
+  // isn't authenticated or the call fails.
   useEffect(() => {
     if (!user) {
       // Signed out: show no events (no Felix & Priya demo) — the dashboard
@@ -656,8 +315,8 @@ export function App() {
       .catch((err) => {
         console.error('Failed to load events from server', err);
         if (!cancelled) {
-          setEvents([FALLBACK_EVENT]);
-          setActiveEvent(FALLBACK_EVENT);
+          setEvents([]);
+          setActiveEvent(EMPTY_EVENT);
         }
       })
       .finally(() => {
@@ -757,7 +416,7 @@ export function App() {
           eventTitle: activeEvent.title,
           hostName: user.name,
           date: activeEvent.date,
-          time: INITIAL_INVITATION.time,
+          time: EMPTY_INVITATION.time,
           venueName: activeEvent.location.venueName || 'Venue TBD',
           venueAddress: activeEvent.location.address || activeEvent.location.city,
           message: buildEventMessage(activeEvent),
