@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { X, Star, MapPin, Check, ShieldCheck, Upload, Calendar as CalendarIcon, MessageSquare, Send, CreditCard, Sparkles, Camera, Bus, Flame, Gift, ListChecks, Phone, Clock, Plus, Maximize2, Car, Mail, Printer, FileText } from 'lucide-react';
+import { X, Star, MapPin, Check, ShieldCheck, Upload, Calendar as CalendarIcon, MessageSquare, Send, CreditCard, Sparkles, Camera, Bus, Gift, ListChecks, Phone, Clock, Plus, Maximize2, Car, Mail, Printer, FileText } from 'lucide-react';
 import { Vendor, Review, getVendorTrustBadges, getLiveDeals, bestDealForAmount, AVAILABILITY_SLOTS, isSlotBooked, openSlots, offeredSlotIds } from '../../../../packages/shared-types';
 import { fetchVendorById, uploadReferenceImage, fetchVendorReviews } from '../api';
 import { PortfolioGrid } from './Portfolio';
 import { DecorationGrid } from './DecorationThemes';
 import { MakeupGrid } from './MakeupLooks';
 import { TransportGrid } from './TransportOptions';
-import { PriestGrid } from './PriestServices';
 import { GiftGrid } from './ReturnGifts';
 import { GenericCategoryGrid } from './CategoryOptions';
 import { CustomRequestBox } from './CateringMenu';
@@ -92,7 +91,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialVendor.id]);
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'portfolio' | 'themes' | 'looks' | 'fleet' | 'ceremonies' | 'gifts' | 'options' | 'services' | 'amenities' | 'packages' | 'gallery' | 'reviews' | 'upload'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'portfolio' | 'themes' | 'looks' | 'fleet' | 'gifts' | 'options' | 'services' | 'amenities' | 'packages' | 'gallery' | 'reviews' | 'upload'>('overview');
   const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewsLoaded, setReviewsLoaded] = useState(false);
 
@@ -176,8 +175,8 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
   const selectionsForActiveTab = selectedOptions.filter((opt) => {
     if (activeTab === 'services') return serviceKeySet.has(opt);
     if (activeTab === 'amenities') return amenityKeySet.has(opt);
-    // The remaining option-style tabs (options/themes/looks/fleet/ceremonies/
-    // gifts) use plain labels — show whatever isn't a service/amenity rate key.
+    // The remaining option-style tabs (options/themes/looks/fleet/gifts) use
+    // plain labels — show whatever isn't a service/amenity rate key.
     return !serviceKeySet.has(opt) && !amenityKeySet.has(opt);
   });
 
@@ -354,17 +353,6 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
               }`}
             >
               <Bus className="w-3.5 h-3.5" /> Fleet
-            </button>
-          )}
-
-          {isPriest && (
-            <button
-              onClick={() => setActiveTab('ceremonies')}
-              className={`py-3 font-semibold text-xs border-b-2 transition-colors flex items-center gap-1 ${
-                activeTab === 'ceremonies' ? 'border-amber-500 text-amber-400' : 'border-transparent text-slate-400 hover:text-white'
-              }`}
-            >
-              <Flame className="w-3.5 h-3.5" /> Ceremonies
             </button>
           )}
 
@@ -726,7 +714,6 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
 
           {activeTab === 'fleet' && <TransportGrid selected={selectedOptions} onToggle={toggleTheme} onPickTier={pickThemeTier} restrictTo={vendor.offeredOptions || []} />}
 
-          {activeTab === 'ceremonies' && <PriestGrid selected={selectedOptions} onToggle={toggleTheme} onPickTier={pickThemeTier} restrictTo={vendor.offeredOptions || []} />}
 
           {activeTab === 'gifts' && (
             <div className="space-y-4">
@@ -2521,7 +2508,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
           </div>
         )}
 
-        {selectionsForActiveTab.length > 0 && ['themes', 'looks', 'fleet', 'ceremonies', 'gifts', 'options', 'services', 'amenities'].includes(activeTab) && (
+        {selectionsForActiveTab.length > 0 && ['themes', 'looks', 'fleet', 'gifts', 'options', 'services', 'amenities'].includes(activeTab) && (
           <div className="px-6 py-4 border-t border-slate-800 bg-emerald-950/20">
             <div className="flex items-center justify-between mb-2">
               <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-300 uppercase">
