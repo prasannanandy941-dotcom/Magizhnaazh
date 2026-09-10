@@ -231,10 +231,6 @@ export function App() {
           {activeTab === 'analytics' && <AnalyticsTab token={token} />}
         </main>
       </div>
-
-      <footer className="border-t border-slate-800 py-4 text-center text-xs text-slate-500">
-        © 2026 Magizhnaazh Super Admin Governance Portal — Port 3002
-      </footer>
     </div>
   );
 }

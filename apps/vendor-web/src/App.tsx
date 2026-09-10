@@ -10482,10 +10482,6 @@ export function App() {
 
       </main>
       )}
-
-      <footer className="border-t border-slate-800 py-6 text-center text-xs text-slate-500">
-        © 2026 Magizhnaazh Vendor Management Portal — Port 3001
-      </footer>
     </div>
   );
 }
