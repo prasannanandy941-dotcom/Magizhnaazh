@@ -1,101 +1,106 @@
-import React, { useEffect, useState } from 'react';
-import { Loader2, Plus } from 'lucide-react';
-import { Category } from '../../../../packages/shared-types';
-import { fetchCategories, addCategory, deleteCategory } from '../api';
-import { DeleteButton } from './CrudListPanel';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Loader2, ChevronDown } from 'lucide-react';
+import { Vendor, VENDOR_CATEGORIES } from '../../../../packages/shared-types';
+import { fetchVendors } from '../api';
 
-export const CategoriesTab: React.FC<{ token: string }> = ({ token }) => {
-  const [categories, setCategories] = useState<Category[]>([]);
+// The admin category list mirrors exactly what a vendor can pick at sign-up
+// (VENDOR_CATEGORIES in shared-types). It is a fixed set, so there is no
+// add / delete here — this tab is a read-only reference plus a live count of
+// how many vendors registered under each one.
+const KNOWN = new Set<string>(VENDOR_CATEGORIES);
+
+export const CategoriesTab: React.FC<{ token: string }> = () => {
+  const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
-  const [busyId, setBusyId] = useState<string | null>(null);
-
-  const [name, setName] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-
-  const load = async () => {
-    setLoading(true);
-    const res = await fetchCategories();
-    setCategories(res.data?.categories || []);
-    setLoading(false);
-  };
+  const [expanded, setExpanded] = useState<string | null>(null);
 
   useEffect(() => {
-    load();
+    let cancelled = false;
+    fetchVendors()
+      .then((res) => {
+        if (!cancelled) setVendors(res.data?.vendors || []);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const handleAdd = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim()) return;
-    setSaving(true);
-    setError('');
-    try {
-      await addCategory(token, name.trim());
-      setName('');
-      await load();
-    } catch (err: any) {
-      setError(err.message || 'Could not save.');
-    } finally {
-      setSaving(false);
+  // Vendors grouped by category. Anything whose category isn't one of the known
+  // vendor-side categories is folded into "Other" so it still shows up.
+  const byCategory = useMemo(() => {
+    const map: Record<string, Vendor[]> = {};
+    for (const v of vendors) {
+      const key = KNOWN.has(v.category as string) ? (v.category as string) : 'Other';
+      (map[key] ||= []).push(v);
     }
-  };
+    return map;
+  }, [vendors]);
 
   return (
     <div className="space-y-6">
       <div>
         <h2 className="font-display font-bold text-2xl text-white">Vendor Categories</h2>
         <p className="text-slate-400 text-sm mt-1">
-          Categories available for vendors to list themselves under.
+          The {VENDOR_CATEGORIES.length} categories a vendor can choose when they register. Vendors who
+          pick <span className="text-white font-semibold">Other</span> are listed under that row so you
+          can see what kind of vendor signed up.
         </p>
       </div>
 
-      {/* Add form */}
-      <form onSubmit={handleAdd} className="glass-card p-5 rounded-2xl border border-slate-800 flex flex-wrap items-end gap-3">
-        <div className="flex-1 min-w-[140px]">
-          <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Category Name</label>
-          <input
-            type="text"
-            placeholder="e.g. Fireworks"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm"
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={saving}
-          className="px-4 py-2.5 rounded-xl bg-indigo-600 text-white font-bold text-xs shadow-md disabled:opacity-60 flex items-center gap-1.5"
-        >
-          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-          Add Category
-        </button>
-        {error && <p className="w-full text-xs text-rose-400">{error}</p>}
-      </form>
-
-      {/* List */}
       <div className="glass-card rounded-3xl border border-slate-800 overflow-hidden">
         {loading ? (
           <div className="p-8 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
             <Loader2 className="w-4 h-4 animate-spin" /> Loading...
           </div>
-        ) : categories.length === 0 ? (
-          <div className="p-8 text-center text-slate-500 text-sm">No categories yet.</div>
         ) : (
           <div className="divide-y divide-slate-800/60">
-            {categories.map((c) => (
-              <div key={c.id} className="flex items-center justify-between gap-3 p-4 hover:bg-slate-900/40">
-                <span className="font-bold text-white truncate">{c.name}</span>
-                <DeleteButton
-                  busy={busyId === c.id}
-                  onClick={async () => {
-                    setBusyId(c.id);
-                    await deleteCategory(token, c.id);
-                    await load();
-                    setBusyId(null);
-                  }}
-                />
-              </div>
-            ))}
+            {VENDOR_CATEGORIES.map((name) => {
+              const list = byCategory[name] || [];
+              const isOther = name === 'Other';
+              const isOpen = expanded === name;
+              const canExpand = isOther && list.length > 0;
+              return (
+                <div key={name}>
+                  <div
+                    className={`flex items-center justify-between gap-3 p-4 ${canExpand ? 'hover:bg-slate-900/40 cursor-pointer' : ''}`}
+                    onClick={canExpand ? () => setExpanded(isOpen ? null : name) : undefined}
+                  >
+                    <span className="flex items-center gap-2.5 min-w-0">
+                      {canExpand && (
+                        <ChevronDown className={`w-4 h-4 text-slate-500 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                      )}
+                      <span className={`font-bold text-white truncate ${canExpand ? '' : 'pl-6'}`}>{name}</span>
+                    </span>
+                    <span className="shrink-0 px-2 py-0.5 rounded-full bg-indigo-600/20 border border-indigo-500/30 text-indigo-300 text-[10px] font-bold">
+                      {list.length} {list.length === 1 ? 'vendor' : 'vendors'}
+                    </span>
+                  </div>
+
+                  {isOther && isOpen && (
+                    <div className="px-4 pb-4 pl-12 space-y-2">
+                      {list.map((v) => (
+                        <div key={v.id} className="rounded-xl bg-slate-900/60 border border-slate-800 p-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-bold text-white text-sm truncate">{v.businessName}</span>
+                            <span className="text-[11px] text-slate-400 shrink-0">{v.location?.city || '—'}</span>
+                          </div>
+                          {v.description && (
+                            <p className="text-xs text-slate-400 mt-1">{v.description}</p>
+                          )}
+                          <div className="text-[11px] text-slate-500 mt-1.5 flex flex-wrap gap-x-3">
+                            {v.contactEmail && <span>{v.contactEmail}</span>}
+                            {v.contactPhone && <span>{v.contactPhone}</span>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
