@@ -59,77 +59,77 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-1 bg-[#26101c]/70 p-1.5 rounded-2xl border border-[#6b2140]/60">
+        <nav className="hidden md:flex items-center gap-1 bg-[#26101c]/70 p-1.5 rounded-2xl border border-[#6b2140]/60 overflow-x-auto no-scrollbar max-w-full">
           <button
             onClick={() => setActiveTab('marketplace')}
-            className={`px-4 py-2 rounded-xl font-medium text-sm transition-all flex items-center gap-2 ${
+            className={`whitespace-nowrap shrink-0 px-3 xl:px-4 py-2 rounded-xl font-medium text-xs xl:text-sm transition-all flex items-center gap-2 ${
               activeTab === 'marketplace'
-                ? 'bg-gradient-to-r from-[#c9a648] to-[#b8860b] text-[#1a0a14] shadow-md'
+                ? 'bg-gradient-to-r from-[#c9a648] to-[#b8860b] text-[#1a0a14] shadow-md font-semibold'
                 : 'text-[#cf9bb3] hover:text-[#e8c874] hover:bg-[#6b2140]/30'
             }`}
           >
-            <Store className="w-4 h-4" />
-            Marketplace
+            <Store className="w-4 h-4 shrink-0" />
+            <span className="whitespace-nowrap">Marketplace</span>
           </button>
 
           <button
             onClick={() => setActiveTab('events')}
-            className={`px-4 py-2 rounded-xl font-medium text-sm transition-all flex items-center gap-2 ${
+            className={`whitespace-nowrap shrink-0 px-3 xl:px-4 py-2 rounded-xl font-medium text-xs xl:text-sm transition-all flex items-center gap-2 ${
               activeTab === 'events'
-                ? 'bg-gradient-to-r from-[#c9a648] to-[#b8860b] text-[#1a0a14] shadow-md'
+                ? 'bg-gradient-to-r from-[#c9a648] to-[#b8860b] text-[#1a0a14] shadow-md font-semibold'
                 : 'text-[#cf9bb3] hover:text-[#e8c874] hover:bg-[#6b2140]/30'
             }`}
           >
-            <Calendar className="w-4 h-4" />
-            My Events
+            <Calendar className="w-4 h-4 shrink-0" />
+            <span className="whitespace-nowrap">My Events</span>
           </button>
 
           <button
             onClick={() => setActiveTab('budget')}
-            className={`px-4 py-2 rounded-xl font-medium text-sm transition-all flex items-center gap-2 ${
+            className={`whitespace-nowrap shrink-0 px-3 xl:px-4 py-2 rounded-xl font-medium text-xs xl:text-sm transition-all flex items-center gap-2 ${
               activeTab === 'budget'
-                ? 'bg-gradient-to-r from-[#c9a648] to-[#b8860b] text-[#1a0a14] shadow-md'
+                ? 'bg-gradient-to-r from-[#c9a648] to-[#b8860b] text-[#1a0a14] shadow-md font-semibold'
                 : 'text-[#cf9bb3] hover:text-[#e8c874] hover:bg-[#6b2140]/30'
             }`}
           >
-            <span className={`font-bold ${activeTab === 'budget' ? 'text-[#1a0a14]' : 'text-[#e8c874]'}`}>₹</span>
-            Smart Budget
+            <span className={`font-bold shrink-0 ${activeTab === 'budget' ? 'text-[#1a0a14]' : 'text-[#e8c874]'}`}>₹</span>
+            <span className="whitespace-nowrap">Smart Budget</span>
           </button>
 
           <button
             onClick={() => setActiveTab('invitations')}
-            className={`px-4 py-2 rounded-xl font-medium text-sm transition-all flex items-center gap-2 ${
+            className={`whitespace-nowrap shrink-0 px-3 xl:px-4 py-2 rounded-xl font-medium text-xs xl:text-sm transition-all flex items-center gap-2 ${
               activeTab === 'invitations'
-                ? 'bg-gradient-to-r from-[#c9a648] to-[#b8860b] text-[#1a0a14] shadow-md'
+                ? 'bg-gradient-to-r from-[#c9a648] to-[#b8860b] text-[#1a0a14] shadow-md font-semibold'
                 : 'text-[#cf9bb3] hover:text-[#e8c874] hover:bg-[#6b2140]/30'
             }`}
           >
-            <Sparkles className={`w-4 h-4 ${activeTab === 'invitations' ? 'text-[#1a0a14]' : 'text-[#f0c869]'}`} />
-            Canva Invites
+            <Sparkles className={`w-4 h-4 shrink-0 ${activeTab === 'invitations' ? 'text-[#1a0a14]' : 'text-[#f0c869]'}`} />
+            <span className="whitespace-nowrap">Canva Invites</span>
           </button>
 
           <button
             onClick={() => setActiveTab('guests')}
-            className={`px-4 py-2 rounded-xl font-medium text-sm transition-all flex items-center gap-2 ${
+            className={`whitespace-nowrap shrink-0 px-3 xl:px-4 py-2 rounded-xl font-medium text-xs xl:text-sm transition-all flex items-center gap-2 ${
               activeTab === 'guests'
-                ? 'bg-gradient-to-r from-[#c9a648] to-[#b8860b] text-[#1a0a14] shadow-md'
+                ? 'bg-gradient-to-r from-[#c9a648] to-[#b8860b] text-[#1a0a14] shadow-md font-semibold'
                 : 'text-[#cf9bb3] hover:text-[#e8c874] hover:bg-[#6b2140]/30'
             }`}
           >
-            <UserIcon className="w-4 h-4" />
-            Guests & RSVP
+            <UserIcon className="w-4 h-4 shrink-0" />
+            <span className="whitespace-nowrap">Guests & RSVP</span>
           </button>
 
           <button
             onClick={() => setActiveTab('orders')}
-            className={`px-4 py-2 rounded-xl font-medium text-sm transition-all flex items-center gap-2 ${
+            className={`whitespace-nowrap shrink-0 px-3 xl:px-4 py-2 rounded-xl font-medium text-xs xl:text-sm transition-all flex items-center gap-2 ${
               activeTab === 'orders'
-                ? 'bg-gradient-to-r from-[#c9a648] to-[#b8860b] text-[#1a0a14] shadow-md'
+                ? 'bg-gradient-to-r from-[#c9a648] to-[#b8860b] text-[#1a0a14] shadow-md font-semibold'
                 : 'text-[#cf9bb3] hover:text-[#e8c874] hover:bg-[#6b2140]/30'
             }`}
           >
-            <ClipboardList className="w-4 h-4" />
-            My Orders
+            <ClipboardList className="w-4 h-4 shrink-0" />
+            <span className="whitespace-nowrap">My Orders</span>
           </button>
 
         </nav>

@@ -313,10 +313,10 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
           </button>
         </div>
 
-        <div className="flex items-center gap-4 px-6 border-b border-amber-500/15 bg-[#120a1e]/70">
+        <div className="flex items-center gap-4 px-6 border-b border-amber-500/15 bg-[#120a1e]/70 overflow-x-auto no-scrollbar">
           <button
             onClick={() => setActiveTab('overview')}
-            className={`py-3 font-semibold text-xs border-b-2 transition-colors ${
+            className={`shrink-0 whitespace-nowrap py-3 font-semibold text-xs border-b-2 transition-colors ${
               activeTab === 'overview' ? 'border-amber-500 text-amber-400' : 'border-transparent text-slate-400 hover:text-white'
             }`}
           >
@@ -326,7 +326,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
           {isDecoration && (
             <button
               onClick={() => setActiveTab('themes')}
-              className={`py-3 font-semibold text-xs border-b-2 transition-colors flex items-center gap-1 ${
+              className={`shrink-0 whitespace-nowrap py-3 font-semibold text-xs border-b-2 transition-colors flex items-center gap-1 ${
                 activeTab === 'themes' ? 'border-pink-500 text-pink-400' : 'border-transparent text-slate-400 hover:text-white'
               }`}
             >
@@ -337,7 +337,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
           {isMakeup && (
             <button
               onClick={() => setActiveTab('looks')}
-              className={`py-3 font-semibold text-xs border-b-2 transition-colors flex items-center gap-1 ${
+              className={`shrink-0 whitespace-nowrap py-3 font-semibold text-xs border-b-2 transition-colors flex items-center gap-1 ${
                 activeTab === 'looks' ? 'border-rose-500 text-rose-400' : 'border-transparent text-slate-400 hover:text-white'
               }`}
             >
@@ -348,7 +348,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
           {isTransport && (
             <button
               onClick={() => setActiveTab('fleet')}
-              className={`py-3 font-semibold text-xs border-b-2 transition-colors flex items-center gap-1 ${
+              className={`shrink-0 whitespace-nowrap py-3 font-semibold text-xs border-b-2 transition-colors flex items-center gap-1 ${
                 activeTab === 'fleet' ? 'border-sky-500 text-sky-400' : 'border-transparent text-slate-400 hover:text-white'
               }`}
             >
@@ -359,7 +359,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
           {isReturnGifts && (
             <button
               onClick={() => setActiveTab('gifts')}
-              className={`py-3 font-semibold text-xs border-b-2 transition-colors flex items-center gap-1 ${
+              className={`shrink-0 whitespace-nowrap py-3 font-semibold text-xs border-b-2 transition-colors flex items-center gap-1 ${
                 activeTab === 'gifts' ? 'border-emerald-500 text-emerald-400' : 'border-transparent text-slate-400 hover:text-white'
               }`}
             >
@@ -370,7 +370,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
           {isGenericOptions && !hasServices && (
             <button
               onClick={() => setActiveTab('options')}
-              className={`py-3 font-semibold text-xs border-b-2 transition-colors flex items-center gap-1 ${
+              className={`shrink-0 whitespace-nowrap py-3 font-semibold text-xs border-b-2 transition-colors flex items-center gap-1 ${
                 activeTab === 'options' ? 'border-amber-500 text-amber-400' : 'border-transparent text-slate-400 hover:text-white'
               }`}
             >
@@ -381,7 +381,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
           {hasServices && (
             <button
               onClick={() => setActiveTab('services')}
-              className={`py-3 font-semibold text-xs border-b-2 transition-colors flex items-center gap-1 ${
+              className={`shrink-0 whitespace-nowrap py-3 font-semibold text-xs border-b-2 transition-colors flex items-center gap-1 ${
                 activeTab === 'services' ? 'border-amber-500 text-amber-400' : 'border-transparent text-slate-400 hover:text-white'
               }`}
             >
@@ -392,7 +392,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
           {hasAmenityRates && (
             <button
               onClick={() => setActiveTab('amenities')}
-              className={`py-3 font-semibold text-xs border-b-2 transition-colors flex items-center gap-1 ${
+              className={`shrink-0 whitespace-nowrap py-3 font-semibold text-xs border-b-2 transition-colors flex items-center gap-1 ${
                 activeTab === 'amenities' ? 'border-amber-500 text-amber-400' : 'border-transparent text-slate-400 hover:text-white'
               }`}
             >
@@ -403,7 +403,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
           {vendor.category !== 'Wedding Planner' && (
             <button
               onClick={() => setActiveTab('packages')}
-              className={`py-3 font-semibold text-xs border-b-2 transition-colors ${
+              className={`shrink-0 whitespace-nowrap py-3 font-semibold text-xs border-b-2 transition-colors ${
                 activeTab === 'packages' ? 'border-amber-500 text-amber-400' : 'border-transparent text-slate-400 hover:text-white'
               }`}
             >
@@ -413,7 +413,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
 
           <button
             onClick={() => setActiveTab('gallery')}
-            className={`py-3 font-semibold text-xs border-b-2 transition-colors ${
+            className={`shrink-0 whitespace-nowrap py-3 font-semibold text-xs border-b-2 transition-colors ${
               activeTab === 'gallery' ? 'border-amber-500 text-amber-400' : 'border-transparent text-slate-400 hover:text-white'
             }`}
           >
@@ -422,7 +422,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
 
           <button
             onClick={() => setActiveTab('reviews')}
-            className={`py-3 font-semibold text-xs border-b-2 transition-colors ${
+            className={`shrink-0 whitespace-nowrap py-3 font-semibold text-xs border-b-2 transition-colors ${
               activeTab === 'reviews' ? 'border-amber-500 text-amber-400' : 'border-transparent text-slate-400 hover:text-white'
             }`}
           >
@@ -431,7 +431,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
 
           <button
             onClick={() => setActiveTab('upload')}
-            className={`py-3 font-semibold text-xs border-b-2 transition-colors flex items-center gap-1 ${
+            className={`shrink-0 whitespace-nowrap py-3 font-semibold text-xs border-b-2 transition-colors flex items-center gap-1 ${
               activeTab === 'upload' ? 'border-amber-500 text-amber-400' : 'border-transparent text-slate-400 hover:text-white'
             }`}
           >
