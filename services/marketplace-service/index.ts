@@ -550,7 +550,15 @@ app.put('/api/v1/vendors/:id', authMiddleware(), async (req: Request, res: Respo
     vendor.markModified('offeredOptionQuality');
   }
   if (policies !== undefined) {
-    vendor.policies = { ...(vendor.policies as any), ...policies };
+    if (!vendor.policies) (vendor as any).policies = {};
+    if (policies.cancellation !== undefined) vendor.policies.cancellation = policies.cancellation;
+    if (policies.refund !== undefined) vendor.policies.refund = policies.refund;
+    if (policies.advancePercentage !== undefined) {
+      vendor.policies.advancePercentage = Number(policies.advancePercentage) || 0;
+    }
+    if (policies.advanceAmount !== undefined) {
+      vendor.policies.advanceAmount = policies.advanceAmount ? Number(policies.advanceAmount) : 0;
+    }
     vendor.markModified('policies');
   }
   // Return Gifts vendors: how many pieces and any quantity discount.

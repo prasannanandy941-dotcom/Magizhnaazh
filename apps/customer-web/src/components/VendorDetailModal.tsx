@@ -326,14 +326,19 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
   const bookingPrice = referencePrice > 0 ? netPrice : undefined;
 
   // A flat advanceAmount the vendor set overrides the percentage-based calc.
-  const flatAdvance = vendor.policies.advanceAmount;
+  const flatAdvance = vendor.policies?.advanceAmount;
   const advanceIsFlat = typeof flatAdvance === 'number' && flatAdvance > 0;
+  const advancePct = typeof vendor.policies?.advancePercentage === 'number' ? vendor.policies.advancePercentage : 0;
   const advanceAmountDue = referencePrice === 0
     ? 0
     : advanceIsFlat
       ? (netPrice > 0 ? Math.min(flatAdvance!, netPrice) : flatAdvance!)
-      : Math.round((netPrice * (vendor.policies.advancePercentage || 0)) / 100);
-  const advanceLabel = advanceIsFlat ? 'Advance required' : `Advance required (${vendor.policies.advancePercentage || 0}%)`;
+      : Math.round((netPrice * advancePct) / 100);
+  const advanceLabel = (advanceAmountDue === 0 && referencePrice > 0) || (!advanceIsFlat && advancePct === 0)
+    ? 'No advance required'
+    : advanceIsFlat
+      ? 'Advance required'
+      : `Advance required (${advancePct}%)`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto">
@@ -508,7 +513,11 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                 <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800">
                   <span className="text-xs text-slate-400 block">Advance Required</span>
                   <span className="text-lg font-bold text-indigo-400 mt-1 block">
-                    {advanceIsFlat ? `₹${flatAdvance!.toLocaleString('en-IN')}` : `${vendor.policies.advancePercentage}%`}
+                    {advanceIsFlat
+                      ? `₹${flatAdvance!.toLocaleString('en-IN')}`
+                      : advancePct > 0
+                        ? `${advancePct}%`
+                        : 'None (₹0)'}
                   </span>
                 </div>
               </div>

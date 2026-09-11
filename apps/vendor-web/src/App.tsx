@@ -245,7 +245,7 @@ export function App() {
   const [category, setCategory] = useState('Venue');
   const [city, setCity] = useState('Chennai');
   const [startingPrice, setStartingPrice] = useState(50000);
-  const [advancePercentage, setAdvancePercentage] = useState(20);
+  const [advancePercentage, setAdvancePercentage] = useState(0);
   const [advanceAmount, setAdvanceAmount] = useState(0);
   const [contactPhone, setContactPhone] = useState('');
   const [description, setDescription] = useState('');
@@ -306,7 +306,7 @@ export function App() {
         setCategory(v.category);
         setCity(v.location.city);
         setStartingPrice(v.startingPrice);
-        setAdvancePercentage(v.policies?.advancePercentage ?? 20);
+        setAdvancePercentage(v.policies?.advancePercentage ?? 0);
         setAdvanceAmount(v.policies?.advanceAmount ?? 0);
         // Older listings (and any created before signup carried the phone
         // through) store the marketplace service's default placeholder. When
@@ -507,11 +507,15 @@ export function App() {
         city,
         startingPrice,
         contactPhone,
-        policies: { ...(myVendor.policies || {}), advancePercentage, advanceAmount: advanceAmount || null },
+        policies: {
+          ...(myVendor.policies || {}),
+          advancePercentage: typeof advancePercentage === 'number' ? advancePercentage : 0,
+          advanceAmount: advanceAmount ? Number(advanceAmount) : 0,
+        },
       } as any);
       if (res.data?.vendor) {
         setMyVendor(res.data.vendor);
-        setAdvancePercentage(res.data.vendor.policies?.advancePercentage ?? advancePercentage);
+        setAdvancePercentage(res.data.vendor.policies?.advancePercentage ?? 0);
         setAdvanceAmount(res.data.vendor.policies?.advanceAmount ?? 0);
         setContactPhone(res.data.vendor.contactPhone || '');
       }
