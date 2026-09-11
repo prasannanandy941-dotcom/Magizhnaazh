@@ -43,12 +43,24 @@ export const SmartBudgetPlanner: React.FC<SmartBudgetPlannerProps> = ({
   const confirmedBookings = forThisEvent.filter((b) => CONFIRMED_STATUSES.has(b.status));
   const pendingBookings = forThisEvent.filter((b) => PENDING_STATUSES.has(b.status));
 
-  // "Spent" is the money actually PAID to vendors so far (the advance the
-  // customer has handed over), not the full agreed order value. Only real money
-  // that has left the customer's pocket is deducted from the budget, so the
-  // remaining figure reflects what they still have to spend.
-  const totalSpent = confirmedBookings.reduce((acc, b) => acc + (b.advanceAmountPaid || 0), 0);
-  const remainingBudget = event.totalBudget - totalSpent;
+  // Advance paid by customer across confirmed bookings
+  const totalAdvancePaid = confirmedBookings.reduce((acc, b) => acc + (b.advanceAmountPaid || 0), 0);
+
+  // "Spent" is the money actually PAID to vendors so far (including advances and confirmed ledger payments).
+  const totalSpent = confirmedBookings.reduce((acc, b) => {
+    const confirmedPayments = (b.payments || []).filter((p) => p.status === 'confirmed');
+    if (confirmedPayments.length > 0) {
+      return acc + confirmedPayments.reduce((pAcc, p) => pAcc + (p.amount || 0), 0);
+    }
+    return acc + (b.advanceAmountPaid || 0);
+  }, 0);
+
+  // Remaining budget left from customer's total budget
+  const remainingBudget = (event.totalBudget || 0) - totalSpent;
+
+  // Total booked orders and remaining balance customer still owes to vendors
+  const totalBookedOrders = confirmedBookings.reduce((acc, b) => acc + (b.agreedPrice || (b as any).price || 0), 0);
+  const pendingVendorBalance = Math.max(0, totalBookedOrders - totalSpent);
 
   // Paid-so-far per category — drives each category row's Spent / Remaining /
   // over-budget state from the same real money that's actually been paid.
@@ -114,45 +126,82 @@ export const SmartBudgetPlanner: React.FC<SmartBudgetPlannerProps> = ({
           <p className="text-slate-400 text-sm mt-1">{event.title} • {event.location.city}</p>
         </div>
 
-        <div className="p-4 rounded-2xl glass-card border border-indigo-500/30 flex items-center gap-6">
+        <div className="p-4 rounded-2xl glass-card border border-indigo-500/30 flex items-center gap-4 sm:gap-6 flex-wrap">
           <div>
-            <span className="text-[11px] font-bold uppercase text-slate-400 block">Full Amount</span>
-            <span className="font-display font-extrabold text-2xl text-white">
-              ₹{event.totalBudget.toLocaleString('en-IN')}
+            <span className="text-[11px] font-bold uppercase text-slate-400 block">Total Amount</span>
+            <span className="font-display font-extrabold text-xl sm:text-2xl text-white">
+              ₹{(event.totalBudget || 0).toLocaleString('en-IN')}
             </span>
           </div>
 
-          <div className="h-8 w-px bg-slate-800" />
+          <div className="h-8 w-px bg-slate-800 hidden sm:block" />
 
           <div>
-            <span className="text-[11px] font-bold uppercase text-slate-400 block">Spent</span>
-            <span className="font-display font-extrabold text-2xl text-amber-400">
+            <span className="text-[11px] font-bold uppercase text-slate-400 block">Advance Paid</span>
+            <span className="font-display font-extrabold text-xl sm:text-2xl text-amber-400">
+              ₹{totalAdvancePaid.toLocaleString('en-IN')}
+            </span>
+          </div>
+
+          <div className="h-8 w-px bg-slate-800 hidden sm:block" />
+
+          <div>
+            <span className="text-[11px] font-bold uppercase text-slate-400 block">Actual Spent</span>
+            <span className="font-display font-extrabold text-xl sm:text-2xl text-indigo-400">
               ₹{totalSpent.toLocaleString('en-IN')}
             </span>
           </div>
 
-          <div className="h-8 w-px bg-slate-800" />
+          <div className="h-8 w-px bg-slate-800 hidden sm:block" />
 
           <div>
             <span className="text-[11px] font-bold uppercase text-slate-400 block">Remaining</span>
-            <span className={`font-display font-extrabold text-2xl ${remainingBudget < 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
+            <span className={`font-display font-extrabold text-xl sm:text-2xl ${remainingBudget < 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
               ₹{remainingBudget.toLocaleString('en-IN')}
             </span>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* 1. Total Amount */}
         <div className="glass-card p-6 rounded-3xl border border-slate-800">
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Allocated Budget</span>
+          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Total Amount</span>
           <div className="font-display font-extrabold text-3xl text-white mt-2">
-            ₹{totalAllocated.toLocaleString('en-IN')}
+            ₹{(event.totalBudget || 0).toLocaleString('en-IN')}
           </div>
           <p className="text-xs text-slate-400 mt-2">
-            {((totalAllocated / event.totalBudget) * 100).toFixed(0)}% of total target allocated
+            {event.totalBudget > 0 ? 'Total planned budget for this event' : 'Set in event wizard or category sliders'}
           </p>
         </div>
 
+        {/* 2. Advance Paid by Customer */}
+        <div className="glass-card p-6 rounded-3xl border border-slate-800">
+          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Advance Paid</span>
+          <div className="font-display font-extrabold text-3xl text-amber-400 mt-2">
+            ₹{totalAdvancePaid.toLocaleString('en-IN')}
+          </div>
+          <p className="text-xs text-slate-400 mt-2">
+            Advance paid by customer to {confirmedBookings.length} confirmed vendor{confirmedBookings.length === 1 ? '' : 's'}
+          </p>
+        </div>
+
+        {/* 3. Remaining Amount of Customer */}
+        <div className="glass-card p-6 rounded-3xl border border-slate-800">
+          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Remaining Amount</span>
+          <div className={`font-display font-extrabold text-3xl mt-2 ${remainingBudget < 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
+            ₹{remainingBudget.toLocaleString('en-IN')}
+          </div>
+          <p className="text-xs text-slate-400 mt-2">
+            {remainingBudget < 0
+              ? `₹${Math.abs(remainingBudget).toLocaleString('en-IN')} over target budget`
+              : pendingVendorBalance > 0
+                ? `₹${pendingVendorBalance.toLocaleString('en-IN')} balance due to vendors`
+                : 'Remaining balance of customer budget'}
+          </p>
+        </div>
+
+        {/* 4. Actual Spent (with click-to-expand breakdown) */}
         <button
           type="button"
           onClick={() => setSpendExpanded((s) => !s)}
@@ -163,24 +212,13 @@ export const SmartBudgetPlanner: React.FC<SmartBudgetPlannerProps> = ({
             <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Actual Spent</span>
             <ChevronDown className={`w-4 h-4 text-slate-500 shrink-0 transition-transform ${spendExpanded ? 'rotate-180' : ''}`} />
           </div>
-          <div className="font-display font-extrabold text-3xl text-amber-400 mt-2">
+          <div className="font-display font-extrabold text-3xl text-indigo-400 mt-2">
             ₹{totalSpent.toLocaleString('en-IN')}
           </div>
           <p className="text-xs text-slate-400 mt-2">
-            Money actually paid to vendors so far — tap to see the breakdown
+            Money actually paid so far — tap to see breakdown
           </p>
         </button>
-
-        <div className="glass-card p-6 rounded-3xl border border-slate-800">
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Budget Health Score</span>
-          <div className="font-display font-extrabold text-3xl text-emerald-400 mt-2 flex items-center gap-2">
-            <span>94 / 100</span>
-            <CheckCircle2 className="w-6 h-6 text-emerald-400" />
-          </div>
-          <p className="text-xs text-slate-400 mt-2">
-            Optimal allocation balance
-          </p>
-        </div>
       </div>
 
       {spendExpanded && (
