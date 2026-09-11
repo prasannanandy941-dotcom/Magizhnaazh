@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { ClipboardList, RefreshCw, Loader2, CheckCircle2, Circle, IndianRupee, LogIn, Star, Send, FileText, Wallet, CalendarPlus } from 'lucide-react';
+import { ClipboardList, RefreshCw, Loader2, CheckCircle2, Circle, IndianRupee, LogIn, Star, Send, FileText, Wallet } from 'lucide-react';
 import { Booking, Review, slotLabelWithTime } from '../../../../packages/shared-types';
 import { fetchMyBookings, fetchMyReviews, submitReview, recordBalancePayment, fetchBookingInvoice } from '../api';
 import { openInvoicePrintWindow } from './invoice';
-import { downloadBookingIcs } from './calendar';
 
 // Work-progress stages a confirmed booking moves through — mirrors the
 // vendor-side tracker in vendor-web/App.tsx. Applies to every vendor
@@ -263,10 +262,6 @@ const PaymentBlock: React.FC<{ booking: Booking; onUpdated: (b: Booking) => void
               <Wallet className="w-3.5 h-3.5" /> Pay balance
             </button>
           )}
-          <button onClick={() => downloadBookingIcs(booking)}
-            className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-[11px] flex items-center gap-1.5">
-            <CalendarPlus className="w-3.5 h-3.5" /> Add to Calendar
-          </button>
           <button onClick={viewInvoice} disabled={invoiceBusy}
             className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-[11px] flex items-center gap-1.5 disabled:opacity-60">
             {invoiceBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />} Invoice
