@@ -36,6 +36,8 @@ jobs:
 
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.2.0
+        continue-on-error: true
+        id: deploy_primary
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
@@ -48,23 +50,48 @@ jobs:
 
             echo "==> Fetching latest code"
             git fetch origin main
-            # Force the tracked tree to exactly match origin/main. A plain
-            # `git pull` aborts if a tracked file was edited directly on the VPS
-            # (local changes would be overwritten by the merge); a deploy target
-            # should mirror main, so discard that drift. Note: this only touches
-            # tracked files — untracked runtime data (uploads/, .env, node_modules)
-            # is left alone (no `git clean`).
             git reset --hard origin/main
 
             echo "==> Installing dependencies (workspaces)"
             npm install
 
             echo "==> Building frontend apps"
-            # The frontends bake VITE_GATEWAY_URL in at build time. The committed
-            # .env.local files point it at localhost for dev, and a real env var
-            # outranks them in Vite — so set the production API URL here, or the
-            # built site calls localhost:8000 in the user's browser (connection
-            # refused). Keep this in sync with nginx's event-api server_name.
+            export VITE_GATEWAY_URL=https://event-api.porulontech.com
+            npm run build:all
+
+            echo "==> Restarting backend services (magizh-* only)"
+            for a in magizh-auth magizh-gateway magizh-marketplace magizh-booking \
+                     magizh-event-budget magizh-invitation magizh-guest-feedback magizh-monitor; do
+              pm2 restart "$a" --update-env || echo "  (skip: $a not found)"
+            done
+            pm2 save
+
+            echo "==> Reloading nginx"
+            nginx -s reload || sudo nginx -s reload || echo "  (skip: nginx reload)"
+
+            echo "==> Deploy complete"
+
+      - name: Deploy over SSH (fallback port 22)
+        if: steps.deploy_primary.outcome != 'success'
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key_path: ${{ github.workspace }}/deploy_key
+          port: 22
+          command_timeout: 20m
+          script: |
+            set -e
+            cd /var/www/magizhnaazh
+
+            echo "==> Fetching latest code"
+            git fetch origin main
+            git reset --hard origin/main
+
+            echo "==> Installing dependencies (workspaces)"
+            npm install
+
+            echo "==> Building frontend apps"
             export VITE_GATEWAY_URL=https://event-api.porulontech.com
             npm run build:all
 
