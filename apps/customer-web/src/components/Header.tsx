@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Sparkles, Calendar, Heart, Store, User as UserIcon, LogIn, LogOut, ChevronDown, ClipboardList, Menu, X } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Sparkles, Calendar, Heart, Store, User as UserIcon, LogIn, LogOut, ChevronDown, ChevronLeft, ChevronRight, ClipboardList, Menu, X } from 'lucide-react';
 import { User } from '../../../../packages/shared-types';
 
 interface HeaderProps {
@@ -25,6 +25,45 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+
+  const navRef = useRef<HTMLElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const checkScroll = () => {
+    if (navRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = navRef.current;
+      setCanScrollLeft(scrollLeft > 6);
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 6);
+    }
+  };
+
+  useEffect(() => {
+    checkScroll();
+    const handleResize = () => checkScroll();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (navRef.current) {
+      const activeEl = navRef.current.querySelector<HTMLElement>('[data-active="true"]');
+      if (activeEl) {
+        activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      }
+      setTimeout(checkScroll, 300);
+    }
+  }, [activeTab]);
+
+  const scrollNav = (direction: 'left' | 'right') => {
+    if (navRef.current) {
+      navRef.current.scrollBy({
+        left: direction === 'left' ? -180 : 180,
+        behavior: 'smooth',
+      });
+      setTimeout(checkScroll, 250);
+    }
+  };
 
   // Shared nav definition, used by both the desktop bar and the mobile menu.
   const navItems: { id: string; label: string; icon: React.ReactNode }[] = [
@@ -58,81 +97,69 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-1 bg-[#26101c]/70 p-1.5 rounded-2xl border border-[#6b2140]/60 overflow-x-auto no-scrollbar max-w-full">
-          <button
-            onClick={() => setActiveTab('marketplace')}
-            className={`whitespace-nowrap shrink-0 px-3 xl:px-4 py-2 rounded-xl font-medium text-xs xl:text-sm transition-all flex items-center gap-2 ${
-              activeTab === 'marketplace'
-                ? 'bg-gradient-to-r from-[#c9a648] to-[#b8860b] text-[#1a0a14] shadow-md font-semibold'
-                : 'text-[#cf9bb3] hover:text-[#e8c874] hover:bg-[#6b2140]/30'
-            }`}
-          >
-            <Store className="w-4 h-4 shrink-0" />
-            <span className="whitespace-nowrap">Marketplace</span>
-          </button>
+        {/* Desktop Navigation with visible scroll indicators */}
+        <div className="hidden md:flex items-center relative min-w-0 max-w-xl xl:max-w-2xl mx-2">
+          {/* Scroll Left Button */}
+          {canScrollLeft && (
+            <button
+              type="button"
+              onClick={() => scrollNav('left')}
+              className="absolute -left-3.5 z-20 w-7 h-7 rounded-full bg-[#1a0a14] border border-[#c9a648] text-[#f0c869] shadow-lg shadow-black/60 flex items-center justify-center hover:scale-110 hover:bg-[#26101c] transition-all"
+              aria-label="Scroll left"
+              title="Scroll left"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+          )}
 
-          <button
-            onClick={() => setActiveTab('events')}
-            className={`whitespace-nowrap shrink-0 px-3 xl:px-4 py-2 rounded-xl font-medium text-xs xl:text-sm transition-all flex items-center gap-2 ${
-              activeTab === 'events'
-                ? 'bg-gradient-to-r from-[#c9a648] to-[#b8860b] text-[#1a0a14] shadow-md font-semibold'
-                : 'text-[#cf9bb3] hover:text-[#e8c874] hover:bg-[#6b2140]/30'
-            }`}
-          >
-            <Calendar className="w-4 h-4 shrink-0" />
-            <span className="whitespace-nowrap">My Events</span>
-          </button>
+          {/* Left fade hint */}
+          {canScrollLeft && (
+            <div className="pointer-events-none absolute left-0 top-1 bottom-2 w-8 bg-gradient-to-r from-[#26101c] to-transparent rounded-l-2xl z-10" />
+          )}
 
-          <button
-            onClick={() => setActiveTab('budget')}
-            className={`whitespace-nowrap shrink-0 px-3 xl:px-4 py-2 rounded-xl font-medium text-xs xl:text-sm transition-all flex items-center gap-2 ${
-              activeTab === 'budget'
-                ? 'bg-gradient-to-r from-[#c9a648] to-[#b8860b] text-[#1a0a14] shadow-md font-semibold'
-                : 'text-[#cf9bb3] hover:text-[#e8c874] hover:bg-[#6b2140]/30'
-            }`}
+          <nav
+            ref={navRef}
+            onScroll={checkScroll}
+            className="flex items-center gap-1 bg-[#26101c]/70 p-1.5 pb-2.5 rounded-2xl border border-[#6b2140]/60 overflow-x-auto nav-scrollbar max-w-full relative scroll-smooth"
           >
-            <span className={`font-bold shrink-0 ${activeTab === 'budget' ? 'text-[#1a0a14]' : 'text-[#e8c874]'}`}>₹</span>
-            <span className="whitespace-nowrap">Smart Budget</span>
-          </button>
+            {navItems.map((item) => {
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  data-active={isActive ? 'true' : undefined}
+                  onClick={() => setActiveTab(item.id)}
+                  className={`whitespace-nowrap shrink-0 px-3 xl:px-4 py-2 rounded-xl font-medium text-xs xl:text-sm transition-all flex items-center gap-2 ${
+                    isActive
+                      ? 'bg-gradient-to-r from-[#c9a648] to-[#b8860b] text-[#1a0a14] shadow-md font-semibold'
+                      : 'text-[#cf9bb3] hover:text-[#e8c874] hover:bg-[#6b2140]/30'
+                  }`}
+                >
+                  <span className="shrink-0">{item.icon}</span>
+                  <span className="whitespace-nowrap">{item.label}</span>
+                </button>
+              );
+            })}
+          </nav>
 
-          <button
-            onClick={() => setActiveTab('invitations')}
-            className={`whitespace-nowrap shrink-0 px-3 xl:px-4 py-2 rounded-xl font-medium text-xs xl:text-sm transition-all flex items-center gap-2 ${
-              activeTab === 'invitations'
-                ? 'bg-gradient-to-r from-[#c9a648] to-[#b8860b] text-[#1a0a14] shadow-md font-semibold'
-                : 'text-[#cf9bb3] hover:text-[#e8c874] hover:bg-[#6b2140]/30'
-            }`}
-          >
-            <Sparkles className={`w-4 h-4 shrink-0 ${activeTab === 'invitations' ? 'text-[#1a0a14]' : 'text-[#f0c869]'}`} />
-            <span className="whitespace-nowrap">Canva Invites</span>
-          </button>
+          {/* Right fade hint */}
+          {canScrollRight && (
+            <div className="pointer-events-none absolute right-0 top-1 bottom-2 w-8 bg-gradient-to-l from-[#26101c] to-transparent rounded-r-2xl z-10" />
+          )}
 
-          <button
-            onClick={() => setActiveTab('guests')}
-            className={`whitespace-nowrap shrink-0 px-3 xl:px-4 py-2 rounded-xl font-medium text-xs xl:text-sm transition-all flex items-center gap-2 ${
-              activeTab === 'guests'
-                ? 'bg-gradient-to-r from-[#c9a648] to-[#b8860b] text-[#1a0a14] shadow-md font-semibold'
-                : 'text-[#cf9bb3] hover:text-[#e8c874] hover:bg-[#6b2140]/30'
-            }`}
-          >
-            <UserIcon className="w-4 h-4 shrink-0" />
-            <span className="whitespace-nowrap">Guests & RSVP</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('orders')}
-            className={`whitespace-nowrap shrink-0 px-3 xl:px-4 py-2 rounded-xl font-medium text-xs xl:text-sm transition-all flex items-center gap-2 ${
-              activeTab === 'orders'
-                ? 'bg-gradient-to-r from-[#c9a648] to-[#b8860b] text-[#1a0a14] shadow-md font-semibold'
-                : 'text-[#cf9bb3] hover:text-[#e8c874] hover:bg-[#6b2140]/30'
-            }`}
-          >
-            <ClipboardList className="w-4 h-4 shrink-0" />
-            <span className="whitespace-nowrap">My Orders</span>
-          </button>
-
-        </nav>
+          {/* Scroll Right Button */}
+          {canScrollRight && (
+            <button
+              type="button"
+              onClick={() => scrollNav('right')}
+              className="absolute -right-3.5 z-20 w-7 h-7 rounded-full bg-[#1a0a14] border border-[#c9a648] text-[#f0c869] shadow-lg shadow-black/60 flex items-center justify-center hover:scale-110 hover:bg-[#26101c] transition-all animate-pulse"
+              aria-label="Scroll right"
+              title="More options — scroll right"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          )}
+        </div>
 
         {/* Right CTA */}
         <div className="flex items-center gap-3">

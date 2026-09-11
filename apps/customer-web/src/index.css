@@ -283,4 +283,25 @@ html[data-theme='light'] .glass-card-gold-hover:hover {
       transform: translateY(110vh) rotate(360deg);
     }
   }
+
+  /* Visible elegant slim gold scrollbar for nav tabs */
+  .nav-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(201, 166, 72, 0.6) rgba(107, 33, 64, 0.25);
+  }
+  .nav-scrollbar::-webkit-scrollbar {
+    height: 4px;
+  }
+  .nav-scrollbar::-webkit-scrollbar-track {
+    background: rgba(107, 33, 64, 0.25);
+    border-radius: 9999px;
+    margin: 0 10px;
+  }
+  .nav-scrollbar::-webkit-scrollbar-thumb {
+    background: linear-gradient(90deg, #c9a648, #e85d8a);
+    border-radius: 9999px;
+  }
+  .nav-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(90deg, #f0c869, #f2a6c4);
+  }
 }
