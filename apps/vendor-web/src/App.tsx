@@ -5109,34 +5109,7 @@ export function App() {
               );
             })()}
 
-            {/* Return Gifts vendors get two structured fields instead of the
-                free-text option box: how many gifts, and a discount note. */}
-            {myVendor.category === 'Return Gifts' && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-amber-400 uppercase mb-1.5">Count of gifts</label>
-                  <input
-                    type="number"
-                    value={giftCount}
-                    onChange={(e) => setGiftCount(e.target.value)}
-                    placeholder="e.g. 100"
-                    className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm"
-                  />
-                  <p className="text-[10px] text-slate-500 mt-1">How many gift pieces you supply per order.</p>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-amber-400 uppercase mb-1.5">Discount (based on item)</label>
-                  <input
-                    type="text"
-                    value={giftDiscount}
-                    onChange={(e) => setGiftDiscount(e.target.value)}
-                    placeholder="e.g. 10% off above 100 pieces"
-                    className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm"
-                  />
-                  <p className="text-[10px] text-slate-500 mt-1">Bulk / item-based discount customers get.</p>
-                </div>
-              </div>
-            )}
+
 
             {/* Custom options already added by the vendor stay visible/editable,
                 but the free-text "Add your own option" box has been removed. */}
