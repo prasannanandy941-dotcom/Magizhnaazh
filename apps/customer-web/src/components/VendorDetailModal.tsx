@@ -273,26 +273,67 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
     setSelectedTierByPkg((prev) => ({ ...prev, [pkg.id]: tier }));
   };
 
-  // Vendors without packages set up yet still have a startingPrice — fall
-  // back to that as the reference total so the advance isn't computed
-  // against a nonexistent ₹0 package price.
-  const referencePrice = effectivePkgPrice || vendor.startingPrice || 0;
+  // Helper to extract the price for an option/item from its label or vendor records
+  const getOptionPrice = (opt: string): number => {
+    // 1. Regex match for price formatted in label: "— ₹150", "- ₹1,500", "(₹1,75,000)", "— ₹ 150"
+    const match = opt.match(/(?:—|-|–|\()\s*₹\s*([0-9,]+)/);
+    if (match) {
+      const val = parseInt(match[1].replace(/,/g, ''), 10);
+      if (!isNaN(val) && val > 0) return val;
+    }
 
-  // Auto-apply the vendor's best live offer to the running total.
-  const appliedDeal = bestDealForAmount(vendor, referencePrice);
+    // 2. Direct lookup in offeredOptionPrices
+    if (vendor.offeredOptionPrices && typeof vendor.offeredOptionPrices[opt] === 'number') {
+      return vendor.offeredOptionPrices[opt];
+    }
+
+    // 3. Lookup in offeredOptionItems across all groups
+    if (vendor.offeredOptionItems) {
+      for (const items of Object.values(vendor.offeredOptionItems)) {
+        if (Array.isArray(items)) {
+          for (const it of items) {
+            if (it.price && (opt === it.name || opt.includes(it.name))) {
+              return it.price;
+            }
+          }
+        }
+      }
+    }
+
+    return 0;
+  };
+
+  const optionsTotalPrice = selectedOptions.reduce((sum, opt) => sum + getOptionPrice(opt), 0);
+
+  // Whether vendor has any selectable packages or services/amenities
+  const hasCatalog = (vendor.packages?.length ?? 0) > 0 || (vendor.offeredOptions?.length ?? 0) > 0 || amenityRateGroups.length > 0;
+  const hasSelection = Boolean(selectedPkgId || optionsTotalPrice > 0 || selectedOptions.length > 0);
+
+  // When vendor offers a catalog (packages or options), pricing strictly reflects the customer's actual picks.
+  // When nothing is selected, total is 0 and advance is 0 (no false pre-calculated advance like ₹304 upfront).
+  // Only for flat vendors with zero catalog do we use startingPrice as reference.
+  const rawTotal = (effectivePkgPrice ?? 0) + optionsTotalPrice;
+  const referencePrice = hasSelection
+    ? rawTotal
+    : (!hasCatalog ? (vendor.startingPrice || 0) : 0);
+
+  // Auto-apply the vendor's best live offer to the running total (only if referencePrice > 0).
+  const appliedDeal = referencePrice > 0 ? bestDealForAmount(vendor, referencePrice) : null;
   const dealDiscount = appliedDeal?.discount ?? 0;
   const netPrice = Math.max(0, referencePrice - dealDiscount);
   // The concrete price the booking is created with — discounted when an offer
-  // applies, otherwise the package price (or undefined to use starting price).
-  const bookingPrice = appliedDeal ? netPrice : effectivePkgPrice;
+  // applies, otherwise the selected items/package price (or undefined if no selection and no catalog).
+  const bookingPrice = referencePrice > 0 ? netPrice : undefined;
 
   // A flat advanceAmount the vendor set overrides the percentage-based calc.
   const flatAdvance = vendor.policies.advanceAmount;
   const advanceIsFlat = typeof flatAdvance === 'number' && flatAdvance > 0;
-  const advanceAmountDue = advanceIsFlat
-    ? (netPrice > 0 ? Math.min(flatAdvance!, netPrice) : flatAdvance!)
-    : Math.round((netPrice * vendor.policies.advancePercentage) / 100);
-  const advanceLabel = advanceIsFlat ? 'Advance required' : `Advance required (${vendor.policies.advancePercentage}%)`;
+  const advanceAmountDue = referencePrice === 0
+    ? 0
+    : advanceIsFlat
+      ? (netPrice > 0 ? Math.min(flatAdvance!, netPrice) : flatAdvance!)
+      : Math.round((netPrice * (vendor.policies.advancePercentage || 0)) / 100);
+  const advanceLabel = advanceIsFlat ? 'Advance required' : `Advance required (${vendor.policies.advancePercentage || 0}%)`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto">
@@ -2546,6 +2587,15 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
             <div className="text-white font-bold text-lg">
               ₹{advanceAmountDue.toLocaleString('en-IN')}
             </div>
+            {referencePrice > 0 ? (
+              <div className="text-xs text-slate-400">
+                Total bill: <span className="text-slate-200 font-semibold">₹{netPrice.toLocaleString('en-IN')}</span>
+              </div>
+            ) : (
+              <div className="text-xs text-amber-400/90 font-medium">
+                Select items or a package to calculate advance
+              </div>
+            )}
             {customRequest && (
               <div className="mt-1 flex items-center gap-1 text-[11px] text-emerald-400 font-semibold">
                 <Check className="w-3 h-3" /> Your request will be shared with the vendor
@@ -2561,7 +2611,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
           <div className="flex items-center gap-3 w-full sm:w-auto">
             <button
               onClick={() => setAdvancePanelOpen(true)}
-              disabled={hasFixedAvailability && !selectedEventDate}
+              disabled={(hasFixedAvailability && !selectedEventDate) || referencePrice === 0}
               className="shine-sweep w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold text-xs shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <CreditCard className="w-4 h-4" /> Book & Pay Advance
@@ -2594,9 +2644,33 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
             <div className="p-6 space-y-4">
               <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-400">{selectedPkg?.packageName || 'Starting Price'}</span>
+                  <span className="text-slate-400">
+                    {selectedPkg
+                      ? optionsTotalPrice > 0
+                        ? `${selectedPkg.packageName} + Selected Items`
+                        : selectedPkg.packageName
+                      : optionsTotalPrice > 0
+                      ? `Selected Items (${selectedOptions.length})`
+                      : 'Starting Price'}
+                  </span>
                   <span className={`font-semibold ${appliedDeal ? 'text-slate-500 line-through' : 'text-white'}`}>₹{referencePrice.toLocaleString('en-IN')}</span>
                 </div>
+                {selectedOptions.length > 0 && (
+                  <div className="mt-2.5 pt-2.5 border-t border-slate-800/80 space-y-1.5">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Selected items ({selectedOptions.length})</span>
+                    <div className="max-h-28 overflow-y-auto space-y-1.5 pr-1 text-xs">
+                      {selectedOptions.map((opt, i) => {
+                        const itemPrice = getOptionPrice(opt);
+                        return (
+                          <div key={i} className="flex items-center justify-between text-slate-300 py-0.5">
+                            <span className="truncate mr-2">• {opt.replace(/^[A-Za-z0-9\s/&]+:\s*/, '')}</span>
+                            {itemPrice > 0 && <span className="text-emerald-400 font-semibold shrink-0">₹{itemPrice.toLocaleString('en-IN')}</span>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
                 {appliedDeal && (
                   <>
                     <div className="flex items-center justify-between text-sm mt-2">
