@@ -799,16 +799,14 @@ export function App() {
                         <option key={q} value={q} className="bg-slate-900">{q}</option>
                       ))}
                     </select>
-                    <div className="flex items-center gap-1 shrink-0" title="Extra charge for outstation / other areas">
-                      <span className="text-slate-400 text-xs font-semibold">+₹</span>
-                      <input
-                        type="number"
-                        value={item.areaCharge ? item.areaCharge : ''}
-                        onChange={(e) => updateOptionItem(opt, i, 'areaCharge', e.target.value)}
-                        placeholder="area charge"
-                        className="w-28 p-2 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-amber-400"
-                      />
-                    </div>
+                    <input
+                      type="number"
+                      value={item.areaCharge ? item.areaCharge : ''}
+                      onChange={(e) => updateOptionItem(opt, i, 'areaCharge', e.target.value)}
+                      placeholder="area charge"
+                      title="Extra charge for outstation / other areas"
+                      className="w-32 p-2 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-amber-400 shrink-0"
+                    />
                   </>
                 )}
 
