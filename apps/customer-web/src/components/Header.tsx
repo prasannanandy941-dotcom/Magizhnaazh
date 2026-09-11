@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, Calendar, Heart, Store, User as UserIcon, LogIn, LogOut, ChevronDown, ChevronLeft, ChevronRight, ClipboardList, Menu, X } from 'lucide-react';
+import { Sparkles, Calendar, Heart, Store, User as UserIcon, LogIn, LogOut, ChevronDown, ClipboardList, Menu, X } from 'lucide-react';
 import { User } from '../../../../packages/shared-types';
 
 interface HeaderProps {
@@ -27,20 +27,23 @@ export const Header: React.FC<HeaderProps> = ({
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   const navRef = useRef<HTMLElement>(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState({ hasOverflow: false, thumbWidthPercent: 100, scrollFraction: 0 });
 
-  const checkScroll = () => {
+  const updateScrollProgress = () => {
     if (navRef.current) {
       const { scrollLeft, scrollWidth, clientWidth } = navRef.current;
-      setCanScrollLeft(scrollLeft > 6);
-      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 6);
+      const maxScroll = scrollWidth - clientWidth;
+      const hasOverflow = maxScroll > 6;
+      const thumbRatio = clientWidth / Math.max(1, scrollWidth);
+      const thumbWidthPercent = Math.max(20, Math.min(100, Math.round(thumbRatio * 100)));
+      const scrollFraction = maxScroll > 0 ? Math.max(0, Math.min(1, scrollLeft / maxScroll)) : 0;
+      setScrollProgress({ hasOverflow, thumbWidthPercent, scrollFraction });
     }
   };
 
   useEffect(() => {
-    checkScroll();
-    const handleResize = () => checkScroll();
+    updateScrollProgress();
+    const handleResize = () => updateScrollProgress();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -51,18 +54,23 @@ export const Header: React.FC<HeaderProps> = ({
       if (activeEl) {
         activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
       }
-      setTimeout(checkScroll, 300);
+      setTimeout(updateScrollProgress, 300);
     }
   }, [activeTab]);
 
-  const scrollNav = (direction: 'left' | 'right') => {
-    if (navRef.current) {
-      navRef.current.scrollBy({
-        left: direction === 'left' ? -180 : 180,
-        behavior: 'smooth',
-      });
-      setTimeout(checkScroll, 250);
+  const handleWheel = (e: React.WheelEvent) => {
+    if (navRef.current && Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+      navRef.current.scrollLeft += e.deltaY;
     }
+  };
+
+  const handleTrackClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!navRef.current) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const fraction = Math.max(0, Math.min(1, clickX / rect.width));
+    const maxScroll = navRef.current.scrollWidth - navRef.current.clientWidth;
+    navRef.current.scrollTo({ left: fraction * maxScroll, behavior: 'smooth' });
   };
 
   // Shared nav definition, used by both the desktop bar and the mobile menu.
@@ -97,30 +105,13 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Desktop Navigation with visible scroll indicators */}
-        <div className="hidden md:flex items-center relative min-w-0 max-w-xl xl:max-w-2xl mx-2">
-          {/* Scroll Left Button */}
-          {canScrollLeft && (
-            <button
-              type="button"
-              onClick={() => scrollNav('left')}
-              className="absolute -left-3.5 z-20 w-7 h-7 rounded-full bg-[#1a0a14] border border-[#c9a648] text-[#f0c869] shadow-lg shadow-black/60 flex items-center justify-center hover:scale-110 hover:bg-[#26101c] transition-all"
-              aria-label="Scroll left"
-              title="Scroll left"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-          )}
-
-          {/* Left fade hint */}
-          {canScrollLeft && (
-            <div className="pointer-events-none absolute left-0 top-1 bottom-2 w-8 bg-gradient-to-r from-[#26101c] to-transparent rounded-l-2xl z-10" />
-          )}
-
+        {/* Desktop Navigation */}
+        <div className="hidden md:flex flex-col bg-[#26101c]/70 rounded-2xl border border-[#6b2140]/60 overflow-hidden min-w-0 max-w-xl xl:max-w-2xl mx-2">
           <nav
             ref={navRef}
-            onScroll={checkScroll}
-            className="flex items-center gap-1 bg-[#26101c]/70 p-1.5 pb-2.5 rounded-2xl border border-[#6b2140]/60 overflow-x-auto nav-scrollbar max-w-full relative scroll-smooth"
+            onScroll={updateScrollProgress}
+            onWheel={handleWheel}
+            className="flex items-center gap-1 p-1.5 overflow-x-auto no-scrollbar scroll-smooth"
           >
             {navItems.map((item) => {
               const isActive = activeTab === item.id;
@@ -142,22 +133,23 @@ export const Header: React.FC<HeaderProps> = ({
             })}
           </nav>
 
-          {/* Right fade hint */}
-          {canScrollRight && (
-            <div className="pointer-events-none absolute right-0 top-1 bottom-2 w-8 bg-gradient-to-l from-[#26101c] to-transparent rounded-r-2xl z-10" />
-          )}
-
-          {/* Scroll Right Button */}
-          {canScrollRight && (
-            <button
-              type="button"
-              onClick={() => scrollNav('right')}
-              className="absolute -right-3.5 z-20 w-7 h-7 rounded-full bg-[#1a0a14] border border-[#c9a648] text-[#f0c869] shadow-lg shadow-black/60 flex items-center justify-center hover:scale-110 hover:bg-[#26101c] transition-all animate-pulse"
-              aria-label="Scroll right"
-              title="More options — scroll right"
+          {/* Dedicated visible scrolling line — clean, properly padded, never cut in half */}
+          {scrollProgress.hasOverflow && (
+            <div
+              onClick={handleTrackClick}
+              className="px-3 pb-2 pt-0.5 cursor-pointer group/track"
+              title="Click or scroll to navigate tabs"
             >
-              <ChevronRight className="w-4 h-4" />
-            </button>
+              <div className="h-1.5 w-full bg-[#6b2140]/40 group-hover/track:bg-[#6b2140]/70 rounded-full overflow-hidden transition-colors relative">
+                <div
+                  className="h-full bg-gradient-to-r from-[#c9a648] via-[#e85d8a] to-[#c9a648] rounded-full transition-[margin] duration-100 shadow-sm shadow-[#c9a648]/40"
+                  style={{
+                    width: `${scrollProgress.thumbWidthPercent}%`,
+                    marginLeft: `${scrollProgress.scrollFraction * (100 - scrollProgress.thumbWidthPercent)}%`,
+                  }}
+                />
+              </div>
+            </div>
           )}
         </div>
 
