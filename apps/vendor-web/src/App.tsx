@@ -713,16 +713,19 @@ export function App() {
             </button>
           )}
           {NO_ITEM_OPTIONS.has(opt) && myVendor?.category === 'Media' && (
-            <select
-              value={offeredOptionQuality[opt] ?? ''}
-              onChange={(e) => setOptionQuality(opt, e.target.value)}
-              className="ml-auto w-36 p-1.5 rounded-lg bg-black/20 text-white text-[11px] font-bold focus:outline-none"
-            >
-              <option value="">Quality (optional)</option>
-              {MEDIA_QUALITY_OPTIONS.map((q) => (
-                <option key={q} value={q} className="bg-slate-900">{q}</option>
-              ))}
-            </select>
+            <div className="ml-auto flex items-center gap-1.5 shrink-0">
+              <span className="text-[11px] text-white/90 font-semibold">Quality:</span>
+              <select
+                value={offeredOptionQuality[opt] ?? ''}
+                onChange={(e) => setOptionQuality(opt, e.target.value)}
+                className="min-w-[155px] px-3 py-1.5 rounded-xl bg-black/40 border border-white/30 text-white text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-amber-400/50 cursor-pointer shadow-sm"
+              >
+                <option value="" className="bg-slate-900 text-white">Quality (optional)</option>
+                {MEDIA_QUALITY_OPTIONS.map((q) => (
+                  <option key={q} value={q} className="bg-slate-900 text-white">{q}</option>
+                ))}
+              </select>
+            </div>
           )}
           <button
             type="button"
@@ -748,113 +751,203 @@ export function App() {
               </p>
             )}
             {items.map((item, i) => (
-              <div key={i} className="flex items-center gap-2 flex-wrap">
-                <input
-                  type="text"
-                  value={item.name}
-                  onChange={(e) => updateOptionItem(opt, i, 'name', e.target.value)}
-                  placeholder={`${myVendor?.category === 'Security' ? 'Person name' : 'Item name'} (e.g. ${nameExample})`}
-                  list={nameSuggestions.length > 0 ? nameListId : undefined}
-                  className="flex-1 min-w-0 p-2 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs"
-                />
-                <div className="flex items-center gap-1">
-                  <span className="text-slate-400 text-xs">₹</span>
-                  <input
-                    type="number"
-                    value={item.price === 0 ? '' : item.price}
-                    onChange={(e) => updateOptionItem(opt, i, 'price', e.target.value)}
-                    placeholder="rate"
-                    className="w-20 p-2 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs"
-                  />
-                </div>
-                {myVendor?.category === 'Media' && (
-                  <>
-                    {mediaExtraField(opt) === 'equipments' && (
-                      <select
-                        value={item.equipments ?? ''}
-                        onChange={(e) => updateOptionItem(opt, i, 'equipments', e.target.value)}
-                        className="w-36 p-2 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs"
-                      >
-                        <option value="">Equipments (optional)</option>
-                        {MEDIA_EQUIPMENT_OPTIONS.map((eq) => (
-                          <option key={eq} value={eq}>{eq}</option>
-                        ))}
-                      </select>
-                    )}
-                    <select
-                      value={item.quality ?? ''}
-                      onChange={(e) => updateOptionItem(opt, i, 'quality', e.target.value)}
-                      className="w-32 p-2 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs"
-                    >
-                      <option value="">Quality (optional)</option>
-                      {MEDIA_QUALITY_OPTIONS.map((q) => (
-                        <option key={q} value={q}>{q}</option>
-                      ))}
-                    </select>
-                    <div className="flex items-center gap-1" title="Extra charge for outstation / other areas">
-                      <span className="text-slate-400 text-xs">+₹</span>
+              myVendor?.category === 'Media' ? (
+                <div key={i} className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800/90 space-y-3 shadow-inner">
+                  {/* Row 1: Item name, Rate, and Delete button */}
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={item.name}
+                      onChange={(e) => updateOptionItem(opt, i, 'name', e.target.value)}
+                      placeholder={`Service name (e.g. ${nameExample})`}
+                      list={nameSuggestions.length > 0 ? nameListId : undefined}
+                      className="flex-1 min-w-0 p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-indigo-500"
+                    />
+                    <div className="flex items-center gap-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 shrink-0">
+                      <span className="text-slate-400 text-xs font-semibold">₹</span>
                       <input
                         type="number"
-                        value={item.areaCharge ? item.areaCharge : ''}
-                        onChange={(e) => updateOptionItem(opt, i, 'areaCharge', e.target.value)}
-                        placeholder="area charge"
-                        className="w-24 p-2 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs"
+                        value={item.price === 0 ? '' : item.price}
+                        onChange={(e) => updateOptionItem(opt, i, 'price', e.target.value)}
+                        placeholder="Rate"
+                        className="w-20 bg-transparent text-white text-xs font-semibold focus:outline-none"
                       />
                     </div>
-                  </>
-                )}
-                <input
-                  type="text"
-                  value={item.note ?? ''}
-                  onChange={(e) => updateOptionItem(opt, i, 'note', e.target.value)}
-                  placeholder="note (optional)"
-                  className="flex-1 min-w-[120px] p-2 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs"
-                />
-                <div className="flex items-center gap-2 shrink-0">
-                  {item.photo ? (
-                    <div className="flex items-center gap-1.5">
-                      <div className="relative h-9 w-9 rounded-lg overflow-hidden border border-slate-800 bg-slate-950 shrink-0">
-                        <img src={item.photo} alt="item" className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => removeOptionItem(opt, i)}
+                      aria-label="Remove item"
+                      className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-rose-400 hover:bg-slate-800 shrink-0 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* Row 2: Media specifics (Equipments, Quality dropdown, Area charge) */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+                    {mediaExtraField(opt) === 'equipments' && (
+                      <div>
+                        <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Equipments</label>
+                        <select
+                          value={item.equipments ?? ''}
+                          onChange={(e) => updateOptionItem(opt, i, 'equipments', e.target.value)}
+                          className="w-full p-2 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs focus:outline-none focus:border-indigo-500 cursor-pointer"
+                        >
+                          <option value="">Equipments (optional)</option>
+                          {MEDIA_EQUIPMENT_OPTIONS.map((eq) => (
+                            <option key={eq} value={eq} className="bg-slate-900">{eq}</option>
+                          ))}
+                        </select>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => updateOptionItem(opt, i, 'photo', '')}
-                        className="text-[10px] text-rose-400 font-bold hover:underline"
+                    )}
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Quality</label>
+                      <select
+                        value={item.quality ?? ''}
+                        onChange={(e) => updateOptionItem(opt, i, 'quality', e.target.value)}
+                        className="w-full min-w-[150px] p-2 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs focus:outline-none focus:border-indigo-500 cursor-pointer"
                       >
-                        Remove Photo
-                      </button>
+                        <option value="">Quality (optional)</option>
+                        {MEDIA_QUALITY_OPTIONS.map((q) => (
+                          <option key={q} value={q} className="bg-slate-900">{q}</option>
+                        ))}
+                      </select>
                     </div>
-                  ) : (
-                    <label className="cursor-pointer flex items-center gap-1 text-[10px] px-2.5 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white font-bold hover:bg-slate-700 shrink-0">
-                      {uploadingItemPhoto === `${opt}-${i}` ? (
-                        <Loader2 className="w-3 h-3 animate-spin" />
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1" title="Extra charge for outstation / other areas">Area Charge (+₹)</label>
+                      <div className="flex items-center gap-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-800">
+                        <span className="text-slate-400 text-xs">+₹</span>
+                        <input
+                          type="number"
+                          value={item.areaCharge ? item.areaCharge : ''}
+                          onChange={(e) => updateOptionItem(opt, i, 'areaCharge', e.target.value)}
+                          placeholder="Outstation charge"
+                          className="w-full bg-transparent text-white text-xs focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Row 3: Note + Photo */}
+                  <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap pt-1">
+                    <input
+                      type="text"
+                      value={item.note ?? ''}
+                      onChange={(e) => updateOptionItem(opt, i, 'note', e.target.value)}
+                      placeholder="Note (optional, e.g. includes drone footage + teaser)"
+                      className="flex-1 min-w-0 p-2 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs focus:outline-none focus:border-indigo-500"
+                    />
+                    <div className="flex items-center gap-2 shrink-0">
+                      {item.photo ? (
+                        <div className="flex items-center gap-1.5">
+                          <div className="relative h-9 w-9 rounded-xl overflow-hidden border border-slate-800 bg-slate-950 shrink-0">
+                            <img src={item.photo} alt="item" className="w-full h-full object-cover" />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => updateOptionItem(opt, i, 'photo', '')}
+                            className="text-[10px] text-rose-400 font-bold hover:underline"
+                          >
+                            Remove Photo
+                          </button>
+                        </div>
                       ) : (
-                        <Upload className="w-3 h-3" />
+                        <label className="cursor-pointer flex items-center gap-1.5 text-[11px] px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white font-semibold hover:bg-slate-700 shrink-0 transition-colors">
+                          {uploadingItemPhoto === `${opt}-${i}` ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <Upload className="w-3 h-3" />
+                          )}
+                          Add Photo
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            disabled={uploadingItemPhoto === `${opt}-${i}`}
+                            onChange={(e) => {
+                              const f = e.target.files?.[0];
+                              if (f) handleItemPhotoUpload(opt, i, f);
+                              e.target.value = '';
+                            }}
+                          />
+                        </label>
                       )}
-                      Add Photo
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        disabled={uploadingItemPhoto === `${opt}-${i}`}
-                        onChange={(e) => {
-                          const f = e.target.files?.[0];
-                          if (f) handleItemPhotoUpload(opt, i, f);
-                          e.target.value = '';
-                        }}
-                      />
-                    </label>
-                  )}
+                    </div>
+                  </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => removeOptionItem(opt, i)}
-                  aria-label="Remove item"
-                  className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-rose-400 hover:bg-slate-800 shrink-0"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
+              ) : (
+                <div key={i} className="flex items-center gap-2 flex-wrap">
+                  <input
+                    type="text"
+                    value={item.name}
+                    onChange={(e) => updateOptionItem(opt, i, 'name', e.target.value)}
+                    placeholder={`${myVendor?.category === 'Security' ? 'Person name' : 'Item name'} (e.g. ${nameExample})`}
+                    list={nameSuggestions.length > 0 ? nameListId : undefined}
+                    className="flex-1 min-w-0 p-2 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs"
+                  />
+                  <div className="flex items-center gap-1">
+                    <span className="text-slate-400 text-xs">₹</span>
+                    <input
+                      type="number"
+                      value={item.price === 0 ? '' : item.price}
+                      onChange={(e) => updateOptionItem(opt, i, 'price', e.target.value)}
+                      placeholder="rate"
+                      className="w-20 p-2 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs"
+                    />
+                  </div>
+                  <input
+                    type="text"
+                    value={item.note ?? ''}
+                    onChange={(e) => updateOptionItem(opt, i, 'note', e.target.value)}
+                    placeholder="note (optional)"
+                    className="flex-1 min-w-[120px] p-2 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs"
+                  />
+                  <div className="flex items-center gap-2 shrink-0">
+                    {item.photo ? (
+                      <div className="flex items-center gap-1.5">
+                        <div className="relative h-9 w-9 rounded-lg overflow-hidden border border-slate-800 bg-slate-950 shrink-0">
+                          <img src={item.photo} alt="item" className="w-full h-full object-cover" />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => updateOptionItem(opt, i, 'photo', '')}
+                          className="text-[10px] text-rose-400 font-bold hover:underline"
+                        >
+                          Remove Photo
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="cursor-pointer flex items-center gap-1 text-[10px] px-2.5 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white font-bold hover:bg-slate-700 shrink-0">
+                        {uploadingItemPhoto === `${opt}-${i}` ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <Upload className="w-3 h-3" />
+                        )}
+                        Add Photo
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          disabled={uploadingItemPhoto === `${opt}-${i}`}
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (f) handleItemPhotoUpload(opt, i, f);
+                            e.target.value = '';
+                          }}
+                        />
+                      </label>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeOptionItem(opt, i)}
+                    aria-label="Remove item"
+                    className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-rose-400 hover:bg-slate-800 shrink-0"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              )
             ))}
             <button
               type="button"
