@@ -410,7 +410,7 @@ export interface InvitationPackageDetails {
 export const INVITATION_TIERS = ['Digital', 'Printed', 'Premium'] as const;
 export const INVITATION_TYPES = ['Digital e-invite', 'Video invite', 'Printed card'] as const;
 export const INVITATION_DESIGNS = ['Custom', 'Template'] as const;
-export const INVITATION_ADDONS = ['RSVP link', 'Map', 'Invitation call by person'] as const;
+export const INVITATION_ADDONS = ['RSVP link', 'Invitation call by person'] as const;
 export const INVITATION_LANGUAGES = ['Tamil', 'Hindi', 'English', 'Telugu'] as const;
 
 // Structured details for a Pujari/Priest vendor's package (per ceremony).

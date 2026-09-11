@@ -1526,7 +1526,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                         const typeList = Array.isArray(iv.types) && iv.types.length > 0
                           ? iv.types
                           : (iv.type ? [iv.type] : []);
-                        const addOnList = (iv.addOns || []).map((a) => (a === 'Caricature' ? 'Invitation call by person' : a));
+                        const addOnList = (iv.addOns || []).filter((a) => a !== 'Map').map((a) => (a === 'Caricature' ? 'Invitation call by person' : a));
 
                         return (
                           <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2.5" onClick={(e) => e.stopPropagation()}>

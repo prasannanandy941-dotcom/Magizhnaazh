@@ -7732,7 +7732,7 @@ export function App() {
                             })}
                           </div>
 
-                          {/* 3. Add-ons (RSVP link, Map, Invitation call by person) with prices */}
+                          {/* 3. Add-ons (RSVP link, Invitation call by person) with prices */}
                           <div className="space-y-2 pt-2 border-t border-slate-800/80">
                             <div>
                               <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Add-ons</label>
