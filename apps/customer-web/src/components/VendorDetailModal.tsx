@@ -61,6 +61,12 @@ interface VendorDetailModalProps {
   isAuthenticated?: boolean;
   // Opens the sign-in modal when a guest tries an action that needs an account.
   onRequireAuth?: () => void;
+  // Whether an event is currently created and active
+  hasActiveEvent?: boolean;
+  activeEventTitle?: string;
+  activeEventDate?: string;
+  // Opens event creation wizard when customer wants to create an event
+  onRequestCreateEvent?: () => void;
   onBookVendor: (
     vendor: Vendor,
     packageId?: string,
@@ -73,7 +79,17 @@ interface VendorDetailModalProps {
   ) => void;
 }
 
-export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: initialVendor, onClose, onBookVendor, isAuthenticated, onRequireAuth }) => {
+export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
+  vendor: initialVendor,
+  onClose,
+  onBookVendor,
+  isAuthenticated,
+  onRequireAuth,
+  hasActiveEvent = false,
+  activeEventTitle,
+  activeEventDate,
+  onRequestCreateEvent,
+}) => {
   // Start from whatever the marketplace list had cached, then refresh with
   // the live record so vendor-side edits (new availability dates, packages,
   // gallery, options) show up immediately instead of only after a full page
@@ -215,6 +231,37 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
   // vendor's advance requirement comes to in rupees, a way to call the
   // vendor directly, and an explicit Confirm Order action.
   const [advancePanelOpen, setAdvancePanelOpen] = useState(false);
+  const [showNeedEventModal, setShowNeedEventModal] = useState(false);
+  const [resumeAdvanceAfterEvent, setResumeAdvanceAfterEvent] = useState(false);
+
+  // If customer created an event in the wizard to continue booking, seamlessly resume straight to advance pay!
+  useEffect(() => {
+    if (hasActiveEvent && resumeAdvanceAfterEvent) {
+      setShowNeedEventModal(false);
+      setResumeAdvanceAfterEvent(false);
+      setAdvancePanelOpen(true);
+    }
+  }, [hasActiveEvent, resumeAdvanceAfterEvent]);
+
+  // If activeEvent has a date and vendor doesn't have fixed dates, auto-fill date
+  useEffect(() => {
+    if (!hasFixedAvailability && !selectedEventDate && activeEventDate) {
+      setSelectedEventDate(activeEventDate);
+    }
+  }, [hasFixedAvailability, selectedEventDate, activeEventDate]);
+
+  const handleBookAndPayClick = () => {
+    if (!isAuthenticated) {
+      onRequireAuth?.();
+      return;
+    }
+    if (!hasActiveEvent) {
+      setResumeAdvanceAfterEvent(true);
+      setShowNeedEventModal(true);
+      return;
+    }
+    setAdvancePanelOpen(true);
+  };
 
   const [selectedImage, setSelectedImage] = useState(getVendorCoverImage(vendor));
   useEffect(() => {
@@ -2619,7 +2666,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
 
           <div className="flex items-center gap-3 w-full sm:w-auto">
             <button
-              onClick={() => setAdvancePanelOpen(true)}
+              onClick={handleBookAndPayClick}
               disabled={(hasFixedAvailability && !selectedEventDate) || referencePrice === 0}
               className="shine-sweep w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold text-xs shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
             >
@@ -2652,6 +2699,12 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
 
             <div className="p-6 space-y-4">
               <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800">
+                {activeEventTitle && (
+                  <div className="flex items-center justify-between text-xs pb-2.5 mb-2.5 border-b border-slate-800">
+                    <span className="text-slate-400">Booking for event:</span>
+                    <span className="text-amber-300 font-semibold truncate max-w-[180px]">{activeEventTitle}</span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-slate-400">
                     {selectedPkg
@@ -2742,6 +2795,54 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({ vendor: in
                 className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold text-sm shadow-md flex items-center justify-center gap-2"
               >
                 Confirm Order
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Prompt when customer clicks Book & Pay Advance without having created an event yet */}
+      {showNeedEventModal && (
+        <div
+          className="fixed inset-0 z-[85] flex items-center justify-center bg-slate-950/90 backdrop-blur-sm p-4"
+          onClick={() => setShowNeedEventModal(false)}
+        >
+          <div
+            className="glass-card w-full max-w-md rounded-3xl border border-amber-500/40 shadow-2xl shadow-[0_0_60px_-15px_rgba(245,158,11,0.5)] overflow-hidden relative isolate bg-gradient-to-b from-[#1f1238] via-[#140b24] to-[#0d0716] p-6 text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <GoldSparkles count={25} />
+            <div className="mx-auto w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-500/20 to-purple-500/20 border border-amber-400/40 flex items-center justify-center mb-4 text-amber-400 shadow-lg shadow-amber-500/20">
+              <CalendarIcon className="w-7 h-7" />
+            </div>
+
+            <h3 className="font-display font-bold text-xl text-white mb-1.5">
+              For what event are you booking?
+            </h3>
+            <p className="text-sm font-semibold text-amber-300 mb-3">
+              Create your event first!
+            </p>
+            <p className="text-xs text-slate-300 leading-relaxed mb-6">
+              Before paying the advance and booking <span className="text-white font-semibold">{vendor.businessName}</span>, please create your event so we can link your booking dates, invoices, and budget to it. Once created, you will go directly to advance pay!
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setShowNeedEventModal(false)}
+                className="w-full sm:w-1/2 py-3 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 font-semibold text-xs border border-slate-700 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowNeedEventModal(false);
+                  onRequestCreateEvent?.();
+                }}
+                className="shine-sweep w-full sm:w-1/2 py-3 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/30 flex items-center justify-center gap-2 hover:brightness-110 transition-all cursor-pointer"
+              >
+                <Plus className="w-4 h-4" /> Create Event Now
               </button>
             </div>
           </div>

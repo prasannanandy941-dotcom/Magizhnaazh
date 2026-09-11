@@ -146,7 +146,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 overflow-y-auto">
       {/* Same dark floral backdrop as the vendor/admin login pages, covering the
           app behind so the sign-up sits on the branded background, not the
           marketplace. */}

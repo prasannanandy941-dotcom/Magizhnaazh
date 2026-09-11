@@ -750,6 +750,10 @@ export function App() {
           onClose={() => setSelectedVendorForModal(null)}
           isAuthenticated={!!user}
           onRequireAuth={() => setShowAuthModal(true)}
+          hasActiveEvent={Boolean(activeEvent?.id)}
+          activeEventTitle={activeEvent?.title}
+          activeEventDate={activeEvent?.date}
+          onRequestCreateEvent={() => requireAuth(() => setShowEventWizard(true))}
           onBookVendor={(v, pkgId, price, notes, eventDate, selectedOptions, referenceImages, timeSlot) => {
             // Named so it can be re-run automatically after a re-login: the
             // customer's `user` staying set doesn't mean their token is
@@ -757,6 +761,10 @@ export function App() {
             // "already logged in" check alone can't catch a stale session —
             // only the 401 the booking call comes back with can.
             const doBook = () => requireAuth(async () => {
+              if (!activeEvent.id) {
+                setShowEventWizard(true);
+                return;
+              }
               const p = price || v.startingPrice;
               setBookingInProgress(true);
 
@@ -869,8 +877,11 @@ export function App() {
           onEventCreated={(newEvent) => {
             setEvents((prev) => [newEvent, ...prev]);
             setActiveEvent(newEvent);
-            triggerNotification(`Event "${newEvent.title}" launched! Budget allocated.`);
-            setActiveTab('budget');
+            setShowEventWizard(false);
+            triggerNotification(`Event "${newEvent.title}" created! Budget allocated.`);
+            if (!selectedVendorForModal) {
+              setActiveTab('budget');
+            }
           }}
         />
       )}
