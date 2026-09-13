@@ -7,7 +7,7 @@ import './index.css';
 // No router dependency — the app only ever needs to distinguish the public,
 // unauthenticated /invite/:token page (shared RSVP links) from everything
 // else, which is the normal logged-in App shell.
-const inviteMatch = window.location.pathname.match(/^\/invite\/([^/]+)\/?$/);
+const inviteMatch = window.location.pathname.match(/^(?:\/customer)?\/invite\/([^/]+)\/?$/);
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

@@ -5,7 +5,7 @@ customer app in `apps/mobile`. Same hybrid architecture:
 
 1. The vendor signs in **natively** (email/OTP or Google), which is validated to
    be a `vendor` (or `admin`) account.
-2. The app then loads the live **vendor portal** (`event-vendor.porulontech.com`)
+2. The app then loads the live **vendor portal** (`event.porulontech.com/vendor`)
    inside a `WebView`, pre-seeding the site's session
    (`magizhnaazh_vendor_token` / `magizhnaazh_vendor_user` in `localStorage`) so
    it opens already logged in — full parity with the web, always in sync.

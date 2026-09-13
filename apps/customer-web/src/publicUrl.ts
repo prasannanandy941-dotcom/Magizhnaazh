@@ -18,5 +18,7 @@ export function publicAppOrigin(): string {
 
 // Full shareable RSVP link for a given invite token.
 export function inviteUrl(token: string): string {
-  return `${publicAppOrigin()}/invite/${token}`;
+  const base = (import.meta.env.BASE_URL || '/').replace(/\/+$/, '');
+  const prefix = base ? `${base}/invite` : '/invite';
+  return `${publicAppOrigin()}${prefix}/${encodeURIComponent(token)}`;
 }

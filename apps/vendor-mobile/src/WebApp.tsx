@@ -6,7 +6,7 @@ import { colors } from './theme';
 
 // The live vendor portal — loaded inside the app so the mobile experience is
 // identical to the web, with every feature, always in sync with the site.
-const SITE_URL = 'https://event-vendor.porulontech.com';
+const SITE_URL = 'https://event.porulontech.com/vendor';
 
 // Present a normal Chrome-on-Android user agent so Google's "disallowed
 // user-agent" check doesn't block Sign in with Google inside the WebView.
