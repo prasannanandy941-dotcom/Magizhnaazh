@@ -573,6 +573,21 @@ app.put('/api/v1/vendors/:id', authMiddleware(), async (req: Request, res: Respo
   res.json({ success: true, message: 'Vendor profile updated.', data: { vendor } });
 });
 
+app.delete('/api/v1/vendors/:id', authMiddleware(), async (req: Request, res: Response) => {
+  const vendor = await VendorModel.findOne({ id: req.params.id });
+  if (!vendor) return res.status(404).json({ success: false, message: 'Vendor not found.' });
+  if (vendor.userId !== req.user!.sub && req.user!.role !== 'admin') {
+    return res.status(403).json({ success: false, message: 'You do not own this vendor listing.' });
+  }
+  await VendorModel.deleteOne({ id: req.params.id });
+  res.json({ success: true, message: 'Vendor deleted.' });
+});
+
+app.post('/api/v1/vendors/reset-all', authMiddleware(), requireRole('admin'), async (_req: Request, res: Response) => {
+  const result = await VendorModel.deleteMany({});
+  res.json({ success: true, message: `Deleted all ${result.deletedCount} vendors.` });
+});
+
 // 6. Portfolio upload — stored via the shared LocalStorageProvider abstraction.
 app.post('/api/v1/vendors/:id/upload', authMiddleware(), upload.single('file'), async (req: Request, res: Response) => {
   const file = req.file;
