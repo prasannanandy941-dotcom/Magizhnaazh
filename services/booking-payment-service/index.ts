@@ -233,6 +233,17 @@ async function seedDemoBookings() {
   console.log(`[booking-payment-service] Seeded ${missing.length} new demo bookings across ${BOOKING_SEED_VENDORS.length} vendors.`);
 }
 
+async function cleanupDemoBookings() {
+  try {
+    const result = await BookingModel.deleteMany({ id: { $regex: /^bk-seed-/ } });
+    if (result.deletedCount > 0) {
+      console.log(`[booking-payment-service] Cleaned up ${result.deletedCount} demo booking(s) from database.`);
+    }
+  } catch (err) {
+    console.error('[booking-payment-service] Failed to clean up demo bookings:', err);
+  }
+}
+
 // 1. Request a quote (enquiry)
 app.post('/api/v1/bookings/quote', authMiddleware(), async (req: Request, res: Response) => {
   // The customer-web client sends this as `notes` (its own custom-request text
@@ -903,7 +914,10 @@ app.delete('/api/v1/coupons/:id', authMiddleware(), async (req: Request, res: Re
 async function start() {
   await connectDB(process.env.MONGODB_URI, 'booking-payment-service');
   await seedIfEmpty();
-  await seedDemoBookings();
+  await cleanupDemoBookings();
+  if (process.env.SEED_DEMO_BOOKINGS === 'true') {
+    await seedDemoBookings();
+  }
   app.listen(PORT, () => {
     console.log(`[Booking & Payment Microservice] Running on http://localhost:${PORT}`);
   });

@@ -276,15 +276,28 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
       )}
 
       {filteredVendors.length === 0 && (
-        <div className="text-center py-16 text-slate-400">
-          <p className="text-sm">
-            {activeOptions.length > 0
+        <div className="text-center py-20 px-4 bg-slate-900/40 border border-slate-800/80 rounded-3xl backdrop-blur-md max-w-xl mx-auto my-8">
+          <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center mx-auto mb-4 text-2xl shadow-inner">
+            🏪
+          </div>
+          <h3 className="text-lg font-bold text-white mb-2">
+            {vendors.length === 0 ? 'No Vendors Listed Yet' : 'No Vendors Match Your Filters'}
+          </h3>
+          <p className="text-sm text-slate-400 max-w-md mx-auto">
+            {vendors.length === 0
+              ? 'New verified vendor profiles created on the server will appear here live.'
+              : activeOptions.length > 0
               ? `No ${selectedCategory !== 'All' ? selectedCategory + ' ' : ''}vendors offer ${activeOptions.join(' + ')} yet.`
-              : 'No vendors match your filters.'}
+              : 'Try clearing your category or city filters to see more results.'}
           </p>
           {activeOptions.length > 0 && (
-            <button type="button" onClick={() => setActiveOptions([])} className="mt-2 text-xs text-indigo-300 hover:text-indigo-200 underline">
+            <button type="button" onClick={() => setActiveOptions([])} className="mt-3 inline-block text-xs font-semibold text-amber-400 hover:text-amber-300 underline">
               Clear option filters
+            </button>
+          )}
+          {vendors.length > 0 && selectedCategory !== 'All' && (
+            <button type="button" onClick={() => setSelectedCategory('All')} className="mt-3 inline-block text-xs font-semibold text-indigo-400 hover:text-indigo-300 underline ml-3">
+              View All Categories
             </button>
           )}
         </div>

@@ -220,12 +220,11 @@ export function App() {
       .then((res) => {
         if (cancelled) return;
         const serverVendors = res.data?.vendors || [];
-        if (serverVendors.length > 0) {
-          setVendors(deduplicateVendors(serverVendors));
-        }
+        setVendors(deduplicateVendors(serverVendors));
       })
       .catch((err) => {
-        console.error('Failed to load vendors from server, using local fallback', err);
+        console.error('Failed to load vendors from server:', err);
+        if (!cancelled) setVendors([]);
       })
       .finally(() => {
         if (!cancelled) setVendorsLoading(false);

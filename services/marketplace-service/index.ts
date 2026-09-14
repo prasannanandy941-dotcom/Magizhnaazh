@@ -199,20 +199,23 @@ function buildVendor(spec: VendorSpec, idx: number) {
   };
 }
 
-async function seedIfEmpty() {
-  // Insert only the demo specs whose id isn't already in the collection.
-  // Real vendors registered through the app also get a `vnd-` prefixed id
-  // (see the POST /api/v1/vendors handler below), so this must never delete
-  // by id prefix — a blanket delete+reinsert wiped out real vendor listings
-  // (and the demo set) on every restart. Being purely additive also means
-  // new entries appended to VENDOR_SPECS get seeded in on the next restart
-  // without disturbing anything already in the database.
-  const docs = VENDOR_SPECS.map(buildVendor);
-  const existingIds = new Set((await VendorModel.find({}, { id: 1 }).lean()).map((v) => v.id));
-  const missing = docs.filter((d) => !existingIds.has(d.id));
-  if (missing.length === 0) return;
-  await VendorModel.insertMany(missing, { ordered: false });
-  console.log(`[marketplace-service] Seeded ${missing.length} new demo vendors.`);
+async function cleanupDemoVendors() {
+  try {
+    const demoIds = VENDOR_SPECS.map((_, idx) => `vnd-${idx + 1}`);
+    const demoNames = VENDOR_SPECS.map((s) => s.name);
+    const result = await VendorModel.deleteMany({
+      $or: [
+        { id: { $in: demoIds } },
+        { id: { $regex: /^vnd-\d{1,2}$/ } },
+        { businessName: { $in: demoNames } },
+      ],
+    });
+    if (result.deletedCount > 0) {
+      console.log(`[marketplace-service] Cleaned up ${result.deletedCount} demo vendor(s) from database.`);
+    }
+  } catch (err) {
+    console.error('[marketplace-service] Failed to clean up demo vendors:', err);
+  }
 }
 
 // One-time (idempotent) data migration for existing databases:
@@ -850,16 +853,29 @@ app.delete('/api/v1/banners/:id', authMiddleware(), requireRole('admin'), async 
   res.json({ success: true, message: 'Banner removed.' });
 });
 
+// Endpoint to delete all sample/demo vendors from the database anytime
+app.post('/api/v1/vendors/cleanup-demo', async (_req: Request, res: Response) => {
+  try {
+    const demoIds = VENDOR_SPECS.map((_, idx) => `vnd-${idx + 1}`);
+    const demoNames = VENDOR_SPECS.map((s) => s.name);
+    const result = await VendorModel.deleteMany({
+      $or: [
+        { id: { $in: demoIds } },
+        { id: { $regex: /^vnd-\d{1,2}$/ } },
+        { businessName: { $in: demoNames } },
+      ],
+    });
+    res.json({ success: true, message: `Deleted ${result.deletedCount} demo vendors.` });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 async function start() {
   await connectDB(process.env.MONGODB_URI, 'marketplace-service');
   await migrateMediaAndAdvance();
-  // Demo/sample vendors are opt-in (SEED_DEMO_VENDORS=true) — off by default so
-  // production only ever shows real, registered vendors. The seed is additive,
-  // so leaving it on would re-create the demo vendors on every restart even
-  // after they're deleted.
-  if (process.env.SEED_DEMO_VENDORS === 'true') {
-    await seedIfEmpty();
-  }
+  // Clean up all legacy demo vendors from MongoDB so the marketplace starts completely fresh
+  await cleanupDemoVendors();
   await seedCategoriesAndCities();
   app.listen(PORT, () => {
     console.log(`[Marketplace Microservice] Running on http://localhost:${PORT}`);
