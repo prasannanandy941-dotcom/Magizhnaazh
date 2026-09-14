@@ -20,6 +20,7 @@ const SERVICES = {
   invitation: serviceUrl(process.env.INVITATION_SERVICE_URL, 'http://localhost:8005'),
   guestFeedback: serviceUrl(process.env.GUEST_FEEDBACK_SERVICE_URL, 'http://localhost:8006'),
   monitor: serviceUrl(process.env.MONITOR_SERVICE_URL, 'http://localhost:8007'),
+  payment: serviceUrl(process.env.PAYMENT_SERVICE_URL, 'http://localhost:3005'),
 };
 
 app.use(cors());
@@ -106,6 +107,7 @@ app.use('/api/v1/feedback', publicSubmissionLimiter, createProxyMiddleware({ tar
 app.use('/api/v1/reviews', createProxyMiddleware({ target: SERVICES.guestFeedback, ...proxyDefaults }));
 app.use('/api/v1/complaints', createProxyMiddleware({ target: SERVICES.guestFeedback, ...proxyDefaults }));
 app.use('/api/v1/monitor', createProxyMiddleware({ target: SERVICES.monitor, ...proxyDefaults }));
+app.use('/api/payment', createProxyMiddleware({ target: SERVICES.payment, ...proxyDefaults }));
 
 // Keep-alive: while the gateway is awake, ping every backend service's public
 // /health on an interval shorter than Render's ~15 min idle window so they
