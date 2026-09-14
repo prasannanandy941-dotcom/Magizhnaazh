@@ -45,11 +45,11 @@ export const Footer: React.FC<FooterProps> = ({
     <footer className="relative z-20 bg-[#0d040a]/95 border-t border-[#6b2140]/60 text-[#fdf1f5] pt-14 pb-10 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        {/* Main Grid: 1 brand column + 4 link columns */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-10 pb-12">
+        {/* Main Grid: 1 brand column + 2 link columns (Company & Support) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-10 pb-12">
           
           {/* Brand & Company Details Column (takes 2 columns on desktop) */}
-          <div className="sm:col-span-2 lg:col-span-2 space-y-4">
+          <div className="sm:col-span-2 md:col-span-2 space-y-4">
             {/* Logo */}
             <div 
               onClick={() => handleTabClick('marketplace')}
@@ -197,102 +197,6 @@ export const Footer: React.FC<FooterProps> = ({
                   Terms of Service
                   <ExternalLink className="w-2.5 h-2.5 opacity-60" />
                 </a>
-              </li>
-            </ul>
-          </div>
-
-          {/* Column 3: Shop / Services */}
-          <div className="space-y-4">
-            <h3 className="font-bold text-sm text-[#fdf1f5] tracking-wide">
-              Shop
-            </h3>
-            <ul className="space-y-2.5 text-xs text-[#cf9bb3]">
-              <li>
-                <button
-                  type="button"
-                  onClick={() => handleTabClick('marketplace')}
-                  className="hover:text-[#f0c869] transition-colors"
-                >
-                  Best Sellers
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  onClick={() => handleTabClick('marketplace')}
-                  className="hover:text-[#f0c869] transition-colors"
-                >
-                  New Arrivals
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  onClick={() => handleTabClick('marketplace')}
-                  className="hover:text-[#f0c869] transition-colors"
-                >
-                  Deals &amp; Offers
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (openEventWizard) {
-                      openEventWizard();
-                    } else {
-                      handleTabClick('events');
-                    }
-                  }}
-                  className="hover:text-[#f0c869] transition-colors"
-                >
-                  Bulk Orders
-                </button>
-              </li>
-            </ul>
-          </div>
-
-          {/* Column 4: Quick Links */}
-          <div className="space-y-4">
-            <h3 className="font-bold text-sm text-[#fdf1f5] tracking-wide">
-              Quick Links
-            </h3>
-            <ul className="space-y-2.5 text-xs text-[#cf9bb3]">
-              <li>
-                <button
-                  type="button"
-                  onClick={() => handleTabClick('marketplace')}
-                  className="hover:text-[#f0c869] transition-colors"
-                >
-                  Nearby Offers
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  onClick={() => handleTabClick('marketplace')}
-                  className="hover:text-[#f0c869] transition-colors"
-                >
-                  Our Services
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  onClick={() => setActiveModal('about')}
-                  className="hover:text-[#f0c869] transition-colors"
-                >
-                  About Us
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  onClick={() => handleTabClick('orders')}
-                  className="hover:text-[#f0c869] transition-colors text-left"
-                >
-                  My Orders
-                </button>
               </li>
             </ul>
           </div>
