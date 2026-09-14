@@ -65,11 +65,11 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateTab }) => {
               <div className="space-y-2 text-xs text-[#cf9bb3]">
                 {/* Phone */}
                 <a
-                  href="tel:+919047099277"
+                  href="tel:+918448655400"
                   className="flex items-center gap-2.5 hover:text-[#e8c874] transition-colors group"
                 >
                   <Phone className="w-3.5 h-3.5 text-[#e8c874] group-hover:scale-110 transition-transform" />
-                  <span>+91 90470 99277</span>
+                  <span>+91 84486 55400</span>
                 </a>
 
                 {/* Email */}
