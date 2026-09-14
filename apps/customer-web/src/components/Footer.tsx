@@ -18,6 +18,9 @@ interface FooterProps {
 }
 
 export const Footer: React.FC<FooterProps> = ({ onNavigateTab }) => {
+  const base = import.meta.env.BASE_URL || '/customer/';
+  const pageUrl = (page: string) => `${base.endsWith('/') ? base : base + '/'}${page}`;
+
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -102,7 +105,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateTab }) => {
             <ul className="space-y-2.5 text-xs text-[#cf9bb3]">
               <li>
                 <a
-                  href="about.html"
+                  href={pageUrl('about.html')}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 hover:text-[#f0c869] transition-colors"
@@ -113,7 +116,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateTab }) => {
               </li>
               <li>
                 <a
-                  href="careers.html"
+                  href={pageUrl('careers.html')}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 hover:text-[#f0c869] transition-colors"
@@ -124,7 +127,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateTab }) => {
               </li>
               <li>
                 <a
-                  href="blog.html"
+                  href={pageUrl('blog.html')}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 hover:text-[#f0c869] transition-colors"
@@ -135,7 +138,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateTab }) => {
               </li>
               <li>
                 <a
-                  href="press.html"
+                  href={pageUrl('press.html')}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 hover:text-[#f0c869] transition-colors"
@@ -155,7 +158,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateTab }) => {
             <ul className="space-y-2.5 text-xs text-[#cf9bb3]">
               <li>
                 <a
-                  href="help.html"
+                  href={pageUrl('help.html')}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 hover:text-[#f0c869] transition-colors"
@@ -166,7 +169,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateTab }) => {
               </li>
               <li>
                 <a
-                  href="returns.html"
+                  href={pageUrl('returns.html')}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 hover:text-[#f0c869] transition-colors"
@@ -177,7 +180,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateTab }) => {
               </li>
               <li>
                 <a
-                  href="privacy.html"
+                  href={pageUrl('privacy.html')}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 hover:text-[#f0c869] transition-colors"
@@ -188,7 +191,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateTab }) => {
               </li>
               <li>
                 <a
-                  href="terms.html"
+                  href={pageUrl('terms.html')}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 hover:text-[#f0c869] transition-colors"
