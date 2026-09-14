@@ -9,7 +9,6 @@ import {
   CreditCard,
   ExternalLink,
 } from 'lucide-react';
-import { FloralGoldBackground } from './FloralGoldBackground';
 
 interface FooterProps {
   onNavigateTab: (tab: string) => void;
@@ -31,9 +30,8 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateTab }) => {
   };
 
   return (
-    <footer className="relative overflow-hidden z-20 border-t border-[#6b2140]/60 text-[#fdf1f5] pt-14 pb-10 transition-colors">
-      <FloralGoldBackground />
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <footer className="relative z-20 bg-[#0d040a] border-t border-[#6b2140]/60 text-[#fdf1f5] pt-14 pb-10 transition-colors">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Main Grid: 1 brand column + 2 link columns (Company & Support) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-10 pb-12">
