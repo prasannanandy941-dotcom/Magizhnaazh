@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Sparkles,
   Phone,
@@ -7,14 +7,7 @@ import {
   ShieldCheck,
   Zap,
   CreditCard,
-  X,
   ExternalLink,
-  Info,
-  Briefcase,
-  HelpCircle,
-  RotateCcw,
-  Newspaper,
-  HeartHandshake,
 } from 'lucide-react';
 
 interface FooterProps {
@@ -23,15 +16,7 @@ interface FooterProps {
   onOpenSignIn?: () => void;
 }
 
-type ModalType = 'about' | 'careers' | 'blog' | 'press' | 'help' | 'returns' | null;
-
-export const Footer: React.FC<FooterProps> = ({
-  onNavigateTab,
-  openEventWizard,
-  onOpenSignIn,
-}) => {
-  const [activeModal, setActiveModal] = useState<ModalType>(null);
-
+export const Footer: React.FC<FooterProps> = ({ onNavigateTab }) => {
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -114,40 +99,48 @@ export const Footer: React.FC<FooterProps> = ({
             </h3>
             <ul className="space-y-2.5 text-xs text-[#cf9bb3]">
               <li>
-                <button
-                  type="button"
-                  onClick={() => setActiveModal('about')}
-                  className="hover:text-[#f0c869] transition-colors"
+                <a
+                  href="about.html"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 hover:text-[#f0c869] transition-colors"
                 >
                   About Us
-                </button>
+                  <ExternalLink className="w-2.5 h-2.5 opacity-60" />
+                </a>
               </li>
               <li>
-                <button
-                  type="button"
-                  onClick={() => setActiveModal('careers')}
-                  className="hover:text-[#f0c869] transition-colors"
+                <a
+                  href="careers.html"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 hover:text-[#f0c869] transition-colors"
                 >
                   Careers
-                </button>
+                  <ExternalLink className="w-2.5 h-2.5 opacity-60" />
+                </a>
               </li>
               <li>
-                <button
-                  type="button"
-                  onClick={() => setActiveModal('blog')}
-                  className="hover:text-[#f0c869] transition-colors"
+                <a
+                  href="blog.html"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 hover:text-[#f0c869] transition-colors"
                 >
                   Blog &amp; News
-                </button>
+                  <ExternalLink className="w-2.5 h-2.5 opacity-60" />
+                </a>
               </li>
               <li>
-                <button
-                  type="button"
-                  onClick={() => setActiveModal('press')}
-                  className="hover:text-[#f0c869] transition-colors"
+                <a
+                  href="press.html"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 hover:text-[#f0c869] transition-colors"
                 >
                   Press
-                </button>
+                  <ExternalLink className="w-2.5 h-2.5 opacity-60" />
+                </a>
               </li>
             </ul>
           </div>
@@ -159,26 +152,30 @@ export const Footer: React.FC<FooterProps> = ({
             </h3>
             <ul className="space-y-2.5 text-xs text-[#cf9bb3]">
               <li>
-                <button
-                  type="button"
-                  onClick={() => setActiveModal('help')}
-                  className="hover:text-[#f0c869] transition-colors"
+                <a
+                  href="help.html"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 hover:text-[#f0c869] transition-colors"
                 >
                   Help Center
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  onClick={() => setActiveModal('returns')}
-                  className="hover:text-[#f0c869] transition-colors"
-                >
-                  Returns &amp; Refunds
-                </button>
+                  <ExternalLink className="w-2.5 h-2.5 opacity-60" />
+                </a>
               </li>
               <li>
                 <a
-                  href="/privacy.html"
+                  href="returns.html"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 hover:text-[#f0c869] transition-colors"
+                >
+                  Returns &amp; Refunds
+                  <ExternalLink className="w-2.5 h-2.5 opacity-60" />
+                </a>
+              </li>
+              <li>
+                <a
+                  href="privacy.html"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 hover:text-[#f0c869] transition-colors"
@@ -189,7 +186,7 @@ export const Footer: React.FC<FooterProps> = ({
               </li>
               <li>
                 <a
-                  href="/terms.html"
+                  href="terms.html"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 hover:text-[#f0c869] transition-colors"
@@ -250,204 +247,6 @@ export const Footer: React.FC<FooterProps> = ({
         </div>
 
       </div>
-
-      {/* Informational Modal for Footer Links */}
-      {activeModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
-          <div className="bg-[#1f0d19] border border-[#6b2140] rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl space-y-5 text-left relative">
-            
-            <button
-              type="button"
-              onClick={() => setActiveModal(null)}
-              className="absolute top-5 right-5 p-2 rounded-xl text-[#cf9bb3] hover:text-[#fdf1f5] hover:bg-[#6b2140]/30 transition-all"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            {activeModal === 'about' && (
-              <>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-[#c9a648]/20 flex items-center justify-center text-[#e8c874]">
-                    <Info className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-display font-bold text-xl text-[#fdf1f5]">About Magizhnaazh</h3>
-                    <p className="text-xs text-[#e8c874] font-semibold">Operated by Porulon Technologies Private Limited</p>
-                  </div>
-                </div>
-                <div className="text-xs sm:text-sm text-[#cf9bb3] space-y-3 leading-relaxed">
-                  <p>
-                    <strong>Magizhnaazh</strong> is Tamil Nadu&apos;s all-in-one celebration and event planning marketplace, headquartered in Coimbatore, Tamil Nadu.
-                  </p>
-                  <p>
-                    From finding premier wedding venues, caterers, makeup artists, and photographers to intelligent budget planning and interactive RSVP invitations, Magizhnaazh simplifies every step of hosting your dream event.
-                  </p>
-                  <div className="p-3.5 rounded-xl bg-[#26101c] border border-[#6b2140]/60 space-y-1.5 text-xs">
-                    <div className="font-semibold text-[#fdf1f5]">Porulon Technologies Private Limited</div>
-                    <div className="text-[#e8c874]">Coimbatore, Tamil Nadu, India</div>
-                    <div>Email: porulontechnologies@gmail.com</div>
-                    <div>Phone: +91 90470 99277</div>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {activeModal === 'careers' && (
-              <>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-[#b8336a]/20 flex items-center justify-center text-[#e85d8a]">
-                    <Briefcase className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-display font-bold text-xl text-[#fdf1f5]">Careers at Porulon</h3>
-                    <p className="text-xs text-[#e85d8a] font-semibold">Shape the Future of Event Technology</p>
-                  </div>
-                </div>
-                <div className="text-xs sm:text-sm text-[#cf9bb3] space-y-3 leading-relaxed">
-                  <p>
-                    We are building cutting-edge event tech and vendor marketplace solutions for celebrations across India.
-                  </p>
-                  <p>
-                    We are always looking for enthusiastic software engineers, designers, vendor relationship managers, and event operations specialists.
-                  </p>
-                  <div className="p-3.5 rounded-xl bg-[#26101c] border border-[#6b2140]/60 text-xs">
-                    <p className="text-[#fdf1f5] font-semibold mb-1">Send us your CV / Portfolio:</p>
-                    <a href="mailto:porulontechnologies@gmail.com" className="text-[#e8c874] underline">
-                      porulontechnologies@gmail.com
-                    </a>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {activeModal === 'blog' && (
-              <>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-[#c9a648]/20 flex items-center justify-center text-[#e8c874]">
-                    <Newspaper className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-display font-bold text-xl text-[#fdf1f5]">Blog &amp; Celebration News</h3>
-                    <p className="text-xs text-[#e8c874] font-semibold">Tips, Trends &amp; Planning Guides</p>
-                  </div>
-                </div>
-                <div className="text-xs sm:text-sm text-[#cf9bb3] space-y-3 leading-relaxed">
-                  <p>
-                    Discover the latest wedding trends, floral stage concepts, curated traditional catering menus, and smart budget allocation guides.
-                  </p>
-                  <p>
-                    Explore our vendor spotlight stories showcasing top artisans, venues, and decorators from across Coimbatore, Chennai, Madurai, and beyond.
-                  </p>
-                </div>
-              </>
-            )}
-
-            {activeModal === 'press' && (
-              <>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-[#c9a648]/20 flex items-center justify-center text-[#e8c874]">
-                    <HeartHandshake className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-display font-bold text-xl text-[#fdf1f5]">Press &amp; Media Inquiries</h3>
-                    <p className="text-xs text-[#e8c874] font-semibold">Media Relations &amp; Brand Assets</p>
-                  </div>
-                </div>
-                <div className="text-xs sm:text-sm text-[#cf9bb3] space-y-3 leading-relaxed">
-                  <p>
-                    For press releases, interview requests, media coverage, or partnership opportunities, reach out directly to our communications desk.
-                  </p>
-                  <div className="p-3.5 rounded-xl bg-[#26101c] border border-[#6b2140]/60 text-xs">
-                    <p className="text-[#fdf1f5] font-semibold mb-1">Press Inquiries:</p>
-                    <a href="mailto:porulontechnologies@gmail.com" className="text-[#e8c874] underline">
-                      porulontechnologies@gmail.com
-                    </a>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {activeModal === 'help' && (
-              <>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 flex items-center justify-center text-emerald-400">
-                    <HelpCircle className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-display font-bold text-xl text-[#fdf1f5]">Customer Help Center</h3>
-                    <p className="text-xs text-emerald-400 font-semibold">We&apos;re Here to Help You Celebrate</p>
-                  </div>
-                </div>
-                <div className="text-xs sm:text-sm text-[#cf9bb3] space-y-3 leading-relaxed">
-                  <p>
-                    Have questions about booking a vendor, paying advances, or managing your event guestlist? Our dedicated support team is available to assist you.
-                  </p>
-                  <div className="p-3.5 rounded-xl bg-[#26101c] border border-[#6b2140]/60 space-y-2 text-xs">
-                    <div className="flex items-center gap-2">
-                      <Phone className="w-3.5 h-3.5 text-[#e8c874]" />
-                      <a href="tel:+919047099277" className="text-[#e8c874] font-semibold hover:underline">
-                        +91 90470 99277
-                      </a>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Mail className="w-3.5 h-3.5 text-[#e8c874]" />
-                      <a href="mailto:porulontechnologies@gmail.com" className="text-[#e8c874] font-semibold hover:underline">
-                        porulontechnologies@gmail.com
-                      </a>
-                    </div>
-                    <div className="text-[#cf9bb3] pt-1">
-                      Support Hours: Monday to Saturday, 9:00 AM – 7:00 PM IST
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {activeModal === 'returns' && (
-              <>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-sky-500/20 flex items-center justify-center text-sky-400">
-                    <RotateCcw className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-display font-bold text-xl text-[#fdf1f5]">Returns &amp; Refunds Policy</h3>
-                    <p className="text-xs text-sky-400 font-semibold">Fair &amp; Transparent Terms</p>
-                  </div>
-                </div>
-                <div className="text-xs sm:text-sm text-[#cf9bb3] space-y-3 leading-relaxed">
-                  <p>
-                    Magizhnaazh ensures transparent booking policies between customers and service vendors:
-                  </p>
-                  <ul className="list-disc pl-5 space-y-1 text-xs">
-                    <li>Advance payments are held securely until booking confirmation by the selected vendor.</li>
-                    <li>If a vendor is unavailable on your requested date, any advance paid is promptly refunded or reallocated.</li>
-                    <li>Cancellations are handled according to the vendor agreement agreed upon during quote confirmation.</li>
-                  </ul>
-                  <p className="pt-2 text-xs">
-                    Need refund assistance? Email us at{' '}
-                    <a href="mailto:porulontechnologies@gmail.com" className="text-[#e8c874] underline">
-                      porulontechnologies@gmail.com
-                    </a>{' '}
-                    with your Booking ID.
-                  </p>
-                </div>
-              </>
-            )}
-
-            <div className="pt-3 border-t border-[#6b2140]/60 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setActiveModal(null)}
-                className="px-5 py-2 rounded-xl bg-gradient-to-r from-[#c9a648] to-[#b8860b] text-[#1a0a14] font-bold text-xs shadow-md hover:brightness-110"
-              >
-                Close
-              </button>
-            </div>
-
-          </div>
-        </div>
-      )}
-
     </footer>
   );
 };

@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Blog & Celebration News — Magizhnaazh</title>
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #12070f;
+      color: #fdf1f5;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      line-height: 1.65;
+    }
+    .header {
+      border-bottom: 1px solid rgba(107, 33, 64, 0.6);
+      background: rgba(26, 10, 20, 0.85);
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-inner {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .logo-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: inherit;
+    }
+    .logo-badge {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #b8336a, #c9a648, #f0c869);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+    .logo-text {
+      font-size: 22px;
+      font-weight: 800;
+      color: #fdf1f5;
+      letter-spacing: -0.5px;
+    }
+    .back-btn {
+      color: #e8c874;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 8px 16px;
+      border-radius: 10px;
+      border: 1px solid rgba(212, 175, 55, 0.4);
+      background: rgba(38, 16, 28, 0.6);
+      transition: all 0.2s;
+    }
+    .back-btn:hover {
+      background: rgba(212, 175, 55, 0.15);
+      border-color: #d4af37;
+    }
+    .wrap {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+    .hero {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    .tagline {
+      color: #f0c869;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    h1 {
+      font-size: 38px;
+      margin: 0 0 16px;
+      color: #fdf1f5;
+      font-weight: 800;
+    }
+    .subtitle {
+      color: #cf9bb3;
+      font-size: 18px;
+      max-width: 650px;
+      margin: 0 auto;
+    }
+    .post-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      margin-top: 36px;
+    }
+    .post-card {
+      background: #1f0d19;
+      border: 1px solid rgba(107, 33, 64, 0.7);
+      border-radius: 20px;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .post-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(212, 175, 55, 0.6);
+    }
+    .category-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: rgba(212, 175, 55, 0.15);
+      color: #e8c874;
+      margin-bottom: 14px;
+    }
+    .post-title {
+      font-size: 20px;
+      color: #fdf1f5;
+      font-weight: 700;
+      margin: 0 0 12px;
+      line-height: 1.4;
+    }
+    .post-desc {
+      color: #cf9bb3;
+      font-size: 14px;
+      line-height: 1.65;
+      margin: 0 0 16px;
+    }
+    .post-meta {
+      font-size: 12px;
+      color: rgba(207, 155, 179, 0.7);
+      border-top: 1px solid rgba(107, 33, 64, 0.4);
+      padding-top: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    footer {
+      text-align: center;
+      margin-top: 60px;
+      font-size: 13px;
+      color: rgba(207, 155, 179, 0.6);
+      border-top: 1px solid rgba(107, 33, 64, 0.4);
+      padding-top: 30px;
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="header-inner">
+      <a href="./" class="logo-group">
+        <div class="logo-badge">✨</div>
+        <span class="logo-text">Magizhnaazh</span>
+      </a>
+      <a href="./" class="back-btn">← Back to Magizhnaazh</a>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div class="hero">
+      <div class="tagline">Magizhnaazh Journal</div>
+      <h1>Celebration Tips, Trends & Planning Guides</h1>
+      <p class="subtitle">Inspiration, expert budgeting advice, and vendor spotlights to make your special day seamless.</p>
+    </div>
+
+    <div class="post-grid">
+      <div class="post-card">
+        <div>
+          <span class="category-badge">Wedding Trends</span>
+          <h2 class="post-title">Top 10 Tamil Nadu Wedding Trends for 2026</h2>
+          <p class="post-desc">From sustainable banana-leaf floral decor to intimate heritage mandapams in Chettinad and Coimbatore, explore the fresh ideas couples are embracing.</p>
+        </div>
+        <div class="post-meta">
+          <span>By Editorial Team</span>
+          <span>5 min read</span>
+        </div>
+      </div>
+
+      <div class="post-card">
+        <div>
+          <span class="category-badge">Smart Budgeting</span>
+          <h2 class="post-title">How to Plan Your Event Budget Without Compromise</h2>
+          <p class="post-desc">Learn how to divide your budget between venues, multi-course feasts, and photography while keeping a healthy contingency buffer.</p>
+        </div>
+        <div class="post-meta">
+          <span>Budget Guides</span>
+          <span>4 min read</span>
+        </div>
+      </div>
+
+      <div class="post-card">
+        <div>
+          <span class="category-badge">Catering</span>
+          <h2 class="post-title">Mastering the Traditional Feast Menu: Veg vs Non-Veg</h2>
+          <p class="post-desc">A deep dive into curating traditional South Indian breakfast spreads, rich wedding lunch feasts, and live counters that leave every guest delighted.</p>
+        </div>
+        <div class="post-meta">
+          <span>Catering Spotlights</span>
+          <span>6 min read</span>
+        </div>
+      </div>
+
+      <div class="post-card">
+        <div>
+          <span class="category-badge">Photography</span>
+          <h2 class="post-title">Capturing Pure Emotion: Candid vs Traditional Photography</h2>
+          <p class="post-desc">Why modern couples are pairing candid photojournalism with classic portraits, and how to brief your wedding cinematographer.</p>
+        </div>
+        <div class="post-meta">
+          <span>Creative Tips</span>
+          <span>4 min read</span>
+        </div>
+      </div>
+
+      <div class="post-card">
+        <div>
+          <span class="category-badge">RSVP & Tech</span>
+          <h2 class="post-title">Why Digital Invitations with Real-Time RSVP Save Hours</h2>
+          <p class="post-desc">How digital cards with QR location links and dietary tracking help you plan catering headcounts with zero wastage.</p>
+        </div>
+        <div class="post-meta">
+          <span>Tech & Planning</span>
+          <span>3 min read</span>
+        </div>
+      </div>
+
+      <div class="post-card">
+        <div>
+          <span class="category-badge">Decor</span>
+          <h2 class="post-title">Stage Lighting & Floral Backdrops: Choosing Your Vibe</h2>
+          <p class="post-desc">How warm amber illumination, brass lamps, and cascading jasmine elevate evening receptions into majestic celebrations.</p>
+        </div>
+        <div class="post-meta">
+          <span>Design Trends</span>
+          <span>5 min read</span>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      © 2026 Porulon Technologies Private Limited · Magizhnaazh. All rights reserved.
+    </footer>
+  </div>
+</body>
+</html>
