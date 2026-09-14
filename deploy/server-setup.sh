@@ -12,7 +12,7 @@
 set -euo pipefail
 
 APP_DIR=/var/www/magizhnaazh
-GATEWAY_URL=https://event-api.porulontech.com
+GATEWAY_URL=https://event.porulontech.com
 PORTS=(8000 8001 8002 8003 8004 8005 8006 8007)
 
 echo "==> [1/7] Installing Node 20, pm2, nginx, git, certbot (only if missing)"

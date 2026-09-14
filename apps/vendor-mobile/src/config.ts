@@ -4,7 +4,7 @@
 // to the deployed gateway. To test against a local gateway (`npm run
 // dev:gateway`), replace this with your computer's LAN IP, e.g.
 //   export const GATEWAY_URL = 'http://192.168.1.5:8000';
-export const GATEWAY_URL = 'https://event-api.porulontech.com';
+export const GATEWAY_URL = 'https://event.porulontech.com';
 
 // --- Google Sign-In ---------------------------------------------------------
 // The WEB OAuth client id — this is the audience the backend verifies against

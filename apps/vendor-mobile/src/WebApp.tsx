@@ -6,7 +6,7 @@ import { colors } from './theme';
 
 // The live vendor portal — loaded inside the app so the mobile experience is
 // identical to the web, with every feature, always in sync with the site.
-const SITE_URL = 'https://event.porulontech.com/vendor';
+const SITE_URL = 'https://event.porulontech.com/vendor/';
 
 // Present a normal Chrome-on-Android user agent so Google's "disallowed
 // user-agent" check doesn't block Sign in with Google inside the WebView.
@@ -64,6 +64,17 @@ export function WebApp({ token, user }: { token?: string | null; user?: unknown 
         onLoadStart={() => setLoading(true)}
         onLoadEnd={() => setLoading(false)}
         onNavigationStateChange={(s) => { canGoBack.current = s.canGoBack; }}
+        renderError={(domain, code, desc) => (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorTitle}>Unable to Load Portal</Text>
+            <Text style={styles.errorSubtitle}>
+              {code === 2 ? 'Connection handshake error. Please tap below to retry.' : desc}
+            </Text>
+            <TouchableOpacity style={styles.retryButton} onPress={() => ref.current?.reload()} activeOpacity={0.85}>
+              <Text style={styles.retryText}>Retry Connection</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       />
       {loading && (
         <View style={styles.loader} pointerEvents="none">
@@ -83,6 +94,42 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   web: { flex: 1, backgroundColor: colors.bg },
   loader: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
+  errorContainer: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: colors.bg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  errorTitle: {
+    color: '#e8c874',
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  errorSubtitle: {
+    color: '#cf9bb3',
+    fontSize: 14,
+    marginBottom: 20,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  retryButton: {
+    backgroundColor: '#d4af37',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+    shadowColor: '#d4af37',
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  retryText: {
+    color: '#1a0a14',
+    fontSize: 14,
+    fontWeight: '700',
+  },
   refreshBtn: {
     position: 'absolute', right: 16, bottom: 28,
     width: 48, height: 48, borderRadius: 24,
