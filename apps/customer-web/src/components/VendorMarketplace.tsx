@@ -135,6 +135,39 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
   }, [categoryDrawerSearch]);
 
   const categoryScrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+
+  const updateCategoryScroll = () => {
+    const el = categoryScrollRef.current;
+    if (!el) return;
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    setCanScrollLeft(scrollLeft > 6);
+    setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 6);
+  };
+
+  useEffect(() => {
+    updateCategoryScroll();
+    const el = categoryScrollRef.current;
+    if (el) {
+      el.addEventListener('scroll', updateCategoryScroll, { passive: true });
+      window.addEventListener('resize', updateCategoryScroll);
+    }
+    return () => {
+      el?.removeEventListener('scroll', updateCategoryScroll);
+      window.removeEventListener('resize', updateCategoryScroll);
+    };
+  }, []);
+
+  const scrollCategories = (dir: 'left' | 'right') => {
+    const el = categoryScrollRef.current;
+    if (!el) return;
+    const scrollAmount = Math.max(220, Math.floor(el.clientWidth * 0.75));
+    el.scrollBy({
+      left: dir === 'left' ? -scrollAmount : scrollAmount,
+      behavior: 'smooth',
+    });
+  };
 
   const toggleFacility = (key: string) => {
     setActiveFacilities((prev) =>
@@ -256,47 +289,86 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
         </div>
       </div>
 
-      {/* Category header with hint & count & quick arrows */}
-      {/* Category Row with prominent "All Categories" Drawer Trigger */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-8 no-scrollbar touch-pan-x">
-        {/* Main "All Categories" Drawer Trigger Button */}
+      {/* Category Row with Left & Right Arrow Navigation Buttons */}
+      <div className="flex items-center gap-1.5 sm:gap-2 mb-8">
+        {/* Left Arrow Button */}
         <button
           type="button"
-          onClick={() => setIsCategoryDrawerOpen(true)}
-          className="flex items-center gap-2 pl-3.5 pr-4 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap shrink-0 transition-all bg-gradient-to-r from-amber-500/20 via-amber-600/20 to-amber-500/20 border border-amber-500/50 text-amber-300 hover:bg-amber-500/30 hover:border-amber-400 active:scale-95 shadow-lg shadow-amber-500/10"
+          onClick={() => scrollCategories('left')}
+          disabled={!canScrollLeft}
+          aria-label="Scroll left to see previous categories"
+          className={`w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center shrink-0 border transition-all ${
+            canScrollLeft
+              ? 'bg-slate-900 border-slate-700 text-amber-400 hover:bg-slate-800 hover:border-amber-500/50 active:scale-95 shadow-md cursor-pointer'
+              : 'bg-slate-950/40 border-slate-900 text-slate-700 opacity-20 cursor-not-allowed'
+          }`}
         >
-          <LayoutGrid className="w-4 h-4 text-amber-400" />
-          <span>All Categories ({CATEGORIES.length - 1})</span>
-          <ChevronDown className="w-3.5 h-3.5 text-amber-400/80" />
+          <ChevronLeft className="w-5 h-5" />
         </button>
 
-        <div className="w-px h-6 bg-slate-800 shrink-0 mx-0.5" />
+        {/* Scrollable Categories List */}
+        <div
+          ref={categoryScrollRef}
+          onScroll={updateCategoryScroll}
+          className="flex-1 flex items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth touch-pan-x py-1"
+        >
+          {/* "All Categories" Drawer Trigger Button */}
+          <button
+            type="button"
+            onClick={() => setIsCategoryDrawerOpen(true)}
+            className="flex items-center gap-2 pl-3.5 pr-4 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap shrink-0 transition-all bg-gradient-to-r from-amber-500/20 via-amber-600/20 to-amber-500/20 border border-amber-500/50 text-amber-300 hover:bg-amber-500/30 hover:border-amber-400 active:scale-95 shadow-lg shadow-amber-500/10"
+          >
+            <LayoutGrid className="w-4 h-4 text-amber-400" />
+            <span>All Categories ({CATEGORIES.length - 1})</span>
+            <ChevronDown className="w-3.5 h-3.5 text-amber-400/80" />
+          </button>
 
-        {/* Category Pills */}
-        {CATEGORIES.map((cat) => {
-          const Icon = CATEGORY_ICONS[cat] ?? Layers;
-          const isActive = selectedCategory === cat;
-          return (
-            <button
-              key={cat}
-              onClick={() => handleCategoryChange(cat)}
-              className={`flex items-center gap-2 pl-3 pr-4 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap shrink-0 transition-all ${
-                isActive
-                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 scale-105 ring-2 ring-indigo-400/30'
-                  : 'bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800'
-              }`}
-            >
-              <span
-                className={`flex items-center justify-center w-6 h-6 rounded-lg transition-colors ${
-                  isActive ? 'bg-white/20' : 'bg-slate-800 text-amber-400'
+          <div className="w-px h-6 bg-slate-800 shrink-0 mx-0.5" />
+
+          {/* Category Pills */}
+          {CATEGORIES.map((cat) => {
+            const Icon = CATEGORY_ICONS[cat] ?? Layers;
+            const isActive = selectedCategory === cat;
+            return (
+              <button
+                key={cat}
+                onClick={(e) => {
+                  handleCategoryChange(cat);
+                  e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                }}
+                className={`flex items-center gap-2 pl-3 pr-4 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap shrink-0 transition-all ${
+                  isActive
+                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 scale-105 ring-2 ring-indigo-400/30'
+                    : 'bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800'
                 }`}
               >
-                <Icon className="w-3.5 h-3.5" />
-              </span>
-              {cat}
-            </button>
-          );
-        })}
+                <span
+                  className={`flex items-center justify-center w-6 h-6 rounded-lg transition-colors ${
+                    isActive ? 'bg-white/20' : 'bg-slate-800 text-amber-400'
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                </span>
+                {cat}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Right Arrow Button to look at remaining categories */}
+        <button
+          type="button"
+          onClick={() => scrollCategories('right')}
+          disabled={!canScrollRight}
+          aria-label="Scroll right to look at remaining categories"
+          className={`w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center shrink-0 border transition-all ${
+            canScrollRight
+              ? 'bg-slate-900 border-amber-500/60 text-amber-300 hover:bg-slate-800 hover:border-amber-400 active:scale-95 shadow-md shadow-amber-500/20 cursor-pointer animate-pulse'
+              : 'bg-slate-950/40 border-slate-900 text-slate-700 opacity-20 cursor-not-allowed'
+          }`}
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
       </div>
 
       {/* Bottom Sheet / Drawer Modal for All 24 Categories */}
