@@ -17,6 +17,7 @@ import { GuestManagement } from './components/GuestManagement';
 import { MyOrders } from './components/MyOrders';
 import { FeedbackModule } from './components/FeedbackModule';
 import { FloralGoldBackground } from './components/FloralGoldBackground';
+import { Footer } from './components/Footer';
 import { INVITATION_TEMPLATES } from '../../../packages/canvas-engine';
 import {
   fetchEvents,
@@ -733,6 +734,12 @@ export function App() {
           />
         )}
       </main>
+
+      <Footer
+        onNavigateTab={setActiveTab}
+        openEventWizard={() => requireAuth(() => setShowEventWizard(true))}
+        onOpenSignIn={() => setShowAuthModal(true)}
+      />
 
       {/* Sub-Header Navigation Bar for Feedback and Quick Utilities */}
       <div className="fixed bottom-4 right-4 z-40">
