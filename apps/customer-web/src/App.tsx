@@ -36,7 +36,7 @@ import {
   GATEWAY_URL,
 } from './api';
 import { groupCitiesByState, STATIC_CITY_GROUPS } from '../../../packages/shared-utils';
-import { MessageSquare, CheckCircle2 } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 
 // Friendly phrasing for the booking-status-change toast — fires whenever a
 // vendor moves one of the customer's bookings forward (accepts a quote,
@@ -740,16 +740,6 @@ export function App() {
         openEventWizard={() => requireAuth(() => setShowEventWizard(true))}
         onOpenSignIn={() => setShowAuthModal(true)}
       />
-
-      {/* Sub-Header Navigation Bar for Feedback and Quick Utilities */}
-      <div className="fixed bottom-4 right-4 z-40">
-        <button
-          onClick={() => setActiveTab('feedback')}
-          className="px-4 py-3 rounded-2xl bg-gradient-to-r from-[#b8336a] to-[#6b2140] text-[#fdf1f5] font-bold text-xs shadow-2xl flex items-center gap-2 hover:scale-105 transition-all border border-[#d4af37]/30"
-        >
-          <MessageSquare className="w-4 h-4" /> Guest Feedback Portal
-        </button>
-      </div>
 
       {selectedVendorForModal && (
         <VendorDetailModal
