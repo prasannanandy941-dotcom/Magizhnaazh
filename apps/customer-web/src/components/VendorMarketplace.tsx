@@ -1,10 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   Star, MapPin, Heart, CheckCircle2, SlidersHorizontal, ArrowUpDown, Layers, Phone, Eye,
   LayoutGrid, UtensilsCrossed, Building2, Sparkles, Brush, Camera, Video, Car, Flame,
   Mail, Printer, Gift, PartyPopper, Music, Lightbulb, Flower2, Hand, Mic, Shield,
   SprayCan, Package, Utensils, ClipboardList, Briefcase, MoreHorizontal,
-  ChevronLeft, ChevronRight,
+  ChevronLeft, ChevronRight, X, Search, ChevronDown, Check,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Vendor, VendorCategory, VENDOR_CATEGORIES, getLiveDeals } from '../../../../packages/shared-types';
@@ -95,57 +95,46 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
   // against vendor.offeredOptions) instead of opening a photo gallery.
   const [activeOptions, setActiveOptions] = useState<string[]>([]);
 
-  // Category horizontal scroll state & ref for mobile & desktop navigation
-  const categoryScrollRef = useRef<HTMLDivElement>(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(true);
-  const [scrollFraction, setScrollFraction] = useState(0);
-  const [thumbWidthPercent, setThumbWidthPercent] = useState(25);
+  // Category Bottom Sheet Drawer state
+  const [isCategoryDrawerOpen, setIsCategoryDrawerOpen] = useState(false);
+  const [categoryDrawerSearch, setCategoryDrawerSearch] = useState('');
 
-  const updateCategoryScroll = () => {
-    const el = categoryScrollRef.current;
-    if (!el) return;
-    const { scrollLeft, scrollWidth, clientWidth } = el;
-    const maxScroll = scrollWidth - clientWidth;
-    setCanScrollLeft(scrollLeft > 6);
-    setCanScrollRight(scrollLeft < maxScroll - 6);
-    if (maxScroll > 0) {
-      setScrollFraction(Math.min(1, Math.max(0, scrollLeft / maxScroll)));
-      setThumbWidthPercent(Math.max(15, (clientWidth / scrollWidth) * 100));
-    }
-  };
-
+  // Close drawer on Escape key & lock scroll when open
   useEffect(() => {
-    updateCategoryScroll();
-    const el = categoryScrollRef.current;
-    if (el) {
-      el.addEventListener('scroll', updateCategoryScroll, { passive: true });
-      window.addEventListener('resize', updateCategoryScroll);
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsCategoryDrawerOpen(false);
+    };
+    if (isCategoryDrawerOpen) {
+      window.addEventListener('keydown', onKeyDown);
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
     }
     return () => {
-      el?.removeEventListener('scroll', updateCategoryScroll);
-      window.removeEventListener('resize', updateCategoryScroll);
+      window.removeEventListener('keydown', onKeyDown);
+      document.body.style.overflow = '';
     };
-  }, []);
+  }, [isCategoryDrawerOpen]);
 
-  const scrollCategories = (dir: 'left' | 'right') => {
-    const el = categoryScrollRef.current;
-    if (!el) return;
-    const scrollAmount = Math.max(220, Math.floor(el.clientWidth * 0.7));
-    el.scrollBy({
-      left: dir === 'left' ? -scrollAmount : scrollAmount,
-      behavior: 'smooth',
-    });
-  };
+  // Vendor count per category for drawer badges
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = { All: vendors.length };
+    for (const v of vendors) {
+      if (v.category) {
+        counts[v.category] = (counts[v.category] || 0) + 1;
+      }
+    }
+    return counts;
+  }, [vendors]);
 
-  const handleTrackClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    const el = categoryScrollRef.current;
-    if (!el) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const clickFraction = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    const maxScroll = el.scrollWidth - el.clientWidth;
-    el.scrollTo({ left: clickFraction * maxScroll, behavior: 'smooth' });
-  };
+  // Filtered categories inside the bottom sheet drawer
+  const filteredDrawerCategories = useMemo(() => {
+    if (!categoryDrawerSearch.trim()) return CATEGORIES;
+    const q = categoryDrawerSearch.toLowerCase().trim();
+    return CATEGORIES.filter((c) => c.toLowerCase().includes(q));
+  }, [categoryDrawerSearch]);
+
+  const categoryScrollRef = useRef<HTMLDivElement>(null);
 
   const toggleFacility = (key: string) => {
     setActiveFacilities((prev) =>
@@ -268,134 +257,169 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
       </div>
 
       {/* Category header with hint & count & quick arrows */}
-      <div className="flex items-center justify-between gap-2 mb-3 px-1">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-            <Layers className="w-3.5 h-3.5 text-amber-400" />
-            Categories ({CATEGORIES.length})
-          </span>
-          <span className="hidden sm:inline-block text-[11px] text-slate-600">•</span>
-          <span className="text-[11px] text-amber-400/90 font-medium">
-            Swipe or use arrows to view all →
-          </span>
-        </div>
-
-        {/* Quick scroll arrows */}
-        <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={() => scrollCategories('left')}
-            disabled={!canScrollLeft}
-            aria-label="Scroll categories left"
-            className={`p-1.5 rounded-xl border transition-all ${
-              canScrollLeft
-                ? 'bg-slate-900 border-slate-700 text-amber-400 hover:bg-slate-800 active:scale-95 shadow-sm'
-                : 'bg-slate-950/50 border-slate-800/50 text-slate-600 opacity-40 cursor-not-allowed'
-            }`}
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => scrollCategories('right')}
-            disabled={!canScrollRight}
-            aria-label="Scroll categories right"
-            className={`p-1.5 rounded-xl border transition-all ${
-              canScrollRight
-                ? 'bg-slate-900 border-amber-500/50 text-amber-300 hover:bg-slate-800 active:scale-95 shadow-md shadow-amber-500/10 animate-pulse'
-                : 'bg-slate-950/50 border-slate-800/50 text-slate-600 opacity-40 cursor-not-allowed'
-            }`}
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-
-      {/* Category Pill Strip with Gradient Edges & Floating Arrows */}
-      <div className="relative mb-3 group/catstrip">
-        {/* Left fade gradient + floating arrow button */}
-        {canScrollLeft && (
-          <div className="absolute left-0 top-0 bottom-0 z-10 flex items-center pr-6 bg-gradient-to-r from-slate-950 via-slate-950/90 to-transparent pointer-events-none">
-            <button
-              type="button"
-              onClick={() => scrollCategories('left')}
-              aria-label="Scroll left"
-              className="pointer-events-auto p-2 rounded-full bg-slate-900/95 border border-amber-500/40 text-amber-400 shadow-xl hover:bg-slate-800 active:scale-95 transition-all -ml-1"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-          </div>
-        )}
-
-        {/* Categories scroll container */}
-        <div
-          ref={categoryScrollRef}
-          className="flex items-center gap-2 overflow-x-auto pb-2 pt-1 scroll-smooth touch-pan-x no-scrollbar"
+      {/* Category Row with prominent "All Categories" Drawer Trigger */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-8 no-scrollbar touch-pan-x">
+        {/* Main "All Categories" Drawer Trigger Button */}
+        <button
+          type="button"
+          onClick={() => setIsCategoryDrawerOpen(true)}
+          className="flex items-center gap-2 pl-3.5 pr-4 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap shrink-0 transition-all bg-gradient-to-r from-amber-500/20 via-amber-600/20 to-amber-500/20 border border-amber-500/50 text-amber-300 hover:bg-amber-500/30 hover:border-amber-400 active:scale-95 shadow-lg shadow-amber-500/10"
         >
-          {CATEGORIES.map((cat) => {
-            const Icon = CATEGORY_ICONS[cat] ?? Layers;
-            const isActive = selectedCategory === cat;
-            return (
-              <button
-                key={cat}
-                onClick={(e) => {
-                  handleCategoryChange(cat);
-                  e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-                }}
-                className={`flex items-center gap-2 pl-3 pr-4 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap shrink-0 transition-all ${
-                  isActive
-                    ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-lg shadow-indigo-600/30 scale-105 ring-2 ring-indigo-400/30'
-                    : 'bg-slate-900/90 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800 hover:border-slate-700'
+          <LayoutGrid className="w-4 h-4 text-amber-400" />
+          <span>All Categories ({CATEGORIES.length - 1})</span>
+          <ChevronDown className="w-3.5 h-3.5 text-amber-400/80" />
+        </button>
+
+        <div className="w-px h-6 bg-slate-800 shrink-0 mx-0.5" />
+
+        {/* Category Pills */}
+        {CATEGORIES.map((cat) => {
+          const Icon = CATEGORY_ICONS[cat] ?? Layers;
+          const isActive = selectedCategory === cat;
+          return (
+            <button
+              key={cat}
+              onClick={() => handleCategoryChange(cat)}
+              className={`flex items-center gap-2 pl-3 pr-4 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap shrink-0 transition-all ${
+                isActive
+                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 scale-105 ring-2 ring-indigo-400/30'
+                  : 'bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              <span
+                className={`flex items-center justify-center w-6 h-6 rounded-lg transition-colors ${
+                  isActive ? 'bg-white/20' : 'bg-slate-800 text-amber-400'
                 }`}
               >
-                <span
-                  className={`flex items-center justify-center w-6 h-6 rounded-lg transition-colors ${
-                    isActive ? 'bg-white/20' : 'bg-slate-800 text-amber-400'
-                  }`}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                </span>
-                {cat}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Right fade gradient + floating arrow button */}
-        {canScrollRight && (
-          <div className="absolute right-0 top-0 bottom-0 z-10 flex items-center pl-6 bg-gradient-to-l from-slate-950 via-slate-950/90 to-transparent pointer-events-none">
-            <button
-              type="button"
-              onClick={() => scrollCategories('right')}
-              aria-label="Scroll right"
-              className="pointer-events-auto p-2 rounded-full bg-slate-900/95 border border-amber-500/50 text-amber-300 shadow-xl hover:bg-slate-800 active:scale-95 transition-all -mr-1 animate-pulse"
-            >
-              <ChevronRight className="w-4 h-4" />
+                <Icon className="w-3.5 h-3.5" />
+              </span>
+              {cat}
             </button>
-          </div>
-        )}
+          );
+        })}
       </div>
 
-      {/* Interactive Horizontal Scrollbar / Progress Indicator */}
-      <div className="flex items-center gap-2 mb-8 px-1">
-        <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Scroll</span>
-        <div
-          onClick={handleTrackClick}
-          className="flex-1 h-2 bg-slate-900 border border-slate-800 rounded-full overflow-hidden cursor-pointer relative group hover:border-amber-500/40 transition-colors"
-          title="Click to jump to categories"
-        >
+      {/* Bottom Sheet / Drawer Modal for All 24 Categories */}
+      {isCategoryDrawerOpen && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+          {/* Backdrop */}
           <div
-            className="h-full bg-gradient-to-r from-amber-400 via-indigo-500 to-amber-400 rounded-full transition-[margin] duration-150 shadow-sm shadow-amber-400/40 group-hover:brightness-125"
-            style={{
-              width: `${thumbWidthPercent}%`,
-              marginLeft: `${scrollFraction * (100 - thumbWidthPercent)}%`,
-            }}
+            className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm transition-opacity"
+            onClick={() => setIsCategoryDrawerOpen(false)}
           />
+
+          {/* Bottom Sheet Modal Container */}
+          <div className="relative w-full sm:max-w-2xl bg-slate-900 border-t sm:border border-slate-800 rounded-t-3xl sm:rounded-3xl shadow-2xl z-10 flex flex-col max-h-[85vh] overflow-hidden animate-in slide-in-from-bottom duration-300">
+            {/* Mobile Drag Pill */}
+            <div className="sm:hidden flex justify-center pt-3 pb-1">
+              <div className="w-12 h-1.5 bg-slate-700 rounded-full" />
+            </div>
+
+            {/* Drawer Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
+              <div>
+                <h3 className="text-lg font-display font-bold text-white flex items-center gap-2">
+                  <LayoutGrid className="w-5 h-5 text-amber-400" />
+                  All Event Categories
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Pick any category to view verified partners ({CATEGORIES.length - 1} categories)
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCategoryDrawerOpen(false)}
+                className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+                aria-label="Close categories drawer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Search filter inside drawer */}
+            <div className="px-6 py-3 border-b border-slate-800/80 bg-slate-950/40">
+              <div className="relative flex items-center">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 pointer-events-none" />
+                <input
+                  type="text"
+                  value={categoryDrawerSearch}
+                  onChange={(e) => setCategoryDrawerSearch(e.target.value)}
+                  placeholder="Search categories (e.g. catering, venue, mehendi, dj)..."
+                  className="w-full bg-slate-800/90 border border-slate-700/80 rounded-xl pl-10 pr-10 py-2.5 text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-none focus:border-amber-400/80 transition-colors"
+                />
+                {categoryDrawerSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setCategoryDrawerSearch('')}
+                    className="absolute right-3 text-slate-400 hover:text-white"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Categories Grid */}
+            <div className="p-4 sm:p-6 overflow-y-auto max-h-[55vh] sm:max-h-[60vh] grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 sm:gap-3">
+              {filteredDrawerCategories.map((cat) => {
+                const Icon = CATEGORY_ICONS[cat] ?? Layers;
+                const isActive = selectedCategory === cat;
+                const count = categoryCounts[cat] ?? 0;
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => {
+                      handleCategoryChange(cat);
+                      setIsCategoryDrawerOpen(false);
+                    }}
+                    className={`flex flex-col items-center text-center p-3 rounded-2xl border transition-all ${
+                      isActive
+                        ? 'bg-gradient-to-b from-indigo-600/30 to-indigo-700/20 border-indigo-500 shadow-lg shadow-indigo-600/20 ring-2 ring-indigo-500/40'
+                        : 'bg-slate-950/50 border-slate-800/80 hover:bg-slate-800/70 hover:border-slate-700'
+                    }`}
+                  >
+                    <div
+                      className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center mb-2 transition-all ${
+                        isActive
+                          ? 'bg-indigo-600 text-white shadow-md'
+                          : 'bg-slate-800 text-amber-400 group-hover:scale-105'
+                      }`}
+                    >
+                      <Icon className="w-5 h-5" />
+                    </div>
+                    <span className="text-xs font-semibold text-white leading-tight line-clamp-2">
+                      {cat}
+                    </span>
+                    <span className="text-[10px] text-slate-400 mt-1">
+                      {count} {count === 1 ? 'partner' : 'partners'}
+                    </span>
+                    {isActive && (
+                      <span className="mt-1 flex items-center gap-1 text-[10px] font-bold text-indigo-300">
+                        <Check className="w-3 h-3" /> Selected
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Drawer Footer */}
+            <div className="px-6 py-3 bg-slate-950 border-t border-slate-800 flex items-center justify-between">
+              <span className="text-xs text-slate-400">
+                Selected: <strong className="text-amber-400">{selectedCategory}</strong>
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsCategoryDrawerOpen(false)}
+                className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/20 transition-all"
+              >
+                View Vendors
+              </button>
+            </div>
+          </div>
         </div>
-        <span className="text-[10px] font-semibold text-amber-400/90">
-          {Math.round(scrollFraction * 100)}%
-        </span>
-      </div>
+      )}
 
       {selectedCategory === 'Venue' && (
         <FacilityChips active={activeFacilities} onToggle={toggleFacility} />
