@@ -10349,81 +10349,91 @@ export function App() {
 
             {/* TAB 1: Business Details (matching Image 2) */}
             {profileSubTab === 'business' && (
-              <div className="p-6 sm:p-8 rounded-3xl border border-slate-200 bg-white text-slate-900 shadow-sm space-y-5">
-                {/* Header */}
-                <div className="flex items-start justify-between gap-4 flex-wrap">
-                  <div>
-                    <h3 className="font-bold text-base sm:text-lg text-slate-900">
-                      Cashfree Easy Split Marketplace Payments
-                    </h3>
-                    <p className="text-xs text-slate-500 mt-1 max-w-xl leading-relaxed">
-                      Connect your Cashfree Vendor Account to automatically receive customer payments directly into your bank account.
-                    </p>
-                  </div>
-                  <div className="shrink-0">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold text-xs tracking-wide">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                      Vendor: CONNECTED
-                    </span>
-                  </div>
+              <div className="p-6 sm:p-8 rounded-3xl border border-slate-800 bg-slate-900/90 text-white shadow-xl space-y-5">
+                <div>
+                  <h3 className="font-bold text-base sm:text-lg text-white">
+                    Settlement Bank Account Details
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1 max-w-xl leading-relaxed">
+                    Used for automated payouts via Razorpay Route and Cashfree Easy Split.
+                  </p>
                 </div>
 
-                {/* Info strip with Vendor ID & Platform Commission */}
-                <div className="p-3.5 rounded-xl bg-teal-50/80 border border-teal-100/90 flex items-center justify-between flex-wrap gap-3 text-xs">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-bold text-teal-900">Cashfree Vendor ID:</span>
-                    <span className="px-2.5 py-1 rounded-lg bg-white border border-teal-200 font-mono text-[11px] text-teal-800 font-semibold shadow-xs">
-                      {bankForm.cashfreeVendorId || ('vendor_' + (myVendor.id || '').replace(/[^a-zA-Z0-9]/g, '').slice(0, 16))}
-                    </span>
-                  </div>
-                  <div className="font-bold text-teal-900">
-                    Platform Commission: <span className="font-extrabold text-teal-950">10%</span>
-                  </div>
-                </div>
-
-                {/* Form Inputs (3 Columns matching Image 2) */}
-                <div className="grid sm:grid-cols-3 gap-4">
+                <div className="grid sm:grid-cols-3 gap-3.5">
                   <div>
-                    <label className="block text-[11px] font-bold tracking-wide text-slate-600 uppercase mb-1.5">
+                    <label className="block text-[11px] font-bold tracking-wide text-slate-300 uppercase mb-1.5">
                       LEGAL BUSINESS / ENTITY NAME
                     </label>
                     <input
                       type="text"
                       value={bankForm.entityName}
                       onChange={(e) => setBankForm((f) => ({ ...f, entityName: e.target.value }))}
-                      placeholder="Rohini B"
-                      className="w-full p-3 rounded-xl bg-white border border-slate-300 text-slate-900 text-sm font-semibold focus:outline-none focus:border-teal-600 focus:ring-1 focus:ring-teal-600 shadow-xs"
+                      placeholder="e.g. John Doe Enterprises"
+                      className="w-full p-2.5 sm:p-3 rounded-xl bg-slate-950/70 border border-slate-800 text-white text-xs sm:text-sm font-semibold placeholder:text-slate-500 focus:outline-none focus:border-slate-600 shadow-inner"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold tracking-wide text-slate-600 uppercase mb-1.5">
+                    <label className="block text-[11px] font-bold tracking-wide text-slate-300 uppercase mb-1.5">
                       BANK ACCOUNT NUMBER
                     </label>
                     <input
                       type="text"
                       value={bankForm.accountNumber}
                       onChange={(e) => setBankForm((f) => ({ ...f, accountNumber: e.target.value }))}
-                      placeholder="6285854908"
-                      className="w-full p-3 rounded-xl bg-white border border-slate-300 text-slate-900 text-sm font-semibold focus:outline-none focus:border-teal-600 focus:ring-1 focus:ring-teal-600 shadow-xs"
+                      placeholder="Account Number"
+                      className="w-full p-2.5 sm:p-3 rounded-xl bg-slate-950/70 border border-slate-800 text-white text-xs sm:text-sm font-semibold placeholder:text-slate-500 focus:outline-none focus:border-slate-600 shadow-inner"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold tracking-wide text-slate-600 uppercase mb-1.5">
+                    <label className="block text-[11px] font-bold tracking-wide text-slate-300 uppercase mb-1.5">
                       BANK IFSC CODE
                     </label>
                     <input
                       type="text"
                       value={bankForm.ifscCode}
                       onChange={(e) => setBankForm((f) => ({ ...f, ifscCode: e.target.value.toUpperCase() }))}
-                      placeholder="IDIB000K073"
-                      className="w-full p-3 rounded-xl bg-white border border-slate-300 text-slate-900 text-sm font-semibold uppercase focus:outline-none focus:border-teal-600 focus:ring-1 focus:ring-teal-600 shadow-xs"
+                      placeholder="e.g. HDFC0001234"
+                      className="w-full p-2.5 sm:p-3 rounded-xl bg-slate-950/70 border border-slate-800 text-white text-xs sm:text-sm font-semibold uppercase placeholder:text-slate-500 focus:outline-none focus:border-slate-600 shadow-inner"
                     />
                   </div>
                 </div>
 
-                {/* Actions: Save Changes (Red) & Connect Cashfree (Teal) */}
+                <div className="p-4 sm:p-5 rounded-2xl border border-slate-800/90 bg-slate-950/50 space-y-3.5">
+                  <div className="flex items-start justify-between gap-3 flex-wrap sm:flex-nowrap">
+                    <div>
+                      <h4 className="font-bold text-sm sm:text-base text-white">
+                        Razorpay Route Marketplace Account
+                      </h4>
+                      <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                        Mandatory to accept online Razorpay payments. Customer payments are split directly to your linked account.
+                      </p>
+                    </div>
+                    <div className="shrink-0">
+                      <div className="px-3.5 py-1.5 rounded-full border border-rose-900/60 bg-rose-950/30 text-rose-400 text-[11px] font-bold leading-tight text-center tracking-wide">
+                        Razorpay: NOT<br />CONNECTED
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-amber-950/20 border border-amber-900/40 text-amber-300 text-xs font-semibold flex items-center gap-2">
+                    <span className="text-amber-400 font-bold">⚠</span>
+                    <span>Complete Razorpay payment onboarding to accept online Razorpay payments.</span>
+                  </div>
+
+                  <div className="flex justify-end pt-1">
+                    <button
+                      type="button"
+                      onClick={handleConnectCashfree}
+                      disabled={bankSaving}
+                      className="px-5 py-2.5 rounded-xl bg-[#0b3c5d] hover:bg-[#0d4b75] text-white font-bold text-xs shadow-sm transition-colors inline-flex items-center gap-1.5 disabled:opacity-50"
+                    >
+                      Connect Razorpay Route Account
+                    </button>
+                  </div>
+                </div>
+
                 <div className="pt-2 flex items-center justify-between flex-wrap gap-3">
                   <button
                     type="button"
@@ -10434,19 +10444,10 @@ export function App() {
                     {bankSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                     Save Changes
                   </button>
-
-                  <button
-                    type="button"
-                    onClick={handleConnectCashfree}
-                    disabled={bankSaving}
-                    className="px-6 py-2.5 rounded-xl bg-[#006b52] hover:bg-[#005541] text-white font-bold text-xs shadow-md transition-colors inline-flex items-center gap-2 disabled:opacity-50"
-                  >
-                    Connect Cashfree Easy Split
-                  </button>
                 </div>
 
                 {bankNotice && (
-                  <p className="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 p-2.5 rounded-xl">
+                  <p className="text-xs font-semibold text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 p-2.5 rounded-xl">
                     {bankNotice}
                   </p>
                 )}
