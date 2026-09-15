@@ -435,6 +435,16 @@ export function recordBalancePayment(bookingId: string, amount?: number, referen
   });
 }
 
+// Cancel a booking, or request a refund if money has already been claimed/paid
+// against it (e.g. the vendor never confirmed the advance). Works any time
+// before the vendor has started the work.
+export function cancelBooking(bookingId: string, reason?: string): Promise<BookingResponse> {
+  return authedFetch<BookingResponse>(`/api/v1/bookings/${bookingId}/cancel`, {
+    method: 'PUT',
+    body: JSON.stringify({ reason }),
+  });
+}
+
 // Structured GST invoice for one of the customer's bookings.
 export function fetchBookingInvoice(bookingId: string): Promise<{ success: boolean; data?: { invoice: BookingInvoice } }> {
   return authedFetch<{ success: boolean; data?: { invoice: BookingInvoice } }>(`/api/v1/bookings/${bookingId}/invoice`, { method: 'GET' });

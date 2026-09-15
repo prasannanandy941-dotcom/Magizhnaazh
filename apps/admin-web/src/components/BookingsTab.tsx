@@ -43,6 +43,15 @@ export const BookingsTab: React.FC<{ token: string }> = ({ token }) => {
         { label: 'Amount', render: (b) => <span className="text-amber-400 font-bold">₹{b.agreedPrice.toLocaleString('en-IN')}</span> },
         { label: 'Advance Paid', render: (b) => `₹${b.advanceAmountPaid.toLocaleString('en-IN')}` },
         { label: 'Status', render: (b) => <span className={`px-2.5 py-1 rounded-full font-bold uppercase text-[10px] ${STATUS_STYLES[b.status] || ''}`}>{b.status.replace('_', ' ')}</span> },
+        {
+          label: 'Cancel/Refund Reason',
+          render: (b) =>
+            (b.status === 'cancelled' || b.status === 'refunded') ? (
+              <span className="text-slate-400 text-xs">{b.cancelReason || '—'}{b.cancelledBy ? ` (${b.cancelledBy})` : ''}</span>
+            ) : (
+              '—'
+            ),
+        },
       ]}
       emptyText="No bookings yet."
     />

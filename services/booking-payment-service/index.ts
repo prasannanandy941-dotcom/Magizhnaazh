@@ -501,6 +501,67 @@ app.put('/api/v1/bookings/:id/status', authMiddleware(), async (req: Request, re
   res.json({ success: true, message: 'Booking status updated.', data: { booking } });
 });
 
+// 4c-2. Customer cancels a booking / requests a refund. Available at any point
+//     before the vendor has actually started delivering the service — this is
+//     exactly the safety net for a vendor who never confirms (stuck on
+//     "Advance Claimed — Confirm") or who is slow to respond to a quote: the
+//     customer isn't left waiting forever with no way out. Once work is
+//     "in_progress" or the booking is already completed/cancelled/refunded,
+//     this must go through support instead.
+app.put('/api/v1/bookings/:id/cancel', authMiddleware(), async (req: Request, res: Response) => {
+  const booking = await BookingModel.findOne({ id: req.params.id });
+  if (!booking) return res.status(404).json({ success: false, message: 'Booking not found.' });
+
+  const isAdmin = req.user!.role === 'admin';
+  if (!isAdmin && booking.customerId !== req.user!.sub) {
+    return res.status(403).json({ success: false, message: 'This booking does not belong to you.' });
+  }
+
+  const blocked = ['completed', 'cancelled', 'refunded', 'in_progress'];
+  if (blocked.includes(booking.status)) {
+    const why =
+      booking.status === 'in_progress'
+        ? 'This booking is already in progress. Please contact support for a refund.'
+        : 'This booking is already closed and cannot be cancelled again.';
+    return res.status(400).json({ success: false, message: why });
+  }
+
+  // Money is "at risk" (and this becomes a refund, not a plain cancel) if any
+  // advance has been confirmed, OR the customer has claimed one that the
+  // vendor hasn't acted on yet — exactly the stuck "Advance Claimed — Confirm"
+  // scenario in the screenshot, where advanceAmountPaid is still 0 because the
+  // vendor never confirmed it.
+  const hadConfirmedMoney = (booking.advanceAmountPaid || 0) > 0;
+  const hasUnconfirmedClaim = (booking.payments || []).some((p: any) => p.status === 'claimed');
+  const isRefund = hadConfirmedMoney || hasUnconfirmedClaim;
+
+  const wasConfirmed = booking.status === 'confirmed';
+  booking.status = isRefund ? 'refunded' : 'cancelled';
+  booking.cancelReason = String(req.body?.reason || '').slice(0, 500);
+  booking.cancelledAt = new Date().toISOString();
+  booking.cancelledBy = isAdmin ? 'admin' : 'customer';
+  await booking.save();
+
+  // If the date/slot had already been closed off (booking was confirmed),
+  // reopen it on the vendor's calendar — best-effort, cancellation already
+  // succeeded either way.
+  if (wasConfirmed && booking.vendorId && booking.eventDate) {
+    fetch(`${MARKETPLACE_SERVICE_URL}/api/v1/vendors/${booking.vendorId}/unbook-slot`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: req.headers.authorization || '' },
+      body: JSON.stringify({ date: booking.eventDate, slot: booking.timeSlot || '' }),
+    }).catch(() => { /* the vendor can still reopen the date manually */ });
+  }
+
+  res.json({
+    success: true,
+    message: isRefund
+      ? 'Booking cancelled. Your refund request has been recorded.'
+      : 'Booking cancelled.',
+    data: { booking },
+  });
+});
+
 // 4d. Vendor records what the agreed money was spent on — a line-item breakdown
 //     ("Mandap flowers ₹40,000", "Stage lighting ₹20,000"). This is purely an
 //     itemisation of the booking total; the customer sees it under this vendor

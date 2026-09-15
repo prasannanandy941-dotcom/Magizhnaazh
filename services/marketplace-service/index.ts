@@ -499,6 +499,27 @@ app.post('/api/v1/vendors/:id/book-slot', authMiddleware(), async (req: Request,
   res.json({ success: true, data: { availableDates: vendor.availableDates, bookedDates: vendor.bookedDates, bookedSlots: vendor.bookedSlots } });
 });
 
+// Reverse of book-slot: reopen a date/slot that was closed for a booking which
+// has since been cancelled or refunded, so the vendor doesn't lose that day.
+// Called server-to-server by booking-payment-service's /cancel route.
+app.post('/api/v1/vendors/:id/unbook-slot', authMiddleware(), async (req: Request, res: Response) => {
+  const { date, slot } = req.body;
+  if (!date) return res.status(400).json({ success: false, message: 'date is required.' });
+  const vendor = await VendorModel.findOne({ id: req.params.id });
+  if (!vendor) return res.status(404).json({ success: false, message: 'Vendor not found.' });
+
+  if (slot) {
+    vendor.bookedSlots = (vendor.bookedSlots || []).filter((b) => !(b.date === date && b.slot === slot));
+    vendor.markModified('bookedSlots');
+  }
+  // Reopen the whole date too — either it was a full-day block, or removing
+  // this slot means the date is no longer fully booked out.
+  vendor.bookedDates = (vendor.bookedDates || []).filter((d) => d !== date);
+  if (!(vendor.availableDates || []).includes(date)) vendor.availableDates = [...(vendor.availableDates || []), date];
+  await vendor.save();
+  res.json({ success: true, data: { availableDates: vendor.availableDates, bookedDates: vendor.bookedDates, bookedSlots: vendor.bookedSlots } });
+});
+
 // Free a previously-blocked date (e.g. a booking was cancelled) — moves it back
 // out of bookedDates. Does not re-add to availableDates (the vendor re-opens it).
 app.post('/api/v1/vendors/:id/free-date', authMiddleware(), async (req: Request, res: Response) => {

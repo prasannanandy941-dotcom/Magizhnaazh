@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { ClipboardList, RefreshCw, Loader2, CheckCircle2, Circle, IndianRupee, LogIn, Star, Send, FileText, Wallet } from 'lucide-react';
+import { ClipboardList, RefreshCw, Loader2, CheckCircle2, Circle, IndianRupee, LogIn, Star, Send, FileText, Wallet, XCircle } from 'lucide-react';
 import { Booking, Review, slotLabelWithTime } from '../../../../packages/shared-types';
-import { fetchMyBookings, fetchMyReviews, submitReview, recordBalancePayment, fetchBookingInvoice } from '../api';
+import { fetchMyBookings, fetchMyReviews, submitReview, recordBalancePayment, fetchBookingInvoice, cancelBooking } from '../api';
 import { openInvoicePrintWindow } from './invoice';
 
 // Work-progress stages a confirmed booking moves through — mirrors the
@@ -27,6 +27,26 @@ const STATUS_LABEL: Record<string, string> = {
   cancelled: 'Cancelled',
   refunded: 'Refunded',
 };
+
+// Statuses the customer can still back out of themselves — anything up to and
+// including "confirmed" but before the vendor has actually started the work.
+// This is the safety net for a vendor who never confirms a claimed advance
+// (stuck on pending_payment) or never responds to a quote at all.
+const CANCELLABLE_STATUSES = new Set([
+  'enquiry',
+  'quote_requested',
+  'quote_received',
+  'quote_sent',
+  'negotiation',
+  'pending_payment',
+  'confirmed',
+]);
+
+// True once money has actually changed hands (or the customer claims it has)
+// against a booking — cancelling then is a refund request, not a plain cancel.
+function bookingHasMoneyAtStake(b: Booking): boolean {
+  return (b.advanceAmountPaid || 0) > 0 || (b.payments || []).some((p) => p.status === 'claimed');
+}
 
 export const MyOrders: React.FC<{ isAuthenticated: boolean; onSignIn: () => void }> = ({ isAuthenticated, onSignIn }) => {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -175,15 +195,20 @@ export const MyOrders: React.FC<{ isAuthenticated: boolean; onSignIn: () => void
                     </div>
                   </div>
                 ) : isOffPath ? (
-                  <p className={`text-xs font-semibold ${b.status === 'cancelled' ? 'text-rose-400' : 'text-sky-400'}`}>
-                    This booking was {(STATUS_LABEL[b.status] || b.status).toLowerCase()}.
-                  </p>
+                  <div className={`text-xs font-semibold ${b.status === 'cancelled' ? 'text-rose-400' : 'text-sky-400'}`}>
+                    <p>This booking was {(STATUS_LABEL[b.status] || b.status).toLowerCase()}.</p>
+                    {b.cancelReason && <p className="text-[11px] font-normal text-slate-400 mt-0.5">Reason: {b.cancelReason}</p>}
+                  </div>
                 ) : (
                   <p className="text-xs text-slate-500">Tracking starts once the vendor confirms this booking.</p>
                 )}
 
                 {isTrackable && (
                   <PaymentBlock booking={b} onUpdated={(nb) => setBookings((prev) => prev.map((x) => (x.id === nb.id ? nb : x)))} />
+                )}
+
+                {CANCELLABLE_STATUSES.has(b.status) && (
+                  <CancelBlock booking={b} onUpdated={(nb) => setBookings((prev) => prev.map((x) => (x.id === nb.id ? nb : x)))} />
                 )}
 
                 {b.status === 'completed' && (
@@ -287,6 +312,68 @@ const PaymentBlock: React.FC<{ booking: Booking; onUpdated: (b: Booking) => void
         </div>
       )}
       {notice && !open && <p className="text-[11px] text-rose-400">{notice}</p>}
+    </div>
+  );
+};
+
+// Lets the customer back out of a booking themselves at any point before the
+// vendor has started the work — including the "vendor never confirms" case
+// (pending_payment) shown in the vendor's "Advance Claimed — Confirm" screen.
+// If money has already been claimed/paid, this is framed as a refund request
+// instead of a plain cancel.
+const CancelBlock: React.FC<{ booking: Booking; onUpdated: (b: Booking) => void }> = ({ booking, onUpdated }) => {
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState('');
+  const isRefund = bookingHasMoneyAtStake(booking);
+
+  const submit = async () => {
+    setBusy(true);
+    setNotice('');
+    try {
+      const res = await cancelBooking(booking.id, reason.trim() || undefined);
+      if (res.data?.booking) onUpdated(res.data.booking);
+      setOpen(false);
+    } catch (err: any) {
+      setNotice(err?.message || 'Could not cancel this booking. Please try again.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="pt-3 border-t border-slate-800 space-y-2">
+      {!open ? (
+        <button
+          onClick={() => setOpen(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/10 border border-rose-500/30 hover:bg-rose-500/20 text-rose-300 font-bold text-[11px]"
+        >
+          <XCircle className="w-3.5 h-3.5" /> {isRefund ? 'Request Refund' : 'Cancel Booking'}
+        </button>
+      ) : (
+        <div className="p-3 rounded-xl bg-slate-900/60 border border-rose-500/30 space-y-2">
+          <p className="text-[11px] text-slate-300">
+            {isRefund
+              ? "This will cancel the booking and mark it as a refund request — use this if the vendor isn't accepting or confirming your booking. You'll need to follow up with the vendor (or support) to get your money back via the same UPI/method you paid with."
+              : "This will cancel the booking. No payment has been made yet, so nothing needs to be refunded."}
+          </p>
+          <input
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="Reason (optional) — e.g. vendor not responding"
+            className="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-white text-xs"
+          />
+          {notice && <p className="text-[11px] text-rose-400">{notice}</p>}
+          <div className="flex items-center gap-2">
+            <button onClick={submit} disabled={busy}
+              className="px-3 py-1.5 rounded-lg bg-rose-500 text-white font-bold text-[11px] disabled:opacity-60 flex items-center gap-1.5">
+              {busy && <Loader2 className="w-3.5 h-3.5 animate-spin" />} {isRefund ? 'Yes, cancel & request refund' : 'Yes, cancel booking'}
+            </button>
+            <button onClick={() => { setOpen(false); setNotice(''); }} className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 font-semibold text-[11px]">Never mind</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

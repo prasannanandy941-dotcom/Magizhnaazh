@@ -57,6 +57,12 @@ const bookingSchema = new Schema<Booking>({
   invoiceIssuedAt: String,
   settlementStatus: { type: String, enum: ['pending', 'settled'], default: 'pending' },
   settledAt: String,
+  // Set when a customer cancels/requests a refund on this booking (see the
+  // /cancel route). cancelledBy distinguishes a customer's own action from an
+  // admin stepping in.
+  cancelReason: String,
+  cancelledAt: String,
+  cancelledBy: { type: String, enum: ['customer', 'admin'] },
   createdAt: { type: String, default: () => new Date().toISOString() },
 });
 

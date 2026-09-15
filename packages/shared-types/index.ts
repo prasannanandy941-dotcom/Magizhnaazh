@@ -1233,6 +1233,12 @@ export interface Booking {
   // Vendor payout settlement (platform pays the vendor their share minus commission).
   settlementStatus?: 'pending' | 'settled';
   settledAt?: string;
+  // Set when a customer cancels/requests a refund on this booking (see the
+  // booking-payment-service /cancel route). cancelledBy distinguishes a
+  // customer's own action from an admin stepping in on their behalf.
+  cancelReason?: string;
+  cancelledAt?: string;
+  cancelledBy?: 'customer' | 'admin';
   createdAt: string;
 }
 
