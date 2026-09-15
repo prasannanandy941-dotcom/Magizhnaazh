@@ -781,6 +781,14 @@ export interface Vendor {
   // quantity-based discount, shown to customers on the listing.
   giftCount?: number;
   giftDiscount?: string;
+  // Bank & Cashfree Easy Split marketplace account details
+  bankDetails?: {
+    entityName?: string;
+    accountNumber?: string;
+    ifscCode?: string;
+    cashfreeVendorId?: string;
+    status?: 'connected' | 'not_connected';
+  };
   // Verification request the vendor submits to earn the Verified badge. `status`
   // drives the admin review queue; `isVerified` above stays in sync (true only
   // when status === 'verified') for backward compatibility.
@@ -849,11 +857,22 @@ export type VerificationStatus = 'unverified' | 'pending' | 'verified' | 'reject
 
 export interface VendorVerification {
   status: VerificationStatus;
+  // Whether vendor registered with GSTIN (true) or PAN/Aadhaar (false)
+  hasGstin?: boolean;
   // Legal / KYC details the vendor supplies to prove the business is real.
   legalName?: string;
   registrationNumber?: string;
   gstNumber?: string;
+  panName?: string;
+  panNumber?: string;
+  aadhaarName?: string;
+  aadhaarNumber?: string;
+  fssaiNumber?: string;
   contactPerson?: string;
+  // Verification check states (Cashfree SecureID validation flags)
+  gstinVerified?: boolean;
+  panVerified?: boolean;
+  aadhaarVerified?: boolean;
   // URLs of proof documents (business registration, GST certificate, ID) the
   // vendor uploaded via the existing vendor upload endpoint.
   documents?: string[];

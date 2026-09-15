@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Hide default browser password reveal/clear buttons (e.g. Microsoft Edge)
+   so only the custom eye toggle icon is shown */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}
+
 /* The portal is a dark-themed app. Declaring the color scheme stops Android
    WebView's "force dark" from re-inverting our light-on-dark UI (which turned
    tab text and labels near-black in the mobile app). The Sign In / Register

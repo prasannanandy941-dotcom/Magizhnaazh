@@ -63,11 +63,14 @@ export const VendorsTab: React.FC<{ token: string }> = ({ token }) => {
                 {s === 'rejected' && <span className="px-2.5 py-1 rounded-full bg-rose-500/20 text-rose-300 font-bold text-[10px] w-fit">Rejected</span>}
                 {s === 'unverified' && <span className="px-2.5 py-1 rounded-full bg-slate-700/50 text-slate-400 font-bold text-[10px] w-fit">Not submitted</span>}
                 {v.isSuspended && <span className="px-2.5 py-1 rounded-full bg-rose-500/20 text-rose-300 font-bold text-[10px] w-fit">Suspended</span>}
-                {(s === 'pending' || s === 'rejected' || s === 'verified') && ver && (ver.legalName || ver.registrationNumber) && (
+                {(s === 'pending' || s === 'rejected' || s === 'verified') && ver && (ver.legalName || ver.registrationNumber || ver.gstNumber || ver.panNumber || ver.aadhaarNumber) && (
                   <div className="mt-1 text-[10px] text-slate-400 leading-relaxed max-w-[220px]">
                     {ver.legalName && <div>Legal: <span className="text-slate-300">{ver.legalName}</span></div>}
                     {ver.registrationNumber && <div>Reg#: <span className="text-slate-300">{ver.registrationNumber}</span></div>}
-                    {ver.gstNumber && <div>GST: <span className="text-slate-300">{ver.gstNumber}</span></div>}
+                    {ver.gstNumber && <div>GST: <span className="text-slate-300 font-mono">{ver.gstNumber}</span></div>}
+                    {ver.panNumber && <div>PAN: <span className="text-slate-300 font-mono">{ver.panNumber}</span> {ver.panName ? `(${ver.panName})` : ''}</div>}
+                    {ver.aadhaarNumber && <div>Aadhaar: <span className="text-slate-300 font-mono">{ver.aadhaarNumber}</span></div>}
+                    {ver.fssaiNumber && <div>FSSAI: <span className="text-amber-300 font-mono">{ver.fssaiNumber}</span></div>}
                     {(ver.documents?.length ?? 0) > 0 && (
                       <div className="flex flex-wrap gap-1.5 mt-1">
                         {ver.documents!.map((d, i) => (

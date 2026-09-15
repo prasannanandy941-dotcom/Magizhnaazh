@@ -503,7 +503,11 @@ app.put('/api/v1/vendors/:id', authMiddleware(), async (req: Request, res: Respo
     return res.status(403).json({ success: false, message: 'You do not own this vendor listing.' });
   }
 
-  const { businessName, category, description, city, startingPrice, contactEmail, contactPhone, upiId, packages, facilities, galleryImages, availableDates, offeredOptions, offeredOptionPrices, offeredOptionItems, offeredOptionQuality, offeredOptionImages, giftCount, giftDiscount, policies, deals } = req.body;
+  const { businessName, category, description, city, startingPrice, contactEmail, contactPhone, upiId, packages, facilities, galleryImages, availableDates, offeredOptions, offeredOptionPrices, offeredOptionItems, offeredOptionQuality, offeredOptionImages, giftCount, giftDiscount, policies, deals, bankDetails } = req.body;
+  if (bankDetails !== undefined) {
+    (vendor as any).bankDetails = { ...((vendor as any).bankDetails || {}), ...bankDetails };
+    vendor.markModified('bankDetails');
+  }
   if (Array.isArray(deals)) {
     vendor.deals = deals;
     vendor.markModified('deals');
@@ -712,13 +716,22 @@ app.post('/api/v1/vendors/:id/verification', authMiddleware(), requireRole('vend
     return res.status(409).json({ success: false, message: 'This listing is already verified.' });
   }
 
-  const { legalName, registrationNumber, gstNumber, contactPerson, documents } = req.body;
+  const { legalName, registrationNumber, gstNumber, panName, panNumber, aadhaarName, aadhaarNumber, fssaiNumber, hasGstin, gstinVerified, panVerified, aadhaarVerified, contactPerson, documents } = req.body;
   vendor.verification = {
     status: 'pending',
+    hasGstin: hasGstin !== undefined ? Boolean(hasGstin) : true,
     legalName: (legalName || '').trim(),
     registrationNumber: (registrationNumber || '').trim(),
     gstNumber: (gstNumber || '').trim(),
+    panName: (panName || '').trim(),
+    panNumber: (panNumber || '').trim(),
+    aadhaarName: (aadhaarName || '').trim(),
+    aadhaarNumber: (aadhaarNumber || '').trim(),
+    fssaiNumber: (fssaiNumber || '').trim(),
     contactPerson: (contactPerson || '').trim(),
+    gstinVerified: Boolean(gstinVerified),
+    panVerified: Boolean(panVerified),
+    aadhaarVerified: Boolean(aadhaarVerified),
     documents: Array.isArray(documents) ? documents.filter((d: any) => typeof d === 'string') : [],
     submittedAt: new Date().toISOString(),
     reviewedAt: '',

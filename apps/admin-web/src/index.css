@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Hide default browser password reveal/clear buttons (e.g. Microsoft Edge)
+   so only the custom eye toggle icon is shown */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}
+
 /* ---------------------------------------------------------------------------
    Light theme. The admin UI is built on the Tailwind slate scale + .glass-card,
    so a site-wide light mode is achieved by remapping those tokens under

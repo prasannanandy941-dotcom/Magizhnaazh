@@ -264,7 +264,22 @@ export async function fetchBookingInvoice(token: string, bookingId: string): Pro
 export function submitVerification(
   token: string,
   vendorId: string,
-  input: { legalName: string; registrationNumber: string; gstNumber: string; contactPerson: string; documents: string[] }
+  input: {
+    hasGstin?: boolean;
+    legalName?: string;
+    registrationNumber?: string;
+    gstNumber?: string;
+    panName?: string;
+    panNumber?: string;
+    aadhaarName?: string;
+    aadhaarNumber?: string;
+    fssaiNumber?: string;
+    gstinVerified?: boolean;
+    panVerified?: boolean;
+    aadhaarVerified?: boolean;
+    contactPerson?: string;
+    documents?: string[];
+  }
 ): Promise<MyVendorResponse> {
   return authedFetch(`/api/v1/vendors/${encodeURIComponent(vendorId)}/verification`, token, {
     method: 'POST',

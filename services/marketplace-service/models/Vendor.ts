@@ -547,14 +547,31 @@ const vendorSchema = new Schema<Vendor>({
   giftDiscount: String,
   // Promotional deals the vendor publishes on their own listing.
   deals: { type: [vendorDealSchema], default: [] },
+  // Bank & Cashfree Easy Split marketplace account details
+  bankDetails: {
+    entityName: { type: String, default: '' },
+    accountNumber: { type: String, default: '' },
+    ifscCode: { type: String, default: '' },
+    cashfreeVendorId: { type: String, default: '' },
+    status: { type: String, enum: ['connected', 'not_connected'], default: 'not_connected' },
+  },
   // Verification request the vendor submits to earn the Verified badge; reviewed
   // by an admin. `isVerified` above mirrors verification.status === 'verified'.
   verification: {
     status: { type: String, enum: ['unverified', 'pending', 'verified', 'rejected'], default: 'unverified' },
+    hasGstin: { type: Boolean, default: true },
     legalName: { type: String, default: '' },
     registrationNumber: { type: String, default: '' },
     gstNumber: { type: String, default: '' },
+    panName: { type: String, default: '' },
+    panNumber: { type: String, default: '' },
+    aadhaarName: { type: String, default: '' },
+    aadhaarNumber: { type: String, default: '' },
+    fssaiNumber: { type: String, default: '' },
     contactPerson: { type: String, default: '' },
+    gstinVerified: { type: Boolean, default: false },
+    panVerified: { type: Boolean, default: false },
+    aadhaarVerified: { type: Boolean, default: false },
     documents: { type: [String], default: [] },
     submittedAt: { type: String, default: '' },
     reviewedAt: { type: String, default: '' },
