@@ -42,6 +42,18 @@ const SERVICES_TAB_LABEL: Record<string, string> = {
 };
 const servicesTabLabel = (category: string) => SERVICES_TAB_LABEL[category] ?? 'Services';
 
+// Vendors type their own contact number into a free-text field, so a stray
+// entry like "per plate" (meant for a menu note, typed in the wrong box) can
+// end up saved as the "phone number". Rendering that verbatim shows a
+// nonsensical "Call per plate" button. Only treat the value as a real phone
+// number — and show the Call button — when it actually looks like one
+// (digits, with optional +, spaces, dashes/parentheses, at least 7 digits).
+const isCallablePhone = (phone?: string | null) => {
+  if (!phone) return false;
+  const digits = phone.replace(/\D/g, '');
+  return digits.length >= 7 && /^[+\d][\d\s\-()]*$/.test(phone.trim());
+};
+
 const isVideoUrl = (url: string | null) => {
   if (!url) return false;
   const cleanUrl = url.toLowerCase().split('?')[0].split('#')[0];
@@ -2751,7 +2763,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                 </div>
               </div>
 
-              {vendor.contactPhone && (
+              {isCallablePhone(vendor.contactPhone) && (
                 <a
                   href={`tel:${vendor.contactPhone}`}
                   className="w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-bold text-sm shadow-md flex items-center justify-center gap-2 transition-colors"

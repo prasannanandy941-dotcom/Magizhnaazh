@@ -43,6 +43,18 @@ app.use(cors());
 app.use(express.json());
 app.use(requestLogger('marketplace-service'));
 registerHealthRoute(app, 'marketplace-service');
+
+// Vendors type their own contact number into a free-text field. Without any
+// shape check, a stray value meant for another field (e.g. a menu note like
+// "per plate") can get saved as the "phone number" and later render as a
+// nonsensical "Call per plate" button for customers. Require it to actually
+// look like a phone number: digits with optional +, spaces, dashes/parens,
+// and at least 7 digits overall.
+const isValidContactPhone = (phone: string) => {
+  const digits = phone.replace(/\D/g, '');
+  return digits.length >= 7 && /^[+\d][\d\s\-()]*$/.test(phone.trim());
+};
+
 app.use('/uploads', express.static(UPLOADS_DIR));
 
 // Cities across India used to place demo vendors.
@@ -394,6 +406,9 @@ const getDefaultImageForCategory = (category: string): string => {
 // 4. Register a vendor profile — requires an authenticated vendor account.
 app.post('/api/v1/vendors', authMiddleware(), requireRole('vendor', 'admin'), async (req: Request, res: Response) => {
   const { businessName, category, city, startingPrice, description, contactEmail, contactPhone } = req.body;
+  if (contactPhone && !isValidContactPhone(contactPhone)) {
+    return res.status(400).json({ success: false, message: 'Please enter a valid contact phone number.' });
+  }
 
   // Prevent duplicate vendor listings for the same vendor user account
   const existing = await VendorModel.findOne({ userId: req.user!.sub });
@@ -504,6 +519,9 @@ app.put('/api/v1/vendors/:id', authMiddleware(), async (req: Request, res: Respo
   }
 
   const { businessName, category, description, city, startingPrice, contactEmail, contactPhone, upiId, packages, facilities, galleryImages, availableDates, offeredOptions, offeredOptionPrices, offeredOptionItems, offeredOptionQuality, offeredOptionImages, giftCount, giftDiscount, policies, deals, bankDetails } = req.body;
+  if (contactPhone !== undefined && contactPhone !== '' && !isValidContactPhone(contactPhone)) {
+    return res.status(400).json({ success: false, message: 'Please enter a valid contact phone number.' });
+  }
   if (bankDetails !== undefined) {
     (vendor as any).bankDetails = { ...((vendor as any).bankDetails || {}), ...bankDetails };
     vendor.markModified('bankDetails');

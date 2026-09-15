@@ -10898,7 +10898,7 @@ export function App() {
                 <input
                   type="tel"
                   value={contactPhone}
-                  onChange={(e) => setContactPhone(e.target.value)}
+                  onChange={(e) => setContactPhone(e.target.value.replace(/[^\d+\s\-()]/g, ''))}
                   placeholder="+91 90000 00000"
                   className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white font-semibold text-xs"
                 />
