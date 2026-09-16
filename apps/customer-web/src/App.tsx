@@ -749,8 +749,9 @@ export function App() {
           hasActiveEvent={Boolean(activeEvent?.id)}
           activeEventTitle={activeEvent?.title}
           activeEventDate={activeEvent?.date}
+          activeEventGuestCount={activeEvent?.guestCount}
           onRequestCreateEvent={() => requireAuth(() => setShowEventWizard(true))}
-          onBookVendor={(v, pkgId, price, notes, eventDate, selectedOptions, referenceImages, timeSlot) => {
+          onBookVendor={(v, pkgId, price, notes, eventDate, selectedOptions, referenceImages, timeSlot, guestCount) => {
             // Named so it can be re-run automatically after a re-login: the
             // customer's `user` staying set doesn't mean their token is
             // still valid (it expires after a few hours), so requireAuth's
@@ -776,6 +777,7 @@ export function App() {
                   packageName: pkg?.packageName,
                   price: p,
                   eventDate: eventDate || activeEvent.date,
+                  guestCount: guestCount || activeEvent.guestCount,
                   timeSlot,
                   notes,
                   selectedOptions,

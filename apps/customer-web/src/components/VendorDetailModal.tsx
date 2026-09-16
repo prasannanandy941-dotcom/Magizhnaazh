@@ -77,6 +77,7 @@ interface VendorDetailModalProps {
   hasActiveEvent?: boolean;
   activeEventTitle?: string;
   activeEventDate?: string;
+  activeEventGuestCount?: number;
   // Opens event creation wizard when customer wants to create an event
   onRequestCreateEvent?: () => void;
   onBookVendor: (
@@ -87,7 +88,8 @@ interface VendorDetailModalProps {
     eventDate?: string,
     selectedOptions?: string[],
     referenceImages?: string[],
-    timeSlot?: string
+    timeSlot?: string,
+    guestCount?: number
   ) => void;
 }
 
@@ -100,6 +102,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
   hasActiveEvent = false,
   activeEventTitle,
   activeEventDate,
+  activeEventGuestCount,
   onRequestCreateEvent,
 }) => {
   // Start from whatever the marketplace list had cached, then refresh with
@@ -2717,6 +2720,12 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                     <span className="text-amber-300 font-semibold truncate max-w-[180px]">{activeEventTitle}</span>
                   </div>
                 )}
+                {activeEventGuestCount && activeEventGuestCount > 0 && (
+                  <div className="flex items-center justify-between text-xs pb-2.5 mb-2.5 border-b border-slate-800">
+                    <span className="text-slate-400">Expected guests:</span>
+                    <span className="text-emerald-300 font-bold">{activeEventGuestCount.toLocaleString('en-IN')} people</span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-slate-400">
                     {selectedPkg
@@ -2800,7 +2809,8 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                       const refs = [...customerUploads, ...selectedGalleryImages];
                       return refs.length > 0 ? refs : undefined;
                     })(),
-                    selectedSlot || undefined
+                    selectedSlot || undefined,
+                    activeEventGuestCount
                   );
                   setAdvancePanelOpen(false);
                 }}
@@ -2900,4 +2910,3 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
     </div>
   );
 };
-

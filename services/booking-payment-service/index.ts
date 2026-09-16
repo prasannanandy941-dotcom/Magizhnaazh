@@ -248,10 +248,14 @@ async function cleanupDemoBookings() {
 app.post('/api/v1/bookings/quote', authMiddleware(), async (req: Request, res: Response) => {
   // The customer-web client sends this as `notes` (its own custom-request text
   // field); accept `specialInstructions` too for any other caller.
-  const { eventId, vendorId, vendorName, vendorCategory, packageId, packageName, price, eventDate, timeSlot, notes, specialInstructions, selectedOptions, referenceImages, advancePaymentClaimed } = req.body;
+  const { eventId, vendorId, vendorName, vendorCategory, packageId, packageName, price, eventDate, guestCount, timeSlot, notes, specialInstructions, selectedOptions, referenceImages, advancePaymentClaimed } = req.body;
 
   const agreedPrice = Number(price) || 50000;
   const resolvedEventDate = eventDate || '2026-12-15';
+  const resolvedGuestCount = Number(guestCount);
+  if (!Number.isInteger(resolvedGuestCount) || resolvedGuestCount < 1) {
+    return res.status(400).json({ success: false, message: 'A valid guest count is required.' });
+  }
   const resolvedSlot = typeof timeSlot === 'string' ? timeSlot : '';
 
   // Reject the request outright if the vendor has opened up specific dates and
@@ -298,6 +302,7 @@ app.post('/api/v1/bookings/quote', authMiddleware(), async (req: Request, res: R
     // confirmation" rather than being silently auto-confirmed client-side.
     status: advancePaymentClaimed ? 'pending_payment' : 'quote_requested',
     eventDate: resolvedEventDate,
+    guestCount: resolvedGuestCount,
     timeSlot: resolvedSlot,
     specialInstructions: notes || specialInstructions || '',
     selectedOptions: Array.isArray(selectedOptions) ? selectedOptions : [],

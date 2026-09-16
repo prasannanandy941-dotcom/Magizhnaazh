@@ -1200,6 +1200,9 @@ export interface Booking {
   remainingAmount: number;
   status: BookingStatus;
   eventDate: string;
+  // Number of guests/people expected at the event, captured from the event
+  // plan so vendors can size staffing and supplies before accepting.
+  guestCount?: number;
   // Time-of-day slot booked on that date (AvailabilitySlot id), when the vendor
   // uses slot-based availability. Empty for legacy full-day bookings.
   timeSlot?: string;

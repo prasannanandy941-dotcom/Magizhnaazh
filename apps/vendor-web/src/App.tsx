@@ -4775,6 +4775,11 @@ export function App() {
                         <p className="text-xs text-slate-400 mt-1">
                           Package: <strong className="text-slate-200">{b.packageName}</strong> • Date: <strong className="text-amber-400">{b.eventDate}</strong>{b.timeSlot ? <> • <span className="text-indigo-300">{slotLabelWithTime(b.timeSlot)}</span></> : null}
                         </p>
+                        {b.guestCount && b.guestCount > 0 && (
+                          <p className="text-xs text-emerald-300 mt-1 font-semibold">
+                            Expected guests: {b.guestCount.toLocaleString('en-IN')} people
+                          </p>
+                        )}
 
                         {b.selectedOptions && b.selectedOptions.length > 0 && (
                           <div className="mt-2 flex flex-wrap gap-1.5">
