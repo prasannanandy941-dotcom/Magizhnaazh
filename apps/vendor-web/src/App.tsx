@@ -4,7 +4,7 @@ import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, VendorD
 import { STATIC_CITY_GROUPS } from '../../../packages/shared-utils';
 import { AuthGate } from './components/AuthGate';
 import { FloralGoldBackground } from './components/FloralGoldBackground';
-import { fetchMyVendor, createVendor, updateVendor, fetchVendorBookings, fetchVendorBookingsSilent, confirmBooking, sendCounterQuote, updateBookingStatus, updateSpendBreakdown, fetchVendorReviews, replyToReview, submitVerification, confirmBookingPayment, fetchBookingInvoice, fetchCalendarToken, GATEWAY_URL } from './api';
+import { fetchMyVendor, createVendor, updateVendor, fetchVendorBookings, fetchVendorBookingsSilent, confirmBooking, sendCounterQuote, updateBookingStatus, updateSpendBreakdown, refundBooking, fetchVendorReviews, replyToReview, submitVerification, confirmBookingPayment, fetchBookingInvoice, fetchCalendarToken, GATEWAY_URL } from './api';
 import { openInvoicePrintWindow } from './invoice';
 import { playNotificationSound } from './notificationSound';
 import { getItemSuggestions, getAmenitySuggestions, suggestionListId } from './itemSuggestions';
@@ -4327,6 +4327,23 @@ export function App() {
     }
   };
 
+  const handleRefundBooking = async (booking: Booking) => {
+    if (!token) return;
+    const amount = booking.advanceAmountPaid || 0;
+    const confirmed = window.confirm(
+      `Refund ₹${amount.toLocaleString('en-IN')} to this customer via UPI, then click OK to record it.`
+    );
+    if (!confirmed) return;
+    const reference = window.prompt('Enter the UPI refund transaction/reference number:')?.trim();
+    if (!reference) return;
+    try {
+      await refundBooking(token, booking.id, reference);
+      await refreshBookings();
+    } catch (err: any) {
+      alert(err?.message || 'Could not record the refund.');
+    }
+  };
+
   const handleViewInvoice = async (bookingId: string) => {
     if (!token) return;
     try {
@@ -4853,6 +4870,22 @@ export function App() {
                             className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white text-[11px] font-bold">
                             <Receipt className="w-3.5 h-3.5 text-indigo-400" /> Invoice
                           </button>
+                        )}
+
+                        {((b.status === 'confirmed' && (b.advanceAmountPaid ?? 0) > 0) ||
+                          (b.status === 'refunded' && !b.refundReference && (b.advanceAmountPaid ?? 0) > 0)) && (
+                          <button
+                            onClick={() => handleRefundBooking(b)}
+                            className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/15 border border-rose-500/40 text-rose-300 hover:bg-rose-500/25 text-[11px] font-bold"
+                          >
+                            Refund Advance ₹{b.advanceAmountPaid.toLocaleString('en-IN')}
+                          </button>
+                        )}
+
+                        {b.status === 'refunded' && b.refundReference && (
+                          <span className="mt-2 text-[10px] text-emerald-400 block">
+                            Refund recorded · Ref: {b.refundReference}
+                          </span>
                         )}
 
                         {b.status === 'pending_payment' && (

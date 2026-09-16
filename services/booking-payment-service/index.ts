@@ -562,6 +562,40 @@ app.put('/api/v1/bookings/:id/cancel', authMiddleware(), async (req: Request, re
   });
 });
 
+// 4c-3. Vendor records that the customer's advance has been returned. The
+// actual transfer is manual UPI today, so a refund reference is required as
+// an audit trail. This also completes a customer-created refund request that
+// is already in the 'refunded' state.
+app.put('/api/v1/bookings/:id/refund', authMiddleware(), async (req: Request, res: Response) => {
+  const booking = await BookingModel.findOne({ id: req.params.id });
+  if (!booking) return res.status(404).json({ success: false, message: 'Booking not found.' });
+  if (!(await callerOwnsVendor(req, booking.vendorId))) {
+    return res.status(403).json({ success: false, message: 'This booking does not belong to your vendor listing.' });
+  }
+  if (!['confirmed', 'refunded'].includes(booking.status)) {
+    return res.status(400).json({ success: false, message: 'Only a confirmed booking or an existing refund request can be refunded.' });
+  }
+  if ((booking.advanceAmountPaid || 0) <= 0 && !(booking.payments || []).some((p: any) => p.type === 'advance' || p.status === 'claimed')) {
+    return res.status(400).json({ success: false, message: 'There is no advance payment recorded for this booking.' });
+  }
+  if (booking.refundReference) {
+    return res.status(409).json({ success: false, message: 'This booking has already been marked as refunded.' });
+  }
+
+  const reference = String(req.body?.reference || '').trim().slice(0, 200);
+  if (!reference) {
+    return res.status(400).json({ success: false, message: 'A UPI refund reference is required.' });
+  }
+
+  booking.status = 'refunded';
+  booking.refundReference = reference;
+  booking.refundedAt = new Date().toISOString();
+  booking.refundedBy = req.user!.role === 'admin' ? 'admin' : 'vendor';
+  await booking.save();
+
+  res.json({ success: true, message: 'Refund recorded successfully.', data: { booking } });
+});
+
 // 4d. Vendor records what the agreed money was spent on — a line-item breakdown
 //     ("Mandap flowers ₹40,000", "Stage lighting ₹20,000"). This is purely an
 //     itemisation of the booking total; the customer sees it under this vendor

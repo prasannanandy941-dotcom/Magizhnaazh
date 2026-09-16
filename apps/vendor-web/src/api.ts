@@ -218,6 +218,13 @@ export function updateBookingStatus(token: string, bookingId: string, status: st
   });
 }
 
+export function refundBooking(token: string, bookingId: string, reference?: string) {
+  return authedFetch(`/api/v1/bookings/${bookingId}/refund`, token, {
+    method: 'PUT',
+    body: JSON.stringify({ reference }),
+  });
+}
+
 // Save the vendor's line-item breakdown of what the booking money was spent on.
 // The customer sees this under the vendor in the Smart Budget drill-down.
 export function updateSpendBreakdown(
@@ -294,4 +301,3 @@ export async function replyToReview(token: string, reviewId: string, reply: stri
     body: JSON.stringify({ reply }),
   });
 }
-

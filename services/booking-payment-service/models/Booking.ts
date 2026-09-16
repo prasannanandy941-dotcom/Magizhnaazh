@@ -63,6 +63,9 @@ const bookingSchema = new Schema<Booking>({
   cancelReason: String,
   cancelledAt: String,
   cancelledBy: { type: String, enum: ['customer', 'admin'] },
+  refundReference: String,
+  refundedAt: String,
+  refundedBy: { type: String, enum: ['vendor', 'admin'] },
   createdAt: { type: String, default: () => new Date().toISOString() },
 });
 

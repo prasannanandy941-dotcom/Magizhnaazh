@@ -1239,6 +1239,9 @@ export interface Booking {
   cancelReason?: string;
   cancelledAt?: string;
   cancelledBy?: 'customer' | 'admin';
+  refundReference?: string;
+  refundedAt?: string;
+  refundedBy?: 'vendor' | 'admin';
   createdAt: string;
 }
 
