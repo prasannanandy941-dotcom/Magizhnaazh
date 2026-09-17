@@ -247,12 +247,12 @@ async function seedIfEmpty() {
       'admin@magizhnaazh.com',
     ];
     for (const demo of demoAccounts) {
-      const demoUser = await UserModel.findOne({ email: demo }).select('+passwordHash');
-      if (demoUser) {
-        demoUser.passwordHash = demoPasswordHash;
-        demoUser.isSuspended = false;
-        await demoUser.save();
-      }
+      // Use a direct update so legacy records with fields that no longer
+      // satisfy the current schema can still have their demo password fixed.
+      await UserModel.updateOne(
+        { email: demo },
+        { $set: { passwordHash: demoPasswordHash, isSuspended: false } },
+      );
     }
 
     const adminUser = await UserModel.findOne({ email: 'admin@magizhnaazh.com' });
