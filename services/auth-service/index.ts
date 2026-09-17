@@ -238,6 +238,23 @@ async function seedIfEmpty() {
     ]);
     console.log('[auth-service] Seeded demo users (password: Passw0rd!).');
   } else {
+    // Keep the explicitly seeded demo accounts usable after a database that
+    // already contains users is restored. Real accounts use timestamp-based
+    // ids and are never changed by this repair.
+    const demoAccounts = [
+      { id: 'usr-customer-1', email: 'customer@magizhnaazh.com' },
+      { id: 'usr-vendor-1', email: 'vendor@magizhnaazh.com' },
+      { id: 'usr-admin-1', email: 'admin@magizhnaazh.com' },
+    ];
+    for (const demo of demoAccounts) {
+      const demoUser = await UserModel.findOne({ id: demo.id, email: demo.email }).select('+passwordHash');
+      if (demoUser) {
+        demoUser.passwordHash = demoPasswordHash;
+        demoUser.isSuspended = false;
+        await demoUser.save();
+      }
+    }
+
     const adminUser = await UserModel.findOne({ email: 'admin@magizhnaazh.com' });
     if (!adminUser) {
       await UserModel.create({
