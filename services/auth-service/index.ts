@@ -242,31 +242,41 @@ async function seedIfEmpty() {
     // that already contains users is restored. This only targets the three
     // reserved demo email addresses.
     const demoAccounts = [
-      'customer@magizhnaazh.com',
-      'vendor@magizhnaazh.com',
-      'admin@magizhnaazh.com',
-    ];
-    for (const demo of demoAccounts) {
-      // Use a direct update so legacy records with fields that no longer
-      // satisfy the current schema can still have their demo password fixed.
-      await UserModel.updateOne(
-        { email: demo },
-        { $set: { passwordHash: demoPasswordHash, isSuspended: false } },
-      );
-    }
-
-    const adminUser = await UserModel.findOne({ email: 'admin@magizhnaazh.com' });
-    if (!adminUser) {
-      await UserModel.create({
-        id: `usr-admin-1`,
+      {
+        id: 'usr-customer-1',
+        name: 'Felix Kumar',
+        email: 'customer@magizhnaazh.com',
+        phone: '+91 9840112233',
+        role: 'customer' as const,
+      },
+      {
+        id: 'usr-vendor-1',
+        name: 'Leela Management',
+        email: 'vendor@magizhnaazh.com',
+        phone: '+91 44 33661234',
+        role: 'vendor' as const,
+        businessName: 'The Leela Palace Grand Ballroom',
+      },
+      {
+        id: 'usr-admin-1',
         name: 'Super Admin',
         email: 'admin@magizhnaazh.com',
         phone: '+91 9999900000',
-        role: 'admin',
-        isVerified: true,
-        passwordHash: demoPasswordHash,
-      });
-      console.log('[auth-service] Seeded missing super admin account (admin@magizhnaazh.com).');
+        role: 'admin' as const,
+      },
+    ];
+    for (const demo of demoAccounts) {
+      await UserModel.updateOne(
+        { email: demo.email },
+        {
+          $set: { passwordHash: demoPasswordHash, isSuspended: false },
+          $setOnInsert: {
+            ...demo,
+            isVerified: true,
+          },
+        },
+        { upsert: true },
+      );
     }
   }
 }
