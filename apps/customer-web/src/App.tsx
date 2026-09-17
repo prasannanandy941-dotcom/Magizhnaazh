@@ -149,17 +149,13 @@ function buildEventMessage(event: Event): string {
 
 function deduplicateVendors(list: Vendor[]): Vendor[] {
   const seenIds = new Set<string>();
-  const seenNameCats = new Set<string>();
   const result: Vendor[] = [];
 
   for (const v of list) {
     if (!v || !v.id) continue;
     if (seenIds.has(v.id)) continue;
-    const nameCatKey = `${(v.businessName || '').toLowerCase().trim()}||${(v.category || '').toLowerCase().trim()}||${(v.location?.city || '').toLowerCase().trim()}`;
-    if (seenNameCats.has(nameCatKey)) continue;
 
     seenIds.add(v.id);
-    seenNameCats.add(nameCatKey);
     result.push(v);
   }
   return result;

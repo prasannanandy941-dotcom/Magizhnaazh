@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Store, LogIn, UserPlus, Loader2, Eye, EyeOff, Check, X } from 'lucide-react';
 import { User, VENDOR_CATEGORIES, VendorCategory } from '../../../../packages/shared-types';
 import { STATIC_CITY_GROUPS, checkPassword, isPasswordStrong } from '../../../../packages/shared-utils';
-import { login, register, createVendor, sendOtp, verifyOtp, forgotPassword, resetPassword, googleLogin } from '../api';
+import { login, register, fetchMyVendor, createVendor, sendOtp, verifyOtp, forgotPassword, resetPassword, googleLogin } from '../api';
 import { FloralGoldBackground } from './FloralGoldBackground';
 import { GoogleSignInButton } from './GoogleSignInButton';
 
@@ -108,6 +108,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
         setName(res.data.user.name || '');
         setMode('google-setup');
       } else {
+        await ensureMarketplaceListing(res.data.token, res.data.user);
         onAuthSuccess(res.data.user, res.data.token);
       }
     } catch (err: any) {
@@ -115,6 +116,18 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const ensureMarketplaceListing = async (token: string, account: User) => {
+    const existing = await fetchMyVendor(token);
+    if (existing.success && existing.data?.vendor) return;
+
+    await createVendor(token, {
+      businessName: account.name || 'New Vendor Business',
+      category: 'Venue',
+      contactEmail: account.email,
+      contactPhone: account.phone || undefined,
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -163,6 +176,9 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
         }
         if (res.data.user.role !== 'vendor' && res.data.user.role !== 'admin') {
           throw new Error('This account is not registered as a vendor. Use the customer portal instead.');
+        }
+        if (res.data.user.role === 'vendor') {
+          await ensureMarketplaceListing(res.data.token, res.data.user);
         }
         onAuthSuccess(res.data.user, res.data.token);
         return;
