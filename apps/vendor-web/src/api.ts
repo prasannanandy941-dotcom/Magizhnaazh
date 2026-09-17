@@ -91,7 +91,7 @@ async function postJson(path: string, body: unknown): Promise<AuthResponse> {
 }
 
 export function login(email: string, password: string): Promise<AuthResponse> {
-  return postJson('/api/v1/auth/login', { email, password });
+  return postJson('/api/v1/auth/login', { email: email.trim(), password });
 }
 
 export interface GoogleAuthResponse {

@@ -227,7 +227,7 @@ async function publicFetch<T>(path: string, options: RequestInit = {}): Promise<
 }
 
 export async function login(email: string, password: string): Promise<AuthResponse> {
-  const result = await postJson('/api/v1/auth/login', { email, password });
+  const result = await postJson('/api/v1/auth/login', { email: email.trim(), password });
   if (result.success && result.data?.token) {
     localStorage.setItem(TOKEN_KEY, result.data.token);
     localStorage.setItem('user', JSON.stringify(result.data.user));

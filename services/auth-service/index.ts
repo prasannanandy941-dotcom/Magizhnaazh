@@ -530,7 +530,8 @@ app.post('/api/v1/auth/login', async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, message: 'Email and password are required.' });
     }
 
-    const user = await UserModel.findOne({ email: String(email).toLowerCase() }).select('+passwordHash');
+    const emailStr = String(email).toLowerCase().trim();
+    const user = await UserModel.findOne({ email: emailStr }).select('+passwordHash');
     if (!user) {
       return res.status(401).json({ success: false, message: 'Invalid credentials.' });
     }
