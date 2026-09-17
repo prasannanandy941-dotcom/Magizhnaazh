@@ -210,28 +210,49 @@ export function App() {
   const [bookingInProgress, setBookingInProgress] = useState(false);
 
   // Load the live vendor marketplace from the backend (vendor-service, via the gateway).
-  // Public endpoint — runs once on mount regardless of login state. The marketplace
-  // stays empty until the backend responds.
+  // Public endpoint — refresh on mount and while the customer returns to the tab
+  // so vendors created in another browser/session become visible without a full
+  // page reload. A failed refresh keeps the last successful list.
   useEffect(() => {
     let cancelled = false;
-    setVendorsLoading(true);
+    let requestInFlight = false;
 
-    fetchVendors()
-      .then((res) => {
-        if (cancelled) return;
-        const serverVendors = res.data?.vendors || [];
-        setVendors(deduplicateVendors(serverVendors));
-      })
-      .catch((err) => {
-        console.error('Failed to load vendors from server:', err);
-        if (!cancelled) setVendors([]);
-      })
-      .finally(() => {
-        if (!cancelled) setVendorsLoading(false);
-      });
+    const loadVendors = () => {
+      if (cancelled || requestInFlight) return;
+      requestInFlight = true;
+      setVendorsLoading(true);
+
+      fetchVendors()
+        .then((res) => {
+          if (cancelled) return;
+          const serverVendors = res.data?.vendors || [];
+          setVendors(deduplicateVendors(serverVendors));
+        })
+        .catch((err) => {
+          // Keep showing the last good response during a temporary gateway or
+          // service restart instead of making the marketplace appear empty.
+          console.error('Failed to refresh vendors from server:', err);
+        })
+        .finally(() => {
+          requestInFlight = false;
+          if (!cancelled) setVendorsLoading(false);
+        });
+    };
+
+    const refreshWhenVisible = () => {
+      if (!document.hidden) loadVendors();
+    };
+
+    loadVendors();
+    const refreshTimer = window.setInterval(loadVendors, 30000);
+    window.addEventListener('focus', loadVendors);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
 
     return () => {
       cancelled = true;
+      window.clearInterval(refreshTimer);
+      window.removeEventListener('focus', loadVendors);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
     };
   }, []);
 

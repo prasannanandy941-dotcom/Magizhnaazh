@@ -315,7 +315,10 @@ export function fetchVendors(filters?: {
     if (filters.radiusKm != null) params.set('radiusKm', String(filters.radiusKm));
   }
   const qs = params.toString();
-  return publicFetch<VendorsListResponse>(`/api/v1/vendors${qs ? `?${qs}` : ''}`, { method: 'GET' });
+  return publicFetch<VendorsListResponse>(`/api/v1/vendors${qs ? `?${qs}` : ''}`, {
+    method: 'GET',
+    cache: 'no-store',
+  });
 }
 
 // Serviceable cities managed in the backend (admin console) — public list used

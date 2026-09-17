@@ -339,6 +339,11 @@ async function seedCategoriesAndCities() {
 
 // 1. Search / discover vendors
 app.get('/api/v1/vendors', async (req: Request, res: Response) => {
+  // Vendor listings can change while a customer keeps the marketplace open.
+  // Prevent browser/proxy caches from serving an older listing snapshot.
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
   const { category, city, search, lat, lng, radiusKm } = req.query;
   const filter: Record<string, unknown> = {};
 
