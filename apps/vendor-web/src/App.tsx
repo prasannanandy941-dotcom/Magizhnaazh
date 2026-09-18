@@ -612,14 +612,18 @@ export function App() {
     }
     try {
       const res = await verifyPanKyc(token, myVendor.id, pan, name);
-      setVerifyForm((prev) => ({ ...prev, panNumber: pan, panVerified: Boolean(res.data?.verified) }));
-      setVerifyNotice(res.message || (res.data?.verified ? 'PAN verified.' : 'PAN verification failed.'));
+      const verified = Boolean(res.data?.verified);
+      setVerifyForm((prev) => ({ ...prev, panNumber: pan, panVerified: verified }));
+      setVerifyNotice(res.message || (verified ? 'PAN verified.' : 'PAN verification failed.'));
+      // A success toast can fade on its own; a failure reason stays on
+      // screen until the vendor retries, so it's actually readable instead
+      // of vanishing before they notice why it failed.
+      if (verified) setTimeout(() => setVerifyNotice(''), 6000);
     } catch (err: any) {
       setVerifyForm((prev) => ({ ...prev, panVerified: false }));
       setVerifyNotice(err?.message || 'PAN verification failed.');
     }
     setVerifyChecking(null);
-    setTimeout(() => setVerifyNotice(''), 6000);
   };
 
   // Aadhaar — real verification via Cashfree's DigiLocker consent flow.
@@ -10852,6 +10856,7 @@ export function App() {
                     <p className="text-[11px] text-slate-500 leading-relaxed">
                       Standard 10-character alphanumeric PAN verified in real-time with Income Tax records.
                     </p>
+                    {verifyNotice && <p className="text-xs text-amber-400 font-semibold">{verifyNotice}</p>}
                   </div>
                 )}
 

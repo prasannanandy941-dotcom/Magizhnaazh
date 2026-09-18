@@ -957,7 +957,12 @@ app.post('/api/v1/vendors/:id/kyc/pan', authMiddleware(), requireRole('vendor', 
 
   try {
     const result = await verifyPan(pan, name);
-    const goodMatch = result.nameMatchResult === 'DIRECT_MATCH' || result.nameMatchResult === 'GOOD_PARTIAL_MATCH';
+    console.log(`[kyc/pan] vendor=${vendor.id} pan=${pan} valid=${result.valid} nameMatch=${result.nameMatchResult} panStatus=${result.panStatus} registeredName="${result.registeredName}"`);
+    // Real names on file often differ in spacing/word-order from what
+    // someone types (e.g. "LINGAMPALLY LAXMIPRASANNA" vs however ITD split
+    // it) without being a different person — only reject a clear mismatch
+    // (POOR_PARTIAL_MATCH/NO_MATCH), not a moderate scoring difference.
+    const goodMatch = result.nameMatchResult !== 'POOR_PARTIAL_MATCH' && result.nameMatchResult !== 'NO_MATCH';
     const verified = result.valid && goodMatch;
     (vendor as any).verification.panNumber = pan;
     (vendor as any).verification.panName = name;
@@ -974,7 +979,8 @@ app.post('/api/v1/vendors/:id/kyc/pan', authMiddleware(), requireRole('vendor', 
         : `PAN exists but the name doesn't match closely enough (registered name on file: ${result.registeredName}).`,
     });
   } catch (err: any) {
-    const message = err?.response?.data?.message || err?.message || 'PAN verification failed.';
+    console.error(`[kyc/pan] vendor=${vendor.id} pan=${pan} error:`, err?.response?.data || err?.message || err);
+    const message = err?.response?.data?.message || err?.response?.data?.error?.description || err?.message || 'PAN verification failed.';
     res.status(502).json({ success: false, message });
   }
 });
