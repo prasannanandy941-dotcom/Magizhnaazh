@@ -178,6 +178,19 @@ export function updateVendor(token: string, vendorId: string, input: Partial<Ven
   return authedFetch(`/api/v1/vendors/${vendorId}`, token, { method: 'PUT', body: JSON.stringify(input) });
 }
 
+// Kicks off (or re-syncs) Razorpay Route linked-account onboarding for this
+// vendor, so customer payments can auto-split their share directly to their
+// bank account. Requires bank details + PAN to already be saved.
+export function onboardRazorpayRoute(token: string, vendorId: string): Promise<MyVendorResponse> {
+  return authedFetch(`/api/v1/vendors/${vendorId}/razorpay/onboard`, token, { method: 'POST' });
+}
+
+// Refreshes the vendor's Razorpay Route status from Razorpay directly — Route
+// approval happens asynchronously, so a vendor may need to check back.
+export function refreshRazorpayStatus(token: string, vendorId: string): Promise<MyVendorResponse> {
+  return authedFetch(`/api/v1/vendors/${vendorId}/razorpay/status`, token, { method: 'GET' });
+}
+
 export interface BookingsResponse {
   success: boolean;
   count?: number;

@@ -13,12 +13,18 @@ import { serviceUrl } from '../../packages/shared-utils/serviceUrl';
 import { BookingModel } from './models/Booking';
 import { PlatformSettingsModel, getSettings } from './models/PlatformSettings';
 import { CouponModel } from './models/Coupon';
+import { createMarketplaceOrder, verifyPaymentSignature, verifyWebhookSignature } from './utils/razorpay';
 
 const app = express();
 const PORT = process.env.PORT || 8004;
 const MARKETPLACE_SERVICE_URL = serviceUrl(process.env.MARKETPLACE_SERVICE_URL, 'http://localhost:8002');
 
 app.use(cors());
+// The Razorpay webhook needs the exact raw request bytes to verify its HMAC
+// signature — mounted here, before the global express.json() below, so this
+// one path gets an untouched Buffer while every other route still gets
+// normal parsed JSON.
+app.use('/api/v1/bookings/webhooks/razorpay', express.raw({ type: 'application/json' }));
 app.use(express.json());
 app.use(requestLogger('booking-payment-service'));
 registerHealthRoute(app, 'booking-payment-service');
@@ -99,6 +105,85 @@ function recomputePayments(booking: any): void {
   booking.advanceAmountPaid = paid;
   booking.remainingAmount = Math.max(0, booking.agreedPrice - paid);
   booking.paidInFull = booking.agreedPrice > 0 && paid >= booking.agreedPrice;
+}
+
+// The advance amount for this booking, per the specific vendor's own policy
+// (a flat advanceAmount overrides advancePercentage when set), clamped into
+// the platform's [min, max] guardrail. Shared by the vendor's manual /confirm
+// route and Razorpay order-creation, so both size the advance identically.
+async function computeAdvanceAmount(booking: any, vendorPolicies: any): Promise<number> {
+  const cfg = await getSettings();
+  const flatAdvance = vendorPolicies?.advanceAmount;
+  if (typeof flatAdvance === 'number' && flatAdvance > 0) {
+    const lo = Math.round(booking.agreedPrice * cfg.advanceDepositMinRate);
+    const hi = Math.round(booking.agreedPrice * cfg.advanceDepositMaxRate);
+    return Math.min(Math.max(flatAdvance, lo), Math.min(hi, booking.agreedPrice));
+  }
+  const vendorRatePercent = vendorPolicies?.advancePercentage;
+  const rawRate = typeof vendorRatePercent === 'number' ? vendorRatePercent / 100 : cfg.advanceDepositRate;
+  const advanceRate = Math.min(Math.max(rawRate, cfg.advanceDepositMinRate), cfg.advanceDepositMaxRate);
+  return Math.round(booking.agreedPrice * advanceRate);
+}
+
+// Idempotently records a Razorpay-verified payment in the ledger, keyed by
+// razorpayOrderId. Both the client-side /verify route and the webhook call
+// this exact function, so whichever fires first (or both) can't double-record
+// the same payment — a repeat call on an already-confirmed order is a no-op.
+function upsertVerifiedRazorpayPayment(
+  booking: any,
+  params: { type: 'advance' | 'balance'; amount: number; razorpayOrderId: string; razorpayPaymentId: string }
+): any {
+  const existing = (booking.payments || []).find((p: any) => p.razorpayOrderId === params.razorpayOrderId);
+  if (existing) {
+    if (existing.status !== 'confirmed') {
+      existing.status = 'confirmed';
+      existing.confirmedAt = new Date().toISOString();
+      existing.razorpayPaymentId = params.razorpayPaymentId;
+    }
+    booking.markModified('payments');
+    return existing;
+  }
+  const entry = {
+    id: `pay-${Date.now()}`,
+    type: params.type,
+    amount: params.amount,
+    method: 'razorpay',
+    status: 'confirmed',
+    razorpayOrderId: params.razorpayOrderId,
+    razorpayPaymentId: params.razorpayPaymentId,
+    razorpaySignatureVerified: true,
+    claimedAt: new Date().toISOString(),
+    confirmedAt: new Date().toISOString(),
+  };
+  booking.payments = [...(booking.payments || []), entry];
+  return entry;
+}
+
+// Applies a verified Razorpay payment to a booking: records the ledger entry,
+// recomputes paid/remaining, and — for an advance — confirms the booking and
+// blocks the event date, exactly like the vendor's manual /confirm route does
+// today. The one code path used by both the client /verify route and the
+// webhook backstop.
+async function applyVerifiedRazorpayPayment(
+  booking: any,
+  params: { type: 'advance' | 'balance'; amount: number; razorpayOrderId: string; razorpayPaymentId: string },
+  authHeader?: string
+): Promise<void> {
+  upsertVerifiedRazorpayPayment(booking, params);
+  recomputePayments(booking);
+
+  if (params.type === 'advance' && booking.status !== 'confirmed') {
+    booking.status = 'confirmed';
+    if (booking.vendorId && booking.eventDate) {
+      fetch(`${MARKETPLACE_SERVICE_URL}/api/v1/vendors/${booking.vendorId}/book-slot`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: authHeader || '' },
+        body: JSON.stringify({ date: booking.eventDate, slot: booking.timeSlot || '' }),
+      }).catch(() => { /* vendor availability will still show the slot until they refresh — not fatal */ });
+    }
+  }
+
+  await booking.save();
 }
 
 async function seedIfEmpty() {
@@ -406,22 +491,9 @@ app.put('/api/v1/bookings/:id/confirm', authMiddleware(), async (req: Request, r
   try {
     const vendorRes = await fetch(`${MARKETPLACE_SERVICE_URL}/api/v1/vendors/${booking.vendorId}`);
     const vendorJson = vendorRes.ok ? await vendorRes.json() : null;
-    const vendorPolicies = vendorJson?.data?.vendor?.policies;
-    const flatAdvance = vendorPolicies?.advanceAmount;
-    const cfg = await getSettings();
-    if (typeof flatAdvance === 'number' && flatAdvance > 0) {
-      // Clamp a flat rupee advance into the platform's [min, max] % guardrail too.
-      const lo = Math.round(booking.agreedPrice * cfg.advanceDepositMinRate);
-      const hi = Math.round(booking.agreedPrice * cfg.advanceDepositMaxRate);
-      advance = Math.min(Math.max(flatAdvance, lo), Math.min(hi, booking.agreedPrice));
-    } else {
-      const vendorRatePercent = vendorPolicies?.advancePercentage;
-      const rawRate = typeof vendorRatePercent === 'number' ? vendorRatePercent / 100 : cfg.advanceDepositRate;
-      const advanceRate = Math.min(Math.max(rawRate, cfg.advanceDepositMinRate), cfg.advanceDepositMaxRate);
-      advance = Math.round(booking.agreedPrice * advanceRate);
-    }
+    advance = await computeAdvanceAmount(booking, vendorJson?.data?.vendor?.policies);
   } catch {
-    advance = Math.round(booking.agreedPrice * (await getSettings()).advanceDepositRate);
+    advance = await computeAdvanceAmount(booking, null);
   }
   booking.status = 'confirmed';
   // Record the advance in the payment ledger (idempotent — only if not present),
@@ -703,6 +775,184 @@ app.put('/api/v1/bookings/:id/payments/:paymentId/confirm', authMiddleware(), as
   res.json({ success: true, message: 'Payment confirmed.', data: { booking } });
 });
 
+// 4f-2. Create a Razorpay order for a booking's advance or balance payment.
+//       Sized identically to the manual /confirm computation (advance) or the
+//       ledger-derived remainingAmount (balance). If the vendor has completed
+//       Razorpay Route onboarding, a transfer is attached so their share
+//       auto-splits at capture; otherwise the order is plain and the full
+//       amount collects to the platform balance for the existing manual
+//       settlement flow — payment still succeeds either way.
+app.post('/api/v1/bookings/:id/payments/razorpay/order', authMiddleware(), async (req: Request, res: Response) => {
+  const booking = await BookingModel.findOne({ id: req.params.id });
+  if (!booking) return res.status(404).json({ success: false, message: 'Booking not found.' });
+  if (booking.customerId !== req.user!.sub && req.user!.role !== 'admin') {
+    return res.status(403).json({ success: false, message: 'This booking does not belong to you.' });
+  }
+
+  const type: 'advance' | 'balance' = req.body?.type === 'balance' ? 'balance' : 'advance';
+  const vendor = await fetchVendor(booking.vendorId);
+
+  let amount: number;
+  if (type === 'advance') {
+    if ((booking.payments || []).some((p: any) => p.type === 'advance' && p.status === 'confirmed')) {
+      return res.status(409).json({ success: false, message: 'The advance for this booking has already been paid.' });
+    }
+    amount = await computeAdvanceAmount(booking, vendor?.policies);
+  } else {
+    recomputePayments(booking);
+    amount = booking.remainingAmount;
+    if (amount <= 0) {
+      return res.status(409).json({ success: false, message: 'This booking is already paid in full.' });
+    }
+  }
+
+  const amountPaise = Math.round(amount * 100);
+  const { commissionRate } = await getSettings();
+  const routeReady = vendor?.razorpay?.routeStatus === 'activated' && vendor?.razorpay?.productStatus === 'active';
+
+  let transfers;
+  if (routeReady && vendor?.razorpay?.accountId) {
+    const commissionPaise = Math.round(amountPaise * commissionRate);
+    const vendorSharePaise = amountPaise - commissionPaise;
+    if (vendorSharePaise > 0) {
+      transfers = [{
+        account: vendor.razorpay.accountId,
+        amount: vendorSharePaise,
+        currency: 'INR',
+        notes: { bookingId: booking.id, type },
+      }];
+    }
+  }
+
+  try {
+    const order: any = await createMarketplaceOrder({
+      amountPaise,
+      receipt: `${booking.id}-${type}-${Date.now()}`.slice(0, 40),
+      transfers,
+      notes: { bookingId: booking.id, type, customerId: booking.customerId },
+    });
+
+    res.json({
+      success: true,
+      data: {
+        orderId: order.id,
+        amount: order.amount,
+        currency: order.currency,
+        keyId: process.env.RAZORPAY_KEY_ID,
+        name: 'Magizhnaazh',
+        description: booking.packageName || `${booking.vendorCategory} — ${type === 'advance' ? 'Advance' : 'Balance'} payment`,
+        prefill: { name: booking.customerName || req.user!.email, email: req.user!.email },
+      },
+    });
+  } catch (err: any) {
+    console.error('Razorpay order creation error:', err?.error?.description || err?.message || err);
+    res.status(502).json({ success: false, message: err?.error?.description || 'Failed to start payment. Please try again.' });
+  }
+});
+
+// 4f-3. Verify a completed Razorpay payment and record it in the ledger. This
+//       — not the client's checkout success callback — is the actual proof a
+//       payment happened: the signature is an HMAC over
+//       `${orderId}|${paymentId}` using the account secret, which only
+//       Razorpay and this server can produce. On failure the ledger is left
+//       untouched.
+app.post('/api/v1/bookings/:id/payments/razorpay/verify', authMiddleware(), async (req: Request, res: Response) => {
+  const booking = await BookingModel.findOne({ id: req.params.id });
+  if (!booking) return res.status(404).json({ success: false, message: 'Booking not found.' });
+  if (booking.customerId !== req.user!.sub && req.user!.role !== 'admin') {
+    return res.status(403).json({ success: false, message: 'This booking does not belong to you.' });
+  }
+
+  const { razorpay_order_id, razorpay_payment_id, razorpay_signature, type } = req.body || {};
+  const paymentType: 'advance' | 'balance' = type === 'balance' ? 'balance' : 'advance';
+
+  const valid = verifyPaymentSignature({
+    orderId: razorpay_order_id,
+    paymentId: razorpay_payment_id,
+    signature: razorpay_signature,
+  });
+  if (!valid) {
+    return res.status(400).json({ success: false, message: 'Payment verification failed: signature mismatch.' });
+  }
+
+  let amount: number;
+  if (paymentType === 'advance') {
+    const vendor = await fetchVendor(booking.vendorId);
+    amount = await computeAdvanceAmount(booking, vendor?.policies);
+  } else {
+    recomputePayments(booking);
+    amount = booking.remainingAmount;
+  }
+
+  await applyVerifiedRazorpayPayment(
+    booking,
+    { type: paymentType, amount, razorpayOrderId: razorpay_order_id, razorpayPaymentId: razorpay_payment_id },
+    req.headers.authorization
+  );
+
+  res.json({ success: true, message: 'Payment verified.', data: { booking } });
+});
+
+// 4f-4. Razorpay webhook — backstop for when the client never calls /verify
+//       (e.g. the browser closed mid-payment). Not JWT-authenticated; the HMAC
+//       signature over the raw body IS the authentication. Always responds
+//       200 quickly so Razorpay doesn't retry-storm a slow/broken handler.
+app.post('/api/v1/bookings/webhooks/razorpay', async (req: Request, res: Response) => {
+  const signature = req.headers['x-razorpay-signature'] as string;
+  const rawBody = req.body as Buffer; // raw, thanks to the express.raw() scoped to this path above
+
+  if (!verifyWebhookSignature({ rawBody, signature })) {
+    console.warn('[Razorpay Webhook] Invalid signature — rejected.');
+    return res.status(400).json({ success: false, message: 'Invalid webhook signature.' });
+  }
+
+  let payload: any;
+  try {
+    payload = JSON.parse(rawBody.toString('utf8'));
+  } catch {
+    return res.status(200).json({ success: true }); // malformed body — nothing to do, ack anyway
+  }
+
+  try {
+    const event = payload?.event;
+    if (event === 'payment.captured') {
+      const payment = payload.payload?.payment?.entity;
+      const bookingId = payment?.notes?.bookingId;
+      const type: 'advance' | 'balance' = payment?.notes?.type === 'balance' ? 'balance' : 'advance';
+      const booking = bookingId ? await BookingModel.findOne({ id: bookingId }) : null;
+      if (booking) {
+        let amount: number;
+        if (type === 'advance') {
+          const vendor = await fetchVendor(booking.vendorId);
+          amount = await computeAdvanceAmount(booking, vendor?.policies);
+        } else {
+          recomputePayments(booking);
+          amount = booking.remainingAmount;
+        }
+        await applyVerifiedRazorpayPayment(booking, { type, amount, razorpayOrderId: payment.order_id, razorpayPaymentId: payment.id });
+      }
+    } else if (event === 'transfer.processed') {
+      const transfer = payload.payload?.transfer?.entity;
+      const bookingId = transfer?.notes?.bookingId;
+      const booking = bookingId ? await BookingModel.findOne({ id: bookingId }) : null;
+      const entry = booking && (booking.payments || []).find((p: any) => p.razorpayPaymentId === transfer?.source?.id);
+      if (booking && entry) {
+        entry.razorpayTransferId = transfer.id;
+        booking.markModified('payments');
+        await booking.save();
+      }
+    } else if (event === 'transfer.failed') {
+      // No transfer id gets stamped, so the settlement register naturally
+      // falls back to manual payout for this amount — just log for visibility.
+      console.warn('[Razorpay Webhook] transfer.failed', payload.payload?.transfer?.entity?.id);
+    }
+  } catch (err: any) {
+    console.error('[Razorpay Webhook] processing error:', err?.message || err);
+  }
+
+  res.status(200).json({ success: true });
+});
+
 // 4g. GST invoice for a booking, rendered as a printable document by the web
 //     apps. Accessible to the customer, the owning vendor, or an admin.
 app.get('/api/v1/bookings/:id/invoice', authMiddleware(), async (req: Request, res: Response) => {
@@ -776,6 +1026,12 @@ app.get('/api/v1/settlements', authMiddleware(), async (req: Request, res: Respo
   const settlements = bookings.map((b) => {
     const commission = Math.round(b.agreedPrice * commissionRate);
     const eligibleOn = payoutEligibleOn(b.eventDate, vendorPayoutHoldDays);
+    // Payments Razorpay Route already auto-transferred to the vendor (tagged
+    // with a razorpayTransferId) aren't owed again through manual settlement —
+    // without this, the admin would be told to pay out money Razorpay already sent.
+    const alreadyAutoSettled = (b.payments || [])
+      .filter((p: any) => p.razorpayTransferId)
+      .reduce((s: number, p: any) => s + (Number(p.amount) || 0), 0);
     return {
       bookingId: b.id,
       bookingNumber: b.bookingNumber,
@@ -784,7 +1040,8 @@ app.get('/api/v1/settlements', authMiddleware(), async (req: Request, res: Respo
       agreedPrice: b.agreedPrice,
       collected: b.advanceAmountPaid,
       commission,
-      vendorPayout: b.agreedPrice - commission,
+      alreadyAutoSettled,
+      vendorPayout: Math.max(0, b.agreedPrice - commission - alreadyAutoSettled),
       paidInFull: b.paidInFull || false,
       settlementStatus: b.settlementStatus || 'pending',
       settledAt: b.settledAt || null,

@@ -59,7 +59,16 @@ export function WebApp({ token, user }: { token?: string | null; user?: unknown 
         allowsInlineMediaPlayback
         mediaPlaybackRequiresUserAction={false}
         mediaCapturePermissionGrantType="grant"
-        setSupportMultipleWindows={false}
+        // Razorpay Checkout's standard card/UPI modal is an in-page iframe and
+        // unaffected either way, but some sub-flows (UPI intent / bank
+        // redirect) can call window.open(). Allow it, and redirect the popup
+        // into this same WebView instead of trying to open a real second
+        // window (which this screen has no UI for).
+        setSupportMultipleWindows
+        onOpenWindow={(event: { nativeEvent: { targetUrl?: string } }) => {
+          const targetUrl = event.nativeEvent.targetUrl;
+          if (targetUrl) ref.current?.injectJavaScript(`window.location.href = ${JSON.stringify(targetUrl)}; true;`);
+        }}
         startInLoadingState
         onLoadStart={() => setLoading(true)}
         onLoadEnd={() => setLoading(false)}

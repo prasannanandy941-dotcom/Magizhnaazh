@@ -555,6 +555,27 @@ const vendorSchema = new Schema<Vendor>({
     cashfreeVendorId: { type: String, default: '' },
     status: { type: String, enum: ['connected', 'not_connected'], default: 'not_connected' },
   },
+  // Razorpay Route linked-account onboarding — lets Razorpay auto-split a
+  // customer's payment so this vendor's share lands directly in their bank
+  // account. routeStatus/productStatus mirror Razorpay's own account/product
+  // lifecycle; a booking-payment-service order only attaches a Route transfer
+  // once routeStatus is 'activated' and productStatus is 'active'.
+  razorpay: {
+    accountId: { type: String, default: '' },
+    stakeholderId: { type: String, default: '' },
+    routeStatus: {
+      type: String,
+      enum: ['not_connected', 'created', 'activated', 'needs_clarification', 'rejected'],
+      default: 'not_connected',
+    },
+    productStatus: {
+      type: String,
+      enum: ['not_requested', 'requested', 'active', 'rejected'],
+      default: 'not_requested',
+    },
+    connectedAt: { type: String, default: '' },
+    lastError: { type: String, default: '' },
+  },
   // Verification request the vendor submits to earn the Verified badge; reviewed
   // by an admin. `isVerified` above mirrors verification.status === 'verified'.
   verification: {

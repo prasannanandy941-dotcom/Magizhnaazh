@@ -789,6 +789,19 @@ export interface Vendor {
     cashfreeVendorId?: string;
     status?: 'connected' | 'not_connected';
   };
+  // Razorpay Route linked-account onboarding state. Once routeStatus is
+  // 'activated' and productStatus is 'active', booking-payment-service attaches
+  // a Route transfer so this vendor's share of a payment lands directly in
+  // their bank account instead of sitting in the platform balance for manual
+  // settlement.
+  razorpay?: {
+    accountId?: string;
+    stakeholderId?: string;
+    routeStatus?: 'not_connected' | 'created' | 'activated' | 'needs_clarification' | 'rejected';
+    productStatus?: 'not_requested' | 'requested' | 'active' | 'rejected';
+    connectedAt?: string;
+    lastError?: string;
+  };
   // Verification request the vendor submits to earn the Verified badge. `status`
   // drives the admin review queue; `isVerified` above stays in sync (true only
   // when status === 'verified') for backward compatibility.
@@ -1250,7 +1263,9 @@ export interface Booking {
 
 // One payment against a booking. Customers record a claim (status 'claimed');
 // the vendor confirms it (status 'confirmed'), which updates the paid/remaining
-// amounts. Method is 'upi' | 'cash' | 'card' | 'bank' etc.
+// amounts. Method is 'upi' | 'cash' | 'card' | 'bank' | 'razorpay' etc.
+// A 'razorpay' entry is only ever written already 'confirmed' — it's created
+// by server-side signature/webhook verification, never by an unverified claim.
 export interface BookingPayment {
   id: string;
   type: 'advance' | 'balance';
@@ -1260,6 +1275,14 @@ export interface BookingPayment {
   status: 'claimed' | 'confirmed';
   claimedAt: string;
   confirmedAt?: string;
+  // Razorpay audit/idempotency fields — present only for gateway-verified payments.
+  razorpayOrderId?: string;
+  razorpayPaymentId?: string;
+  // Set once Razorpay Route actually transfers this payment's vendor share —
+  // its presence is what tells the settlement register this portion was
+  // already auto-paid out and shouldn't be counted as a pending manual payout.
+  razorpayTransferId?: string;
+  razorpaySignatureVerified?: boolean;
 }
 
 // Structured GST invoice for a booking, computed server-side and rendered as a

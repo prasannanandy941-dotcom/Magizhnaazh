@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { ClipboardList, RefreshCw, Loader2, CheckCircle2, Circle, IndianRupee, LogIn, Star, Send, FileText, Wallet, XCircle } from 'lucide-react';
 import { Booking, Review, slotLabelWithTime } from '../../../../packages/shared-types';
-import { fetchMyBookings, fetchMyReviews, submitReview, recordBalancePayment, fetchBookingInvoice, cancelBooking } from '../api';
+import { fetchMyBookings, fetchMyReviews, submitReview, fetchBookingInvoice, cancelBooking } from '../api';
+import { payBookingWithRazorpay } from '../utils/razorpayCheckout';
 import { openInvoicePrintWindow } from './invoice';
 
 // Work-progress stages a confirmed booking moves through — mirrors the
@@ -200,7 +201,7 @@ export const MyOrders: React.FC<{ isAuthenticated: boolean; onSignIn: () => void
                     {b.cancelReason && <p className="text-[11px] font-normal text-slate-400 mt-0.5">Reason: {b.cancelReason}</p>}
                   </div>
                 ) : (
-                  <p className="text-xs text-slate-500">Tracking starts once the vendor confirms this booking.</p>
+                  <AdvancePaymentBlock booking={b} onUpdated={(nb) => setBookings((prev) => prev.map((x) => (x.id === nb.id ? nb : x)))} />
                 )}
 
                 {isTrackable && (
@@ -227,34 +228,34 @@ export const MyOrders: React.FC<{ isAuthenticated: boolean; onSignIn: () => void
   );
 };
 
-// Balance-payment + invoice controls for a confirmed booking. The customer
-// records that they've paid the balance (manual UPI); the vendor confirms it.
+// Balance-payment + invoice controls for a confirmed booking. "Pay balance"
+// opens real Razorpay checkout — verified server-side, so it lands already
+// confirmed rather than needing the vendor to manually confirm a claim.
 const PaymentBlock: React.FC<{ booking: Booking; onUpdated: (b: Booking) => void }> = ({ booking, onUpdated }) => {
   const [paying, setPaying] = useState(false);
-  const [reference, setReference] = useState('');
-  const [open, setOpen] = useState(false);
-  const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');
   const [invoiceBusy, setInvoiceBusy] = useState(false);
 
   const remaining = booking.remainingAmount;
   const paidInFull = booking.paidInFull || remaining <= 0;
-  // A balance the customer has recorded but the vendor hasn't confirmed yet.
-  const pendingClaim = (booking.payments || []).some((p) => p.type === 'balance' && p.status === 'claimed');
 
-  const submitPayment = async () => {
-    setBusy(true);
+  const payBalance = () => {
+    setPaying(true);
     setNotice('');
-    try {
-      const res = await recordBalancePayment(booking.id, remaining, reference.trim() || undefined);
-      if (res.data?.booking) onUpdated(res.data.booking);
-      setOpen(false);
-      setPaying(false);
-    } catch (err: any) {
-      setNotice(err?.message || 'Could not record the payment. Please try again.');
-    } finally {
-      setBusy(false);
-    }
+    payBookingWithRazorpay(booking.id, 'balance', {
+      onSuccess: (nb) => {
+        setPaying(false);
+        onUpdated(nb);
+      },
+      onDismiss: () => {
+        setPaying(false);
+        setNotice('Payment not completed — you can try again anytime.');
+      },
+      onError: (message) => {
+        setPaying(false);
+        setNotice(message || 'Payment failed — please try again.');
+      },
+    });
   };
 
   const viewInvoice = async () => {
@@ -278,13 +279,12 @@ const PaymentBlock: React.FC<{ booking: Booking; onUpdated: (b: Booking) => void
           ) : (
             <span className="text-slate-300">Balance due: <strong className="text-amber-400">₹{remaining.toLocaleString('en-IN')}</strong></span>
           )}
-          {pendingClaim && !paidInFull && <span className="block text-[11px] text-sky-400 mt-0.5">Balance payment recorded — awaiting vendor confirmation.</span>}
         </div>
         <div className="flex items-center gap-2">
-          {!paidInFull && !pendingClaim && (
-            <button onClick={() => { setPaying(true); setOpen(true); }}
-              className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[11px] flex items-center gap-1.5">
-              <Wallet className="w-3.5 h-3.5" /> Pay balance
+          {!paidInFull && (
+            <button onClick={payBalance} disabled={paying}
+              className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[11px] flex items-center gap-1.5 disabled:opacity-60">
+              {paying ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wallet className="w-3.5 h-3.5" />} Pay balance
             </button>
           )}
           <button onClick={viewInvoice} disabled={invoiceBusy}
@@ -293,25 +293,49 @@ const PaymentBlock: React.FC<{ booking: Booking; onUpdated: (b: Booking) => void
           </button>
         </div>
       </div>
+      {notice && <p className="text-[11px] text-rose-400">{notice}</p>}
+    </div>
+  );
+};
 
-      {paying && open && !paidInFull && (
-        <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2">
-          <p className="text-[11px] text-slate-400">
-            Pay the vendor <strong className="text-amber-400">₹{remaining.toLocaleString('en-IN')}</strong> via their UPI (shown on their page or your confirmation), then record it here. The vendor confirms receipt.
-          </p>
-          <input value={reference} onChange={(e) => setReference(e.target.value)} placeholder="UPI reference / txn note (optional)"
-            className="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-white text-xs" />
-          {notice && <p className="text-[11px] text-rose-400">{notice}</p>}
-          <div className="flex items-center gap-2">
-            <button onClick={submitPayment} disabled={busy}
-              className="px-3 py-1.5 rounded-lg bg-emerald-500 text-slate-950 font-bold text-[11px] disabled:opacity-60 flex items-center gap-1.5">
-              {busy && <Loader2 className="w-3.5 h-3.5 animate-spin" />} I've paid the balance
-            </button>
-            <button onClick={() => { setOpen(false); setPaying(false); }} className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 font-semibold text-[11px]">Cancel</button>
-          </div>
-        </div>
-      )}
-      {notice && !open && <p className="text-[11px] text-rose-400">{notice}</p>}
+// Lets the customer pay (or retry) the advance for a booking that hasn't been
+// confirmed yet — covers both a fresh booking and one where a previous
+// Razorpay checkout was dismissed/failed partway through. Nothing is ever
+// charged unless a payment actually verifies, so retrying here is always safe.
+const AdvancePaymentBlock: React.FC<{ booking: Booking; onUpdated: (b: Booking) => void }> = ({ booking, onUpdated }) => {
+  const [paying, setPaying] = useState(false);
+  const [notice, setNotice] = useState('');
+
+  const payAdvance = () => {
+    setPaying(true);
+    setNotice('');
+    payBookingWithRazorpay(booking.id, 'advance', {
+      onSuccess: (nb) => {
+        setPaying(false);
+        onUpdated(nb);
+      },
+      onDismiss: () => {
+        setPaying(false);
+        setNotice('Payment not completed — you can try again anytime.');
+      },
+      onError: (message) => {
+        setPaying(false);
+        setNotice(message || 'Payment failed — please try again.');
+      },
+    });
+  };
+
+  return (
+    <div className="pt-1 space-y-2">
+      <p className="text-xs text-slate-500">Pay the advance to confirm this booking with the vendor.</p>
+      <button
+        onClick={payAdvance}
+        disabled={paying}
+        className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-[11px] flex items-center gap-1.5 disabled:opacity-60"
+      >
+        {paying ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wallet className="w-3.5 h-3.5" />} Pay Advance
+      </button>
+      {notice && <p className="text-[11px] text-rose-400">{notice}</p>}
     </div>
   );
 };

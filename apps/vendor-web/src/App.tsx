@@ -4,7 +4,7 @@ import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, VendorD
 import { STATIC_CITY_GROUPS } from '../../../packages/shared-utils';
 import { AuthGate } from './components/AuthGate';
 import { FloralGoldBackground } from './components/FloralGoldBackground';
-import { fetchMyVendor, createVendor, updateVendor, fetchVendorBookings, fetchVendorBookingsSilent, confirmBooking, sendCounterQuote, updateBookingStatus, updateSpendBreakdown, refundBooking, fetchVendorReviews, replyToReview, submitVerification, confirmBookingPayment, fetchBookingInvoice, fetchCalendarToken, GATEWAY_URL } from './api';
+import { fetchMyVendor, createVendor, updateVendor, fetchVendorBookings, fetchVendorBookingsSilent, confirmBooking, sendCounterQuote, updateBookingStatus, updateSpendBreakdown, refundBooking, fetchVendorReviews, replyToReview, submitVerification, confirmBookingPayment, fetchBookingInvoice, fetchCalendarToken, onboardRazorpayRoute, refreshRazorpayStatus, GATEWAY_URL } from './api';
 import { openInvoicePrintWindow } from './invoice';
 import { playNotificationSound } from './notificationSound';
 import { getItemSuggestions, getAmenitySuggestions, suggestionListId } from './itemSuggestions';
@@ -217,6 +217,10 @@ export function App() {
   });
   const [bankSaving, setBankSaving] = useState(false);
   const [bankNotice, setBankNotice] = useState('');
+  // Inline PAN capture right on the Razorpay Route card — a vendor with GSTIN
+  // never sees the PAN field in the Vendor Details KYC tab (it's GSTIN-or-PAN
+  // there), but Razorpay's stakeholder KYC always needs a PAN regardless.
+  const [razorpayPan, setRazorpayPan] = useState({ panNumber: '', panName: '' });
 
   // Vendor Details: Identity & Business KYC Verification (matching Image 3 & 4)
   const [verifyForm, setVerifyForm] = useState({
@@ -506,27 +510,68 @@ export function App() {
     }
   };
 
-  const handleConnectCashfree = async () => {
+  const handleConnectRazorpay = async () => {
     if (!token || !myVendor) return;
+    if (!bankForm.accountNumber || !bankForm.ifscCode || !bankForm.entityName) {
+      setBankNotice('Save your bank account number, IFSC and entity name above first.');
+      setTimeout(() => setBankNotice(''), 4000);
+      return;
+    }
+    const havePan = verifyForm.panNumber || razorpayPan.panNumber;
+    if (!havePan) {
+      setBankNotice('Enter your PAN above to connect Razorpay.');
+      setTimeout(() => setBankNotice(''), 4000);
+      return;
+    }
     setBankSaving(true);
     setBankNotice('');
     try {
-      const res = await updateVendor(token, myVendor.id, {
+      // "Connect" is one click end-to-end: persist whatever's currently in the
+      // bank-details form (in case "Save Changes" wasn't clicked separately)
+      // plus a freshly-entered inline PAN (additive — doesn't touch the
+      // separate KYC verification submission/status), THEN onboard — so the
+      // server always sees the same values the vendor just typed.
+      const saveRes = await updateVendor(token, myVendor.id, {
         bankDetails: {
-          ...bankForm,
-          status: 'connected',
+          entityName: bankForm.entityName,
+          accountNumber: bankForm.accountNumber,
+          ifscCode: bankForm.ifscCode,
+          cashfreeVendorId: bankForm.cashfreeVendorId,
+          status: bankForm.status,
         },
+        ...(!verifyForm.panNumber && razorpayPan.panNumber
+          ? { panDetails: { panNumber: razorpayPan.panNumber, panName: razorpayPan.panName } }
+          : {}),
       } as any);
-      if (res.data?.vendor) {
-        setMyVendor(res.data.vendor);
-        setBankForm((prev) => ({ ...prev, status: 'connected' }));
+      if (saveRes.data?.vendor) {
+        setMyVendor(saveRes.data.vendor);
+        if (saveRes.data.vendor.verification?.panNumber) {
+          setVerifyForm((f) => ({ ...f, panNumber: saveRes.data!.vendor.verification!.panNumber!, panName: saveRes.data!.vendor.verification!.panName || f.panName }));
+        }
       }
-      setBankNotice('Cashfree Easy Split connected! Customer payments will split automatically.');
+
+      const res = await onboardRazorpayRoute(token, myVendor.id);
+      if (res.data?.vendor) setMyVendor(res.data.vendor);
+      setBankNotice(res.success ? 'Razorpay Route onboarding submitted — check status below.' : (res.message || 'Onboarding did not complete — see status below.'));
     } catch (err: any) {
-      setBankNotice(err?.message || 'Failed to connect Cashfree Easy Split.');
+      setBankNotice(err?.message || 'Failed to connect Razorpay.');
     } finally {
       setBankSaving(false);
+      setTimeout(() => setBankNotice(''), 6000);
+    }
+  };
+
+  const handleRefreshRazorpayStatus = async () => {
+    if (!token || !myVendor) return;
+    setBankSaving(true);
+    try {
+      const res = await refreshRazorpayStatus(token, myVendor.id);
+      if (res.data?.vendor) setMyVendor(res.data.vendor);
+    } catch (err: any) {
+      setBankNotice(err?.message || 'Could not refresh Razorpay status.');
       setTimeout(() => setBankNotice(''), 4000);
+    } finally {
+      setBankSaving(false);
     }
   };
 
@@ -10439,37 +10484,103 @@ export function App() {
                 </div>
 
                 <div className="p-4 sm:p-5 rounded-2xl border border-slate-800/90 bg-slate-950/50 space-y-3.5">
-                  <div className="flex items-start justify-between gap-3 flex-wrap sm:flex-nowrap">
-                    <div>
-                      <h4 className="font-bold text-sm sm:text-base text-white">
-                        Razorpay Route Marketplace Account
-                      </h4>
-                      <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                        Mandatory to accept online Razorpay payments. Customer payments are split directly to your linked account.
-                      </p>
-                    </div>
-                    <div className="shrink-0">
-                      <div className="px-3.5 py-1.5 rounded-full border border-rose-900/60 bg-rose-950/30 text-rose-400 text-[11px] font-bold leading-tight text-center tracking-wide">
-                        Razorpay: NOT<br />CONNECTED
-                      </div>
-                    </div>
-                  </div>
+                  {(() => {
+                    const rz = (myVendor as any)?.razorpay;
+                    const connected = rz?.routeStatus === 'activated' && rz?.productStatus === 'active';
+                    const pending = !connected && !!rz?.accountId;
+                    const badgeText = connected ? 'CONNECTED' : pending ? 'PENDING APPROVAL' : 'NOT CONNECTED';
+                    const badgeClass = connected
+                      ? 'border-emerald-900/60 bg-emerald-950/30 text-emerald-400'
+                      : pending
+                      ? 'border-amber-900/60 bg-amber-950/30 text-amber-400'
+                      : 'border-rose-900/60 bg-rose-950/30 text-rose-400';
+                    return (
+                      <>
+                        <div className="flex items-start justify-between gap-3 flex-wrap sm:flex-nowrap">
+                          <div>
+                            <h4 className="font-bold text-sm sm:text-base text-white">
+                              Razorpay Route Marketplace Account
+                            </h4>
+                            <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                              Mandatory to accept online Razorpay payments. Customer payments are split directly to your linked account.
+                            </p>
+                          </div>
+                          <div className="shrink-0 flex flex-col items-end gap-1.5">
+                            <div className={`px-3.5 py-1.5 rounded-full border text-[11px] font-bold leading-tight text-center tracking-wide ${badgeClass}`}>
+                              Razorpay: {badgeText}
+                            </div>
+                            {rz?.accountId && (
+                              <button
+                                type="button"
+                                onClick={handleRefreshRazorpayStatus}
+                                disabled={bankSaving}
+                                className="text-[10px] font-semibold text-slate-400 hover:text-slate-200 underline disabled:opacity-50"
+                              >
+                                Refresh status
+                              </button>
+                            )}
+                          </div>
+                        </div>
 
-                  <div className="p-3 rounded-xl bg-amber-950/20 border border-amber-900/40 text-amber-300 text-xs font-semibold flex items-center gap-2">
-                    <span className="text-amber-400 font-bold">⚠</span>
-                    <span>Complete Razorpay payment onboarding to accept online Razorpay payments.</span>
-                  </div>
+                        {!connected && (
+                          <div className="p-3 rounded-xl bg-amber-950/20 border border-amber-900/40 text-amber-300 text-xs font-semibold flex items-center gap-2">
+                            <span className="text-amber-400 font-bold">⚠</span>
+                            <span>
+                              {pending
+                                ? 'Onboarding submitted — Razorpay is reviewing your account. Check back or refresh status above.'
+                                : 'Complete Razorpay payment onboarding to accept online Razorpay payments.'}
+                              {rz?.lastError ? ` (${rz.lastError})` : ''}
+                            </span>
+                          </div>
+                        )}
 
-                  <div className="flex justify-end pt-1">
-                    <button
-                      type="button"
-                      onClick={handleConnectCashfree}
-                      disabled={bankSaving}
-                      className="px-5 py-2.5 rounded-xl bg-[#0b3c5d] hover:bg-[#0d4b75] text-white font-bold text-xs shadow-sm transition-colors inline-flex items-center gap-1.5 disabled:opacity-50"
-                    >
-                      Connect Razorpay Route Account
-                    </button>
-                  </div>
+                        {/* PAN is mandatory for Razorpay's stakeholder KYC, but a
+                            vendor with GSTIN never sees a PAN field in the
+                            Vendor Details tab (GSTIN-or-PAN there) — so it's
+                            captured here directly when missing. */}
+                        {!connected && !verifyForm.panNumber && (
+                          <div className="grid sm:grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">
+                                PAN Number <span className="text-rose-500">*</span>
+                              </label>
+                              <input
+                                type="text"
+                                value={razorpayPan.panNumber}
+                                onChange={(e) => setRazorpayPan((f) => ({ ...f, panNumber: e.target.value.toUpperCase() }))}
+                                placeholder="e.g. ABCDE1234F"
+                                maxLength={10}
+                                className="w-full p-2.5 rounded-xl bg-slate-950/70 border border-slate-800 text-white text-xs font-semibold uppercase placeholder:text-slate-500 focus:outline-none focus:border-slate-600"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">
+                                Name as on PAN
+                              </label>
+                              <input
+                                type="text"
+                                value={razorpayPan.panName}
+                                onChange={(e) => setRazorpayPan((f) => ({ ...f, panName: e.target.value }))}
+                                placeholder="e.g. John Doe"
+                                className="w-full p-2.5 rounded-xl bg-slate-950/70 border border-slate-800 text-white text-xs font-semibold placeholder:text-slate-500 focus:outline-none focus:border-slate-600"
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="flex justify-end pt-1">
+                          <button
+                            type="button"
+                            onClick={handleConnectRazorpay}
+                            disabled={bankSaving}
+                            className="px-5 py-2.5 rounded-xl bg-[#0b3c5d] hover:bg-[#0d4b75] text-white font-bold text-xs shadow-sm transition-colors inline-flex items-center gap-1.5 disabled:opacity-50"
+                          >
+                            {connected ? 'Re-sync Razorpay Route Account' : 'Connect Razorpay Route Account'}
+                          </button>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
 
                 <div className="pt-2 flex items-center justify-between flex-wrap gap-3">

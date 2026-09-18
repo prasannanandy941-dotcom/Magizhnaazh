@@ -21,6 +21,11 @@ const paymentSchema = new Schema(
     status: { type: String, enum: ['claimed', 'confirmed'], default: 'claimed' },
     claimedAt: { type: String, default: () => new Date().toISOString() },
     confirmedAt: String,
+    // Razorpay audit/idempotency fields — present only for gateway-verified payments.
+    razorpayOrderId: String,
+    razorpayPaymentId: String,
+    razorpayTransferId: String,
+    razorpaySignatureVerified: Boolean,
   },
   { _id: false }
 );

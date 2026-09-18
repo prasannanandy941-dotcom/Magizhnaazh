@@ -432,10 +432,49 @@ export function fetchMyBookings(): Promise<BookingsListResponse> {
 
 // Record a balance payment against a confirmed booking (manual UPI claim). The
 // vendor confirms it afterwards. Amount defaults server-side to the full balance.
+// Kept for any offline/cash fallback — the customer-facing "Pay balance"
+// button now defaults to real Razorpay checkout (see below).
 export function recordBalancePayment(bookingId: string, amount?: number, reference?: string): Promise<BookingResponse> {
   return authedFetch<BookingResponse>(`/api/v1/bookings/${bookingId}/payments`, {
     method: 'POST',
     body: JSON.stringify({ amount, reference, method: 'upi' }),
+  });
+}
+
+export interface RazorpayOrderResponse {
+  success: boolean;
+  message?: string;
+  data?: {
+    orderId: string;
+    amount: number; // paise
+    currency: string;
+    keyId: string;
+    name?: string;
+    description?: string;
+    prefill?: { name?: string; email?: string };
+  };
+}
+
+// Creates a Razorpay order for a booking's advance or balance payment. The
+// server decides the exact amount and whether the vendor's Route account gets
+// a split transfer — the frontend just opens checkout with what comes back.
+export function createRazorpayOrder(bookingId: string, type: 'advance' | 'balance'): Promise<RazorpayOrderResponse> {
+  return authedFetch<RazorpayOrderResponse>(`/api/v1/bookings/${bookingId}/payments/razorpay/order`, {
+    method: 'POST',
+    body: JSON.stringify({ type }),
+  });
+}
+
+// Verifies a completed Razorpay checkout server-side (signature check) and, on
+// success, confirms the booking/records the ledger entry. Never trust the
+// checkout `handler` callback alone — this call is the actual proof of payment.
+export function verifyRazorpayPayment(
+  bookingId: string,
+  payload: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string; type: 'advance' | 'balance' }
+): Promise<BookingResponse> {
+  return authedFetch<BookingResponse>(`/api/v1/bookings/${bookingId}/payments/razorpay/verify`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
   });
 }
 

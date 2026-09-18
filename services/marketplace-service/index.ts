@@ -19,6 +19,7 @@ import { VendorModel } from './models/Vendor';
 import { CategoryModel } from './models/Category';
 import { CityModel } from './models/City';
 import { BannerModel } from './models/Banner';
+import { onboardVendor, getAccountDetails } from './utils/razorpay';
 
 const app = express();
 const PORT = process.env.PORT || 8002;
@@ -544,13 +545,25 @@ app.put('/api/v1/vendors/:id', authMiddleware(), async (req: Request, res: Respo
     return res.status(403).json({ success: false, message: 'You do not own this vendor listing.' });
   }
 
-  const { businessName, category, description, city, startingPrice, contactEmail, contactPhone, upiId, packages, facilities, galleryImages, availableDates, offeredOptions, offeredOptionPrices, offeredOptionItems, offeredOptionQuality, offeredOptionImages, giftCount, giftDiscount, policies, deals, bankDetails } = req.body;
+  const { businessName, category, description, city, startingPrice, contactEmail, contactPhone, upiId, packages, facilities, galleryImages, availableDates, offeredOptions, offeredOptionPrices, offeredOptionItems, offeredOptionQuality, offeredOptionImages, giftCount, giftDiscount, policies, deals, bankDetails, panDetails } = req.body;
   if (contactPhone !== undefined && contactPhone !== '' && !isValidContactPhone(contactPhone)) {
     return res.status(400).json({ success: false, message: 'Please enter a valid contact phone number.' });
   }
   if (bankDetails !== undefined) {
     (vendor as any).bankDetails = { ...((vendor as any).bankDetails || {}), ...bankDetails };
     vendor.markModified('bankDetails');
+  }
+  // Lightweight, additive PAN save for Razorpay onboarding — distinct from the
+  // full KYC /verification submission (which overwrites the whole record and
+  // resets status to 'pending'). A vendor with GSTIN never sees a PAN field in
+  // that flow ("PAN not required when GSTIN is provided"), but Razorpay's
+  // stakeholder KYC always needs one — so this lets it be set without
+  // disturbing verification status or any other KYC field.
+  if (panDetails !== undefined) {
+    (vendor as any).verification = { ...((vendor as any).verification || {}) };
+    if (panDetails.panNumber !== undefined) (vendor as any).verification.panNumber = String(panDetails.panNumber).trim().toUpperCase();
+    if (panDetails.panName !== undefined) (vendor as any).verification.panName = String(panDetails.panName).trim();
+    vendor.markModified('verification');
   }
   if (Array.isArray(deals)) {
     vendor.deals = deals;
@@ -619,6 +632,109 @@ app.put('/api/v1/vendors/:id', authMiddleware(), async (req: Request, res: Respo
   vendor.markModified('facilities');
   await vendor.save();
   res.json({ success: true, message: 'Vendor profile updated.', data: { vendor } });
+});
+
+// Razorpay Route onboarding — creates (or re-syncs) a linked account so this
+// vendor can receive their share of a customer's payment directly, via a
+// Route transfer attached by booking-payment-service at order-creation time.
+// Requires bank details + PAN to already be saved (PAN lives under the
+// vendor's "Vendor Details" KYC tab, not duplicated here) — the frontend is
+// expected to guide the vendor there first if it's missing.
+app.post('/api/v1/vendors/:id/razorpay/onboard', authMiddleware(), async (req: Request, res: Response) => {
+  const vendor = await VendorModel.findOne({ id: req.params.id });
+  if (!vendor) return res.status(404).json({ success: false, message: 'Vendor not found.' });
+  if (vendor.userId !== req.user!.sub && req.user!.role !== 'admin') {
+    return res.status(403).json({ success: false, message: 'You do not own this vendor listing.' });
+  }
+
+  const bank = (vendor as any).bankDetails || {};
+  const verification = (vendor as any).verification || {};
+  const missing: string[] = [];
+  if (!bank.accountNumber) missing.push('bank account number');
+  if (!bank.ifscCode) missing.push('bank IFSC code');
+  if (!bank.entityName) missing.push('account holder / entity name');
+  if (!verification.panNumber) missing.push('PAN');
+  if (!vendor.contactEmail) missing.push('contact email');
+  if (!vendor.contactPhone) missing.push('contact phone');
+  if (missing.length > 0) {
+    return res.status(400).json({
+      success: false,
+      message: `Add the following before connecting Razorpay: ${missing.join(', ')}.`,
+    });
+  }
+
+  try {
+    const result = await onboardVendor({
+      storeId: vendor.id,
+      businessName: vendor.businessName,
+      legalBusinessName: verification.legalName || vendor.businessName,
+      ownerName: verification.contactPerson || vendor.businessName,
+      email: vendor.contactEmail,
+      phone: vendor.contactPhone,
+      pan: verification.panNumber,
+      panName: verification.panName,
+      address: {
+        street: vendor.location?.address,
+        city: vendor.location?.city,
+        state: vendor.location?.state,
+        pincode: vendor.location?.pincode,
+      },
+      bankAccount: { accountNumber: bank.accountNumber, ifscCode: bank.ifscCode, entityName: bank.entityName },
+      existingAccountId: (vendor as any).razorpay?.accountId,
+    });
+
+    (vendor as any).razorpay = {
+      accountId: result.accountId,
+      stakeholderId: result.stakeholderId || '',
+      routeStatus: result.routeStatus,
+      productStatus: result.productStatus,
+      connectedAt: (vendor as any).razorpay?.connectedAt || new Date().toISOString(),
+      lastError: result.error || '',
+    };
+    vendor.markModified('razorpay');
+    await vendor.save();
+
+    res.json({
+      success: !result.error,
+      message: result.error
+        ? `Onboarding started but hit an issue: ${result.error}`
+        : 'Razorpay Route onboarding submitted.',
+      data: { vendor },
+    });
+  } catch (err: any) {
+    const message = err?.response?.data?.error?.description || err?.message || 'Failed to connect Razorpay.';
+    (vendor as any).razorpay = { ...((vendor as any).razorpay || {}), lastError: message };
+    vendor.markModified('razorpay');
+    await vendor.save();
+    res.status(502).json({ success: false, message, data: { vendor } });
+  }
+});
+
+// Refresh a vendor's Razorpay Route status from Razorpay directly — approval
+// happens asynchronously on Razorpay's side, so a vendor may need to check
+// back after onboarding before routeStatus flips to 'activated'.
+app.get('/api/v1/vendors/:id/razorpay/status', authMiddleware(), async (req: Request, res: Response) => {
+  const vendor = await VendorModel.findOne({ id: req.params.id });
+  if (!vendor) return res.status(404).json({ success: false, message: 'Vendor not found.' });
+  if (vendor.userId !== req.user!.sub && req.user!.role !== 'admin') {
+    return res.status(403).json({ success: false, message: 'You do not own this vendor listing.' });
+  }
+
+  const accountId = (vendor as any).razorpay?.accountId;
+  if (!accountId) {
+    return res.json({ success: true, data: { vendor } });
+  }
+
+  try {
+    const info = await getAccountDetails(accountId);
+    (vendor as any).razorpay.routeStatus = info.status === 'activated' ? 'activated' : (info.status || (vendor as any).razorpay.routeStatus);
+    vendor.markModified('razorpay');
+    await vendor.save();
+  } catch (err: any) {
+    // Best-effort — return the last-known status rather than failing the request.
+  }
+
+  res.json({ success: true, data: { vendor } });
 });
 
 app.delete('/api/v1/vendors/:id', authMiddleware(), async (req: Request, res: Response) => {
