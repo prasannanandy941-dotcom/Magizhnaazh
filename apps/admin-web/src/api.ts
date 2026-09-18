@@ -98,7 +98,17 @@ async function authedFetch(
   if (options.body && !(options.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json');
   }
-  const { json } = await fetchJson(path, { ...options, headers });
+  const { res, json } = await fetchJson(path, { ...options, headers });
+  // An expired/invalid admin token previously failed every authed call
+  // silently (visible only as 401s in the browser console) — clicking
+  // Approve/Reject/Suspend etc. just did nothing, with no indication why.
+  // Clear the stale session and reload so the login screen reappears.
+  if (res.status === 401) {
+    localStorage.removeItem('magizhnaazh_admin_user');
+    localStorage.removeItem('magizhnaazh_admin_token');
+    window.location.reload();
+    throw new Error('Session expired — please sign in again.');
+  }
   return json;
 }
 
