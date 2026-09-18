@@ -293,28 +293,30 @@ export function App() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [bookingsLoading, setBookingsLoading] = useState(false);
 
-  // Live payment alerts: when a customer confirms they've paid an advance on
-  // the customer app, that booking arrives here as `pending_payment`. We track
-  // which pending IDs we've already seen so a newly-arrived one pops a banner
-  // the vendor can act on, rather than sitting silently in the list until the
-  // next manual reload.
+  // Live payment alerts: when a customer actually completes the real Razorpay
+  // advance payment, that booking flips straight to `confirmed` with a
+  // razorpay-paid advance in its ledger. We track which confirmed IDs we've
+  // already seen so a newly-arrived one pops a banner, rather than sitting
+  // silently in the list until the next manual reload.
   const [paymentAlerts, setPaymentAlerts] = useState<Booking[]>([]);
   const knownPendingRef = useRef<Set<string>>(new Set());
 
   // Reconcile a freshly-fetched bookings list into state. When `notify` is on,
-  // any pending_payment booking whose ID we haven't seen before raises an
-  // alert; the initial load and vendor-triggered refreshes pass notify=false
-  // so pre-existing claims don't spam the banner.
+  // any newly razorpay-confirmed booking whose ID we haven't seen before
+  // raises an alert; the initial load and vendor-triggered refreshes pass
+  // notify=false so pre-existing payments don't spam the banner.
   const applyBookings = (list: Booking[], notify: boolean) => {
-    const pending = list.filter((b) => b.status === 'pending_payment');
+    const paid = list.filter(
+      (b) => b.status === 'confirmed' && (b.payments || []).some((p) => p.type === 'advance' && p.razorpayPaymentId)
+    );
     if (notify) {
-      const fresh = pending.filter((b) => !knownPendingRef.current.has(b.id));
+      const fresh = paid.filter((b) => !knownPendingRef.current.has(b.id));
       if (fresh.length > 0) {
         setPaymentAlerts((prev) => [...fresh, ...prev]);
         playNotificationSound();
       }
     }
-    knownPendingRef.current = new Set(pending.map((b) => b.id));
+    knownPendingRef.current = new Set(paid.map((b) => b.id));
     setBookings(list);
   };
 
@@ -4432,34 +4434,29 @@ export function App() {
         </div>
       </header>
 
-      {/* Live advance-payment alerts — a customer just confirmed payment on
-          the customer app. Stacked toasts the vendor can confirm or dismiss. */}
+      {/* Live advance-payment alerts — a customer just completed the real
+          Razorpay advance payment. Purely informational since the payment is
+          already confirmed; nothing left for the vendor to do but dismiss. */}
       {paymentAlerts.length > 0 && (
         <div className="fixed top-24 right-4 z-[90] w-full max-w-xs space-y-2">
           {paymentAlerts.map((b) => (
             <div
               key={b.id}
-              className="glass-card rounded-2xl border border-amber-500/40 bg-slate-950/90 shadow-2xl p-4 animate-in"
+              className="glass-card rounded-2xl border border-emerald-500/40 bg-slate-950/90 shadow-2xl p-4 animate-in"
             >
               <div className="flex items-start gap-2">
-                <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-300 flex items-center justify-center shrink-0">
                   <Bell className="w-4 h-4" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-bold text-white">New advance payment claimed</p>
+                  <p className="text-xs font-bold text-white">Advance payment received</p>
                   <p className="text-[11px] text-slate-400 mt-0.5">
                     <strong className="text-slate-200">{b.bookingNumber}</strong> • {b.packageName}
                   </p>
-                  <p className="text-[11px] text-amber-300 mt-0.5">
-                    Advance ₹{(b.advanceAmountPaid || b.agreedPrice).toLocaleString('en-IN')} — verify it landed, then confirm.
+                  <p className="text-[11px] text-emerald-300 mt-0.5">
+                    ₹{(b.advanceAmountPaid || b.agreedPrice).toLocaleString('en-IN')} paid via Razorpay — booking confirmed.
                   </p>
                   <div className="flex items-center gap-2 mt-2">
-                    <button
-                      onClick={async () => { await handleAcceptQuote(b.id); dismissAlert(b.id); }}
-                      className="px-3 py-1.5 rounded-lg bg-amber-500 text-slate-950 font-bold text-[11px] shadow"
-                    >
-                      Confirm Received
-                    </button>
                     <button
                       onClick={() => dismissAlert(b.id)}
                       className="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 font-semibold text-[11px] hover:text-white"
@@ -4926,14 +4923,8 @@ export function App() {
                         {b.status === 'pending_payment' && (
                           <div className="mt-3 flex flex-col items-end gap-1.5">
                             <p className="text-[10px] text-amber-300 text-right max-w-[220px]">
-                              Customer says they've paid the advance via UPI. Verify it landed, then confirm.
+                              Quote accepted — waiting for the customer to pay the advance through Razorpay. This confirms automatically the moment they pay, no action needed from you.
                             </p>
-                            <button
-                              onClick={() => handleAcceptQuote(b.id)}
-                              className="px-4 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs shadow-md"
-                            >
-                              Confirm Advance Received
-                            </button>
                           </div>
                         )}
 

@@ -460,15 +460,17 @@ app.get('/api/v1/bookings/:id', async (req: Request, res: Response) => {
   res.json({ success: true, data: { booking } });
 });
 
-// 4. Confirm booking + simulate advance deposit collection
+// 4. Vendor accepts the customer's requested/negotiated price. This used to
+// also fabricate a fake "paid" advance record on the spot — no real money
+// ever moved. Now it only finalizes the price and moves the booking to
+// 'pending_payment'; the booking only becomes 'confirmed' once the customer
+// completes a real Razorpay payment (see /payments/razorpay/order + /verify,
+// and applyVerifiedRazorpayPayment which does the actual confirming).
 app.put('/api/v1/bookings/:id/confirm', authMiddleware(), async (req: Request, res: Response) => {
   const booking = await BookingModel.findOne({ id: req.params.id });
   if (!booking) return res.status(404).json({ success: false, message: 'Booking not found.' });
 
-  // Only the vendor this booking belongs to (or an admin) may confirm it —
-  // the customer's own "I paid" claim lands the booking in 'pending_payment'
-  // (see the /quote route) but does not confirm it; confirmation, and the
-  // advance amount that gets recorded, is the vendor's call.
+  // Only the vendor this booking belongs to (or an admin) may accept it.
   if (req.user!.role !== 'admin') {
     try {
       const vendorRes = await fetch(`${MARKETPLACE_SERVICE_URL}/api/v1/vendors/${booking.vendorId}`);
@@ -482,43 +484,16 @@ app.put('/api/v1/bookings/:id/confirm', authMiddleware(), async (req: Request, r
     }
   }
 
-  // Use the specific vendor's own advance requirement (set on their Business
-  // Profile) rather than one platform-wide rate for everyone — this is the
-  // same amount the customer was shown as "Advance Required" on the
-  // vendor's page, so what gets charged now actually matches that. A flat
-  // advanceAmount, when the vendor has set one, overrides the percentage.
-  let advance: number;
-  try {
-    const vendorRes = await fetch(`${MARKETPLACE_SERVICE_URL}/api/v1/vendors/${booking.vendorId}`);
-    const vendorJson = vendorRes.ok ? await vendorRes.json() : null;
-    advance = await computeAdvanceAmount(booking, vendorJson?.data?.vendor?.policies);
-  } catch {
-    advance = await computeAdvanceAmount(booking, null);
+  // Already past acceptance (paid, in progress, completed, cancelled, or
+  // refunded) — nothing left to do here, and definitely nothing to fake-pay.
+  if (booking.status !== 'quote_requested' && booking.status !== 'enquiry' && booking.status !== 'quote_sent' && booking.status !== 'negotiation') {
+    return res.json({ success: true, message: 'This booking has already moved past the acceptance stage.', data: { booking } });
   }
-  booking.status = 'confirmed';
-  // Record the advance in the payment ledger (idempotent — only if not present),
-  // then derive paid/remaining from the ledger.
-  const hasAdvance = (booking.payments || []).some((p: any) => p.type === 'advance');
-  if (!hasAdvance) {
-    booking.payments = [
-      ...(booking.payments || []),
-      { id: `pay-${Date.now()}`, type: 'advance', amount: advance, method: 'upi', status: 'confirmed', claimedAt: new Date().toISOString(), confirmedAt: new Date().toISOString() },
-    ];
-  }
-  recomputePayments(booking);
+
+  booking.status = 'pending_payment';
   await booking.save();
 
-  // Auto-block the event date on the vendor's calendar so the same day can't be
-  // double-booked. Best-effort — confirmation already succeeded.
-  if (booking.vendorId && booking.eventDate) {
-    fetch(`${MARKETPLACE_SERVICE_URL}/api/v1/vendors/${booking.vendorId}/book-slot`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: req.headers.authorization || '' },
-      body: JSON.stringify({ date: booking.eventDate, slot: booking.timeSlot || '' }),
-    }).catch(() => { /* the vendor can still block it manually */ });
-  }
-
-  res.json({ success: true, message: 'Booking quote confirmed and advance deposit processed.', data: { booking } });
+  res.json({ success: true, message: 'Quote accepted — the customer can now pay the advance to confirm the booking.', data: { booking } });
 });
 
 // 4b. Send a counter-quote (negotiation). Vendor or customer proposes a new price;
