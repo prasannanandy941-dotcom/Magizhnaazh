@@ -536,6 +536,20 @@ app.post('/api/v1/auth/login', async (req: Request, res: Response) => {
       return res.status(401).json({ success: false, message: 'Invalid credentials.' });
     }
 
+    // An account created via "Sign in with Google" has no real password — we
+    // store a random, unusable hash for it (see the Google route below) — so
+    // bcrypt.compare against it would always fail. Tell the person to use the
+    // Google button instead of a generic "Invalid credentials", which reads
+    // like a wrong-password error and sends them looking for a password reset
+    // that won't help.
+    if (user.authProvider === 'google') {
+      return res.status(401).json({
+        success: false,
+        message: 'This account signs in with Google — use the "Sign in with Google" button instead.',
+        code: 'GOOGLE_ACCOUNT',
+      });
+    }
+
     const matches = await bcrypt.compare(password, user.passwordHash);
     if (!matches) {
       return res.status(401).json({ success: false, message: 'Invalid credentials.' });
