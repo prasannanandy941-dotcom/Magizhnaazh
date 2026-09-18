@@ -557,22 +557,26 @@ const vendorSchema = new Schema<Vendor>({
   },
   // Razorpay Route linked-account onboarding — lets Razorpay auto-split a
   // customer's payment so this vendor's share lands directly in their bank
-  // account. routeStatus/productStatus mirror Razorpay's own account/product
-  // lifecycle; a booking-payment-service order only attaches a Route transfer
-  // once routeStatus is 'activated' and productStatus is 'active'.
+  // account. routeStatus mirrors the account's own `status` (created/
+  // suspended — the account itself is never "activated", only a product on
+  // it is). productStatus mirrors the route product's `activation_status`
+  // (requested/needs_clarification/under_review/activated/suspended) — a
+  // booking-payment-service order only attaches a Route transfer once
+  // productStatus is 'activated'.
   razorpay: {
     accountId: { type: String, default: '' },
     stakeholderId: { type: String, default: '' },
     routeStatus: {
       type: String,
-      enum: ['not_connected', 'created', 'activated', 'needs_clarification', 'rejected'],
+      enum: ['not_connected', 'created', 'activated', 'needs_clarification', 'rejected', 'suspended'],
       default: 'not_connected',
     },
     productStatus: {
       type: String,
-      enum: ['not_requested', 'requested', 'active', 'rejected'],
+      enum: ['not_requested', 'requested', 'needs_clarification', 'under_review', 'activated', 'suspended', 'active', 'rejected'],
       default: 'not_requested',
     },
+    productId: { type: String, default: '' },
     connectedAt: { type: String, default: '' },
     lastError: { type: String, default: '' },
   },

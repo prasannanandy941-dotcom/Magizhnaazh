@@ -817,7 +817,10 @@ app.post('/api/v1/bookings/:id/payments/razorpay/order', authMiddleware(), async
 
   const amountPaise = Math.round(amount * 100);
   const { commissionRate } = await getSettings();
-  const routeReady = vendor?.razorpay?.routeStatus === 'activated' && vendor?.razorpay?.productStatus === 'active';
+  // The account itself is never "activated" (Razorpay only reports
+  // created/suspended at the account level) — Route-transfer eligibility is
+  // decided entirely by the route PRODUCT's own activation_status.
+  const routeReady = vendor?.razorpay?.productStatus === 'activated';
 
   let transfers;
   if (routeReady && vendor?.razorpay?.accountId) {

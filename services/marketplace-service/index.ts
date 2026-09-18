@@ -19,7 +19,7 @@ import { VendorModel } from './models/Vendor';
 import { CategoryModel } from './models/Category';
 import { CityModel } from './models/City';
 import { BannerModel } from './models/Banner';
-import { onboardVendor, getAccountDetails } from './utils/razorpay';
+import { onboardVendor, getAccountDetails, getProductStatus } from './utils/razorpay';
 
 const app = express();
 const PORT = process.env.PORT || 8002;
@@ -690,6 +690,7 @@ app.post('/api/v1/vendors/:id/razorpay/onboard', authMiddleware(), async (req: R
       stakeholderId: result.stakeholderId || '',
       routeStatus: result.routeStatus,
       productStatus: result.productStatus,
+      productId: result.productId || '',
       connectedAt: (vendor as any).razorpay?.connectedAt || new Date().toISOString(),
       lastError: result.error || '',
     };
@@ -714,7 +715,11 @@ app.post('/api/v1/vendors/:id/razorpay/onboard', authMiddleware(), async (req: R
 
 // Refresh a vendor's Razorpay Route status from Razorpay directly — approval
 // happens asynchronously on Razorpay's side, so a vendor may need to check
-// back after onboarding before routeStatus flips to 'activated'.
+// back after onboarding before productStatus flips to 'activated'. Checks
+// both the account (routeStatus) and, separately, the route product itself
+// (productStatus) — the account fetch alone never reports the product's
+// approval state, which used to leave "PENDING APPROVAL" stuck forever even
+// after Razorpay's own dashboard showed the product as activated.
 app.get('/api/v1/vendors/:id/razorpay/status', authMiddleware(), async (req: Request, res: Response) => {
   const vendor = await VendorModel.findOne({ id: req.params.id });
   if (!vendor) return res.status(404).json({ success: false, message: 'Vendor not found.' });
@@ -723,18 +728,38 @@ app.get('/api/v1/vendors/:id/razorpay/status', authMiddleware(), async (req: Req
   }
 
   const accountId = (vendor as any).razorpay?.accountId;
+  const productId = (vendor as any).razorpay?.productId;
   if (!accountId) {
     return res.json({ success: true, data: { vendor } });
   }
 
   try {
     const info = await getAccountDetails(accountId);
-    (vendor as any).razorpay.routeStatus = info.status === 'activated' ? 'activated' : (info.status || (vendor as any).razorpay.routeStatus);
-    vendor.markModified('razorpay');
-    await vendor.save();
-  } catch (err: any) {
-    // Best-effort — return the last-known status rather than failing the request.
+    (vendor as any).razorpay.routeStatus = info.status || (vendor as any).razorpay.routeStatus;
+  } catch {
+    // Best-effort — keep the last-known routeStatus.
   }
+
+  if (productId) {
+    try {
+      const product = await getProductStatus(accountId, productId);
+      if (product.status) {
+        (vendor as any).razorpay.productStatus = product.status;
+        // A resolved (activated) or still-progressing product means the old
+        // submission error no longer describes reality — clear it so the UI
+        // stops showing a stale rejection reason next to a status that's
+        // since moved on.
+        if (product.status !== 'needs_clarification' && product.status !== 'suspended') {
+          (vendor as any).razorpay.lastError = '';
+        }
+      }
+    } catch {
+      // Best-effort — keep the last-known productStatus.
+    }
+  }
+
+  vendor.markModified('razorpay');
+  await vendor.save();
 
   res.json({ success: true, data: { vendor } });
 });

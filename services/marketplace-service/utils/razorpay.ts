@@ -91,13 +91,16 @@ export async function createStakeholder(accountId: string, input: VendorOnboardi
   return data;
 }
 
+// The product's approval state lives in `activation_status`, NOT `status` —
+// the account itself only ever reports `created`/`suspended` (see
+// getAccountDetails); "activated" is a per-product state.
 export async function requestRouteProduct(accountId: string): Promise<{ id: string; status: string }> {
   const { data } = await axios.post(
     `https://api.razorpay.com/v2/accounts/${accountId}/products`,
     { product_name: 'route' },
     { headers: authHeaders() }
   );
-  return data;
+  return { id: data.id, status: data.activation_status };
 }
 
 export async function updateRouteProductConfig(
@@ -105,7 +108,12 @@ export async function updateRouteProductConfig(
   productId: string,
   bankAccount?: { accountNumber?: string; ifscCode?: string; entityName?: string }
 ): Promise<{ status: string }> {
-  const payload: any = { tnc: { accepted: true } };
+  // Razorpay's actual field is the flat boolean `tnc_accepted` — the nested
+  // `{ tnc: { accepted: true } }` shape this used to send was rejected
+  // outright ("tnc is/are not required and should not be sent"), which left
+  // every vendor stuck at "PENDING APPROVAL" forever regardless of what
+  // Razorpay's own dashboard showed.
+  const payload: any = { tnc_accepted: true };
   if (bankAccount && bankAccount.accountNumber) {
     payload.settlements = {
       account_number: String(bankAccount.accountNumber).trim(),
@@ -118,10 +126,20 @@ export async function updateRouteProductConfig(
     payload,
     { headers: authHeaders() }
   );
-  return data;
+  return { status: data.activation_status };
 }
 
-export async function getAccountDetails(accountId: string): Promise<{ status: string; products?: any[] }> {
+// Fetch just this one product's current activation_status — used to refresh
+// a vendor's Route eligibility without re-submitting anything.
+export async function getProductStatus(accountId: string, productId: string): Promise<{ status: string }> {
+  const { data } = await axios.get(
+    `https://api.razorpay.com/v2/accounts/${accountId}/products/${productId}`,
+    { headers: authHeaders() }
+  );
+  return { status: data.activation_status };
+}
+
+export async function getAccountDetails(accountId: string): Promise<{ status: string }> {
   const { data } = await axios.get(`https://api.razorpay.com/v2/accounts/${accountId}`, { headers: authHeaders() });
   return data;
 }
@@ -171,14 +189,24 @@ export async function onboardVendor(input: VendorOnboardingInput): Promise<Onboa
 
   try {
     const updated = await updateRouteProductConfig(accountId, productId, input.bankAccount);
-    productStatus = updated.status || 'active';
+    productStatus = updated.status || productStatus;
   } catch (err: any) {
     error = err?.response?.data?.error?.description || err?.message || error;
   }
 
+  // Once tnc_accepted + settlements are submitted, Razorpay's approval is
+  // asynchronous — re-check the product itself (not the account) for the
+  // freshest activation_status, in case it resolved synchronously.
+  try {
+    const refreshed = await getProductStatus(accountId, productId);
+    productStatus = refreshed.status || productStatus;
+  } catch {
+    // Best-effort — the status above from the update call still stands.
+  }
+
   try {
     const info = await getAccountDetails(accountId);
-    routeStatus = info.status === 'activated' ? 'activated' : (info.status || routeStatus);
+    routeStatus = info.status || routeStatus;
   } catch {
     // Best-effort refresh only — accountId/stakeholderId/productStatus above still stand.
   }

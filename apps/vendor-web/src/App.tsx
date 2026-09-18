@@ -10462,9 +10462,22 @@ export function App() {
                 <div className="p-4 sm:p-5 rounded-2xl border border-slate-800/90 bg-slate-950/50 space-y-3.5">
                   {(() => {
                     const rz = (myVendor as any)?.razorpay;
-                    const connected = rz?.routeStatus === 'activated' && rz?.productStatus === 'active';
-                    const pending = !connected && !!rz?.accountId;
-                    const badgeText = connected ? 'CONNECTED' : pending ? 'PENDING APPROVAL' : 'NOT CONNECTED';
+                    // Route-transfer eligibility is decided entirely by the
+                    // product's own activation_status — the account itself
+                    // is never "activated" (only created/suspended).
+                    const connected = rz?.productStatus === 'activated';
+                    const needsClarification = rz?.productStatus === 'needs_clarification';
+                    const suspended = rz?.productStatus === 'suspended' || rz?.routeStatus === 'suspended';
+                    const pending = !connected && !needsClarification && !suspended && !!rz?.accountId;
+                    const badgeText = connected
+                      ? 'CONNECTED'
+                      : needsClarification
+                      ? 'NEEDS CLARIFICATION'
+                      : suspended
+                      ? 'SUSPENDED'
+                      : pending
+                      ? 'PENDING APPROVAL'
+                      : 'NOT CONNECTED';
                     const badgeClass = connected
                       ? 'border-emerald-900/60 bg-emerald-950/30 text-emerald-400'
                       : pending
@@ -10502,7 +10515,11 @@ export function App() {
                           <div className="p-3 rounded-xl bg-amber-950/20 border border-amber-900/40 text-amber-300 text-xs font-semibold flex items-center gap-2">
                             <span className="text-amber-400 font-bold">⚠</span>
                             <span>
-                              {pending
+                              {needsClarification
+                                ? 'Razorpay needs more information before it can approve this account.'
+                                : suspended
+                                ? 'Razorpay has suspended this account.'
+                                : pending
                                 ? 'Onboarding submitted — Razorpay is reviewing your account. Check back or refresh status above.'
                                 : 'Complete Razorpay payment onboarding to accept online Razorpay payments.'}
                               {rz?.lastError ? ` (${rz.lastError})` : ''}
