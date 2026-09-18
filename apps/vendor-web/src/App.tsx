@@ -4342,6 +4342,25 @@ export function App() {
   const handleRefundBooking = async (booking: Booking) => {
     if (!token) return;
     const amount = booking.advanceAmountPaid || 0;
+    const paidViaRazorpay = (booking.payments || []).some((p) => p.type === 'advance' && p.razorpayPaymentId);
+
+    if (paidViaRazorpay) {
+      const confirmed = window.confirm(
+        `Refund ₹${amount.toLocaleString('en-IN')} to this customer through Razorpay right now? This sends the money back automatically — it cannot be undone.`
+      );
+      if (!confirmed) return;
+      try {
+        await refundBooking(token, booking.id);
+        await refreshBookings();
+      } catch (err: any) {
+        alert(err?.message || 'Razorpay could not process this refund.');
+      }
+      return;
+    }
+
+    // No Razorpay payment on file for this booking (a manually-claimed UPI
+    // payment) — there's no gateway to push it back through automatically,
+    // so record the UPI reference for the refund you send yourself.
     const confirmed = window.confirm(
       `Refund ₹${amount.toLocaleString('en-IN')} to this customer via UPI, then click OK to record it.`
     );

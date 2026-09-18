@@ -13,7 +13,7 @@ import { serviceUrl } from '../../packages/shared-utils/serviceUrl';
 import { BookingModel } from './models/Booking';
 import { PlatformSettingsModel, getSettings } from './models/PlatformSettings';
 import { CouponModel } from './models/Coupon';
-import { createMarketplaceOrder, verifyPaymentSignature, verifyWebhookSignature } from './utils/razorpay';
+import { createMarketplaceOrder, getRazorpayInstance, verifyPaymentSignature, verifyWebhookSignature } from './utils/razorpay';
 
 const app = express();
 const PORT = process.env.PORT || 8004;
@@ -639,10 +639,14 @@ app.put('/api/v1/bookings/:id/cancel', authMiddleware(), async (req: Request, re
   });
 });
 
-// 4c-3. Vendor records that the customer's advance has been returned. The
-// actual transfer is manual UPI today, so a refund reference is required as
-// an audit trail. This also completes a customer-created refund request that
-// is already in the 'refunded' state.
+// 4c-3. Vendor (or admin) refunds the customer's advance. If the advance was
+// paid through Razorpay checkout, this calls Razorpay's refund API directly
+// (with reverse_all so any Route transfer already sent to the vendor's linked
+// account is pulled back first) — real money moves, not just a recorded
+// claim. Only a payment with no Razorpay trail (a manually-claimed UPI
+// payment from before the gateway existed, or made outside it) falls back to
+// recording a UPI reference number as an audit trail, since there's no API
+// to push that kind of payment back through.
 app.put('/api/v1/bookings/:id/refund', authMiddleware(), async (req: Request, res: Response) => {
   const booking = await BookingModel.findOne({ id: req.params.id });
   if (!booking) return res.status(404).json({ success: false, message: 'Booking not found.' });
@@ -654,6 +658,39 @@ app.put('/api/v1/bookings/:id/refund', authMiddleware(), async (req: Request, re
   }
   if (booking.refundReference) {
     return res.status(409).json({ success: false, message: 'This booking has already been marked as refunded.' });
+  }
+
+  const advancePayment = (booking.payments || []).find((p: any) => p.type === 'advance' && p.razorpayPaymentId);
+
+  if (advancePayment) {
+    let refund;
+    try {
+      const razorpay = getRazorpayInstance();
+      refund = await razorpay.payments.refund(advancePayment.razorpayPaymentId, {
+        amount: Math.round((booking.advanceAmountPaid || 0) * 100),
+        speed: 'normal',
+        reverse_all: 1,
+        notes: { bookingId: booking.id, bookingNumber: booking.bookingNumber },
+      });
+    } catch (err: any) {
+      console.error('Razorpay refund error:', err?.error?.description || err?.message || err);
+      return res.status(502).json({
+        success: false,
+        message: err?.error?.description || 'Razorpay could not process this refund. No money has moved — please try again or contact support.',
+      });
+    }
+
+    booking.status = 'refunded';
+    booking.refundReference = refund.id;
+    booking.refundedAt = new Date().toISOString();
+    booking.refundedBy = req.user!.role === 'admin' ? 'admin' : 'vendor';
+    await booking.save();
+
+    return res.json({
+      success: true,
+      message: 'Refund issued via Razorpay — the customer will receive it back in their original payment method.',
+      data: { booking },
+    });
   }
 
   const reference = String(req.body?.reference || '').trim().slice(0, 200);
