@@ -6,8 +6,11 @@
  * 'verified' via the real admin approval endpoint. This resets those vendors
  * back to unverified so the badge only shows for admin-approved vendors.
  *
- * Demo vendors (userId `usr-vendor-<n>`) are skipped — they're intentionally
- * pre-verified sample data, not affected by the real registration bug.
+ * Seeded demo listings (id `vnd-1`..`vnd-60`, a small sequential number) are
+ * skipped — they're intentionally pre-verified sample data. Everything else
+ * has a timestamp-based id (`vnd-<ms>`) from the real registration endpoint,
+ * regardless of which login account (including a reused demo login) created
+ * it, so this matches on the vendor's own id rather than its userId.
  *
  * Run on the server (uses this service's own .env → production DB):
  *   cd services/marketplace-service && npx tsx scripts/reset-unapproved-verification.ts
@@ -23,7 +26,7 @@ import { VendorModel } from '../models/Vendor';
 const FILTER = {
   isVerified: true,
   'verification.status': { $ne: 'verified' },
-  userId: { $not: { $regex: /^usr-vendor-\d+$/ } },
+  id: { $not: { $regex: /^vnd-\d{1,2}$/ } },
 };
 
 async function run() {
