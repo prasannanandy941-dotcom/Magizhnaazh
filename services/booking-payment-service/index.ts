@@ -808,11 +808,17 @@ app.post('/api/v1/bookings/:id/payments/razorpay/order', authMiddleware(), async
     }
     amount = await computeAdvanceAmount(booking, vendor?.policies);
     if (amount <= 0) {
-      // This vendor's policy genuinely requires no advance (0% rate, or a
-      // price small enough to round down to ₹0) — Razorpay refuses to create
-      // a zero-amount order outright, so there's nothing to check out for.
-      // Confirm the booking directly instead of leaving it stuck forever
-      // with no way to reach 'confirmed'.
+      // No advance required by policy (0% rate, or a price small enough to
+      // round down to ₹0) — but confirmation should never be free. Charge
+      // the full agreed price instead (Razorpay's ₹1 minimum makes this work
+      // even for very cheap test items).
+      amount = booking.agreedPrice;
+    }
+    if (amount <= 0) {
+      // The booking itself has no price at all — genuinely nothing to
+      // charge, and Razorpay refuses to create a zero-amount order outright.
+      // Confirm directly instead of leaving it stuck forever with no way to
+      // reach 'confirmed'.
       if (booking.status !== 'confirmed') {
         booking.status = 'confirmed';
         await booking.save();
