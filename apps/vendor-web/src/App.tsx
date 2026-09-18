@@ -127,10 +127,6 @@ const isVideoUrl = (url: string) => {
   );
 };
 
-// Options that are a simple yes/we-offer-this with no per-item breakdown, so
-// their card hides the "Add items" editor entirely.
-const NO_ITEM_OPTIONS = new Set<string>(['Live Streaming', 'Same-Day Edit', 'Highlight Reel', 'LED Screens']);
-
 // Example item name shown as the placeholder in the per-option item editor,
 // tailored to each vendor category so a caterer sees a dish and a cleaner sees
 // a cleaning service (not "Paneer Butter Masala"). Falls back to a generic
@@ -799,18 +795,6 @@ export function App() {
     }
   };
 
-  // Option-level quality (for NO_ITEM_OPTIONS like Live Streaming).
-  const setOptionQuality = (opt: string, val: string) =>
-    setOfferedOptionQuality((prev) => {
-      if (val === '') {
-        if (!(opt in prev)) return prev;
-        const next = { ...prev };
-        delete next[opt];
-        return next;
-      }
-      return { ...prev, [opt]: val };
-    });
-
   // --- Per-option line-item editing (name + rate + optional note) ---
   const addOptionItem = (opt: string) =>
     setOfferedOptionItems((prev) => ({
@@ -893,41 +877,24 @@ export function App() {
             {CATERING_OPTION_STYLE[opt] && <span className={`w-2 h-2 rounded-full ${CATERING_OPTION_STYLE[opt].dot}`} />}
             {opt}
           </span>
-          {!NO_ITEM_OPTIONS.has(opt) && (
-            <button
-              type="button"
-              onClick={() => setExpandedOption((cur) => (cur === opt ? null : opt))}
-              className="ml-auto flex items-center gap-1 text-[11px] text-white font-bold px-2 py-1 rounded-lg bg-black/20 hover:bg-black/30"
-            >
-              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-              {(() => { const unit = myVendor?.category === 'Security' ? 'person' : 'item'; return items.length > 0 ? `${items.length} ${items.length === 1 ? unit : (unit === 'person' ? 'persons' : 'items')}` : (unit === 'person' ? 'Add persons' : 'Add items'); })()}
-            </button>
-          )}
-          {NO_ITEM_OPTIONS.has(opt) && myVendor?.category === 'Media' && (
-            <div className="ml-auto flex items-center gap-1.5 shrink-0">
-              <span className="text-[11px] text-white/90 font-semibold">Quality:</span>
-              <select
-                value={offeredOptionQuality[opt] ?? ''}
-                onChange={(e) => setOptionQuality(opt, e.target.value)}
-                className="min-w-[155px] px-3 py-1.5 rounded-xl bg-black/40 border border-white/30 text-white text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-amber-400/50 cursor-pointer shadow-sm"
-              >
-                <option value="" className="bg-slate-900 text-white">Quality (optional)</option>
-                {MEDIA_QUALITY_OPTIONS.map((q) => (
-                  <option key={q} value={q} className="bg-slate-900 text-white">{q}</option>
-                ))}
-              </select>
-            </div>
-          )}
+          <button
+            type="button"
+            onClick={() => setExpandedOption((cur) => (cur === opt ? null : opt))}
+            className="ml-auto flex items-center gap-1 text-[11px] text-white font-bold px-2 py-1 rounded-lg bg-black/20 hover:bg-black/30"
+          >
+            <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+            {(() => { const unit = myVendor?.category === 'Security' ? 'person' : 'item'; return items.length > 0 ? `${items.length} ${items.length === 1 ? unit : (unit === 'person' ? 'persons' : 'items')}` : (unit === 'person' ? 'Add persons' : 'Add items'); })()}
+          </button>
           <button
             type="button"
             onClick={() => toggleOffered(opt)}
             aria-label={`Remove ${opt}`}
-            className={`w-5 h-5 rounded-full flex items-center justify-center text-white hover:bg-white/20 shrink-0 ${NO_ITEM_OPTIONS.has(opt) && myVendor?.category !== 'Media' ? 'ml-auto' : ''}`}
+            className="w-5 h-5 rounded-full flex items-center justify-center text-white hover:bg-white/20 shrink-0"
           >
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
-        {isOpen && !NO_ITEM_OPTIONS.has(opt) && (
+        {isOpen && (
           <div className="p-3 space-y-2">
             {nameSuggestions.length > 0 && (
               <datalist id={nameListId}>
