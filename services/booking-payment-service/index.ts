@@ -649,9 +649,6 @@ app.put('/api/v1/bookings/:id/refund', authMiddleware(), async (req: Request, re
   if (!(await callerOwnsVendor(req, booking.vendorId))) {
     return res.status(403).json({ success: false, message: 'This booking does not belong to your vendor listing.' });
   }
-  if (!['confirmed', 'refunded'].includes(booking.status)) {
-    return res.status(400).json({ success: false, message: 'Only a confirmed booking or an existing refund request can be refunded.' });
-  }
   if ((booking.advanceAmountPaid || 0) <= 0 && !(booking.payments || []).some((p: any) => p.type === 'advance' || p.status === 'claimed')) {
     return res.status(400).json({ success: false, message: 'There is no advance payment recorded for this booking.' });
   }

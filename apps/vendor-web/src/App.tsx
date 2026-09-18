@@ -4889,8 +4889,7 @@ export function App() {
                           </button>
                         )}
 
-                        {((b.status === 'confirmed' && (b.advanceAmountPaid ?? 0) > 0) ||
-                          (b.status === 'refunded' && !b.refundReference && (b.advanceAmountPaid ?? 0) > 0)) && (
+                        {(b.advanceAmountPaid ?? 0) > 0 && !b.refundReference && (
                           <button
                             onClick={() => handleRefundBooking(b)}
                             className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/15 border border-rose-500/40 text-rose-300 hover:bg-rose-500/25 text-[11px] font-bold"
