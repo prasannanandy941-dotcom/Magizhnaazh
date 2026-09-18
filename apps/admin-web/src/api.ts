@@ -135,10 +135,7 @@ export async function googleLogin(credential: string): Promise<AuthResponse> {
 // --- Dashboard ---
 
 export async function fetchVendors(): Promise<{ success: boolean; data?: { vendors: Vendor[] } }> {
-  // Send the admin token so the backend also includes vendors pending
-  // verification (the public marketplace only returns verified vendors).
-  const token = localStorage.getItem('magizhnaazh_admin_token');
-  const { json } = await fetchJson('/api/v1/vendors', token ? { headers: { Authorization: `Bearer ${token}` } } : {});
+  const { json } = await fetchJson('/api/v1/vendors');
   return json;
 }
 

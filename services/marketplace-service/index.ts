@@ -339,7 +339,7 @@ async function seedCategoriesAndCities() {
 }
 
 // 1. Search / discover vendors
-app.get('/api/v1/vendors', authMiddleware(false), async (req: Request, res: Response) => {
+app.get('/api/v1/vendors', async (req: Request, res: Response) => {
   // Vendor listings can change while a customer keeps the marketplace open.
   // Prevent browser/proxy caches from serving an older listing snapshot.
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -348,11 +348,10 @@ app.get('/api/v1/vendors', authMiddleware(false), async (req: Request, res: Resp
   const { category, city, search, lat, lng, radiusKm } = req.query;
   const filter: Record<string, unknown> = {};
 
-  // Only an admin request (for the approval queue) sees unapproved vendors —
-  // the public marketplace only ever shows vendors an admin has verified.
-  if (req.user?.role !== 'admin') {
-    filter.isVerified = true;
-  }
+  // A vendor's listing goes live on the marketplace the moment they submit
+  // it — isVerified only gates the "Verified" badge shown on the card (see
+  // isVerified/verification on the Vendor model), not whether it's visible
+  // here. An admin explicitly un-listing a bad vendor uses isSuspended.
 
   if (category && category !== 'All') {
     filter.category = new RegExp(`^${String(category)}$`, 'i');
