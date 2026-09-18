@@ -37,6 +37,7 @@ interface VendorMarketplaceProps {
   toggleCompare: (vendorId: string) => void;
   openCompareModal: () => void;
   selectedCity: string;
+  maxBudget: number | null;
   onCityChange: (city: string) => void;
   // Ordered [state, cities][] for the city filter — sourced from the backend's
   // serviceable cities (falls back to the full India catalogue).
@@ -82,6 +83,7 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
   toggleCompare,
   openCompareModal,
   selectedCity,
+  maxBudget,
   onCityChange,
   cityGroups,
 }) => {
@@ -155,6 +157,7 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
         v.businessName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         v.description.toLowerCase().includes(searchQuery.toLowerCase());
       const matchCity = selectedCity === 'All' || v.location.city.toLowerCase() === selectedCity.toLowerCase();
+      const matchBudget = maxBudget === null || v.startingPrice <= maxBudget;
       // Sub-category option filter: keep only vendors that offer every selected
       // option. offeredOptions holds the labels the vendor ticked (Veg, Non-Veg,
       // theme names, etc.), matching the chip labels shown for the category.
@@ -191,7 +194,7 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
       const matchOptions =
         activeOptions.length === 0 ||
         activeOptions.every((opt) => optionPool.some((o) => chipMatches(opt, o)));
-      return matchCat && matchSearch && matchCity && matchOptions;
+      return matchCat && matchSearch && matchCity && matchBudget && matchOptions;
     }),
     activeFacilities
   ).sort((a, b) => {

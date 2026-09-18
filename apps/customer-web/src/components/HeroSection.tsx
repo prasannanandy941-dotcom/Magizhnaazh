@@ -17,6 +17,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onSearch, openEventWiz
   const [cityAutoDetected, setCityAutoDetected] = useState(false);
   const [guests, setGuests] = useState(500);
   const [budget, setBudget] = useState(800000);
+  const [budgetInput, setBudgetInput] = useState('8');
 
   // Auto-detect the visitor's city from their browser location so vendors near
   // them surface first. Silently keeps the default if permission is denied or
@@ -132,13 +133,17 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onSearch, openEventWiz
               <span className="text-[#fdf1f5] font-bold text-sm">₹</span>
               <input
                 type="number"
-                value={budget === 0 ? '' : Math.round(budget / 100000)}
+                value={budgetInput}
                 onChange={(e) => {
                   const raw = e.target.value.replace(/^0+(?=\d)/, '');
-                  const lakhs = raw === '' ? 0 : Number(raw);
-                  setBudget(lakhs * 100000);
+                  setBudgetInput(raw);
+                  const amount = raw === '' ? 0 : Number(raw);
+                  // Keep the lakh-based UI, while allowing automation and users
+                  // to enter a direct INR amount such as 50000.
+                  setBudget(amount >= 1000 ? amount : amount * 100000);
                 }}
                 placeholder="e.g. 8"
+                aria-label="Total budget in lakhs or rupees"
                 step={1}
                 min={1}
                 className="w-14 bg-transparent text-[#fdf1f5] font-bold text-sm focus:outline-none"
