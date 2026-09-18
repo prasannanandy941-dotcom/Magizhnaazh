@@ -66,9 +66,6 @@ jobs:
             done
             pm2 save
 
-            echo "==> ONE-TIME: resetting vendors auto-verified by the pre-fix signup bug"
-            (cd services/marketplace-service && npx tsx scripts/reset-unapproved-verification.ts) || echo "  (one-time data fix failed — continuing deploy)"
-
             echo "==> Reloading nginx"
             nginx -s reload || sudo nginx -s reload || echo "  (skip: nginx reload)"
 
@@ -104,9 +101,6 @@ jobs:
               pm2 restart "$a" --update-env || echo "  (skip: $a not found)"
             done
             pm2 save
-
-            echo "==> ONE-TIME: resetting vendors auto-verified by the pre-fix signup bug"
-            (cd services/marketplace-service && npx tsx scripts/reset-unapproved-verification.ts) || echo "  (one-time data fix failed — continuing deploy)"
 
             echo "==> Reloading nginx"
             nginx -s reload || sudo nginx -s reload || echo "  (skip: nginx reload)"
