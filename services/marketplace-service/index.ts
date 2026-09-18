@@ -441,17 +441,14 @@ app.post('/api/v1/vendors', authMiddleware(), requireRole('vendor', 'admin'), as
     yearsOfExperience: 0,
     ratingAverage: 0,
     reviewCount: 0,
-    // Auto-approve new vendors so every vendor that signs up is live on the
-    // marketplace immediately (no manual admin gate). An admin can still
-    // suspend a bad listing via isSuspended.
-    isVerified: true,
+    isVerified: false,
     galleryImages: [getDefaultImageForCategory(category || 'Venue')],
     packages: [],
     contactEmail: contactEmail || req.user!.email,
     contactPhone: contactPhone || '+91 9000000000',
   });
 
-  res.status(201).json({ success: true, message: 'Vendor profile created and live on the marketplace.', data: { vendor } });
+  res.status(201).json({ success: true, message: 'Vendor profile created. It is live on the marketplace and will show a Verified badge once an admin approves it.', data: { vendor } });
 });
 
 // 5. Update own vendor profile (business info, packages, pricing).
