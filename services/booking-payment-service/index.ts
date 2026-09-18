@@ -807,6 +807,25 @@ app.post('/api/v1/bookings/:id/payments/razorpay/order', authMiddleware(), async
       return res.status(409).json({ success: false, message: 'The advance for this booking has already been paid.' });
     }
     amount = await computeAdvanceAmount(booking, vendor?.policies);
+    if (amount <= 0) {
+      // This vendor's policy genuinely requires no advance (0% rate, or a
+      // price small enough to round down to ₹0) — Razorpay refuses to create
+      // a zero-amount order outright, so there's nothing to check out for.
+      // Confirm the booking directly instead of leaving it stuck forever
+      // with no way to reach 'confirmed'.
+      if (booking.status !== 'confirmed') {
+        booking.status = 'confirmed';
+        await booking.save();
+        if (booking.vendorId && booking.eventDate) {
+          fetch(`${MARKETPLACE_SERVICE_URL}/api/v1/vendors/${booking.vendorId}/book-slot`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: req.headers.authorization || '' },
+            body: JSON.stringify({ date: booking.eventDate, slot: booking.timeSlot || '' }),
+          }).catch(() => { /* vendor availability will still show the slot until they refresh — not fatal */ });
+        }
+      }
+      return res.json({ success: true, data: { noPaymentNeeded: true, booking } });
+    }
   } else {
     recomputePayments(booking);
     amount = booking.remainingAmount;

@@ -445,10 +445,15 @@ export interface RazorpayOrderResponse {
   success: boolean;
   message?: string;
   data?: {
-    orderId: string;
-    amount: number; // paise
-    currency: string;
-    keyId: string;
+    // Set instead of the order fields below when the vendor's policy
+    // requires no advance/balance — the booking is confirmed directly
+    // server-side with nothing to check out for.
+    noPaymentNeeded?: boolean;
+    booking?: any;
+    orderId?: string;
+    amount?: number; // paise
+    currency?: string;
+    keyId?: string;
     name?: string;
     description?: string;
     prefill?: { name?: string; email?: string };

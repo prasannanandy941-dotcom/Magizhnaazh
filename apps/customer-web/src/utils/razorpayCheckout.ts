@@ -22,6 +22,13 @@ export async function payBookingWithRazorpay(
       return;
     }
 
+    // The vendor's policy requires no advance/balance — the server already
+    // confirmed the booking directly, so there's nothing to check out for.
+    if (orderRes.data.noPaymentNeeded) {
+      opts.onSuccess(orderRes.data.booking);
+      return;
+    }
+
     const scriptLoaded = await loadRazorpayCheckout();
     if (!scriptLoaded || !window.Razorpay) {
       opts.onError?.('Could not load the payment window. Check your connection and try again.');
