@@ -191,6 +191,50 @@ export function refreshRazorpayStatus(token: string, vendorId: string): Promise<
   return authedFetch(`/api/v1/vendors/${vendorId}/razorpay/status`, token, { method: 'GET' });
 }
 
+export interface PanVerifyApiResult {
+  success: boolean;
+  message: string;
+  data?: { verified: boolean; valid: boolean; registeredName: string; nameMatchResult: string };
+}
+
+// Checks the PAN against real Income Tax Department records via Cashfree —
+// not a format check.
+export function verifyPanKyc(token: string, vendorId: string, pan: string, name: string): Promise<PanVerifyApiResult> {
+  return authedFetch(`/api/v1/vendors/${vendorId}/kyc/pan`, token, {
+    method: 'POST',
+    body: JSON.stringify({ pan, name }),
+  });
+}
+
+export interface AadhaarStartApiResult {
+  success: boolean;
+  message?: string;
+  data?: { verificationId: string; referenceId: number; url: string };
+}
+
+// Starts the DigiLocker consent flow — the returned url is where the vendor
+// logs in with their Aadhaar-linked mobile + OTP on DigiLocker's own site.
+export function startAadhaarKyc(token: string, vendorId: string, redirectUrl: string): Promise<AadhaarStartApiResult> {
+  return authedFetch(`/api/v1/vendors/${vendorId}/kyc/aadhaar/start`, token, {
+    method: 'POST',
+    body: JSON.stringify({ redirectUrl }),
+  });
+}
+
+export interface AadhaarStatusApiResult {
+  success: boolean;
+  message?: string;
+  data?: { status: 'PENDING' | 'AUTHENTICATED' | 'EXPIRED' | 'CONSENT_DENIED'; verified: boolean; name?: string; maskedUid?: string };
+}
+
+// Poll after the vendor returns from DigiLocker to see whether they
+// completed login + consent, and (once AUTHENTICATED) get the verified name.
+export function getAadhaarKycStatus(token: string, vendorId: string, verificationId: string): Promise<AadhaarStatusApiResult> {
+  return authedFetch(`/api/v1/vendors/${vendorId}/kyc/aadhaar/status?verification_id=${encodeURIComponent(verificationId)}`, token, {
+    method: 'GET',
+  });
+}
+
 export interface BookingsResponse {
   success: boolean;
   count?: number;

@@ -20,6 +20,7 @@ import { CategoryModel } from './models/Category';
 import { CityModel } from './models/City';
 import { BannerModel } from './models/Banner';
 import { onboardVendor, getAccountDetails, getProductStatus } from './utils/razorpay';
+import { verifyPan, createDigilockerUrl, getDigilockerStatus, getAadhaarDocument } from './utils/cashfreeVerification';
 
 const app = express();
 const PORT = process.env.PORT || 8002;
@@ -903,7 +904,10 @@ app.post('/api/v1/vendors/:id/verification', authMiddleware(), requireRole('vend
     return res.status(409).json({ success: false, message: 'This listing is already verified.' });
   }
 
-  const { legalName, registrationNumber, gstNumber, panName, panNumber, aadhaarName, aadhaarNumber, fssaiNumber, hasGstin, gstinVerified, panVerified, aadhaarVerified, contactPerson, documents } = req.body;
+  const { legalName, registrationNumber, gstNumber, panName, panNumber, aadhaarName, aadhaarNumber, fssaiNumber, hasGstin, gstinVerified, contactPerson, documents } = req.body;
+  const prevVerification = vendor.verification;
+  const cleanPan = (panNumber || '').trim().toUpperCase();
+  const cleanAadhaar = (aadhaarNumber || '').trim();
   vendor.verification = {
     status: 'pending',
     hasGstin: hasGstin !== undefined ? Boolean(hasGstin) : true,
@@ -911,14 +915,19 @@ app.post('/api/v1/vendors/:id/verification', authMiddleware(), requireRole('vend
     registrationNumber: (registrationNumber || '').trim(),
     gstNumber: (gstNumber || '').trim(),
     panName: (panName || '').trim(),
-    panNumber: (panNumber || '').trim(),
+    panNumber: cleanPan,
     aadhaarName: (aadhaarName || '').trim(),
-    aadhaarNumber: (aadhaarNumber || '').trim(),
+    aadhaarNumber: cleanAadhaar,
     fssaiNumber: (fssaiNumber || '').trim(),
     contactPerson: (contactPerson || '').trim(),
     gstinVerified: Boolean(gstinVerified),
-    panVerified: Boolean(panVerified),
-    aadhaarVerified: Boolean(aadhaarVerified),
+    // panVerified/aadhaarVerified are never trusted from the client — only
+    // the dedicated /kyc/pan and /kyc/aadhaar/status endpoints below (which
+    // check real Income Tax / DigiLocker records) set these to true. Carried
+    // forward only if the number submitted here still matches what was
+    // actually verified.
+    panVerified: Boolean(prevVerification?.panVerified) && prevVerification?.panNumber === cleanPan,
+    aadhaarVerified: Boolean(prevVerification?.aadhaarVerified) && prevVerification?.aadhaarNumber === cleanAadhaar,
     documents: Array.isArray(documents) ? documents.filter((d: any) => typeof d === 'string') : [],
     submittedAt: new Date().toISOString(),
     reviewedAt: '',
@@ -926,6 +935,106 @@ app.post('/api/v1/vendors/:id/verification', authMiddleware(), requireRole('vend
   };
   await vendor.save();
   res.json({ success: true, message: 'Verification request submitted for review.', data: { vendor } });
+});
+
+// 6c. Real PAN verification via Cashfree Secure ID — checks Income Tax
+// Department records instead of trusting a client-asserted boolean.
+app.post('/api/v1/vendors/:id/kyc/pan', authMiddleware(), requireRole('vendor', 'admin'), async (req: Request, res: Response) => {
+  const vendor = await VendorModel.findOne({ id: req.params.id });
+  if (!vendor) return res.status(404).json({ success: false, message: 'Vendor not found.' });
+  if (vendor.userId !== req.user!.sub && req.user!.role !== 'admin') {
+    return res.status(403).json({ success: false, message: 'You can only verify PAN for your own listing.' });
+  }
+
+  const pan = String(req.body?.pan || '').trim().toUpperCase();
+  const name = String(req.body?.name || '').trim();
+  if (!/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan)) {
+    return res.status(400).json({ success: false, message: 'Enter a valid 10-character PAN (e.g. ABCDE1234F).' });
+  }
+  if (!name) {
+    return res.status(400).json({ success: false, message: 'Enter the name exactly as on the PAN card.' });
+  }
+
+  try {
+    const result = await verifyPan(pan, name);
+    const goodMatch = result.nameMatchResult === 'DIRECT_MATCH' || result.nameMatchResult === 'GOOD_PARTIAL_MATCH';
+    const verified = result.valid && goodMatch;
+    (vendor as any).verification.panNumber = pan;
+    (vendor as any).verification.panName = name;
+    (vendor as any).verification.panVerified = verified;
+    vendor.markModified('verification');
+    await vendor.save();
+    res.json({
+      success: true,
+      data: { verified, valid: result.valid, registeredName: result.registeredName, nameMatchResult: result.nameMatchResult },
+      message: verified
+        ? 'PAN verified with Income Tax Department records.'
+        : !result.valid
+        ? 'This PAN does not exist in Income Tax Department records.'
+        : `PAN exists but the name doesn't match closely enough (registered name on file: ${result.registeredName}).`,
+    });
+  } catch (err: any) {
+    const message = err?.response?.data?.message || err?.message || 'PAN verification failed.';
+    res.status(502).json({ success: false, message });
+  }
+});
+
+// 6d. Aadhaar verification via Cashfree's DigiLocker consent flow. The
+// vendor logs in and grants consent on DigiLocker's own site — their Aadhaar
+// number and OTP never pass through our servers — and Cashfree redirects
+// them back to `redirectUrl` with a verification_id we then poll here.
+app.post('/api/v1/vendors/:id/kyc/aadhaar/start', authMiddleware(), requireRole('vendor', 'admin'), async (req: Request, res: Response) => {
+  const vendor = await VendorModel.findOne({ id: req.params.id });
+  if (!vendor) return res.status(404).json({ success: false, message: 'Vendor not found.' });
+  if (vendor.userId !== req.user!.sub && req.user!.role !== 'admin') {
+    return res.status(403).json({ success: false, message: 'You can only verify Aadhaar for your own listing.' });
+  }
+
+  const redirectUrl = String(req.body?.redirectUrl || '').trim();
+  if (!/^https?:\/\//.test(redirectUrl)) {
+    return res.status(400).json({ success: false, message: 'A valid redirectUrl is required.' });
+  }
+
+  try {
+    const verificationId = `aadhaar-${vendor.id}-${Date.now()}`.slice(0, 50);
+    const result = await createDigilockerUrl({ verificationId, redirectUrl, userFlow: 'signin' });
+    res.json({ success: true, data: result });
+  } catch (err: any) {
+    const message = err?.response?.data?.message || err?.message || 'Could not start Aadhaar verification.';
+    res.status(502).json({ success: false, message });
+  }
+});
+
+// Poll after the vendor returns from DigiLocker. Only once Cashfree reports
+// AUTHENTICATED do we fetch the actual document — its uid is already masked
+// to the last 4 digits, which is the only form of it we ever store.
+app.get('/api/v1/vendors/:id/kyc/aadhaar/status', authMiddleware(), requireRole('vendor', 'admin'), async (req: Request, res: Response) => {
+  const vendor = await VendorModel.findOne({ id: req.params.id });
+  if (!vendor) return res.status(404).json({ success: false, message: 'Vendor not found.' });
+  if (vendor.userId !== req.user!.sub && req.user!.role !== 'admin') {
+    return res.status(403).json({ success: false, message: 'You can only verify Aadhaar for your own listing.' });
+  }
+
+  const verificationId = String(req.query.verification_id || '').trim();
+  if (!verificationId) return res.status(400).json({ success: false, message: 'verification_id is required.' });
+
+  try {
+    const statusResult = await getDigilockerStatus(verificationId);
+    if (statusResult.status !== 'AUTHENTICATED') {
+      return res.json({ success: true, data: { status: statusResult.status, verified: false } });
+    }
+    const doc = await getAadhaarDocument(verificationId);
+    const verified = doc.status === 'SUCCESS';
+    (vendor as any).verification.aadhaarNumber = doc.maskedUid;
+    (vendor as any).verification.aadhaarName = doc.name;
+    (vendor as any).verification.aadhaarVerified = verified;
+    vendor.markModified('verification');
+    await vendor.save();
+    res.json({ success: true, data: { status: statusResult.status, verified, name: doc.name, maskedUid: doc.maskedUid } });
+  } catch (err: any) {
+    const message = err?.response?.data?.message || err?.message || 'Could not check Aadhaar verification status.';
+    res.status(502).json({ success: false, message });
+  }
 });
 
 // 7. Admin verification decision. With a body of { decision: 'approve' | 'reject',

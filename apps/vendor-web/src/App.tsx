@@ -4,7 +4,7 @@ import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, VendorD
 import { STATIC_CITY_GROUPS } from '../../../packages/shared-utils';
 import { AuthGate } from './components/AuthGate';
 import { FloralGoldBackground } from './components/FloralGoldBackground';
-import { fetchMyVendor, createVendor, updateVendor, fetchVendorBookings, fetchVendorBookingsSilent, confirmBooking, sendCounterQuote, updateBookingStatus, updateSpendBreakdown, refundBooking, fetchVendorReviews, replyToReview, submitVerification, confirmBookingPayment, fetchBookingInvoice, fetchCalendarToken, onboardRazorpayRoute, refreshRazorpayStatus, GATEWAY_URL } from './api';
+import { fetchMyVendor, createVendor, updateVendor, fetchVendorBookings, fetchVendorBookingsSilent, confirmBooking, sendCounterQuote, updateBookingStatus, updateSpendBreakdown, refundBooking, fetchVendorReviews, replyToReview, submitVerification, confirmBookingPayment, fetchBookingInvoice, fetchCalendarToken, onboardRazorpayRoute, refreshRazorpayStatus, verifyPanKyc, startAadhaarKyc, getAadhaarKycStatus, GATEWAY_URL } from './api';
 import { openInvoicePrintWindow } from './invoice';
 import { playNotificationSound } from './notificationSound';
 import { getItemSuggestions, getAmenitySuggestions, suggestionListId } from './itemSuggestions';
@@ -573,11 +573,13 @@ export function App() {
     }
   };
 
-  const handleVerifyField = async (field: 'gstin' | 'pan' | 'aadhaar') => {
+  // GSTIN verification remains a format check only — no real-time GST portal
+  // lookup wired up yet.
+  const handleVerifyField = async (field: 'gstin' | 'pan') => {
     setVerifyChecking(field);
     setVerifyNotice('');
-    await new Promise((r) => setTimeout(r, 650)); // simulated real-time check against government/Cashfree SecureID
     if (field === 'gstin') {
+      await new Promise((r) => setTimeout(r, 650));
       const clean = verifyForm.gstNumber.trim().toUpperCase();
       if (!clean || clean.length < 15) {
         setVerifyNotice('Please enter a valid 15-character GSTIN number (e.g. 22AAAAA0000A1Z5).');
@@ -585,29 +587,100 @@ export function App() {
         return;
       }
       setVerifyForm((prev) => ({ ...prev, gstNumber: clean, gstinVerified: true }));
-      setVerifyNotice('GSTIN verified in real-time with GST portal.');
-    } else if (field === 'pan') {
-      const clean = verifyForm.panNumber.trim().toUpperCase();
-      if (!clean || clean.length < 10) {
-        setVerifyNotice('Please enter a valid 10-character PAN number (e.g. ABCDE1234F).');
-        setVerifyChecking(null);
-        return;
-      }
-      setVerifyForm((prev) => ({ ...prev, panNumber: clean, panVerified: true }));
-      setVerifyNotice('PAN verified in real-time with Income Tax records.');
-    } else if (field === 'aadhaar') {
-      const clean = verifyForm.aadhaarNumber.trim().replace(/\D/g, '');
-      if (!clean || clean.length < 12) {
-        setVerifyNotice('Please enter a valid 12-digit Aadhaar number.');
-        setVerifyChecking(null);
-        return;
-      }
-      setVerifyForm((prev) => ({ ...prev, aadhaarNumber: clean, aadhaarVerified: true }));
-      setVerifyNotice('Aadhaar verified with UIDAI Paperless e-KYC.');
+      setVerifyNotice('GSTIN format looks valid.');
+      setVerifyChecking(null);
+      setTimeout(() => setVerifyNotice(''), 4000);
+      return;
+    }
+
+    // PAN — a real lookup against Income Tax Department records via Cashfree.
+    if (!token || !myVendor) {
+      setVerifyChecking(null);
+      return;
+    }
+    const pan = verifyForm.panNumber.trim().toUpperCase();
+    const name = verifyForm.panName.trim();
+    if (!/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan)) {
+      setVerifyNotice('Enter a valid 10-character PAN (e.g. ABCDE1234F).');
+      setVerifyChecking(null);
+      return;
+    }
+    if (!name) {
+      setVerifyNotice('Enter the name exactly as on the PAN card first.');
+      setVerifyChecking(null);
+      return;
+    }
+    try {
+      const res = await verifyPanKyc(token, myVendor.id, pan, name);
+      setVerifyForm((prev) => ({ ...prev, panNumber: pan, panVerified: Boolean(res.data?.verified) }));
+      setVerifyNotice(res.message || (res.data?.verified ? 'PAN verified.' : 'PAN verification failed.'));
+    } catch (err: any) {
+      setVerifyForm((prev) => ({ ...prev, panVerified: false }));
+      setVerifyNotice(err?.message || 'PAN verification failed.');
     }
     setVerifyChecking(null);
-    setTimeout(() => setVerifyNotice(''), 4000);
+    setTimeout(() => setVerifyNotice(''), 6000);
   };
+
+  // Aadhaar — real verification via Cashfree's DigiLocker consent flow.
+  // Redirects the vendor, in this same tab, to DigiLocker to log in with
+  // their Aadhaar-linked mobile + OTP and grant consent; DigiLocker then
+  // redirects back here with a verification_id the effect below picks up.
+  const handleStartAadhaarDigilocker = async () => {
+    if (!token || !myVendor) return;
+    setVerifyChecking('aadhaar');
+    setVerifyNotice('');
+    try {
+      const redirectUrl = window.location.origin + window.location.pathname;
+      const res = await startAadhaarKyc(token, myVendor.id, redirectUrl);
+      if (res.data?.url) {
+        window.location.href = res.data.url;
+        return; // navigating away
+      }
+      setVerifyNotice(res.message || 'Could not start Aadhaar verification.');
+      setVerifyChecking(null);
+    } catch (err: any) {
+      setVerifyNotice(err?.message || 'Could not start Aadhaar verification.');
+      setVerifyChecking(null);
+    }
+  };
+
+  // Resume the Aadhaar DigiLocker flow after being redirected back — Cashfree
+  // appends verification_id to the redirectUrl we gave it on completion.
+  useEffect(() => {
+    if (!token || !myVendor?.id) return;
+    const params = new URLSearchParams(window.location.search);
+    const verificationId = params.get('verification_id');
+    if (!verificationId) return;
+    // Clean the URL immediately so a refresh doesn't re-trigger this.
+    window.history.replaceState({}, '', window.location.pathname);
+    setVerifyChecking('aadhaar');
+    getAadhaarKycStatus(token, myVendor.id, verificationId)
+      .then((res) => {
+        const status = res.data?.status;
+        if (status === 'AUTHENTICATED' && res.data?.verified) {
+          setVerifyForm((prev) => ({
+            ...prev,
+            aadhaarName: res.data!.name || prev.aadhaarName,
+            aadhaarNumber: res.data!.maskedUid || prev.aadhaarNumber,
+            aadhaarVerified: true,
+          }));
+          setVerifyNotice('Aadhaar verified via DigiLocker.');
+        } else if (status === 'CONSENT_DENIED') {
+          setVerifyNotice('Aadhaar verification was cancelled — consent was not given on DigiLocker.');
+        } else if (status === 'EXPIRED') {
+          setVerifyNotice('The DigiLocker link expired before verification completed. Please try again.');
+        } else {
+          setVerifyNotice('Could not confirm Aadhaar verification. Please try again.');
+        }
+      })
+      .catch((err) => setVerifyNotice(err?.message || 'Could not check Aadhaar verification status.'))
+      .finally(() => {
+        setVerifyChecking(null);
+        setTimeout(() => setVerifyNotice(''), 6000);
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, myVendor?.id]);
 
   const handleSubmitVerification = async () => {
     if (!token || !myVendor) return;
@@ -10805,29 +10878,28 @@ export function App() {
                     <input
                       type="text"
                       value={verifyForm.aadhaarName}
-                      onChange={(e) => setVerifyForm((f) => ({ ...f, aadhaarName: e.target.value.toUpperCase() }))}
-                      placeholder="E.G. JOHN DOE"
-                      className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm font-semibold uppercase placeholder:text-slate-600 focus:outline-none focus:border-teal-500"
+                      readOnly
+                      placeholder="Filled in automatically after DigiLocker verification"
+                      className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm font-semibold uppercase placeholder:text-slate-600 placeholder:normal-case focus:outline-none focus:border-teal-500"
                     />
                   </div>
 
                   <div>
                     <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">
-                      AADHAAR NUMBER
+                      AADHAAR NUMBER (MASKED)
                     </label>
                     <div className="flex items-center gap-2">
                       <input
                         type="text"
                         value={verifyForm.aadhaarNumber}
-                        onChange={(e) => setVerifyForm((f) => ({ ...f, aadhaarNumber: e.target.value, aadhaarVerified: false }))}
-                        placeholder="e.g. 123456789012 (12 digits)"
-                        maxLength={14}
+                        readOnly
+                        placeholder="Verify via DigiLocker to fill this in"
                         className="flex-1 p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm font-semibold placeholder:text-slate-600 focus:outline-none focus:border-teal-500"
                       />
                       <button
                         type="button"
-                        onClick={() => handleVerifyField('aadhaar')}
-                        disabled={verifyChecking === 'aadhaar' || !verifyForm.aadhaarNumber}
+                        onClick={handleStartAadhaarDigilocker}
+                        disabled={verifyChecking === 'aadhaar' || verifyForm.aadhaarVerified}
                         className={`px-4 py-3 rounded-xl font-bold text-xs shrink-0 flex items-center gap-1.5 transition-all ${
                           verifyForm.aadhaarVerified
                             ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
@@ -10839,13 +10911,15 @@ export function App() {
                         ) : verifyForm.aadhaarVerified ? (
                           <Check className="w-3.5 h-3.5" />
                         ) : null}
-                        {verifyForm.aadhaarVerified ? 'Verified ✓' : 'Verify Aadhaar'}
+                        {verifyForm.aadhaarVerified ? 'Verified ✓' : 'Verify via DigiLocker'}
                       </button>
                     </div>
                   </div>
 
                   <p className="text-[11px] text-slate-500 leading-relaxed">
-                    Your 12-digit Unique Identification Authority of India (UIDAI) citizen number.
+                    You'll be taken to DigiLocker (the Government of India's own document locker) to log in with your
+                    Aadhaar-linked mobile number and OTP, and grant consent to share your Aadhaar. Your Aadhaar number
+                    and OTP are entered there, never on this site.
                   </p>
                 </div>
 
