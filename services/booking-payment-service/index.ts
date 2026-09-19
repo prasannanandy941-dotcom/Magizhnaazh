@@ -813,15 +813,6 @@ app.post('/api/v1/bookings/:id/payments/razorpay/order', authMiddleware(), async
       // the full agreed price instead.
       amount = booking.agreedPrice;
     }
-    // Razorpay's Orders API accepts amounts as low as ₹1, but its checkout
-    // widget behaves unreliably in practice for very small amounts (a
-    // vendor's flat advance typo'd as ₹2, or a cheap test item, produced a
-    // charge Razorpay's own checkout failed to render at all). Enforce a
-    // sane floor so this can't happen — never above the agreed price itself.
-    const MIN_RAZORPAY_CHARGE = 10;
-    if (amount > 0 && amount < MIN_RAZORPAY_CHARGE) {
-      amount = Math.min(MIN_RAZORPAY_CHARGE, booking.agreedPrice);
-    }
     if (amount <= 0) {
       // The booking itself has no price at all — genuinely nothing to
       // charge, and Razorpay refuses to create a zero-amount order outright.
