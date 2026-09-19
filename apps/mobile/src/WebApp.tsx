@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet, BackHandler } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet, BackHandler, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import { colors } from './theme';
@@ -39,6 +39,23 @@ export function WebApp({ token, user }: { token?: string | null; user?: unknown 
     return () => sub.remove();
   }, []);
 
+  // A WebView can only ever navigate to real web pages (http/https, plus a
+  // couple of internal schemes) — it has no idea what to do with a UPI app
+  // deep link like upi://pay?..., phonepe://..., tez://..., paytmmp://..., or
+  // an Android intent:// URL, and blows up with net::ERR_UNKNOWN_URL_SCHEME
+  // if asked to load one directly. Those need to be handed off to the OS
+  // (which either opens the matching app or shows its own "no app found"),
+  // never loaded as a page inside this WebView.
+  const isWebLoadableUrl = (url: string) =>
+    /^(https?:|about:|data:|blob:)/i.test(url);
+
+  const openExternally = (url: string) => {
+    Linking.openURL(url).catch(() => {
+      // No app installed to handle this scheme, or the OS declined — nothing
+      // more we can do; the WebView itself is left untouched either way.
+    });
+  };
+
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <WebView
@@ -61,13 +78,27 @@ export function WebApp({ token, user }: { token?: string | null; user?: unknown 
         mediaCapturePermissionGrantType="grant"
         // Razorpay Checkout's standard card/UPI modal is an in-page iframe and
         // unaffected either way, but some sub-flows (UPI intent / bank
-        // redirect) can call window.open(). Allow it, and redirect the popup
-        // into this same WebView instead of trying to open a real second
-        // window (which this screen has no UI for).
+        // redirect) can call window.open(). Allow it: a real web URL loads
+        // into this same WebView (which has no UI for a real second window
+        // anyway); a UPI app deep link goes to the OS instead.
         setSupportMultipleWindows
         onOpenWindow={(event: { nativeEvent: { targetUrl?: string } }) => {
           const targetUrl = event.nativeEvent.targetUrl;
-          if (targetUrl) ref.current?.injectJavaScript(`window.location.href = ${JSON.stringify(targetUrl)}; true;`);
+          if (!targetUrl) return;
+          if (isWebLoadableUrl(targetUrl)) {
+            ref.current?.injectJavaScript(`window.location.href = ${JSON.stringify(targetUrl)}; true;`);
+          } else {
+            openExternally(targetUrl);
+          }
+        }}
+        // Covers the more common case for UPI intent apps (PhonePe, Google
+        // Pay, Paytm, etc.): checkout navigating straight to the deep link
+        // (window.location.href = 'phonepe://...') rather than via
+        // window.open(). Intercept before the WebView attempts to load it.
+        onShouldStartLoadWithRequest={(request) => {
+          if (isWebLoadableUrl(request.url)) return true;
+          openExternally(request.url);
+          return false;
         }}
         startInLoadingState
         onLoadStart={() => setLoading(true)}
