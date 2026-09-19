@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Store, Star, Upload, Check, LogOut, Loader2, Plus, SlidersHorizontal, ChevronDown, Receipt, X, Bell, ShieldCheck, Clock as ClockIcon, AlertCircle, FileText, CalendarDays, Sparkles, Car, Mail, Printer, Gift, Building2, Fingerprint, UtensilsCrossed, CreditCard, Save, CheckCircle2, Shield } from 'lucide-react';
+import { Store, Star, Upload, Check, LogOut, Loader2, Plus, SlidersHorizontal, ChevronDown, ChevronLeft, ChevronRight, Receipt, X, Bell, ShieldCheck, Clock as ClockIcon, AlertCircle, FileText, CalendarDays, Sparkles, Car, Mail, Printer, Gift, Building2, Fingerprint, UtensilsCrossed, CreditCard, Save, CheckCircle2, Shield } from 'lucide-react';
 import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, VendorDeal, OfferedOptionItem, CateringFoodItem, CateringCourseItem, VENDOR_CATEGORIES, CATEGORY_OPTIONS, CATERING_OPTION_STYLE, MEDIA_QUALITY_OPTIONS, MEDIA_EQUIPMENT_OPTIONS, mediaExtraField, isDealLive, CATERING_MENU_TIERS, CATERING_FOOD_TYPES, CATERING_CUISINES, CATERING_COURSES, CATERING_LIVE_COUNTERS, CATERING_SERVICE_STYLES, BUFFET_PLATE_TYPES, BANANA_LEAF_TYPES, slotLabelWithTime, AVAILABILITY_SLOTS, offeredSlotIds, VENUE_SESSIONS, VENUE_HALL_TYPES, VENUE_HALL_CLASSES, VENUE_CATERING_POLICIES, VENUE_FEATURES, DECORATION_TIERS, DECORATION_THEMES, DECORATION_AREAS, DECORATION_FLOWER_TYPES, MAKEUP_TYPES, MAKEUP_FINISHES, MEDIA_TIERS, MEDIA_COVERAGE, MEDIA_STYLES, TRANSPORT_TIERS, TRANSPORT_VEHICLE_TYPES, TRANSPORT_PRICING_BASIS, TRANSPORT_USES, PRIEST_CEREMONY_TYPES, PRIEST_LANGUAGES, INVITATION_TIERS, INVITATION_TYPES, INVITATION_DESIGNS, INVITATION_ADDONS, INVITATION_LANGUAGES, PRINTING_PRODUCTS, PRINTING_FINISHES, RETURN_GIFTS_TIERS, RETURN_GIFT_TYPES, ENTERTAINMENT_ACT_TYPES, MUSIC_DJ_TIERS, MUSIC_DJ_TYPES, MUSIC_DJ_VENUE_TYPES, LIGHTING_TIERS, LIGHTING_TYPES, FLOWERS_VARIETIES, FLOWERS_ITEMS, FLOWERS_KINDS, MEHENDI_TIERS, MEHENDI_TYPES, MEHENDI_INTRICACY, EVENT_HOST_EVENT_TYPES, EVENT_HOST_LANGUAGES, EVENT_HOST_MODES, SECURITY_TYPES, SECURITY_GENDERS, RENTAL_ITEMS, UTENSILS_MATERIALS, UTENSILS_VESSEL_TYPES, WEDDING_PLANNER_SCOPES, CORPORATE_EVENT_TYPES, CORPORATE_ADDONS } from '../../../packages/shared-types';
 import { STATIC_CITY_GROUPS } from '../../../packages/shared-utils';
 import { AuthGate } from './components/AuthGate';
@@ -262,6 +262,43 @@ export function App() {
   const [availabilityNotice, setAvailabilityNotice] = useState('');
 
   const [myVendor, setMyVendor] = useState<Vendor | null>(null);
+
+  // The section-tab bar overflows on narrow/mobile screens — it's already
+  // swipeable, but with no visible scrollbar there was no hint that more
+  // tabs existed off-screen (just looked cut off, e.g. "Local Disk P...").
+  // Left/right arrow buttons make that overflow discoverable and tappable.
+  const tabScrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollTabsLeft, setCanScrollTabsLeft] = useState(false);
+  const [canScrollTabsRight, setCanScrollTabsRight] = useState(false);
+
+  const updateTabScroll = () => {
+    const el = tabScrollRef.current;
+    if (!el) return;
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    setCanScrollTabsLeft(scrollLeft > 6);
+    setCanScrollTabsRight(scrollLeft < scrollWidth - clientWidth - 6);
+  };
+
+  useEffect(() => {
+    updateTabScroll();
+    const el = tabScrollRef.current;
+    if (el) {
+      el.addEventListener('scroll', updateTabScroll, { passive: true });
+      window.addEventListener('resize', updateTabScroll);
+    }
+    return () => {
+      el?.removeEventListener('scroll', updateTabScroll);
+      window.removeEventListener('resize', updateTabScroll);
+    };
+  }, [myVendor?.category]);
+
+  const scrollTabs = (dir: 'left' | 'right') => {
+    const el = tabScrollRef.current;
+    if (!el) return;
+    const scrollAmount = Math.max(160, Math.floor(el.clientWidth * 0.6));
+    el.scrollBy({ left: dir === 'left' ? -scrollAmount : scrollAmount, behavior: 'smooth' });
+  };
+
   const [vendorLoading, setVendorLoading] = useState(true);
   const [vendorNotFound, setVendorNotFound] = useState(false);
   // Set when the load fails because the backend was unreachable (services /
@@ -4733,32 +4770,69 @@ export function App() {
         )}
 
         {/* Navigation Tabs */}
-        <div className="flex items-center gap-4 border-b border-slate-800 overflow-x-auto no-scrollbar">
-          {[
-            { key: 'dashboard', label: 'Bookings & Quotes' },
-            { key: 'reviews', label: `Reviews${reviews.length ? ` (${reviews.length})` : ''}` },
-            // Venue's event-services live inside the Halls tab, so it has no
-            // separate "Hall Facilities" tab.
-            ...(myVendor?.category !== 'Venue' ? [{ key: 'facilities', label: facilitiesSectionLabel(myVendor?.category) }] : []),
-            ...(myVendor?.category !== 'Wedding Planner' && myVendor?.category !== 'Event Host/Anchor' ? [{ key: 'packages', label: `${myVendor?.category === 'Venue' ? 'Halls' : 'Packages'}${packages.length ? ` (${packages.length})` : ''}` }] : []),
-            ...(myVendor?.category !== 'Security' ? [{ key: 'offers', label: `Offers${deals.length ? ` (${deals.length})` : ''}` }] : []),
-            // Venue availability is managed directly under each hall/session
-            ...(myVendor?.category !== 'Venue' ? [{ key: 'availability', label: 'Availability' }] : []),
-            { key: 'portfolio', label: 'Local Disk Portfolio' },
-            { key: 'profile', label: 'Business Profile' },
-          ].map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key as any)}
-              className={`shrink-0 whitespace-nowrap py-3 font-semibold text-xs border-b-2 transition-colors ${
-                activeTab === tab.key
-                  ? 'border-amber-500 text-amber-400'
-                  : 'border-transparent text-slate-100 hover:text-white'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+        <div className="flex items-center gap-1 border-b border-slate-800">
+          <button
+            type="button"
+            onClick={() => scrollTabs('left')}
+            disabled={!canScrollTabsLeft}
+            aria-label="Scroll left to see previous tabs"
+            className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition-all ${
+              canScrollTabsLeft
+                ? 'bg-slate-900 border border-slate-700 text-amber-400 hover:bg-slate-800'
+                : 'opacity-0 pointer-events-none'
+            }`}
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+
+          <div
+            ref={tabScrollRef}
+            onScroll={updateTabScroll}
+            className="flex-1 flex items-center gap-4 overflow-x-auto no-scrollbar scroll-smooth touch-pan-x"
+          >
+            {[
+              { key: 'dashboard', label: 'Bookings & Quotes' },
+              { key: 'reviews', label: `Reviews${reviews.length ? ` (${reviews.length})` : ''}` },
+              // Venue's event-services live inside the Halls tab, so it has no
+              // separate "Hall Facilities" tab.
+              ...(myVendor?.category !== 'Venue' ? [{ key: 'facilities', label: facilitiesSectionLabel(myVendor?.category) }] : []),
+              ...(myVendor?.category !== 'Wedding Planner' && myVendor?.category !== 'Event Host/Anchor' ? [{ key: 'packages', label: `${myVendor?.category === 'Venue' ? 'Halls' : 'Packages'}${packages.length ? ` (${packages.length})` : ''}` }] : []),
+              ...(myVendor?.category !== 'Security' ? [{ key: 'offers', label: `Offers${deals.length ? ` (${deals.length})` : ''}` }] : []),
+              // Venue availability is managed directly under each hall/session
+              ...(myVendor?.category !== 'Venue' ? [{ key: 'availability', label: 'Availability' }] : []),
+              { key: 'portfolio', label: 'Local Disk Portfolio' },
+              { key: 'profile', label: 'Business Profile' },
+            ].map((tab) => (
+              <button
+                key={tab.key}
+                onClick={(e) => {
+                  setActiveTab(tab.key as any);
+                  e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                }}
+                className={`shrink-0 whitespace-nowrap py-3 font-semibold text-xs border-b-2 transition-colors ${
+                  activeTab === tab.key
+                    ? 'border-amber-500 text-amber-400'
+                    : 'border-transparent text-slate-100 hover:text-white'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => scrollTabs('right')}
+            disabled={!canScrollTabsRight}
+            aria-label="Scroll right to see more tabs"
+            className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition-all ${
+              canScrollTabsRight
+                ? 'bg-slate-900 border border-slate-700 text-amber-400 hover:bg-slate-800'
+                : 'opacity-0 pointer-events-none'
+            }`}
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
         </div>
 
         {/* Dashboard Tab */}
