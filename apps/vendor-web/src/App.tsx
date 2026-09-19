@@ -10830,20 +10830,20 @@ export function App() {
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                       <input
                         type="text"
                         value={verifyForm.gstNumber}
                         onChange={(e) => setVerifyForm((f) => ({ ...f, gstNumber: e.target.value.toUpperCase(), gstinVerified: false }))}
                         placeholder="E.G. 22AAAAA0000A1Z5"
                         maxLength={15}
-                        className="flex-1 p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm font-semibold uppercase placeholder:text-slate-600 focus:outline-none focus:border-teal-500"
+                        className="w-full sm:flex-1 p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm font-semibold uppercase placeholder:text-slate-600 focus:outline-none focus:border-teal-500"
                       />
                       <button
                         type="button"
                         onClick={() => handleVerifyField('gstin')}
                         disabled={verifyChecking === 'gstin' || !verifyForm.gstNumber}
-                        className={`px-4 py-3 rounded-xl font-bold text-xs shrink-0 flex items-center gap-1.5 transition-all ${
+                        className={`w-full sm:w-auto px-4 py-3 rounded-xl font-bold text-xs shrink-0 flex items-center justify-center gap-1.5 transition-all ${
                           verifyForm.gstinVerified
                             ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
                             : 'bg-teal-600 hover:bg-teal-500 text-white disabled:opacity-50'
@@ -10898,20 +10898,20 @@ export function App() {
                       <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">
                         PAN NUMBER <span className="text-rose-500">*</span>
                       </label>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                         <input
                           type="text"
                           value={verifyForm.panNumber}
                           onChange={(e) => setVerifyForm((f) => ({ ...f, panNumber: e.target.value.toUpperCase(), panVerified: false }))}
                           placeholder="E.G. ABCDE1234F"
                           maxLength={10}
-                          className="flex-1 p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm font-semibold uppercase placeholder:text-slate-600 focus:outline-none focus:border-teal-500"
+                          className="w-full sm:flex-1 p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm font-semibold uppercase placeholder:text-slate-600 focus:outline-none focus:border-teal-500"
                         />
                         <button
                           type="button"
                           onClick={() => handleVerifyField('pan')}
                           disabled={verifyChecking === 'pan' || !verifyForm.panNumber}
-                          className={`px-4 py-3 rounded-xl font-bold text-xs shrink-0 flex items-center gap-1.5 transition-all ${
+                          className={`w-full sm:w-auto px-4 py-3 rounded-xl font-bold text-xs shrink-0 flex items-center justify-center gap-1.5 transition-all ${
                             verifyForm.panVerified
                               ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
                               : 'bg-teal-600 hover:bg-teal-500 text-white disabled:opacity-50'
@@ -10967,19 +10967,19 @@ export function App() {
                     <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">
                       AADHAAR NUMBER (MASKED)
                     </label>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                       <input
                         type="text"
                         value={verifyForm.aadhaarNumber}
                         readOnly
                         placeholder="Verify via DigiLocker to fill this in"
-                        className="flex-1 p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm font-semibold placeholder:text-slate-600 focus:outline-none focus:border-teal-500"
+                        className="w-full sm:flex-1 p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm font-semibold placeholder:text-slate-600 focus:outline-none focus:border-teal-500"
                       />
                       <button
                         type="button"
                         onClick={handleStartAadhaarDigilocker}
                         disabled={verifyChecking === 'aadhaar' || verifyForm.aadhaarVerified}
-                        className={`px-4 py-3 rounded-xl font-bold text-xs shrink-0 flex items-center gap-1.5 transition-all ${
+                        className={`w-full sm:w-auto px-4 py-3 rounded-xl font-bold text-xs shrink-0 flex items-center justify-center gap-1.5 transition-all ${
                           verifyForm.aadhaarVerified
                             ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
                             : 'bg-teal-600 hover:bg-teal-500 text-white disabled:opacity-50'
