@@ -3,6 +3,7 @@ import { ClipboardList, RefreshCw, Loader2, CheckCircle2, Circle, IndianRupee, L
 import { Booking, Review, slotLabelWithTime } from '../../../../packages/shared-types';
 import { fetchMyBookings, fetchMyReviews, submitReview, fetchBookingInvoice, cancelBooking } from '../api';
 import { payBookingWithRazorpay } from '../utils/razorpayCheckout';
+import { loadRazorpayCheckout } from '../utils/loadRazorpay';
 import { openInvoicePrintWindow } from './invoice';
 
 // Work-progress stages a confirmed booking moves through — mirrors the
@@ -239,6 +240,12 @@ const PaymentBlock: React.FC<{ booking: Booking; onUpdated: (b: Booking) => void
   const remaining = booking.remainingAmount;
   const paidInFull = booking.paidInFull || remaining <= 0;
 
+  // Same head start as the advance block below — load Razorpay's checkout
+  // script while this is on screen, not only once "Pay Balance" is clicked.
+  useEffect(() => {
+    if (!paidInFull) loadRazorpayCheckout();
+  }, [paidInFull]);
+
   const payBalance = () => {
     setPaying(true);
     setNotice('');
@@ -305,6 +312,13 @@ const PaymentBlock: React.FC<{ booking: Booking; onUpdated: (b: Booking) => void
 const AdvancePaymentBlock: React.FC<{ booking: Booking; onUpdated: (b: Booking) => void }> = ({ booking, onUpdated }) => {
   const [paying, setPaying] = useState(false);
   const [notice, setNotice] = useState('');
+
+  // Start fetching Razorpay's checkout script as soon as this "Pay Advance"
+  // block is on screen, rather than only once they click it — by click time
+  // it's usually already loaded instead of visibly blocking the click.
+  useEffect(() => {
+    loadRazorpayCheckout();
+  }, []);
 
   const payAdvance = () => {
     setPaying(true);

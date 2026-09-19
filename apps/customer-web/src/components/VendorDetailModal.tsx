@@ -11,6 +11,7 @@ import { GenericCategoryGrid } from './CategoryOptions';
 import { CustomRequestBox } from './CateringMenu';
 import { getVendorCoverImage, categoryCoverImage } from './vendorUtils';
 import { GoldSparkles } from './GoldSparkles';
+import { loadRazorpayCheckout } from '../utils/loadRazorpay';
 
 // Category-appropriate name for the "Services" tab (the vendor's list of
 // offered, priced options). e.g. a Catering vendor's options ARE their menu, a
@@ -275,6 +276,11 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
       setShowNeedEventModal(true);
       return;
     }
+    // Start fetching Razorpay's checkout script now, in the background,
+    // instead of only starting once they click Confirm Order inside this
+    // panel — by then it's had several extra seconds (reviewing the summary,
+    // deciding) to finish, instead of visibly blocking the click.
+    loadRazorpayCheckout();
     setAdvancePanelOpen(true);
   };
 
