@@ -58,10 +58,6 @@ export const SmartBudgetPlanner: React.FC<SmartBudgetPlannerProps> = ({
   // Remaining budget left from customer's total budget
   const remainingBudget = (event.totalBudget || 0) - totalSpent;
 
-  // Total booked orders and remaining balance customer still owes to vendors
-  const totalBookedOrders = confirmedBookings.reduce((acc, b) => acc + (b.agreedPrice || (b as any).price || 0), 0);
-  const pendingVendorBalance = Math.max(0, totalBookedOrders - totalSpent);
-
   // Paid-so-far per category — drives each category row's Spent / Remaining /
   // over-budget state from the same real money that's actually been paid.
   const spentByCategory: Record<string, number> = {};
@@ -145,12 +141,21 @@ export const SmartBudgetPlanner: React.FC<SmartBudgetPlannerProps> = ({
 
           <div className="h-8 w-px bg-slate-800 hidden sm:block" />
 
-          <div>
-            <span className="text-[11px] font-bold uppercase text-slate-400 block">Actual Spent</span>
-            <span className="font-display font-extrabold text-xl sm:text-2xl text-indigo-400">
-              ₹{totalSpent.toLocaleString('en-IN')}
-            </span>
-          </div>
+          <button
+            type="button"
+            onClick={() => setSpendExpanded((s) => !s)}
+            aria-expanded={spendExpanded}
+            className="flex items-center gap-1.5 text-left hover:opacity-80 transition-opacity"
+            title="Tap to see spending breakdown"
+          >
+            <div>
+              <span className="text-[11px] font-bold uppercase text-slate-400 block">Actual Spent</span>
+              <span className="font-display font-extrabold text-xl sm:text-2xl text-indigo-400">
+                ₹{totalSpent.toLocaleString('en-IN')}
+              </span>
+            </div>
+            <ChevronDown className={`w-4 h-4 text-slate-500 shrink-0 transition-transform ${spendExpanded ? 'rotate-180' : ''}`} />
+          </button>
 
           <div className="h-8 w-px bg-slate-800 hidden sm:block" />
 
@@ -161,64 +166,6 @@ export const SmartBudgetPlanner: React.FC<SmartBudgetPlannerProps> = ({
             </span>
           </div>
         </div>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* 1. Total Amount */}
-        <div className="glass-card p-6 rounded-3xl border border-slate-800">
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Total Amount</span>
-          <div className="font-display font-extrabold text-3xl text-white mt-2">
-            ₹{(event.totalBudget || 0).toLocaleString('en-IN')}
-          </div>
-          <p className="text-xs text-slate-400 mt-2">
-            {event.totalBudget > 0 ? 'Total planned budget for this event' : 'Set in event wizard or category sliders'}
-          </p>
-        </div>
-
-        {/* 2. Advance Paid by Customer */}
-        <div className="glass-card p-6 rounded-3xl border border-slate-800">
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Advance Paid</span>
-          <div className="font-display font-extrabold text-3xl text-amber-400 mt-2">
-            ₹{totalAdvancePaid.toLocaleString('en-IN')}
-          </div>
-          <p className="text-xs text-slate-400 mt-2">
-            Advance paid by customer to {confirmedBookings.length} confirmed vendor{confirmedBookings.length === 1 ? '' : 's'}
-          </p>
-        </div>
-
-        {/* 3. Remaining Amount of Customer */}
-        <div className="glass-card p-6 rounded-3xl border border-slate-800">
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Remaining Amount</span>
-          <div className={`font-display font-extrabold text-3xl mt-2 ${remainingBudget < 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
-            ₹{remainingBudget.toLocaleString('en-IN')}
-          </div>
-          <p className="text-xs text-slate-400 mt-2">
-            {remainingBudget < 0
-              ? `₹${Math.abs(remainingBudget).toLocaleString('en-IN')} over target budget`
-              : pendingVendorBalance > 0
-                ? `₹${pendingVendorBalance.toLocaleString('en-IN')} balance due to vendors`
-                : 'Remaining balance of customer budget'}
-          </p>
-        </div>
-
-        {/* 4. Actual Spent (with click-to-expand breakdown) */}
-        <button
-          type="button"
-          onClick={() => setSpendExpanded((s) => !s)}
-          aria-expanded={spendExpanded}
-          className="glass-card p-6 rounded-3xl border border-slate-800 text-left hover:border-amber-500/40 transition-colors"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Actual Spent</span>
-            <ChevronDown className={`w-4 h-4 text-slate-500 shrink-0 transition-transform ${spendExpanded ? 'rotate-180' : ''}`} />
-          </div>
-          <div className="font-display font-extrabold text-3xl text-indigo-400 mt-2">
-            ₹{totalSpent.toLocaleString('en-IN')}
-          </div>
-          <p className="text-xs text-slate-400 mt-2">
-            Money actually paid so far — tap to see breakdown
-          </p>
-        </button>
       </div>
 
       {spendExpanded && (
