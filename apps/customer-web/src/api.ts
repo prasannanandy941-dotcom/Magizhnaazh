@@ -169,7 +169,16 @@ export class ApiError extends Error {
 }
 
 // Authenticated request helper — attaches the Bearer token stored at login.
-async function authedFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
+// `suppressSessionExpiryReload` skips the hard reload-on-401 behavior below —
+// use it for calls mid-way through something disruptive to abandon (like an
+// open Razorpay checkout), where a transient/misdiagnosed 401 shouldn't blow
+// away the page the customer is actively paying through. The caller still
+// gets the ApiError and can show a normal "try again" message.
+async function authedFetch<T>(
+  path: string,
+  options: RequestInit = {},
+  config: { suppressSessionExpiryReload?: boolean } = {}
+): Promise<T> {
   const token = getToken();
   const { res, json } = await fetchJson(path, {
     ...options,
@@ -185,7 +194,7 @@ async function authedFetch<T>(path: string, options: RequestInit = {}): Promise<
     // a dead token forever (which shows "Invalid or expired token" on every action
     // with no way out). Only act when we actually sent a token, to avoid loops on
     // ordinary "authentication required" responses for anonymous calls.
-    if (res.status === 401 && token) {
+    if (res.status === 401 && token && !config.suppressSessionExpiryReload) {
       handleExpiredSession();
     }
     throw new ApiError(json.message || 'Request failed.', res.status, json.code);
@@ -463,24 +472,34 @@ export interface RazorpayOrderResponse {
 // Creates a Razorpay order for a booking's advance or balance payment. The
 // server decides the exact amount and whether the vendor's Route account gets
 // a split transfer — the frontend just opens checkout with what comes back.
+// suppressSessionExpiryReload: a 401 here shouldn't force a hard page reload —
+// that would blow away an open Razorpay checkout mid-payment. A real expired
+// session surfaces as a normal error the caller can show and let the customer
+// retry, rather than yanking them out from under an in-progress payment.
 export function createRazorpayOrder(bookingId: string, type: 'advance' | 'balance'): Promise<RazorpayOrderResponse> {
-  return authedFetch<RazorpayOrderResponse>(`/api/v1/bookings/${bookingId}/payments/razorpay/order`, {
-    method: 'POST',
-    body: JSON.stringify({ type }),
-  });
+  return authedFetch<RazorpayOrderResponse>(
+    `/api/v1/bookings/${bookingId}/payments/razorpay/order`,
+    { method: 'POST', body: JSON.stringify({ type }) },
+    { suppressSessionExpiryReload: true }
+  );
 }
 
 // Verifies a completed Razorpay checkout server-side (signature check) and, on
 // success, confirms the booking/records the ledger entry. Never trust the
 // checkout `handler` callback alone — this call is the actual proof of payment.
+// Also suppresses the reload-on-401 — the payment itself already succeeded
+// with Razorpay by this point (the checkout webhook is a backstop that
+// records it independently even if this call fails), so a transient auth
+// hiccup here should never look like the whole session/payment vanished.
 export function verifyRazorpayPayment(
   bookingId: string,
   payload: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string; type: 'advance' | 'balance' }
 ): Promise<BookingResponse> {
-  return authedFetch<BookingResponse>(`/api/v1/bookings/${bookingId}/payments/razorpay/verify`, {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  });
+  return authedFetch<BookingResponse>(
+    `/api/v1/bookings/${bookingId}/payments/razorpay/verify`,
+    { method: 'POST', body: JSON.stringify(payload) },
+    { suppressSessionExpiryReload: true }
+  );
 }
 
 // Cancel a booking, or request a refund if money has already been claimed/paid

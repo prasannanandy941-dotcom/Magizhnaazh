@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { App } from './App';
 import { PublicInviteRoute } from './components/PublicInviteRoute';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import './index.css';
 
 // No router dependency — the app only ever needs to distinguish the public,
@@ -11,6 +12,8 @@ const inviteMatch = window.location.pathname.match(/^(?:\/customer)?\/invite\/([
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    {inviteMatch ? <PublicInviteRoute token={decodeURIComponent(inviteMatch[1])} /> : <App />}
+    <ErrorBoundary>
+      {inviteMatch ? <PublicInviteRoute token={decodeURIComponent(inviteMatch[1])} /> : <App />}
+    </ErrorBoundary>
   </React.StrictMode>
 );
