@@ -411,10 +411,18 @@ export function createBookingQuote(input: {
   // instead of it auto-confirming.
   advancePaymentClaimed?: boolean;
 }): Promise<BookingResponse> {
-  return authedFetch<BookingResponse>('/api/v1/bookings/quote', {
-    method: 'POST',
-    body: JSON.stringify(input),
-  });
+  // suppressSessionExpiryReload: App.tsx's own booking flow (doBook) already
+  // has a purpose-built recovery for a 401 here — it logs out locally,
+  // prompts sign-in, and automatically re-runs this exact booking once
+  // they're back in, rather than silently dropping it (see the comment on
+  // its catch block). The generic hard reload-on-401 was firing at the same
+  // time and racing that graceful recovery, which is what actually produced
+  // the "page error, then signed out" experience.
+  return authedFetch<BookingResponse>(
+    '/api/v1/bookings/quote',
+    { method: 'POST', body: JSON.stringify(input) },
+    { suppressSessionExpiryReload: true }
+  );
 }
 
 // Upload a customer reference image (multipart) and return its stored URL. Used
