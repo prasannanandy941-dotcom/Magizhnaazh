@@ -54,6 +54,7 @@ export const MyOrders: React.FC<{ isAuthenticated: boolean; onSignIn: () => void
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [reviews, setReviews] = useState<Record<string, Review>>({});
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'active' | 'cancelled'>('active');
 
   const load = () => {
     setLoading(true);
@@ -96,16 +97,21 @@ export const MyOrders: React.FC<{ isAuthenticated: boolean; onSignIn: () => void
   }
 
   const sorted = [...bookings].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  const activeBookings = sorted.filter((b) => b.status !== 'cancelled' && b.status !== 'refunded');
+  const cancelledBookings = sorted.filter((b) => b.status === 'cancelled' || b.status === 'refunded');
+  const showcaseBookings = activeTab === 'active' ? activeBookings : cancelledBookings;
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h2 className="font-display font-bold text-3xl text-gradient-gold flex items-center gap-2">
-            <ClipboardList className="w-7 h-7 text-amber-400" /> My Orders
+            <ClipboardList className="w-7 h-7 text-amber-400" /> {activeTab === 'active' ? 'My Orders' : 'Cancelled Orders'}
           </h2>
           <p className="text-slate-400 text-sm mt-1">
-            Every vendor booking you've made, with live progress once the vendor confirms it.
+            {activeTab === 'active'
+              ? "Every vendor booking you've made, with live progress once the vendor confirms it."
+              : 'Cancelled and refunded bookings are kept here so you can still review what was closed.'}
           </p>
         </div>
         <button
@@ -118,17 +124,39 @@ export const MyOrders: React.FC<{ isAuthenticated: boolean; onSignIn: () => void
         </button>
       </div>
 
+      <div className="inline-flex rounded-2xl border border-slate-700 bg-slate-950/80 p-1">
+        {[
+          { key: 'active', label: 'My Orders' },
+          { key: 'cancelled', label: 'Cancelled Orders' },
+        ].map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            onClick={() => setActiveTab(tab.key as 'active' | 'cancelled')}
+            className={`px-4 py-2 rounded-xl text-sm font-bold transition-colors ${
+              activeTab === tab.key
+                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
+                : 'text-slate-300 hover:text-white'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
       {loading && bookings.length === 0 ? (
         <div className="p-12 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
           <Loader2 className="w-4 h-4 animate-spin" /> Loading your orders...
         </div>
-      ) : sorted.length === 0 ? (
+      ) : showcaseBookings.length === 0 ? (
         <div className="glass-card p-12 rounded-3xl border border-slate-800 text-center text-sm text-slate-400">
-          No bookings yet — head to the Marketplace to book a vendor.
+          {activeTab === 'active'
+            ? 'No active bookings yet — head to the Marketplace to book a vendor.'
+            : 'No cancelled or refunded bookings yet.'}
         </div>
       ) : (
         <div className="space-y-4">
-          {sorted.map((b) => {
+          {showcaseBookings.map((b) => {
             const currentStepIdx = ORDER_STEPS.findIndex((s) => s.key === b.status);
             const isTrackable = b.status === 'confirmed' || b.status === 'in_progress' || b.status === 'completed';
             const isOffPath = b.status === 'cancelled' || b.status === 'refunded';
@@ -205,15 +233,15 @@ export const MyOrders: React.FC<{ isAuthenticated: boolean; onSignIn: () => void
                   <AdvancePaymentBlock booking={b} onUpdated={(nb) => setBookings((prev) => prev.map((x) => (x.id === nb.id ? nb : x)))} />
                 )}
 
-                {isTrackable && (
+                {activeTab === 'active' && isTrackable && (
                   <PaymentBlock booking={b} onUpdated={(nb) => setBookings((prev) => prev.map((x) => (x.id === nb.id ? nb : x)))} />
                 )}
 
-                {CANCELLABLE_STATUSES.has(b.status) && (
+                {activeTab === 'active' && CANCELLABLE_STATUSES.has(b.status) && (
                   <CancelBlock booking={b} onUpdated={(nb) => setBookings((prev) => prev.map((x) => (x.id === nb.id ? nb : x)))} />
                 )}
 
-                {b.status === 'completed' && (
+                {activeTab === 'active' && b.status === 'completed' && (
                   <ReviewBlock
                     booking={b}
                     existing={reviews[b.id]}

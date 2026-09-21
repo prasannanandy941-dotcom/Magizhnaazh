@@ -875,6 +875,42 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                       : 'bg-slate-900/50 border-slate-800 hover:border-slate-700'
                   }`}
                 >
+                  {pkg.images && pkg.images.length > 0 && (
+                    <div
+                      className="flex gap-2 overflow-x-auto pb-1 mb-4"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {pkg.images.map((url, index) => (
+                        <button
+                          key={`${url}-${index}`}
+                          type="button"
+                          onClick={() => setLightboxImage(url)}
+                          aria-label={`Open ${pkg.packageName} image ${index + 1}`}
+                          className="relative h-24 w-32 shrink-0 overflow-hidden rounded-lg border border-slate-800 hover:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                        >
+                          {isVideoUrl(url) ? (
+                            <video
+                              src={url}
+                              muted
+                              playsInline
+                              preload="metadata"
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <img
+                              src={url}
+                              alt={`${pkg.packageName} ${index + 1}`}
+                              className="h-full w-full object-cover"
+                            />
+                          )}
+                          <span className="absolute inset-0 flex items-center justify-center bg-slate-950/20 text-white opacity-0 transition-opacity hover:opacity-100">
+                            <Maximize2 className="h-5 w-5" />
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
                   {vendor.category === 'Security' ? (
                     <>
                       <div className="flex items-center justify-between">
