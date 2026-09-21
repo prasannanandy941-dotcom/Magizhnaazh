@@ -329,6 +329,7 @@ export function App() {
 
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [bookingsLoading, setBookingsLoading] = useState(false);
+  const [bookingTab, setBookingTab] = useState<'active' | 'cancelled'>('active');
 
   // Live payment alerts: when a customer actually completes the real Razorpay
   // advance payment, that booking flips straight to `confirmed` with a
@@ -4928,18 +4929,50 @@ export function App() {
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-300 to-amber-600 flex items-center justify-center shadow-md shadow-amber-500/30 shrink-0">
                   <Receipt className="w-4 h-4 text-slate-950" />
                 </div>
-                <h3 className="font-bold text-lg text-white">Client Bookings & Quote Requests</h3>
+                <h3 className="font-bold text-lg text-white">
+                  {bookingTab === 'active' ? 'Client Bookings & Quote Requests' : 'Cancelled Bookings'}
+                </h3>
+              </div>
+
+              <div className="px-6 pt-5">
+                <div className="inline-flex rounded-2xl border border-slate-700 bg-slate-950/80 p-1">
+                  {[
+                    { key: 'active', label: 'My Bookings', count: bookings.filter((b) => b.status !== 'cancelled' && b.status !== 'refunded').length },
+                    { key: 'cancelled', label: 'Cancelled Bookings', count: bookings.filter((b) => b.status === 'cancelled' || b.status === 'refunded').length },
+                  ].map((tab) => (
+                    <button
+                      key={tab.key}
+                      type="button"
+                      onClick={() => setBookingTab(tab.key as 'active' | 'cancelled')}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-colors ${
+                        bookingTab === tab.key
+                          ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
+                          : 'text-slate-300 hover:text-white'
+                      }`}
+                    >
+                      {tab.label} ({tab.count})
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {bookingsLoading ? (
                 <div className="p-8 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
                   <Loader2 className="w-4 h-4 animate-spin" /> Loading bookings...
                 </div>
-              ) : bookings.length === 0 ? (
-                <div className="p-8 text-center text-xs text-slate-500">No bookings yet.</div>
-              ) : (
+              ) : (() => {
+                const visibleBookings = bookings.filter((b) =>
+                  bookingTab === 'active'
+                    ? b.status !== 'cancelled' && b.status !== 'refunded'
+                    : b.status === 'cancelled' || b.status === 'refunded'
+                );
+                return visibleBookings.length === 0 ? (
+                  <div className="p-8 text-center text-xs text-slate-500">
+                    {bookingTab === 'active' ? 'No active bookings yet.' : 'No cancelled or refunded bookings yet.'}
+                  </div>
+                ) : (
                 <div className="divide-y divide-slate-800/80">
-                  {bookings.map((b) => (
+                  {visibleBookings.map((b) => (
                     <div key={b.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-900/40">
                       <div>
                         <div className="flex items-center gap-2">
@@ -5111,7 +5144,8 @@ export function App() {
                     </div>
                   ))}
                 </div>
-              )}
+                );
+              })()}
             </div>
           </div>
         )}
