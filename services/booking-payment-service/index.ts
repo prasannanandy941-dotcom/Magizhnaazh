@@ -443,7 +443,14 @@ app.get('/api/v1/bookings', authMiddleware(), async (req: Request, res: Response
       }
     }
 
-    const bookings = await BookingModel.find({ vendorId: String(vendorId) }).limit(200);
+    // Most bookings store the marketplace listing ID. Keep the linked account
+    // ID as a compatibility key for bookings created by older mobile clients
+    // that submitted the vendor account ID instead.
+    const vendor = await fetchVendor(String(vendorId));
+    const vendorIds = [String(vendorId), vendor?.userId].filter(
+      (id): id is string => typeof id === 'string' && id.length > 0
+    );
+    const bookings = await BookingModel.find({ vendorId: { $in: vendorIds } }).limit(200);
     return res.json({ success: true, count: bookings.length, data: { bookings } });
   }
 
