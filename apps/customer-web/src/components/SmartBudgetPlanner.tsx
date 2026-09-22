@@ -97,6 +97,11 @@ export const SmartBudgetPlanner: React.FC<SmartBudgetPlannerProps> = ({
   const recommendedVendors = affordableVendors.length > 0
     ? affordableVendors
     : recommendationPool.slice(0, 8);
+  const recommendedVendorsByCategory = recommendedVendors.reduce<Record<string, Vendor[]>>((groups, vendor) => {
+    const category = vendor.category?.trim() || 'Other services';
+    (groups[category] ||= []).push(vendor);
+    return groups;
+  }, {});
 
   // Which real, confirmed vendor orders make up the spend — shown when the
   // customer taps the "Actual Spent" tile to drill in.
@@ -378,29 +383,42 @@ export const SmartBudgetPlanner: React.FC<SmartBudgetPlannerProps> = ({
         {recommendedVendors.length === 0 ? (
           <p className="text-sm text-slate-400">No vendors are available for this category yet.</p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {recommendedVendors.map((vendor) => (
-              <button
-                key={vendor.id}
-                type="button"
-                onClick={() => onSelectVendor(vendor)}
-                className="text-left rounded-2xl overflow-hidden bg-slate-900/70 border border-slate-800 hover:border-indigo-400/60 transition-colors group"
-              >
-                {vendor.galleryImages?.[0] ? (
-                  <img src={vendor.galleryImages[0]} alt="" className="w-full h-28 object-cover" />
-                ) : (
-                  <div className="w-full h-28 bg-gradient-to-br from-indigo-900/50 to-slate-900 flex items-center justify-center text-xs text-slate-400">
-                    {vendor.category}
-                  </div>
-                )}
-                <div className="p-3">
-                  <p className="font-bold text-sm text-white truncate">{vendor.businessName}</p>
-                  <p className="text-xs text-amber-300 mt-1">Starting ₹{vendor.startingPrice.toLocaleString('en-IN')}</p>
-                  <span className="inline-flex items-center gap-1 text-[11px] text-indigo-300 mt-3 group-hover:text-indigo-200">
-                    View vendor <ArrowRight className="w-3 h-3" />
+          <div className="space-y-7">
+            {Object.entries(recommendedVendorsByCategory).map(([category, categoryVendors]) => (
+              <section key={category}>
+                <div className="flex items-center gap-3 mb-3">
+                  <h4 className="font-display font-bold text-base text-amber-100">{category}</h4>
+                  <span className="text-[11px] text-slate-500">
+                    {categoryVendors.length} {categoryVendors.length === 1 ? 'vendor' : 'vendors'}
                   </span>
+                  <div className="h-px flex-1 bg-slate-800" />
                 </div>
-              </button>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {categoryVendors.map((vendor) => (
+                    <button
+                      key={vendor.id}
+                      type="button"
+                      onClick={() => onSelectVendor(vendor)}
+                      className="text-left rounded-2xl overflow-hidden bg-slate-900/70 border border-slate-800 hover:border-indigo-400/60 transition-colors group"
+                    >
+                      {vendor.galleryImages?.[0] ? (
+                        <img src={vendor.galleryImages[0]} alt="" className="w-full h-28 object-cover" />
+                      ) : (
+                        <div className="w-full h-28 bg-gradient-to-br from-indigo-900/50 to-slate-900 flex items-center justify-center text-xs text-slate-400">
+                          {vendor.category}
+                        </div>
+                      )}
+                      <div className="p-3">
+                        <p className="font-bold text-sm text-white truncate">{vendor.businessName}</p>
+                        <p className="text-xs text-amber-300 mt-1">Starting ₹{vendor.startingPrice.toLocaleString('en-IN')}</p>
+                        <span className="inline-flex items-center gap-1 text-[11px] text-indigo-300 mt-3 group-hover:text-indigo-200">
+                          View vendor <ArrowRight className="w-3 h-3" />
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </section>
             ))}
           </div>
         )}
