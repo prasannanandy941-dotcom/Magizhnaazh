@@ -81,7 +81,10 @@ export function WebApp({ token, user }: { token?: string | null; user?: unknown 
         // redirect) can call window.open(). Allow it: a real web URL loads
         // into this same WebView (which has no UI for a real second window
         // anyway); a UPI app deep link goes to the OS instead.
-        setSupportMultipleWindows
+        // Keep Razorpay Checkout inside this WebView. On Android, enabling
+        // multiple windows can send the checkout popup to onOpenWindow with
+        // an empty target and make the payment screen appear to fall back.
+        setSupportMultipleWindows={false}
         onOpenWindow={(event: { nativeEvent: { targetUrl?: string } }) => {
           const targetUrl = event.nativeEvent.targetUrl;
           if (!targetUrl) return;
