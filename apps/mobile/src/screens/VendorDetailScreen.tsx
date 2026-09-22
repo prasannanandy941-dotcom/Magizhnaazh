@@ -236,7 +236,16 @@ function BookModal({ visible, onClose, vendor, token, selectedPkg, price, advanc
           </View>
           <ScrollView contentContainerStyle={{ padding: space.lg }} keyboardShouldPersistTaps="handled">
             <Text style={styles.summary}>{vendor.businessName}{selectedPkg ? ` — ${selectedPkg.packageName}` : ''}</Text>
-            <Text style={styles.summaryPrice}>Total ₹{price.toLocaleString('en-IN')} • Advance ₹{advance.toLocaleString('en-IN')}</Text>
+            <View style={styles.summaryAmounts}>
+              <View style={styles.summaryAmountBox}>
+                <Text style={styles.summaryAmountLabel}>Total amount</Text>
+                <Text style={styles.summaryAmountValue}>₹{price.toLocaleString('en-IN')}</Text>
+              </View>
+              <View style={[styles.summaryAmountBox, styles.summaryAdvanceBox]}>
+                <Text style={styles.summaryAmountLabel}>Pay Advance</Text>
+                <Text style={styles.summaryAdvanceValue}>₹{advance.toLocaleString('en-IN')}</Text>
+              </View>
+            </View>
 
             <Text style={styles.modalLabel}>Book for which event?</Text>
             {loadingEvents ? (
@@ -320,7 +329,15 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: 18, fontWeight: '800', color: colors.text },
   close: { fontSize: 18, color: colors.textMuted, paddingHorizontal: 6 },
   summary: { fontSize: 15, fontWeight: '700', color: colors.text },
-  summaryPrice: { fontSize: 13, color: colors.gold, fontWeight: '700', marginTop: 2 },
+  summaryAmounts: { flexDirection: 'row', gap: space.sm, marginTop: space.sm },
+  summaryAmountBox: {
+    flex: 1, padding: space.sm, borderRadius: radius.md, borderWidth: 1,
+    borderColor: colors.border, backgroundColor: colors.surface,
+  },
+  summaryAdvanceBox: { borderColor: colors.gold, backgroundColor: 'rgba(212,175,55,0.12)' },
+  summaryAmountLabel: { fontSize: 11, color: colors.textMuted, fontWeight: '600' },
+  summaryAmountValue: { fontSize: 15, color: colors.text, fontWeight: '800', marginTop: 2 },
+  summaryAdvanceValue: { fontSize: 15, color: colors.gold, fontWeight: '800', marginTop: 2 },
   modalLabel: { fontSize: 12, fontWeight: '700', color: colors.text, marginTop: space.lg, marginBottom: space.sm },
   eventRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
