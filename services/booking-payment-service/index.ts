@@ -799,6 +799,12 @@ app.post('/api/v1/bookings/:id/payments/razorpay/order', authMiddleware(), async
   }
 
   const type: 'advance' | 'balance' = req.body?.type === 'balance' ? 'balance' : 'advance';
+  if (type === 'advance' && booking.status !== 'pending_payment') {
+    return res.status(400).json({
+      success: false,
+      message: 'The vendor must accept this booking before the advance can be paid.',
+    });
+  }
   const vendor = await fetchVendor(booking.vendorId);
 
   let amount: number;
