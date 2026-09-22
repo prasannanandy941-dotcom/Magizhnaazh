@@ -1451,6 +1451,9 @@ export interface Complaint {
   id: string;
   eventId?: string;
   bookingId?: string;
+  vendorId?: string;
+  vendorName?: string;
+  customerName?: string;
   submittedBy: string;
   subject: string;
   description: string;

@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Store, Star, Upload, Check, LogOut, Loader2, Plus, SlidersHorizontal, ChevronDown, ChevronLeft, ChevronRight, Receipt, X, Bell, ShieldCheck, Clock as ClockIcon, AlertCircle, FileText, CalendarDays, Sparkles, Car, Mail, Printer, Gift, Building2, Fingerprint, UtensilsCrossed, CreditCard, Save, CheckCircle2, Shield } from 'lucide-react';
 import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, VendorDeal, OfferedOptionItem, CateringFoodItem, CateringCourseItem, VENDOR_CATEGORIES, CATEGORY_OPTIONS, CATERING_OPTION_STYLE, MEDIA_QUALITY_OPTIONS, MEDIA_EQUIPMENT_OPTIONS, mediaExtraField, isDealLive, CATERING_MENU_TIERS, CATERING_FOOD_TYPES, CATERING_CUISINES, CATERING_COURSES, CATERING_LIVE_COUNTERS, CATERING_SERVICE_STYLES, BUFFET_PLATE_TYPES, BANANA_LEAF_TYPES, slotLabelWithTime, AVAILABILITY_SLOTS, offeredSlotIds, VENUE_SESSIONS, VENUE_HALL_TYPES, VENUE_HALL_CLASSES, VENUE_CATERING_POLICIES, VENUE_FEATURES, DECORATION_TIERS, DECORATION_THEMES, DECORATION_AREAS, DECORATION_FLOWER_TYPES, MAKEUP_TYPES, MAKEUP_FINISHES, MEDIA_TIERS, MEDIA_COVERAGE, MEDIA_STYLES, TRANSPORT_TIERS, TRANSPORT_VEHICLE_TYPES, TRANSPORT_PRICING_BASIS, TRANSPORT_USES, PRIEST_CEREMONY_TYPES, PRIEST_LANGUAGES, INVITATION_TIERS, INVITATION_TYPES, INVITATION_DESIGNS, INVITATION_ADDONS, INVITATION_LANGUAGES, PRINTING_PRODUCTS, PRINTING_FINISHES, RETURN_GIFTS_TIERS, RETURN_GIFT_TYPES, ENTERTAINMENT_ACT_TYPES, MUSIC_DJ_TIERS, MUSIC_DJ_TYPES, MUSIC_DJ_VENUE_TYPES, LIGHTING_TIERS, LIGHTING_TYPES, FLOWERS_VARIETIES, FLOWERS_ITEMS, FLOWERS_KINDS, MEHENDI_TIERS, MEHENDI_TYPES, MEHENDI_INTRICACY, EVENT_HOST_EVENT_TYPES, EVENT_HOST_LANGUAGES, EVENT_HOST_MODES, SECURITY_TYPES, SECURITY_GENDERS, RENTAL_ITEMS, UTENSILS_MATERIALS, UTENSILS_VESSEL_TYPES, WEDDING_PLANNER_SCOPES, CORPORATE_EVENT_TYPES, CORPORATE_ADDONS } from '../../../packages/shared-types';
+import type { Complaint } from '../../../packages/shared-types';
 import { STATIC_CITY_GROUPS } from '../../../packages/shared-utils';
 import { AuthGate } from './components/AuthGate';
 import { FloralGoldBackground } from './components/FloralGoldBackground';
-import { fetchMyVendor, createVendor, updateVendor, fetchVendorBookings, fetchVendorBookingsSilent, confirmBooking, sendCounterQuote, updateBookingStatus, updateSpendBreakdown, refundBooking, fetchVendorReviews, replyToReview, submitVerification, confirmBookingPayment, fetchBookingInvoice, fetchCalendarToken, onboardRazorpayRoute, refreshRazorpayStatus, verifyPanKyc, startAadhaarKyc, getAadhaarKycStatus, GATEWAY_URL } from './api';
+import { fetchMyVendor, createVendor, updateVendor, fetchVendorBookings, fetchVendorBookingsSilent, confirmBooking, sendCounterQuote, updateBookingStatus, updateSpendBreakdown, refundBooking, fetchVendorReviews, replyToReview, submitVerification, confirmBookingPayment, fetchBookingInvoice, fetchCalendarToken, onboardRazorpayRoute, refreshRazorpayStatus, verifyPanKyc, startAadhaarKyc, getAadhaarKycStatus, fetchVendorComplaints, GATEWAY_URL } from './api';
 import { openInvoicePrintWindow } from './invoice';
 import { playNotificationSound } from './notificationSound';
 import { getItemSuggestions, getAmenitySuggestions, suggestionListId } from './itemSuggestions';
@@ -330,6 +331,7 @@ export function App() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [bookingsLoading, setBookingsLoading] = useState(false);
   const [bookingTab, setBookingTab] = useState<'active' | 'cancelled'>('active');
+  const [complaints, setComplaints] = useState<Complaint[]>([]);
 
   // Live payment alerts: when a customer actually completes the real Razorpay
   // advance payment, that booking flips straight to `confirmed` with a
@@ -451,6 +453,9 @@ export function App() {
         fetchVendorReviews(v.id)
           .then((rv) => setReviews(rv.data?.reviews || []))
           .catch(() => setReviews([]));
+        fetchVendorComplaints(token, v.id)
+          .then((cr) => setComplaints(cr.data?.complaints || []))
+          .catch(() => setComplaints([]));
       } else {
         setVendorNotFound(true);
       }
@@ -4920,6 +4925,34 @@ export function App() {
                       <span className="text-lg font-extrabold text-amber-400 flex items-center gap-1"><Star className="w-4 h-4 fill-amber-400" />{myVendor.ratingAverage}</span>
                     </div>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {complaints.length > 0 && (
+              <div className="glass-card relative rounded-3xl overflow-hidden border border-rose-500/20 mb-5">
+                <div className="p-6 border-b border-rose-500/15 flex items-center gap-2.5">
+                  <Mail className="w-5 h-5 text-rose-300" />
+                  <div>
+                    <h3 className="font-bold text-lg text-white">Customer Issues ({complaints.length})</h3>
+                    <p className="text-xs text-slate-400">Messages sent from customer orders</p>
+                  </div>
+                </div>
+                <div className="divide-y divide-slate-800/80">
+                  {complaints.map((complaint) => (
+                    <div key={complaint.id} className="p-5">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="font-bold text-white">{complaint.subject}</p>
+                          <p className="text-xs text-slate-400 mt-1">
+                            {complaint.customerName || 'Customer'}{complaint.bookingId ? ` · Booking ${complaint.bookingId}` : ''}
+                          </p>
+                        </div>
+                        <span className="rounded-full bg-amber-500/15 px-2 py-1 text-[10px] font-bold uppercase text-amber-300">{complaint.status.replace('_', ' ')}</span>
+                      </div>
+                      <p className="mt-3 whitespace-pre-wrap text-sm text-slate-300">{complaint.description}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}

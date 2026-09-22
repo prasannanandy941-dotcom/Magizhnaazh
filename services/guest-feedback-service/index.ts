@@ -312,13 +312,31 @@ app.post('/api/v1/complaints', authMiddleware(), async (req: Request, res: Respo
     return res.status(400).json({ success: false, message: 'subject and description are required.' });
   }
 
+  let booking: any = null;
+  if (bookingId) {
+    const bookingRes = await fetch(`${BOOKING_SERVICE_URL}/api/v1/bookings/${encodeURIComponent(bookingId)}`);
+    if (!bookingRes.ok) return res.status(404).json({ success: false, message: 'Booking not found.' });
+    booking = (await bookingRes.json()).data?.booking;
+    if (!booking || booking.customerId !== req.user!.sub) {
+      return res.status(403).json({ success: false, message: 'You can only report issues for your own bookings.' });
+    }
+  }
+
   const complaint = await ComplaintModel.create({
     id: `cmp-${Date.now()}`,
-    eventId,
-    bookingId,
+    eventId: eventId || booking?.eventId,
+    bookingId: bookingId || undefined,
+    vendorId: booking?.vendorId,
+    vendorName: booking?.vendorName,
+    customerName: booking?.customerName,
     submittedBy: req.user!.sub,
     subject,
     description,
+  });
+
+  app.get('/api/v1/complaints/vendor/:vendorId', authMiddleware(), requireRole('vendor'), async (req: Request, res: Response) => {
+    const complaints = await ComplaintModel.find({ vendorId: req.params.vendorId }).sort({ createdAt: -1 }).limit(200);
+    res.json({ success: true, data: { complaints } });
   });
 
   res.status(201).json({ success: true, message: 'Complaint submitted. Our team will review it shortly.', data: { complaint } });

@@ -1,4 +1,4 @@
-import { User, Vendor, Booking, Review } from '../../../packages/shared-types';
+import { User, Vendor, Booking, Review, Complaint } from '../../../packages/shared-types';
 
 // In production this is baked in at build time from the VITE_GATEWAY_URL env
 // var (set in Render). Falls back to the local gateway for `npm run dev`.
@@ -8,6 +8,10 @@ const rawGatewayUrl = import.meta.env.VITE_GATEWAY_URL || 'http://localhost:8000
 export const GATEWAY_URL = /^https?:\/\//i.test(rawGatewayUrl)
   ? rawGatewayUrl
   : `https://${rawGatewayUrl}`;
+
+export function fetchVendorComplaints(token: string, vendorId: string): Promise<{ success: boolean; data?: { complaints: Complaint[] } }> {
+  return authedFetch(`/api/v1/complaints/vendor/${encodeURIComponent(vendorId)}`, token, { method: 'GET' });
+}
 
 export interface AuthResponse {
   success: boolean;

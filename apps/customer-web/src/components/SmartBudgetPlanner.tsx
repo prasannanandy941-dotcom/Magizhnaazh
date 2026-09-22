@@ -86,7 +86,7 @@ export const SmartBudgetPlanner: React.FC<SmartBudgetPlannerProps> = ({
   }));
   const displayBreakdown = focusedBookings.length > 0 ? orderBreakdown : breakdown;
   const recommendationBudget = selectedBooking
-    ? Math.max(0, bookingAmount(selectedBooking) - bookingPaid(selectedBooking))
+    ? bookingAmount(selectedBooking)
     : Math.max(0, event.totalBudget || 0);
   // Recommendations are budget-wide, not limited to the category already
   // booked. A customer with ₹3,008 remaining should discover any affordable
@@ -94,7 +94,9 @@ export const SmartBudgetPlanner: React.FC<SmartBudgetPlannerProps> = ({
   const recommendationPool = vendors
     .sort((a, b) => a.startingPrice - b.startingPrice);
   const affordableVendors = recommendationPool.filter((vendor) => vendor.startingPrice <= recommendationBudget);
-  const recommendedVendors = (affordableVendors.length > 0 ? affordableVendors : recommendationPool).slice(0, 4);
+  const recommendedVendors = affordableVendors.length > 0
+    ? affordableVendors
+    : recommendationPool.slice(0, 8);
 
   // Which real, confirmed vendor orders make up the spend — shown when the
   // customer taps the "Actual Spent" tile to drill in.
@@ -368,7 +370,7 @@ export const SmartBudgetPlanner: React.FC<SmartBudgetPlannerProps> = ({
           </div>
           {recommendationPool.length > 0 && affordableVendors.length === 0 && (
             <span className="text-[11px] text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded-full px-3 py-1">
-              Showing closest matches
+              Showing closest options across categories
             </span>
           )}
         </div>

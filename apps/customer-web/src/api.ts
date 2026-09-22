@@ -624,6 +624,17 @@ export function fetchMyReviews(): Promise<{ success: boolean; data?: { reviews: 
   return authedFetch<{ success: boolean; data?: { reviews: Review[] } }>('/api/v1/reviews/mine', { method: 'GET' });
 }
 
+export function submitBookingComplaint(input: {
+  bookingId: string;
+  subject: string;
+  description: string;
+}): Promise<{ success: boolean; message?: string }> {
+  return authedFetch<{ success: boolean; message?: string }>('/api/v1/complaints', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
 // Public reviews for a vendor — shown on the vendor detail page so shoppers can
 // read verified feedback and the vendor's replies. No account required.
 export function fetchVendorReviews(vendorId: string): Promise<{ success: boolean; data?: { reviews: Review[]; averageRating: number; count: number } }> {
