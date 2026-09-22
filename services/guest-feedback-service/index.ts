@@ -334,12 +334,12 @@ app.post('/api/v1/complaints', authMiddleware(), async (req: Request, res: Respo
     description,
   });
 
-  app.get('/api/v1/complaints/vendor/:vendorId', authMiddleware(), requireRole('vendor'), async (req: Request, res: Response) => {
-    const complaints = await ComplaintModel.find({ vendorId: req.params.vendorId }).sort({ createdAt: -1 }).limit(200);
-    res.json({ success: true, data: { complaints } });
-  });
-
   res.status(201).json({ success: true, message: 'Complaint submitted. Our team will review it shortly.', data: { complaint } });
+});
+
+app.get('/api/v1/complaints/vendor/:vendorId', authMiddleware(), requireRole('vendor'), async (req: Request, res: Response) => {
+  const complaints = await ComplaintModel.find({ vendorId: req.params.vendorId }).sort({ createdAt: -1 }).limit(200);
+  res.json({ success: true, data: { complaints } });
 });
 
 app.get('/api/v1/complaints', authMiddleware(), requireRole('admin'), async (req: Request, res: Response) => {
