@@ -387,6 +387,15 @@ app.get('/api/v1/vendors/mine', authMiddleware(), requireRole('vendor', 'admin')
   res.json({ success: true, data: { vendor } });
 });
 
+// All listings owned by the logged-in vendor account. This keeps bookings
+// visible when a customer created an order from an older listing record.
+app.get('/api/v1/vendors/owned', authMiddleware(), requireRole('vendor', 'admin'), async (req: Request, res: Response) => {
+  const vendors = await VendorModel.find(
+    req.user!.role === 'admin' ? {} : { userId: req.user!.sub }
+  ).select({ id: 1, userId: 1 });
+  res.json({ success: true, data: { vendors } });
+});
+
 // 3. Vendor detail
 app.get('/api/v1/vendors/:id', async (req: Request, res: Response) => {
   // Accept both the public listing ID and the linked vendor account ID.

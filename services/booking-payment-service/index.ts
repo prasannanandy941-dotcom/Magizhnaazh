@@ -367,13 +367,21 @@ app.post('/api/v1/bookings/quote', authMiddleware(), async (req: Request, res: R
     }
   }
 
+  // Store the canonical marketplace listing ID even if an older/mobile client
+  // submitted the vendor account ID.
+  let canonicalVendorId = vendorId;
+  if (vendorId) {
+    const resolvedVendor = await fetchVendor(String(vendorId));
+    if (resolvedVendor?.id) canonicalVendorId = resolvedVendor.id;
+  }
+
   const booking = await BookingModel.create({
     id: `bk-${Date.now()}`,
     bookingNumber: `BK-${Date.now()}`,
     eventId: eventId || 'evt-101',
     customerId: req.user!.sub,
     customerName: (req.body.customerName || req.user!.email || '').trim(),
-    vendorId: vendorId || 'vnd-1',
+    vendorId: canonicalVendorId || 'vnd-1',
     vendorName: vendorName || 'Vendor Partner',
     vendorCategory: vendorCategory || 'Other',
     packageId,
@@ -399,10 +407,10 @@ app.post('/api/v1/bookings/quote', authMiddleware(), async (req: Request, res: R
   // already succeeded, so a failure here must not fail the request. Only closes
   // when the vendor actually uses date-based availability (an enquiry-only
   // quote_requested doesn't lock the date).
-  if (advancePaymentClaimed && vendorId && resolvedEventDate) {
+  if (advancePaymentClaimed && canonicalVendorId && resolvedEventDate) {
     // Block only the chosen slot (Morning/Afternoon/Evening) so the rest of the
     // day stays open; with no slot this closes the whole date (book-slot handles both).
-    fetch(`${MARKETPLACE_SERVICE_URL}/api/v1/vendors/${vendorId}/book-slot`, {
+    fetch(`${MARKETPLACE_SERVICE_URL}/api/v1/vendors/${canonicalVendorId}/book-slot`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: req.headers.authorization || '' },
       body: JSON.stringify({ date: resolvedEventDate, slot: resolvedSlot }),
@@ -447,9 +455,24 @@ app.get('/api/v1/bookings', authMiddleware(), async (req: Request, res: Response
     // ID as a compatibility key for bookings created by older mobile clients
     // that submitted the vendor account ID instead.
     const vendor = await fetchVendor(String(vendorId));
-    const vendorIds = [String(vendorId), vendor?.userId].filter(
+    const vendorIds = [String(vendorId), vendor?.id, vendor?.userId].filter(
       (id): id is string => typeof id === 'string' && id.length > 0
     );
+    try {
+      const ownedRes = await fetch(`${MARKETPLACE_SERVICE_URL}/api/v1/vendors/owned`, {
+        headers: { Authorization: req.headers.authorization || '' },
+      });
+      if (ownedRes.ok) {
+        const ownedJson = await ownedRes.json();
+        for (const ownedVendor of ownedJson.data?.vendors || []) {
+          if (typeof ownedVendor?.id === 'string') vendorIds.push(ownedVendor.id);
+          if (typeof ownedVendor?.userId === 'string') vendorIds.push(ownedVendor.userId);
+        }
+      }
+    } catch {
+      // The exact listing IDs above remain sufficient when marketplace lookup
+      // is temporarily unavailable.
+    }
     const bookings = await BookingModel.find({ vendorId: { $in: vendorIds } }).limit(200);
     return res.json({ success: true, count: bookings.length, data: { bookings } });
   }
