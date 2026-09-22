@@ -40,35 +40,52 @@ export const SmartBudgetPlanner: React.FC<SmartBudgetPlannerProps> = ({
   // breakdown so the customer can see upcoming vendor spend, not only money paid.
   const PENDING_STATUSES = new Set<Booking['status']>(['pending_payment', 'negotiation', 'quote_sent']);
   const forThisEvent = myBookings.filter((b) => b.eventId === event.id);
+  const activeBookings = forThisEvent.filter((b) => b.status !== 'cancelled' && b.status !== 'refunded');
   const confirmedBookings = forThisEvent.filter((b) => CONFIRMED_STATUSES.has(b.status));
   const pendingBookings = forThisEvent.filter((b) => PENDING_STATUSES.has(b.status));
 
-  // Advance paid by customer across confirmed bookings
-  const totalAdvancePaid = confirmedBookings.reduce((acc, b) => acc + (b.advanceAmountPaid || 0), 0);
-
-  // "Spent" is the money actually PAID to vendors so far (including advances and confirmed ledger payments).
-  const totalSpent = confirmedBookings.reduce((acc, b) => {
+  const bookingAmount = (b: Booking) => b.agreedPrice || (b as any).price || 0;
+  const bookingPaid = (b: Booking) => {
     const confirmedPayments = (b.payments || []).filter((p) => p.status === 'confirmed');
-    if (confirmedPayments.length > 0) {
-      return acc + confirmedPayments.reduce((pAcc, p) => pAcc + (p.amount || 0), 0);
-    }
-    return acc + (b.advanceAmountPaid || 0);
-  }, 0);
+    return confirmedPayments.length > 0
+      ? confirmedPayments.reduce((sum, p) => sum + (p.amount || 0), 0)
+      : b.advanceAmountPaid || 0;
+  };
 
-  // Remaining budget left from customer's total budget
-  const remainingBudget = (event.totalBudget || 0) - totalSpent;
+  // Once orders exist, the order totals are the customer's real budget. The
+  // event's planning budget is only used before the first order is placed.
+  const orderTotal = activeBookings.reduce((acc, b) => acc + bookingAmount(b), 0);
+  const totalAmount = orderTotal > 0 ? orderTotal : event.totalBudget || 0;
+  const totalAdvancePaid = activeBookings.reduce((acc, b) => acc + (b.advanceAmountPaid || 0), 0);
+
+  // "Spent" is the money actually paid across every active order.
+  const totalSpent = activeBookings.reduce((acc, b) => acc + bookingPaid(b), 0);
+
+  // Remaining amount owed across the customer's active orders.
+  const remainingBudget = totalAmount - totalSpent;
 
   // Paid-so-far per category — drives each category row's Spent / Remaining /
   // over-budget state from the same real money that's actually been paid.
   const spentByCategory: Record<string, number> = {};
-  for (const b of confirmedBookings) {
-    spentByCategory[b.vendorCategory] = (spentByCategory[b.vendorCategory] || 0) + (b.advanceAmountPaid || 0);
+  const bookedByCategory: Record<string, number> = {};
+  for (const b of activeBookings) {
+    spentByCategory[b.vendorCategory] = (spentByCategory[b.vendorCategory] || 0) + bookingPaid(b);
+    bookedByCategory[b.vendorCategory] = (bookedByCategory[b.vendorCategory] || 0) + bookingAmount(b);
   }
+
+  const orderBreakdown = Object.entries(bookedByCategory).map(([category, allocatedAmount]) => ({
+    id: `order-${category}`,
+    category,
+    allocatedPercentage: totalAmount > 0 ? Math.round((allocatedAmount / totalAmount) * 100) : 0,
+    allocatedAmount,
+    actualSpent: spentByCategory[category] || 0,
+  }));
+  const displayBreakdown = activeBookings.length > 0 ? orderBreakdown : breakdown;
 
   // Which real, confirmed vendor orders make up the spend — shown when the
   // customer taps the "Actual Spent" tile to drill in.
   const [spendExpanded, setSpendExpanded] = useState(false);
-  const spendByCategory = [...confirmedBookings, ...pendingBookings].reduce<
+  const spendByCategory = activeBookings.reduce<
     Record<string, {
       vendorName: string;
       bookingNumber: string;
@@ -84,8 +101,8 @@ export const SmartBudgetPlanner: React.FC<SmartBudgetPlannerProps> = ({
     // derived from the total minus what's paid so it always ties out even if the
     // stored remainingAmount is stale.
     const pending = PENDING_STATUSES.has(b.status);
-    const amount = b.agreedPrice || (b as any).price || 0;
-    const paid = b.advanceAmountPaid || 0;
+    const amount = bookingAmount(b);
+    const paid = bookingPaid(b);
     (acc[b.vendorCategory] ||= []).push({
       vendorName: b.vendorName,
       bookingNumber: b.bookingNumber,
@@ -126,7 +143,7 @@ export const SmartBudgetPlanner: React.FC<SmartBudgetPlannerProps> = ({
           <div>
             <span className="text-[11px] font-bold uppercase text-slate-400 block">Total Amount</span>
             <span className="font-display font-extrabold text-xl sm:text-2xl text-white">
-              ₹{(event.totalBudget || 0).toLocaleString('en-IN')}
+              ₹{totalAmount.toLocaleString('en-IN')}
             </span>
           </div>
 
@@ -243,7 +260,7 @@ export const SmartBudgetPlanner: React.FC<SmartBudgetPlannerProps> = ({
         <h3 className="font-display font-bold text-xl text-white mb-6">Category Budget Breakdown & Adjustment</h3>
 
         <div className="space-y-4">
-          {breakdown.map((item) => {
+          {displayBreakdown.map((item) => {
             const categorySpent = spentByCategory[item.category] || 0;
             const isOverBudget = categorySpent > item.allocatedAmount;
 
@@ -293,6 +310,7 @@ export const SmartBudgetPlanner: React.FC<SmartBudgetPlannerProps> = ({
                     max={50}
                     value={item.allocatedPercentage}
                     onChange={(e) => handlePercentageChange(item.id, Number(e.target.value))}
+                    disabled={activeBookings.length > 0}
                     className="w-full accent-indigo-500 cursor-pointer"
                   />
                   <span className="text-xs font-bold text-slate-300 w-12 text-right">
