@@ -40,6 +40,7 @@ export const BookingsTab: React.FC<{ token: string }> = ({ token }) => {
         { label: 'Booking #', render: (b) => <span className="font-bold text-white font-mono">{b.bookingNumber}</span> },
         { label: 'Vendor', render: (b) => b.vendorName },
         { label: 'Package', render: (b) => b.packageName || '—' },
+        { label: 'Booked on', render: (b) => new Date(b.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) },
         { label: 'Amount', render: (b) => <span className="text-amber-400 font-bold">₹{b.agreedPrice.toLocaleString('en-IN')}</span> },
         { label: 'Advance Paid', render: (b) => `₹${b.advanceAmountPaid.toLocaleString('en-IN')}` },
         { label: 'Status', render: (b) => <span className={`px-2.5 py-1 rounded-full font-bold uppercase text-[10px] ${STATUS_STYLES[b.status] || ''}`}>{b.status.replace('_', ' ')}</span> },

@@ -5073,7 +5073,10 @@ export function App() {
                         </div>
 
                         <p className="text-xs text-slate-400 mt-1">
-                          Package: <strong className="text-slate-200">{b.packageName}</strong> • Date: <strong className="text-amber-400">{b.eventDate}</strong>{b.timeSlot ? <> • <span className="text-indigo-300">{slotLabelWithTime(b.timeSlot)}</span></> : null}
+                          Package: <strong className="text-slate-200">{b.packageName}</strong> • Event date: <strong className="text-amber-400">{b.eventDate}</strong>{b.timeSlot ? <> • <span className="text-indigo-300">{slotLabelWithTime(b.timeSlot)}</span></> : null}
+                        </p>
+                        <p className="text-[11px] text-slate-500 mt-1">
+                          Booked on: {new Date(b.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
                         </p>
                         {b.guestCount && b.guestCount > 0 && (
                           <p className="text-xs text-emerald-300 mt-1 font-semibold">

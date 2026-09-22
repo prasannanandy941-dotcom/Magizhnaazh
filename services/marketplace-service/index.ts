@@ -389,7 +389,12 @@ app.get('/api/v1/vendors/mine', authMiddleware(), requireRole('vendor', 'admin')
 
 // 3. Vendor detail
 app.get('/api/v1/vendors/:id', async (req: Request, res: Response) => {
-  const vendor = await VendorModel.findOne({ id: req.params.id });
+  // Accept both the public listing ID and the linked vendor account ID.
+  // Older/mobile booking flows may submit either value, but all callers still
+  // receive the same canonical vendor record.
+  const vendor = await VendorModel.findOne({
+    $or: [{ id: req.params.id }, { userId: req.params.id }],
+  });
   if (!vendor) return res.status(404).json({ success: false, message: 'Vendor not found.' });
   res.json({ success: true, data: { vendor } });
 });
