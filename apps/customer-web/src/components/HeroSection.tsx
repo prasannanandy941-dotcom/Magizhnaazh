@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Search, MapPin, Calendar as CalendarIcon, Users, IndianRupee, Sparkles, ShieldCheck, ArrowRight } from 'lucide-react';
 import { STATIC_CITY_GROUPS, detectUserCity } from '../../../../packages/shared-utils';
+import { VENDOR_CATEGORIES } from '../../../../packages/shared-types';
 
 interface HeroSectionProps {
-  onSearch: (params: { eventType: string; city: string; guests: number; budget: number }) => void;
+  onSearch: (params: { eventType: string; category: string; city: string; guests: number; budget: number }) => void;
   openEventWizard: () => void;
   // Ordered [state, cities][] for the location dropdown — sourced from the
   // backend's serviceable cities (falls back to the full India catalogue).
@@ -13,6 +14,7 @@ interface HeroSectionProps {
 export const HeroSection: React.FC<HeroSectionProps> = ({ onSearch, openEventWizard, cityGroups }) => {
   const groups = cityGroups && cityGroups.length > 0 ? cityGroups : STATIC_CITY_GROUPS;
   const [eventType, setEventType] = useState('Wedding');
+  const [category, setCategory] = useState('All');
   const [city, setCity] = useState('Chennai');
   const [cityAutoDetected, setCityAutoDetected] = useState(false);
   const [guests, setGuests] = useState(500);
@@ -38,7 +40,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onSearch, openEventWiz
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSearch({ eventType, city, guests, budget });
+    onSearch({ eventType, category, city, guests, budget });
   };
 
   return (
@@ -60,7 +62,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onSearch, openEventWiz
 
         <form
           onSubmit={handleSearchSubmit}
-          className="glass-card-gold p-4 sm:p-5 rounded-3xl shadow-2xl max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-center text-left"
+          className="glass-card-gold p-4 sm:p-5 rounded-3xl shadow-2xl max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 items-center text-left"
         >
           <div className="bg-[#26101c]/80 p-3 rounded-2xl border border-[#6b2140]/60 hover:border-[#d4af37]/50 transition-colors">
             <label className="block text-[11px] font-bold text-[#cf9bb3] uppercase tracking-wider mb-1">
@@ -77,6 +79,22 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onSearch, openEventWiz
               <option value="Anniversary" className="bg-[#26101c]">✨ Anniversary</option>
               <option value="Baby Shower" className="bg-[#26101c]">👶 Baby Shower</option>
               <option value="Corporate Event" className="bg-[#26101c]">🏢 Corporate Event</option>
+            </select>
+          </div>
+
+          <div className="bg-[#26101c]/80 p-3 rounded-2xl border border-[#6b2140]/60 hover:border-[#d4af37]/50 transition-colors">
+            <label className="block text-[11px] font-bold text-[#cf9bb3] uppercase tracking-wider mb-1">
+              Category Type
+            </label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full bg-transparent text-[#fdf1f5] font-semibold text-sm focus:outline-none cursor-pointer"
+            >
+              <option value="All" className="bg-[#26101c]">All Categories</option>
+              {VENDOR_CATEGORIES.map((item) => (
+                <option key={item} value={item} className="bg-[#26101c]">{item}</option>
+              ))}
             </select>
           </div>
 

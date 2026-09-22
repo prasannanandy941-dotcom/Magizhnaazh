@@ -60,12 +60,13 @@ export default function MarketplaceScreen() {
       </View>
 
       <View style={styles.chipsWrap}>
+        <Text style={styles.categoryLabel}>Category Type</Text>
         <FlatList
           data={CATEGORIES}
           horizontal
           showsHorizontalScrollIndicator={false}
           keyExtractor={(c) => c}
-          contentContainerStyle={{ paddingHorizontal: space.lg, gap: space.sm }}
+          contentContainerStyle={{ paddingHorizontal: space.md, gap: space.sm }}
           renderItem={({ item }) => (
             <TouchableOpacity
               style={[styles.chip, category === item && styles.chipActive]}
@@ -157,7 +158,14 @@ const styles = StyleSheet.create({
     borderWidth: 2, borderColor: colors.borderStrong, borderRadius: radius.md,
     paddingHorizontal: 14, paddingVertical: 11, color: colors.text, backgroundColor: colors.surface, fontSize: 15,
   },
-  chipsWrap: { paddingVertical: space.md },
+  chipsWrap: {
+    marginHorizontal: space.lg, paddingVertical: space.md, borderRadius: radius.md,
+    borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface,
+  },
+  categoryLabel: {
+    color: colors.textMuted, fontFamily: fonts.medium, fontSize: 11,
+    textTransform: 'uppercase', letterSpacing: 1, marginHorizontal: space.md, marginBottom: space.sm,
+  },
   chip: {
     paddingHorizontal: 14, paddingVertical: 7, borderRadius: 999,
     borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface,

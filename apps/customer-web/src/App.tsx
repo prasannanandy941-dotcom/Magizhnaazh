@@ -164,6 +164,7 @@ function deduplicateVendors(list: Vendor[]): Vendor[] {
 
 export function App() {
   const [activeTab, setActiveTab] = useState<string>('marketplace');
+  const [marketplaceCategory, setMarketplaceCategory] = useState('All');
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [vendorsLoading, setVendorsLoading] = useState(false);
   const [events, setEvents] = useState<Event[]>([]);
@@ -566,8 +567,9 @@ export function App() {
               onSearch={(params) => {
                 setMarketplaceCity(params.city);
                 setMarketplaceBudget(params.budget > 0 ? params.budget : null);
+                setMarketplaceCategory(params.category);
                 triggerNotification(
-                  `Showing vendors for ${params.eventType} in ${params.city} — ${params.guests} guests, ₹${(params.budget / 100000).toFixed(1)}L budget`
+                  `Showing ${params.category === 'All' ? 'all categories' : params.category} vendors for ${params.eventType} in ${params.city} — ${params.guests} guests, ₹${(params.budget / 100000).toFixed(1)}L budget`
                 );
                 document.getElementById('vendor-marketplace-section')?.scrollIntoView({ behavior: 'smooth' });
               }}
@@ -584,6 +586,8 @@ export function App() {
               toggleCompare={toggleCompare}
               openCompareModal={() => setShowCompareModal(true)}
               selectedCity={marketplaceCity}
+              selectedCategory={marketplaceCategory}
+              onCategoryChange={setMarketplaceCategory}
               maxBudget={marketplaceBudget}
               onCityChange={setMarketplaceCity}
               cityGroups={cityGroups}

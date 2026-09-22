@@ -39,6 +39,8 @@ interface VendorMarketplaceProps {
   selectedCity: string;
   maxBudget: number | null;
   onCityChange: (city: string) => void;
+  selectedCategory?: string;
+  onCategoryChange?: (category: string) => void;
   // Ordered [state, cities][] for the city filter — sourced from the backend's
   // serviceable cities (falls back to the full India catalogue).
   cityGroups?: [string, string[]][];
@@ -85,10 +87,12 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
   selectedCity,
   maxBudget,
   onCityChange,
+  selectedCategory: selectedCategoryProp,
+  onCategoryChange,
   cityGroups,
 }) => {
   const groups = cityGroups && cityGroups.length > 0 ? cityGroups : STATIC_CITY_GROUPS;
-  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [selectedCategory, setSelectedCategory] = useState<string>(selectedCategoryProp || 'All');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'rating' | 'price_low' | 'price_high'>('rating');
   const [activeFacilities, setActiveFacilities] = useState<string[]>([]);
@@ -146,9 +150,16 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
 
   const handleCategoryChange = (cat: string) => {
     setSelectedCategory(cat);
+    onCategoryChange?.(cat);
     if (cat !== 'Venue') setActiveFacilities([]);
     setActiveOptions([]);
   };
+
+  useEffect(() => {
+    if (selectedCategoryProp && selectedCategoryProp !== selectedCategory) {
+      setSelectedCategory(selectedCategoryProp);
+    }
+  }, [selectedCategoryProp, selectedCategory]);
 
   const filteredVendors = filterVenuesByFacilities(
     vendors.filter((v) => {
