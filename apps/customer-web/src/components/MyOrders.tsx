@@ -126,8 +126,8 @@ export const MyOrders: React.FC<{ isAuthenticated: boolean; onSignIn: () => void
 
       <div className="inline-flex rounded-2xl border border-slate-700 bg-slate-950/80 p-1">
         {[
-          { key: 'active', label: 'My Orders' },
-          { key: 'cancelled', label: 'Cancelled Orders' },
+          { key: 'active', label: 'My Orders', count: activeBookings.length },
+          { key: 'cancelled', label: 'Cancelled Orders', count: cancelledBookings.length },
         ].map((tab) => (
           <button
             key={tab.key}
@@ -139,9 +139,13 @@ export const MyOrders: React.FC<{ isAuthenticated: boolean; onSignIn: () => void
                 : 'text-slate-300 hover:text-white'
             }`}
           >
-            {tab.label}
+            {tab.label} ({tab.count})
           </button>
         ))}
+      </div>
+
+      <div className="rounded-2xl border border-indigo-500/20 bg-indigo-500/10 px-4 py-3 text-sm text-indigo-100">
+        Total orders: <strong className="text-white">{sorted.length}</strong>
       </div>
 
       {loading && bookings.length === 0 ? (

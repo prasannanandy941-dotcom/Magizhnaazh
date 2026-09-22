@@ -5016,7 +5016,9 @@ export function App() {
                   <Receipt className="w-4 h-4 text-slate-950" />
                 </div>
                 <h3 className="font-bold text-lg text-white">
-                  {bookingTab === 'active' ? 'Client Bookings & Quote Requests' : 'Cancelled Bookings'}
+                  {bookingTab === 'active'
+                    ? `Client Bookings & Quote Requests (${bookings.filter((b) => b.status !== 'cancelled' && b.status !== 'refunded').length})`
+                    : `Cancelled Bookings (${bookings.filter((b) => b.status === 'cancelled' || b.status === 'refunded').length})`}
                 </h3>
               </div>
 
