@@ -85,17 +85,17 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="sticky top-0 z-50 border-b border-[#6b2140]/50 bg-[#1a0a14]/85 backdrop-blur-xl">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-20 flex min-w-0 items-center justify-between">
         
         {/* Logo */}
         <div 
           onClick={() => setActiveTab('marketplace')}
-          className="flex items-center gap-3 cursor-pointer group"
+          className="flex min-w-0 shrink items-center gap-2 sm:gap-3 cursor-pointer group"
         >
-          <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-[#b8336a] via-[#c9a648] to-[#f0c869] flex items-center justify-center shadow-lg shadow-[#d4af37]/20 group-hover:scale-105 transition-transform">
+          <div className="w-10 h-10 sm:w-11 sm:h-11 shrink-0 rounded-2xl bg-gradient-to-tr from-[#b8336a] via-[#c9a648] to-[#f0c869] flex items-center justify-center shadow-lg shadow-[#d4af37]/20 group-hover:scale-105 transition-transform">
             <Sparkles className="w-6 h-6 text-[#1a0a14]" />
           </div>
-          <div>
+          <div className="hidden min-w-0 sm:block">
             <span className="font-display font-extrabold text-2xl tracking-tight text-[#fdf1f5] group-hover:text-[#e8c874] transition-colors">
               Magizhnaazh
             </span>
@@ -154,7 +154,7 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Right CTA */}
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
           <button
             onClick={openEventWizard}
             className="shine-sweep hidden sm:flex items-center gap-1.5 whitespace-nowrap px-3 py-2 rounded-lg bg-gradient-to-r from-[#d4af37] via-[#c9a648] to-[#e85d8a] hover:from-[#f0c869] hover:to-[#f2a6c4] text-[#1a0a14] font-bold text-xs shadow-lg shadow-[#d4af37]/25 transition-all hover:scale-105"
@@ -212,15 +212,15 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={onSignIn}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#26101c] border border-[#6b2140]/60 hover:border-[#d4af37]/50 text-[#f5c9dc] font-bold text-xs transition-colors"
             >
-              <LogIn className="w-4 h-4" />
-              Sign In
+              <LogIn className="w-4 h-4 shrink-0" />
+              <span className="hidden sm:inline">Sign In</span>
             </button>
           )}
 
           {/* Mobile menu toggle (shown < md, where the desktop nav is hidden) */}
           <button
             onClick={() => setShowMobileMenu((s) => !s)}
-            className="md:hidden p-2.5 rounded-xl bg-[#26101c] border border-[#6b2140]/60 text-[#cf9bb3] hover:text-[#f0c869] transition-colors"
+            className="md:hidden shrink-0 p-2.5 rounded-xl bg-[#26101c] border border-[#6b2140]/60 text-[#cf9bb3] hover:text-[#f0c869] transition-colors"
             aria-label="Menu"
           >
             {showMobileMenu ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
