@@ -2768,32 +2768,39 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                     <span className="text-emerald-300 font-bold">{activeEventGuestCount.toLocaleString('en-IN')} people</span>
                   </div>
                 )}
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-400">
-                    {selectedPkg
-                      ? optionsTotalPrice > 0
-                        ? `${selectedPkg.packageName} + Selected Items`
-                        : selectedPkg.packageName
-                      : optionsTotalPrice > 0
-                      ? `Selected Items (${selectedOptions.length})`
-                      : 'Starting Price'}
-                  </span>
-                  <span className={`font-semibold ${appliedDeal ? 'text-slate-500 line-through' : 'text-white'}`}>₹{referencePrice.toLocaleString('en-IN')}</span>
-                </div>
-                {selectedOptions.length > 0 && (
-                  <div className="mt-2.5 pt-2.5 border-t border-slate-800/80 space-y-1.5">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Selected items ({selectedOptions.length})</span>
-                    <div className="max-h-28 overflow-y-auto space-y-1.5 pr-1 text-xs">
-                      {selectedOptions.map((opt, i) => {
-                        const itemPrice = getOptionPrice(opt);
-                        return (
-                          <div key={i} className="flex items-center justify-between text-slate-300 py-0.5">
-                            <span className="truncate mr-2">• {opt.replace(/^[A-Za-z0-9\s/&]+:\s*/, '')}</span>
-                            {itemPrice > 0 && <span className="text-emerald-400 font-semibold shrink-0">₹{itemPrice.toLocaleString('en-IN')}</span>}
-                          </div>
-                        );
-                      })}
+                {(selectedPkg || selectedOptions.length > 0) ? (
+                  <div className="space-y-2 text-sm">
+                    {selectedPkg && (
+                      <div className="flex items-center justify-between text-slate-300">
+                        <span className="truncate mr-3">{vendor.category}: {selectedPkg.packageName}{chosenTier ? ` — ${chosenTier.name}` : ''}</span>
+                        <span className="font-semibold text-white shrink-0">₹{(effectivePkgPrice ?? 0).toLocaleString('en-IN')}</span>
+                      </div>
+                    )}
+                    {selectedOptions.length > 0 && (
+                      <div className="pt-2 border-t border-slate-800/80 space-y-1.5">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Selected items</span>
+                        <div className="max-h-28 overflow-y-auto space-y-1.5 pr-1 text-xs">
+                          {selectedOptions.map((opt, i) => {
+                            const itemPrice = getOptionPrice(opt);
+                            return (
+                              <div key={i} className="flex items-center justify-between text-slate-300 py-0.5">
+                                <span className="truncate mr-2">• {opt.replace(/^[A-Za-z0-9\s/&]+:\s*/, '')}</span>
+                                {itemPrice > 0 && <span className="text-emerald-400 font-semibold shrink-0">₹{itemPrice.toLocaleString('en-IN')}</span>}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-800 text-white font-bold">
+                      <span>Total amount</span>
+                      <span>₹{referencePrice.toLocaleString('en-IN')}</span>
                     </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-400">Starting Price</span>
+                    <span className="font-semibold text-white">₹{referencePrice.toLocaleString('en-IN')}</span>
                   </div>
                 )}
                 {appliedDeal && (
