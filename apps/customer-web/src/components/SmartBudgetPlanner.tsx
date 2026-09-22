@@ -85,26 +85,14 @@ export const SmartBudgetPlanner: React.FC<SmartBudgetPlannerProps> = ({
     actualSpent: spentByCategory[category] || 0,
   }));
   const displayBreakdown = focusedBookings.length > 0 ? orderBreakdown : breakdown;
-  const recommendationCategory = selectedBooking?.vendorCategory || displayBreakdown[0]?.category;
   const recommendationBudget = selectedBooking
     ? Math.max(0, bookingAmount(selectedBooking) - bookingPaid(selectedBooking))
     : Math.max(0, event.totalBudget || 0);
-  const categoryAliases: Record<string, string[]> = {
-    Media: ['media', 'photography', 'photographer', 'video', 'videography'],
-    Lighting: ['lighting', 'lights & sounds', 'sound'],
-  };
-  const categoryMatches = (vendorCategory: string, selected: string | undefined) => {
-    if (!selected) return true;
-    const vendor = vendorCategory.toLowerCase();
-    const target = selected.toLowerCase();
-    return vendor === target || (categoryAliases[target] || []).includes(vendor);
-  };
-  const categoryVendors = vendors
-    .filter((vendor) => categoryMatches(vendor.category, recommendationCategory))
+  // Recommendations are budget-wide, not limited to the category already
+  // booked. A customer with ₹3,008 remaining should discover any affordable
+  // service, including a different category.
+  const recommendationPool = vendors
     .sort((a, b) => a.startingPrice - b.startingPrice);
-  const recommendationPool = categoryVendors.length > 0
-    ? categoryVendors
-    : vendors.slice().sort((a, b) => a.startingPrice - b.startingPrice);
   const affordableVendors = recommendationPool.filter((vendor) => vendor.startingPrice <= recommendationBudget);
   const recommendedVendors = (affordableVendors.length > 0 ? affordableVendors : recommendationPool).slice(0, 4);
 
@@ -372,9 +360,9 @@ export const SmartBudgetPlanner: React.FC<SmartBudgetPlannerProps> = ({
           <div>
             <h3 className="font-display font-bold text-xl text-white">Vendors Within Your Budget</h3>
             <p className="text-xs text-slate-400 mt-1">
-              {recommendationCategory && categoryVendors.length > 0
-                ? `${recommendationCategory} vendors for this order`
-                : 'Vendors matched to your remaining budget'}
+              {recommendationBudget > 0
+                ? `All categories · vendors starting at or below ₹${recommendationBudget.toLocaleString('en-IN')}`
+                : 'Affordable vendors across all categories'}
               {recommendationBudget > 0 ? ` · Up to ₹${recommendationBudget.toLocaleString('en-IN')}` : ''}
             </p>
           </div>
