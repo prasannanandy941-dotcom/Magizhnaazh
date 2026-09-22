@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Star, MapPin, Check, ShieldCheck, Upload, Calendar as CalendarIcon, MessageSquare, Send, CreditCard, Sparkles, Camera, Bus, Gift, ListChecks, Phone, Clock, Plus, Maximize2, Car, Mail, Printer, FileText } from 'lucide-react';
-import { Vendor, Review, getVendorTrustBadges, getLiveDeals, bestDealForAmount, AVAILABILITY_SLOTS, isSlotBooked, openSlots, offeredSlotIds } from '../../../../packages/shared-types';
+import { Vendor, Review, Event, getVendorTrustBadges, getLiveDeals, bestDealForAmount, AVAILABILITY_SLOTS, isSlotBooked, openSlots, offeredSlotIds } from '../../../../packages/shared-types';
 import { fetchVendorById, uploadReferenceImage, fetchVendorReviews } from '../api';
 import { PortfolioGrid } from './Portfolio';
 import { DecorationGrid } from './DecorationThemes';
@@ -76,6 +76,8 @@ interface VendorDetailModalProps {
   onRequireAuth?: () => void;
   // Whether an event is currently created and active
   hasActiveEvent?: boolean;
+  activeEventId?: string;
+  events?: Event[];
   activeEventTitle?: string;
   activeEventDate?: string;
   activeEventGuestCount?: number;
@@ -90,7 +92,8 @@ interface VendorDetailModalProps {
     selectedOptions?: string[],
     referenceImages?: string[],
     timeSlot?: string,
-    guestCount?: number
+    guestCount?: number,
+    eventId?: string
   ) => void;
 }
 
@@ -101,11 +104,20 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
   isAuthenticated,
   onRequireAuth,
   hasActiveEvent = false,
+  activeEventId,
+  events = [],
   activeEventTitle,
   activeEventDate,
   activeEventGuestCount,
   onRequestCreateEvent,
 }) => {
+  const [selectedBookingEventId, setSelectedBookingEventId] = useState('');
+  const selectedBookingEvent = events.find((event) => event.id === selectedBookingEventId);
+  useEffect(() => {
+    if (events.length > 0 && !events.some((event) => event.id === selectedBookingEventId)) {
+      setSelectedBookingEventId(activeEventId || events[0].id);
+    }
+  }, [events, selectedBookingEventId, activeEventId]);
   // Start from whatever the marketplace list had cached, then refresh with
   // the live record so vendor-side edits (new availability dates, packages,
   // gallery, options) show up immediately instead of only after a full page
@@ -261,10 +273,10 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
 
   // If activeEvent has a date and vendor doesn't have fixed dates, auto-fill date
   useEffect(() => {
-    if (!hasFixedAvailability && !selectedEventDate && activeEventDate) {
-      setSelectedEventDate(activeEventDate);
+    if (!hasFixedAvailability && !selectedEventDate && (selectedBookingEvent?.date || activeEventDate)) {
+      setSelectedEventDate(selectedBookingEvent?.date || activeEventDate || '');
     }
-  }, [hasFixedAvailability, selectedEventDate, activeEventDate]);
+  }, [hasFixedAvailability, selectedEventDate, activeEventDate, selectedBookingEvent?.date]);
 
   const handleBookAndPayClick = () => {
     if (!isAuthenticated) {
@@ -2757,15 +2769,29 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
             <div className="p-6 space-y-4">
               <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800">
                 {activeEventTitle && (
-                  <div className="flex items-center justify-between text-xs pb-2.5 mb-2.5 border-b border-slate-800">
+                  <div className="flex items-center justify-between gap-3 text-xs pb-2.5 mb-2.5 border-b border-slate-800">
                     <span className="text-slate-400">Booking for event:</span>
-                    <span className="text-amber-300 font-semibold truncate max-w-[180px]">{activeEventTitle}</span>
+                    {events.length > 1 ? (
+                      <select
+                        value={selectedBookingEventId}
+                        onChange={(e) => {
+                          const event = events.find((item) => item.id === e.target.value);
+                          setSelectedBookingEventId(e.target.value);
+                          setSelectedEventDate(event?.date || '');
+                        }}
+                        className="max-w-[190px] rounded-lg border border-slate-700 bg-slate-900 px-2 py-1 text-amber-300 font-semibold"
+                      >
+                        {events.map((event) => <option key={event.id} value={event.id}>{event.title}</option>)}
+                      </select>
+                    ) : (
+                      <span className="text-amber-300 font-semibold truncate max-w-[180px]">{selectedBookingEvent?.title || activeEventTitle}</span>
+                    )}
                   </div>
                 )}
-                {activeEventGuestCount && activeEventGuestCount > 0 && (
+                {(selectedBookingEvent?.guestCount || activeEventGuestCount) && (
                   <div className="flex items-center justify-between text-xs pb-2.5 mb-2.5 border-b border-slate-800">
                     <span className="text-slate-400">Expected guests:</span>
-                    <span className="text-emerald-300 font-bold">{activeEventGuestCount.toLocaleString('en-IN')} people</span>
+                    <span className="text-emerald-300 font-bold">{(selectedBookingEvent?.guestCount || activeEventGuestCount || 0).toLocaleString('en-IN')} people</span>
                   </div>
                 )}
                 {(selectedPkg || selectedOptions.length > 0) ? (
@@ -2859,7 +2885,8 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                       return refs.length > 0 ? refs : undefined;
                     })(),
                     selectedSlot || undefined,
-                    activeEventGuestCount
+                    selectedBookingEvent?.guestCount || activeEventGuestCount,
+                    selectedBookingEvent?.id || selectedBookingEventId
                   );
                   setAdvancePanelOpen(false);
                 }}
