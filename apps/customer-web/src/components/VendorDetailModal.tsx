@@ -2818,10 +2818,6 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                         </div>
                       </div>
                     )}
-                    <div className="flex items-center justify-between pt-2 border-t border-slate-800 text-white font-bold">
-                      <span>Total amount</span>
-                      <span>₹{referencePrice.toLocaleString('en-IN')}</span>
-                    </div>
                   </div>
                 ) : (
                   <div className="flex items-center justify-between text-sm">
@@ -2841,9 +2837,15 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                     </div>
                   </>
                 )}
-                <div className="flex items-center justify-between text-sm mt-2 pt-2 border-t border-slate-800">
-                  <span className="text-slate-400">{advanceLabel}</span>
-                  <span className="text-amber-400 font-bold">₹{advanceAmountDue.toLocaleString('en-IN')}</span>
+                <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-slate-800">
+                  <div className="rounded-xl bg-slate-800/50 border border-slate-700/70 px-3 py-2.5">
+                    <span className="text-[11px] text-slate-400 block">Total amount</span>
+                    <span className="text-white font-bold">₹{referencePrice.toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 px-3 py-2.5">
+                    <span className="text-[11px] text-slate-400 block">{advanceLabel}</span>
+                    <span className="text-amber-400 font-bold">₹{advanceAmountDue.toLocaleString('en-IN')}</span>
+                  </div>
                 </div>
               </div>
 
