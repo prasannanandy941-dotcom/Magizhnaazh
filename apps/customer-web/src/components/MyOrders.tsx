@@ -233,10 +233,8 @@ export const MyOrders: React.FC<{ isAuthenticated: boolean; onSignIn: () => void
                     <p>This booking was {(STATUS_LABEL[b.status] || b.status).toLowerCase()}.</p>
                     {b.cancelReason && <p className="text-[11px] font-normal text-slate-400 mt-0.5">Reason: {b.cancelReason}</p>}
                   </div>
-                ) : b.status === 'pending_payment' ? (
-                  <AdvancePaymentBlock booking={b} onUpdated={(nb) => setBookings((prev) => prev.map((x) => (x.id === nb.id ? nb : x)))} />
                 ) : (
-                  <p className="text-xs text-amber-300">Waiting for the vendor to accept this booking. You can pay the advance after acceptance.</p>
+                  <AdvancePaymentBlock booking={b} onUpdated={(nb) => setBookings((prev) => prev.map((x) => (x.id === nb.id ? nb : x)))} />
                 )}
 
                 {activeTab === 'active' && isTrackable && (

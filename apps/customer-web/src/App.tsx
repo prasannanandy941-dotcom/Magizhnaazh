@@ -814,12 +814,57 @@ export function App() {
                 const booking = quote.data?.booking;
                 if (!booking) throw new Error('Could not create the booking. Please try again.');
 
+                const finishBooking = (confirmedBooking: any) => {
+                  const spent = confirmedBooking?.agreedPrice ?? p;
+                  // Credit the spend against the matching budget line (falling back to
+                  // "Other" if this category isn't broken out) so "Actual Spent to Date"
+                  // on the Smart Budget dashboard reflects real bookings, not just the
+                  // top-level spentBudget total.
+                  const targetCategory = activeEvent.budgetBreakdown.some((b) => b.category === v.category)
+                    ? v.category
+                    : 'Other';
+                  const updatedBreakdown = activeEvent.budgetBreakdown.map((b) =>
+                    b.category === targetCategory ? { ...b, actualSpent: b.actualSpent + spent } : b
+                  );
+
+                  const updated = {
+                    ...activeEvent,
+                    spentBudget: activeEvent.spentBudget + spent,
+                    budgetBreakdown: updatedBreakdown,
+                  };
+                  setActiveEvent(updated);
+                  setEvents((prev) => prev.map((e) => (e.id === updated.id ? updated : e)));
+
+                  // Best-effort persist — local state above already reflects the spend
+                  // immediately, so a failure here (e.g. this is the shared demo fallback
+                  // event and isn't owned by this account) shouldn't block the booking flow.
+                  updateEventBudget(updated.id, updatedBreakdown).catch((err) =>
+                    console.error('Failed to persist updated budget breakdown', err)
+                  );
+
+                  triggerNotification(
+                    `Payment received for ${v.businessName} — ₹${spent.toLocaleString('en-IN')} confirmed. ` +
+                      `Your booking is confirmed.` +
+                      (notes ? ` Your request was shared with the vendor.` : '')
+                  );
+                  setActiveTab('budget');
+                  setBookingInProgress(false);
+                };
+
                 setSelectedVendorForModal(null);
-                setBookingInProgress(false);
-                triggerNotification(
-                  `Your request was sent to ${v.businessName}. The vendor must accept it before you can pay the advance.`
-                );
-                setActiveTab('orders');
+                await payBookingWithRazorpay(booking.id, 'advance', {
+                  onSuccess: finishBooking,
+                  onDismiss: () => {
+                    setBookingInProgress(false);
+                    triggerNotification(
+                      `Payment not completed for ${v.businessName} — you can finish paying anytime from My Orders.`
+                    );
+                  },
+                  onError: (message) => {
+                    setBookingInProgress(false);
+                    triggerNotification(message || `Payment failed for ${v.businessName} — please try again from My Orders.`);
+                  },
+                });
               } catch (err: any) {
                 console.error('Booking failed', err);
                 if (err instanceof ApiError && err.status === 401) {
