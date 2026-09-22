@@ -473,12 +473,14 @@ app.get('/api/v1/bookings', authMiddleware(), async (req: Request, res: Response
       // The exact listing IDs above remain sufficient when marketplace lookup
       // is temporarily unavailable.
     }
-    const bookings = await BookingModel.find({ vendorId: { $in: vendorIds } }).limit(200);
+    const bookings = await BookingModel.find({ vendorId: { $in: [...new Set(vendorIds)] } })
+      .sort({ createdAt: -1 })
+      .limit(200);
     return res.json({ success: true, count: bookings.length, data: { bookings } });
   }
 
   const filter = req.user!.role === 'admin' ? {} : { customerId: req.user!.sub };
-  const bookings = await BookingModel.find(filter).limit(200);
+  const bookings = await BookingModel.find(filter).sort({ createdAt: -1 }).limit(200);
   res.json({ success: true, count: bookings.length, data: { bookings } });
 });
 

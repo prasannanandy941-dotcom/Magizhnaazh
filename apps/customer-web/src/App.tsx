@@ -849,6 +849,7 @@ export function App() {
                       `Your booking is confirmed.` +
                       (notes ? ` Your request was shared with the vendor.` : '')
                   );
+                  window.dispatchEvent(new CustomEvent('magizhnaazh:booking-updated'));
                   setActiveTab('budget');
                   setBookingInProgress(false);
                 };

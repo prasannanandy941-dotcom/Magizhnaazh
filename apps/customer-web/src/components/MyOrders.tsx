@@ -80,6 +80,15 @@ export const MyOrders: React.FC<{ isAuthenticated: boolean; onSignIn: () => void
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]);
 
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const refreshAfterBooking = () => load();
+    window.addEventListener('magizhnaazh:booking-updated', refreshAfterBooking);
+    return () => window.removeEventListener('magizhnaazh:booking-updated', refreshAfterBooking);
+    // `load` is intentionally kept stable for this mounted page listener.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated]);
+
   if (!isAuthenticated) {
     return (
       <div className="max-w-md mx-auto px-4 py-20 text-center space-y-4">
