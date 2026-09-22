@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Event, Vendor, Booking } from '../../../../packages/shared-types';
-import { IndianRupee, AlertTriangle, Sparkles, CheckCircle2, TrendingUp, ChevronDown, Receipt } from 'lucide-react';
+import { IndianRupee, AlertTriangle, Sparkles, CheckCircle2, TrendingUp, ChevronDown, Receipt, ArrowRight } from 'lucide-react';
 import { fetchMyBookings } from '../api';
 
 interface SmartBudgetPlannerProps {
@@ -85,6 +85,28 @@ export const SmartBudgetPlanner: React.FC<SmartBudgetPlannerProps> = ({
     actualSpent: spentByCategory[category] || 0,
   }));
   const displayBreakdown = focusedBookings.length > 0 ? orderBreakdown : breakdown;
+  const recommendationCategory = selectedBooking?.vendorCategory || displayBreakdown[0]?.category;
+  const recommendationBudget = selectedBooking
+    ? Math.max(0, bookingAmount(selectedBooking) - bookingPaid(selectedBooking))
+    : Math.max(0, event.totalBudget || 0);
+  const categoryAliases: Record<string, string[]> = {
+    Media: ['media', 'photography', 'photographer', 'video', 'videography'],
+    Lighting: ['lighting', 'lights & sounds', 'sound'],
+  };
+  const categoryMatches = (vendorCategory: string, selected: string | undefined) => {
+    if (!selected) return true;
+    const vendor = vendorCategory.toLowerCase();
+    const target = selected.toLowerCase();
+    return vendor === target || (categoryAliases[target] || []).includes(vendor);
+  };
+  const categoryVendors = vendors
+    .filter((vendor) => categoryMatches(vendor.category, recommendationCategory))
+    .sort((a, b) => a.startingPrice - b.startingPrice);
+  const recommendationPool = categoryVendors.length > 0
+    ? categoryVendors
+    : vendors.slice().sort((a, b) => a.startingPrice - b.startingPrice);
+  const affordableVendors = recommendationPool.filter((vendor) => vendor.startingPrice <= recommendationBudget);
+  const recommendedVendors = (affordableVendors.length > 0 ? affordableVendors : recommendationPool).slice(0, 4);
 
   // Which real, confirmed vendor orders make up the spend — shown when the
   // customer taps the "Actual Spent" tile to drill in.
@@ -343,6 +365,55 @@ export const SmartBudgetPlanner: React.FC<SmartBudgetPlannerProps> = ({
             );
           })}
         </div>
+      </div>
+
+      <div className="glass-card p-6 rounded-3xl border border-indigo-500/30">
+        <div className="flex flex-wrap items-start justify-between gap-3 mb-5">
+          <div>
+            <h3 className="font-display font-bold text-xl text-white">Vendors Within Your Budget</h3>
+            <p className="text-xs text-slate-400 mt-1">
+              {recommendationCategory && categoryVendors.length > 0
+                ? `${recommendationCategory} vendors for this order`
+                : 'Vendors matched to your remaining budget'}
+              {recommendationBudget > 0 ? ` · Up to ₹${recommendationBudget.toLocaleString('en-IN')}` : ''}
+            </p>
+          </div>
+          {recommendationPool.length > 0 && affordableVendors.length === 0 && (
+            <span className="text-[11px] text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded-full px-3 py-1">
+              Showing closest matches
+            </span>
+          )}
+        </div>
+
+        {recommendedVendors.length === 0 ? (
+          <p className="text-sm text-slate-400">No vendors are available for this category yet.</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {recommendedVendors.map((vendor) => (
+              <button
+                key={vendor.id}
+                type="button"
+                onClick={() => onSelectVendor(vendor)}
+                className="text-left rounded-2xl overflow-hidden bg-slate-900/70 border border-slate-800 hover:border-indigo-400/60 transition-colors group"
+              >
+                {vendor.galleryImages?.[0] ? (
+                  <img src={vendor.galleryImages[0]} alt="" className="w-full h-28 object-cover" />
+                ) : (
+                  <div className="w-full h-28 bg-gradient-to-br from-indigo-900/50 to-slate-900 flex items-center justify-center text-xs text-slate-400">
+                    {vendor.category}
+                  </div>
+                )}
+                <div className="p-3">
+                  <p className="font-bold text-sm text-white truncate">{vendor.businessName}</p>
+                  <p className="text-xs text-amber-300 mt-1">Starting ₹{vendor.startingPrice.toLocaleString('en-IN')}</p>
+                  <span className="inline-flex items-center gap-1 text-[11px] text-indigo-300 mt-3 group-hover:text-indigo-200">
+                    View vendor <ArrowRight className="w-3 h-3" />
+                  </span>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
     </div>
