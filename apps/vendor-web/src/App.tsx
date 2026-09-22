@@ -4949,16 +4949,7 @@ export function App() {
                             {complaint.customerName || 'Customer'}{complaint.bookingId ? ` · Booking ${complaint.bookingId}` : ''}
                           </p>
                         </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="rounded-full bg-amber-500/15 px-2 py-1 text-[10px] font-bold uppercase text-amber-300">{complaint.status.replace('_', ' ')}</span>
-                          <button
-                            type="button"
-                            onClick={() => setOpenComplaint(complaint)}
-                            className="rounded-lg bg-indigo-600 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-indigo-500"
-                          >
-                            Open
-                          </button>
-                        </div>
+                        <span className="rounded-full bg-amber-500/15 px-2 py-1 text-[10px] font-bold uppercase text-amber-300">{complaint.status.replace('_', ' ')}</span>
                       </div>
                     </div>
                   ))}
