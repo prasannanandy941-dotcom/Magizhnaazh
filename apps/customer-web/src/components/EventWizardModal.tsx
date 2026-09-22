@@ -176,19 +176,19 @@ export const EventWizardModal: React.FC<EventWizardModalProps> = ({ onClose, onE
           {step === 5 && (
             <div>
               <h3 className="font-display font-bold text-2xl text-white">Expected Guest Count</h3>
-              <p className="text-xs text-slate-400 mt-1 mb-6">How many attendees are you expecting?</p>
+              <p className="text-xs text-slate-400 mt-1 mb-6">Enter the number of attendees you are expecting.</p>
 
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3 p-4 rounded-2xl bg-slate-900 border border-slate-800">
                 <input
-                  type="range"
-                  min={20}
-                  max={2000}
-                  step={20}
+                  type="number"
+                  min={1}
+                  step={1}
                   value={guestCount}
-                  onChange={(e) => setGuestCount(Number(e.target.value))}
-                  className="w-full accent-indigo-500"
+                  onChange={(e) => setGuestCount(Math.max(1, Number(e.target.value) || 1))}
+                  className="w-full bg-transparent text-white font-bold text-2xl focus:outline-none"
+                  aria-label="Expected guest count"
                 />
-                <span className="text-2xl font-bold text-amber-400 w-24 text-right">{guestCount}</span>
+                <span className="text-sm font-semibold text-slate-400 whitespace-nowrap">guests</span>
               </div>
             </div>
           )}
