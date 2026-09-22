@@ -332,6 +332,7 @@ export function App() {
   const [bookingsLoading, setBookingsLoading] = useState(false);
   const [bookingTab, setBookingTab] = useState<'active' | 'cancelled'>('active');
   const [complaints, setComplaints] = useState<Complaint[]>([]);
+  const [openComplaint, setOpenComplaint] = useState<Complaint | null>(null);
 
   // Live payment alerts: when a customer actually completes the real Razorpay
   // advance payment, that booking flips straight to `confirmed` with a
@@ -4948,11 +4949,65 @@ export function App() {
                             {complaint.customerName || 'Customer'}{complaint.bookingId ? ` · Booking ${complaint.bookingId}` : ''}
                           </p>
                         </div>
-                        <span className="rounded-full bg-amber-500/15 px-2 py-1 text-[10px] font-bold uppercase text-amber-300">{complaint.status.replace('_', ' ')}</span>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="rounded-full bg-amber-500/15 px-2 py-1 text-[10px] font-bold uppercase text-amber-300">{complaint.status.replace('_', ' ')}</span>
+                          <button
+                            type="button"
+                            onClick={() => setOpenComplaint(complaint)}
+                            className="rounded-lg bg-indigo-600 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-indigo-500"
+                          >
+                            Open
+                          </button>
+                        </div>
                       </div>
-                      <p className="mt-3 whitespace-pre-wrap text-sm text-slate-300">{complaint.description}</p>
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {openComplaint && (
+              <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 px-4" role="dialog" aria-modal="true">
+                <div className="w-full max-w-2xl rounded-2xl border border-slate-700 bg-slate-950 p-6 shadow-2xl">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-rose-300">Customer issue</p>
+                      <h3 className="mt-1 text-xl font-bold text-white">{openComplaint.subject}</h3>
+                      <p className="mt-1 text-xs text-slate-400">
+                        {openComplaint.customerName || 'Customer'}
+                        {openComplaint.bookingId ? ` · Booking ${openComplaint.bookingId}` : ''}
+                      </p>
+                    </div>
+                    <button type="button" onClick={() => setOpenComplaint(null)} className="text-slate-400 hover:text-white" aria-label="Close issue">
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
+                  <div className="mt-5 rounded-xl border border-slate-800 bg-slate-900/70 p-4">
+                    <p className="whitespace-pre-wrap text-sm leading-6 text-slate-200">{openComplaint.description}</p>
+                  </div>
+                  <div className="mt-5 flex items-center justify-between gap-3">
+                    <span className="rounded-full bg-amber-500/15 px-2.5 py-1 text-[10px] font-bold uppercase text-amber-300">
+                      {openComplaint.status.replace('_', ' ')}
+                    </span>
+                    <div className="flex gap-2">
+                      {openComplaint.bookingId && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOpenComplaint(null);
+                            setBookingTab('active');
+                            setTimeout(() => document.getElementById(`booking-${openComplaint.bookingId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 0);
+                          }}
+                          className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white hover:bg-indigo-500"
+                        >
+                          Open booking
+                        </button>
+                      )}
+                      <button type="button" onClick={() => setOpenComplaint(null)} className="rounded-xl bg-slate-800 px-4 py-2 text-xs font-bold text-white hover:bg-slate-700">
+                        Close
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -5006,7 +5061,7 @@ export function App() {
                 ) : (
                 <div className="divide-y divide-slate-800/80">
                   {visibleBookings.map((b) => (
-                    <div key={b.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-900/40">
+                    <div id={`booking-${b.id}`} key={b.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-900/40">
                       <div>
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-white text-base">{b.bookingNumber}</span>
