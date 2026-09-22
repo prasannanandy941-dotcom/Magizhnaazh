@@ -90,7 +90,7 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Logo */}
         <div 
           onClick={() => setActiveTab('marketplace')}
-          className="flex min-w-0 shrink items-center gap-2 sm:gap-3 cursor-pointer group"
+          className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-3 cursor-pointer group"
         >
           <div className="w-10 h-10 sm:w-11 sm:h-11 shrink-0 rounded-2xl bg-gradient-to-tr from-[#b8336a] via-[#c9a648] to-[#f0c869] flex items-center justify-center shadow-lg shadow-[#d4af37]/20 group-hover:scale-105 transition-transform">
             <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-[#1a0a14]" />
@@ -106,7 +106,7 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Desktop Navigation */}
-        <div className="hidden md:flex flex-col bg-[#26101c]/70 rounded-2xl border border-[#6b2140]/60 overflow-hidden min-w-0 max-w-xl xl:max-w-2xl mx-2">
+        <div className="hidden md:flex min-w-0 flex-1 flex-col bg-[#26101c]/70 rounded-2xl border border-[#6b2140]/60 overflow-hidden max-w-xl xl:max-w-2xl ml-3 mr-2">
           <nav
             ref={navRef}
             onScroll={updateScrollProgress}
