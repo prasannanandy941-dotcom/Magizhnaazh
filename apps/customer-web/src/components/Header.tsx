@@ -93,13 +93,13 @@ export const Header: React.FC<HeaderProps> = ({
           className="flex min-w-0 shrink items-center gap-2 sm:gap-3 cursor-pointer group"
         >
           <div className="w-10 h-10 sm:w-11 sm:h-11 shrink-0 rounded-2xl bg-gradient-to-tr from-[#b8336a] via-[#c9a648] to-[#f0c869] flex items-center justify-center shadow-lg shadow-[#d4af37]/20 group-hover:scale-105 transition-transform">
-            <Sparkles className="w-6 h-6 text-[#1a0a14]" />
+            <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-[#1a0a14]" />
           </div>
-          <div className="hidden min-w-0 sm:block">
-            <span className="font-display font-extrabold text-2xl tracking-tight text-[#fdf1f5] group-hover:text-[#e8c874] transition-colors">
+          <div className="min-w-0">
+            <span className="block whitespace-nowrap font-display font-extrabold text-xl sm:text-2xl tracking-tight text-[#fdf1f5] group-hover:text-[#e8c874] transition-colors">
               Magizhnaazh
             </span>
-            <span className="block text-[10px] uppercase font-bold tracking-widest text-[#e8c874] font-sans">
+            <span className="block whitespace-nowrap text-[8px] sm:text-[10px] uppercase font-bold tracking-[0.12em] sm:tracking-widest text-[#e8c874] font-sans">
               Customer Event Planner
             </span>
           </div>
