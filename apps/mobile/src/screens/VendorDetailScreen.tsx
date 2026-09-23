@@ -242,7 +242,7 @@ function BookModal({ visible, onClose, vendor, token, selectedPkg, price, advanc
                 <Text style={styles.summaryAmountValue}>₹{price.toLocaleString('en-IN')}</Text>
               </View>
               <View style={[styles.summaryAmountBox, styles.summaryAdvanceBox]}>
-                <Text style={styles.summaryAmountLabel}>Pay Advance</Text>
+                <Text style={styles.summaryAdvanceLabel}>Advance required</Text>
                 <Text style={styles.summaryAdvanceValue}>₹{advance.toLocaleString('en-IN')}</Text>
               </View>
             </View>
@@ -329,15 +329,17 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: 18, fontWeight: '800', color: colors.text },
   close: { fontSize: 18, color: colors.textMuted, paddingHorizontal: 6 },
   summary: { fontSize: 15, fontWeight: '700', color: colors.text },
-  summaryAmounts: { flexDirection: 'row', gap: space.sm, marginTop: space.sm },
+  summaryAmounts: { gap: space.sm, marginTop: space.sm },
   summaryAmountBox: {
-    flex: 1, padding: space.sm, borderRadius: radius.md, borderWidth: 1,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: space.md, paddingVertical: space.sm + 2, borderRadius: radius.md, borderWidth: 1,
     borderColor: colors.border, backgroundColor: colors.surface,
   },
   summaryAdvanceBox: { borderColor: colors.gold, backgroundColor: 'rgba(212,175,55,0.12)' },
-  summaryAmountLabel: { fontSize: 11, color: colors.textMuted, fontWeight: '600' },
-  summaryAmountValue: { fontSize: 15, color: colors.text, fontWeight: '800', marginTop: 2 },
-  summaryAdvanceValue: { fontSize: 15, color: colors.gold, fontWeight: '800', marginTop: 2 },
+  summaryAmountLabel: { fontSize: 12, color: colors.textMuted, fontWeight: '600' },
+  summaryAdvanceLabel: { fontSize: 12, color: colors.gold, fontWeight: '600' },
+  summaryAmountValue: { fontSize: 15, color: colors.text, fontWeight: '800' },
+  summaryAdvanceValue: { fontSize: 15, color: colors.gold, fontWeight: '800' },
   modalLabel: { fontSize: 12, fontWeight: '700', color: colors.text, marginTop: space.lg, marginBottom: space.sm },
   eventRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
