@@ -10,6 +10,7 @@ import { useAuth } from '../auth';
 import type { Vendor, VendorPackage, VenuePackageDetails, EventItem } from '../types';
 import type { RootStackParamList, RootNav } from '../navTypes';
 import { colors, radius, space, fonts } from '../theme';
+import { AVAILABILITY_SLOTS, isSlotBooked, offeredSlotIds, openSlots, slotLabel } from '../slots';
 
 const { width } = Dimensions.get('window');
 
@@ -143,6 +144,27 @@ export default function VendorDetailScreen() {
           </>
         )}
 
+        {((vendor.availableDates?.length ?? 0) > 0 || (vendor.bookedDates?.length ?? 0) > 0) && (
+          <>
+            <Text style={styles.sectionTitle}>Available Dates & Sessions</Text>
+            <Text style={styles.hint}>Open dates and slots offered by this vendor.</Text>
+            <View style={styles.datesContainer}>
+              {(vendor.availableDates || []).map((d) => (
+                <View key={d} style={styles.dateBadgeOpen}>
+                  <Text style={styles.dateBadgeTextOpen}>{d}</Text>
+                  <Text style={styles.dateBadgeSubOpen}>Available</Text>
+                </View>
+              ))}
+              {(vendor.bookedDates || []).map((d) => (
+                <View key={d} style={styles.dateBadgeBooked}>
+                  <Text style={styles.dateBadgeTextBooked}>{d}</Text>
+                  <Text style={styles.dateBadgeSubBooked}>BOOKED</Text>
+                </View>
+              ))}
+            </View>
+          </>
+        )}
+
         {!!vendor.contactPhone && (
           <>
             <Text style={styles.sectionTitle}>Contact</Text>
@@ -197,18 +219,57 @@ function BookModal({ visible, onClose, vendor, token, selectedPkg, price, advanc
   const [notes, setNotes] = useState('');
   const [placing, setPlacing] = useState(false);
 
+  const hasFixedDates = (vendor.availableDates?.length ?? 0) > 0;
+  const [selectedDate, setSelectedDate] = useState<string>(vendor.availableDates?.[0] || '');
+  const [selectedSlot, setSelectedSlot] = useState<string>('');
+
   useEffect(() => {
     if (!visible || !token) return;
     setLoadingEvents(true);
     api.fetchEvents(token)
-      .then((list) => { setEvents(list); if (list[0]) setEventId((cur) => cur ?? list[0].id); })
+      .then((list) => {
+        setEvents(list);
+        if (list[0]) {
+          setEventId((cur) => cur ?? list[0].id);
+          if (!hasFixedDates && list[0].date) setSelectedDate((cur) => cur || list[0].date);
+        }
+      })
       .catch(() => {})
       .finally(() => setLoadingEvents(false));
-  }, [visible, token]);
+  }, [visible, token, hasFixedDates]);
+
+  useEffect(() => {
+    if (!selectedDate) { setSelectedSlot(''); return; }
+    const open = openSlots(vendor, selectedDate);
+    setSelectedSlot(open.length ? open[0].id : '');
+  }, [selectedDate, vendor.bookedSlots, vendor.bookedDates]);
+
+  const onSelectEvent = (e: EventItem) => {
+    setEventId(e.id);
+    if (!hasFixedDates && e.date) {
+      setSelectedDate(e.date);
+    }
+  };
+
+  const isCurrentSlotBooked = Boolean(selectedDate && selectedSlot && isSlotBooked(vendor, selectedDate, selectedSlot));
+  const isDateFullyBooked = Boolean(selectedDate && (vendor.bookedDates || []).includes(selectedDate));
 
   const confirm = async () => {
     if (!token) return;
     if (!eventId) { Alert.alert('Pick an event', 'Create an event in the Events tab first, then book against it.'); return; }
+    if (hasFixedDates && !selectedDate) {
+      Alert.alert('Pick a date', 'Please choose an available date for this vendor.');
+      return;
+    }
+    if (isDateFullyBooked) {
+      Alert.alert('Date Booked', 'This date has already been booked by another customer. Please choose another date.');
+      return;
+    }
+    if (isCurrentSlotBooked) {
+      Alert.alert('Session Booked', 'This date and session has already been booked by another customer. Please choose another date or session.');
+      return;
+    }
+
     setPlacing(true);
     try {
       const ev = events.find((e) => e.id === eventId);
@@ -220,7 +281,8 @@ function BookModal({ visible, onClose, vendor, token, selectedPkg, price, advanc
         packageId: selectedPkg?.id,
         packageName: selectedPkg?.packageName,
         price,
-        eventDate: ev?.date,
+        eventDate: selectedDate || ev?.date,
+        timeSlot: selectedSlot || undefined,
         notes: notes.trim() || undefined,
         advancePaymentClaimed: true,
       });
@@ -254,6 +316,92 @@ function BookModal({ visible, onClose, vendor, token, selectedPkg, price, advanc
               </View>
             </View>
 
+            {/* Vendor Available Dates */}
+            {(hasFixedDates || (vendor.bookedDates?.length ?? 0) > 0) && (
+              <>
+                <Text style={styles.modalLabel}>Pick an available date</Text>
+                <View style={styles.chipRow}>
+                  {(vendor.availableDates || []).map((d) => {
+                    const sel = selectedDate === d;
+                    return (
+                      <TouchableOpacity
+                        key={d}
+                        style={[styles.dateChip, sel && styles.dateChipSel]}
+                        onPress={() => setSelectedDate(d)}
+                      >
+                        <Text style={[styles.dateChipText, sel && styles.dateChipTextSel]}>{d}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                  {(vendor.bookedDates || []).map((d) => (
+                    <TouchableOpacity
+                      key={d}
+                      style={styles.dateChipBooked}
+                      onPress={() => Alert.alert('Date Booked', 'This date has already been booked by another customer. Please choose another date.')}
+                    >
+                      <Text style={styles.dateChipTextBooked}>{d}</Text>
+                      <Text style={styles.badgeBooked}>BOOKED</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </>
+            )}
+
+            {/* Session / Slot Picker */}
+            {selectedDate ? (
+              <>
+                <Text style={styles.modalLabel}>Pick a session / slot</Text>
+                <View style={styles.chipRow}>
+                  {AVAILABILITY_SLOTS.filter((s) => offeredSlotIds(vendor, selectedDate).includes(s.id)).map((s) => {
+                    const booked = isSlotBooked(vendor, selectedDate, s.id);
+                    const sel = selectedSlot === s.id;
+                    return (
+                      <TouchableOpacity
+                        key={s.id}
+                        style={[
+                          styles.slotChip,
+                          sel && !booked && styles.slotChipSel,
+                          booked && styles.slotChipBooked,
+                        ]}
+                        onPress={() => {
+                          if (booked) {
+                            Alert.alert('Session Booked', 'This session has already been booked by another customer. Please choose another date or session.');
+                          } else {
+                            setSelectedSlot(s.id);
+                          }
+                        }}
+                      >
+                        <Text style={[
+                          styles.slotChipText,
+                          sel && !booked && styles.slotChipTextSel,
+                          booked && styles.slotChipTextBooked,
+                        ]}>
+                          {s.label}
+                        </Text>
+                        {booked && <Text style={styles.badgeBooked}>Booked</Text>}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
+                {isCurrentSlotBooked && (
+                  <View style={styles.conflictBanner}>
+                    <Text style={styles.conflictText}>
+                      ⚠️ This session has already been booked by another customer. Please choose another session or date.
+                    </Text>
+                  </View>
+                )}
+
+                {openSlots(vendor, selectedDate).length === 0 && (
+                  <View style={styles.conflictBanner}>
+                    <Text style={styles.conflictText}>
+                      ⚠️ All sessions on this date are booked by other customers. Please pick another date.
+                    </Text>
+                  </View>
+                )}
+              </>
+            ) : null}
+
             <Text style={styles.modalLabel}>Book for which event?</Text>
             {loadingEvents ? (
               <ActivityIndicator color={colors.primary} style={{ marginVertical: space.md }} />
@@ -261,7 +409,7 @@ function BookModal({ visible, onClose, vendor, token, selectedPkg, price, advanc
               <Text style={styles.hint}>No events yet — create one in the Events tab, then come back to book.</Text>
             ) : (
               events.map((e) => (
-                <TouchableOpacity key={e.id} style={[styles.eventRow, eventId === e.id && styles.eventRowSel]} onPress={() => setEventId(e.id)}>
+                <TouchableOpacity key={e.id} style={[styles.eventRow, eventId === e.id && styles.eventRowSel]} onPress={() => onSelectEvent(e)}>
                   <Text style={styles.eventName}>{eventId === e.id ? '● ' : '○ '}{e.title}</Text>
                   <Text style={styles.eventDate}>{e.date}</Text>
                 </TouchableOpacity>
@@ -278,7 +426,11 @@ function BookModal({ visible, onClose, vendor, token, selectedPkg, price, advanc
               multiline
             />
 
-            <TouchableOpacity style={styles.confirmBtn} onPress={confirm} disabled={placing || events.length === 0}>
+            <TouchableOpacity
+              style={[styles.confirmBtn, (placing || events.length === 0 || isCurrentSlotBooked || isDateFullyBooked) && styles.confirmBtnDisabled]}
+              onPress={confirm}
+              disabled={placing || events.length === 0 || isCurrentSlotBooked || isDateFullyBooked}
+            >
               {placing ? <ActivityIndicator color={colors.onPrimary} /> : <Text style={styles.confirmText}>I've paid the advance — Confirm booking</Text>}
             </TouchableOpacity>
             <Text style={styles.disclaimer}>The vendor verifies your payment and confirms the booking on their side.</Text>
@@ -363,6 +515,30 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface, minHeight: 70, textAlignVertical: 'top',
   },
   confirmBtn: { backgroundColor: colors.primary, borderRadius: radius.md, paddingVertical: 15, alignItems: 'center', marginTop: space.lg },
+  confirmBtnDisabled: { opacity: 0.4 },
   confirmText: { color: colors.onPrimary, fontWeight: '800', fontSize: 14 },
   disclaimer: { fontSize: 11, color: colors.textMuted, textAlign: 'center', marginTop: space.sm, marginBottom: space.md },
+  datesContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
+  dateBadgeOpen: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.md, borderWidth: 1, borderColor: colors.primary, backgroundColor: 'rgba(212,175,55,0.08)' },
+  dateBadgeTextOpen: { fontSize: 13, fontWeight: '700', color: colors.gold },
+  dateBadgeSubOpen: { fontSize: 10, color: colors.green, fontWeight: '700' },
+  dateBadgeBooked: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.md, borderWidth: 1, borderColor: 'rgba(220,38,38,0.3)', backgroundColor: 'rgba(220,38,38,0.1)' },
+  dateBadgeTextBooked: { fontSize: 13, fontWeight: '600', color: colors.textMuted, textDecorationLine: 'line-through' },
+  dateBadgeSubBooked: { fontSize: 10, color: colors.danger, fontWeight: '800' },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  dateChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+  dateChipSel: { borderColor: colors.primary, backgroundColor: colors.primary },
+  dateChipText: { fontSize: 13, fontWeight: '600', color: colors.text },
+  dateChipTextSel: { color: colors.onPrimary, fontWeight: '700' },
+  dateChipBooked: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.md, borderWidth: 1, borderColor: 'rgba(220,38,38,0.3)', backgroundColor: 'rgba(220,38,38,0.08)', flexDirection: 'row', alignItems: 'center', gap: 6 },
+  dateChipTextBooked: { fontSize: 13, fontWeight: '600', color: colors.textMuted, textDecorationLine: 'line-through' },
+  slotChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+  slotChipSel: { borderColor: colors.primary, backgroundColor: colors.primary },
+  slotChipBooked: { borderColor: 'rgba(220,38,38,0.3)', backgroundColor: 'rgba(220,38,38,0.08)' },
+  slotChipText: { fontSize: 13, fontWeight: '600', color: colors.text },
+  slotChipTextSel: { color: colors.onPrimary, fontWeight: '700' },
+  slotChipTextBooked: { color: colors.textMuted, textDecorationLine: 'line-through' },
+  badgeBooked: { fontSize: 9, fontWeight: '800', color: colors.danger, backgroundColor: 'rgba(220,38,38,0.15)', paddingHorizontal: 4, paddingVertical: 1, borderRadius: 4 },
+  conflictBanner: { marginTop: space.sm, padding: space.sm + 2, borderRadius: radius.md, borderWidth: 1, borderColor: 'rgba(220,38,38,0.4)', backgroundColor: 'rgba(220,38,38,0.12)' },
+  conflictText: { fontSize: 12, fontWeight: '600', color: colors.danger, lineHeight: 17 },
 });

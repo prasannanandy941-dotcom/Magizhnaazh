@@ -11,7 +11,7 @@ import { authMiddleware, requireRole } from '../../packages/shared-utils/auth';
 import { requestLogger } from '../../packages/shared-utils/logging';
 import { registerHealthRoute } from '../../packages/shared-utils/health';
 import { LocalStorageProvider } from '../../packages/local-storage-provider';
-import { AVAILABILITY_SLOTS } from '../../packages/shared-types';
+import { AVAILABILITY_SLOTS, offeredSlotIds } from '../../packages/shared-types';
 import { serviceUrl } from '../../packages/shared-utils/serviceUrl';
 import { VENDOR_CATEGORIES } from '../../packages/shared-types';
 import { INDIA_STATES_AND_CITIES } from '../../packages/shared-utils/indiaLocations';
@@ -472,11 +472,21 @@ app.post('/api/v1/vendors', authMiddleware(), requireRole('vendor', 'admin'), as
 });
 
 // 5. Update own vendor profile (business info, packages, pricing).
+// Helper middleware: allow requests that carry the internal API secret (from
+// booking-payment-service or guest-feedback-service) OR a valid customer/vendor JWT.
+const allowInternalOrAuth = (req: Request, res: Response, next: express.NextFunction) => {
+  const internalSecret = process.env.INTERNAL_API_SECRET;
+  if (internalSecret && req.headers['x-internal-secret'] === internalSecret) {
+    return next();
+  }
+  return authMiddleware()(req, res, next);
+};
+
 // Close a single date on a vendor's availability once a customer books it, so
 // the same date can't be double-booked. Called server-to-server by the booking
-// service (forwarding the booking customer's token) right after a booking is
-// placed; any authenticated user may close the date they're booking.
-app.post('/api/v1/vendors/:id/book-date', authMiddleware(), async (req: Request, res: Response) => {
+// service right after a booking is placed; any authenticated user or internal
+// service may close the date they're booking.
+app.post('/api/v1/vendors/:id/book-date', allowInternalOrAuth, async (req: Request, res: Response) => {
   const { date } = req.body;
   if (!date) return res.status(400).json({ success: false, message: 'date is required.' });
   const vendor = await VendorModel.findOne({ id: req.params.id });
@@ -492,28 +502,37 @@ app.post('/api/v1/vendors/:id/book-date', authMiddleware(), async (req: Request,
 });
 
 // Close a single TIME SLOT on a date (Morning/Afternoon/Evening). Booking one
-// slot leaves the others on that day open. When every slot on the date is taken,
-// the whole date is closed (added to bookedDates). With no `slot`, this behaves
-// like book-date (full-day block). Called server-to-server by the booking service.
-app.post('/api/v1/vendors/:id/book-slot', authMiddleware(), async (req: Request, res: Response) => {
+// slot leaves the others on that day open. When every slot on the date is taken
+// (or a full-day slot is booked), the whole date is closed (added to bookedDates).
+// Called server-to-server by the booking service.
+app.post('/api/v1/vendors/:id/book-slot', allowInternalOrAuth, async (req: Request, res: Response) => {
   const { date, slot } = req.body;
   if (!date) return res.status(400).json({ success: false, message: 'date is required.' });
   const vendor = await VendorModel.findOne({ id: req.params.id });
   if (!vendor) return res.status(404).json({ success: false, message: 'Vendor not found.' });
 
-  if (!slot) {
-    // No slot → block the whole day (legacy behaviour).
+  if (!slot || slot === 'fullday') {
+    // No slot or fullday → block the whole day.
     vendor.availableDates = (vendor.availableDates || []).filter((d) => d !== date);
     if (!(vendor.bookedDates || []).includes(date)) vendor.bookedDates = [...(vendor.bookedDates || []), date];
+    const slots = Array.isArray(vendor.bookedSlots) ? vendor.bookedSlots : [];
+    if (!slots.some((b) => b.date === date && b.slot === 'fullday')) {
+      vendor.bookedSlots = [...slots, { date, slot: 'fullday' }];
+      vendor.markModified('bookedSlots');
+    }
   } else {
     const slots = Array.isArray(vendor.bookedSlots) ? vendor.bookedSlots : [];
     if (!slots.some((b) => b.date === date && b.slot === slot)) {
       vendor.bookedSlots = [...slots, { date, slot }];
       vendor.markModified('bookedSlots');
     }
-    // If every slot on this date is now booked, close the whole date.
+    // If every offered session on this date is now booked, or if fullday was booked, close the whole date.
     const bookedForDate = new Set((vendor.bookedSlots || []).filter((b) => b.date === date).map((b) => b.slot));
-    if (AVAILABILITY_SLOTS.every((s) => bookedForDate.has(s.id))) {
+    const offered = offeredSlotIds(vendor as any, date);
+    const sessionOffered = offered.filter((s) => s !== 'fullday');
+    const allSessionsBooked = sessionOffered.length > 0 && sessionOffered.every((s) => bookedForDate.has(s));
+
+    if (bookedForDate.has('fullday') || allSessionsBooked) {
       vendor.availableDates = (vendor.availableDates || []).filter((d) => d !== date);
       if (!(vendor.bookedDates || []).includes(date)) vendor.bookedDates = [...(vendor.bookedDates || []), date];
     }
@@ -525,27 +544,33 @@ app.post('/api/v1/vendors/:id/book-slot', authMiddleware(), async (req: Request,
 // Reverse of book-slot: reopen a date/slot that was closed for a booking which
 // has since been cancelled or refunded, so the vendor doesn't lose that day.
 // Called server-to-server by booking-payment-service's /cancel route.
-app.post('/api/v1/vendors/:id/unbook-slot', authMiddleware(), async (req: Request, res: Response) => {
+app.post('/api/v1/vendors/:id/unbook-slot', allowInternalOrAuth, async (req: Request, res: Response) => {
   const { date, slot } = req.body;
   if (!date) return res.status(400).json({ success: false, message: 'date is required.' });
   const vendor = await VendorModel.findOne({ id: req.params.id });
   if (!vendor) return res.status(404).json({ success: false, message: 'Vendor not found.' });
 
   if (slot) {
-    vendor.bookedSlots = (vendor.bookedSlots || []).filter((b) => !(b.date === date && b.slot === slot));
+    vendor.bookedSlots = (vendor.bookedSlots || []).filter((b) => !(b.date === date && (b.slot === slot || (slot === 'fullday' && b.slot === 'fullday'))));
     vendor.markModified('bookedSlots');
   }
-  // Reopen the whole date too — either it was a full-day block, or removing
-  // this slot means the date is no longer fully booked out.
-  vendor.bookedDates = (vendor.bookedDates || []).filter((d) => d !== date);
-  if (!(vendor.availableDates || []).includes(date)) vendor.availableDates = [...(vendor.availableDates || []), date];
+  // Check if remaining booked slots for this date still mean the whole date is booked
+  const remainingBooked = (vendor.bookedSlots || []).filter((b) => b.date === date).map((b) => b.slot);
+  const offered = offeredSlotIds(vendor as any, date);
+  const sessionOffered = offered.filter((s) => s !== 'fullday');
+  const stillFullyBooked = remainingBooked.includes('fullday') || (sessionOffered.length > 0 && sessionOffered.every((s) => remainingBooked.includes(s)));
+
+  if (!stillFullyBooked) {
+    vendor.bookedDates = (vendor.bookedDates || []).filter((d) => d !== date);
+    if (!(vendor.availableDates || []).includes(date)) vendor.availableDates = [...(vendor.availableDates || []), date];
+  }
   await vendor.save();
   res.json({ success: true, data: { availableDates: vendor.availableDates, bookedDates: vendor.bookedDates, bookedSlots: vendor.bookedSlots } });
 });
 
 // Free a previously-blocked date (e.g. a booking was cancelled) — moves it back
 // out of bookedDates. Does not re-add to availableDates (the vendor re-opens it).
-app.post('/api/v1/vendors/:id/free-date', authMiddleware(), async (req: Request, res: Response) => {
+app.post('/api/v1/vendors/:id/free-date', allowInternalOrAuth, async (req: Request, res: Response) => {
   const { date } = req.body;
   if (!date) return res.status(400).json({ success: false, message: 'date is required.' });
   const vendor = await VendorModel.findOne({ id: req.params.id });

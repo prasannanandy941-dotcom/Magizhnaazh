@@ -13,6 +13,7 @@ import { serviceUrl } from '../../packages/shared-utils/serviceUrl';
 import { BookingModel } from './models/Booking';
 import { PlatformSettingsModel, getSettings } from './models/PlatformSettings';
 import { CouponModel } from './models/Coupon';
+import { isSlotBooked, slotLabel } from '../../packages/shared-types';
 import { createMarketplaceOrder, getRazorpayInstance, verifyPaymentSignature, verifyWebhookSignature } from './utils/razorpay';
 
 const app = express();
@@ -177,9 +178,15 @@ async function applyVerifiedRazorpayPayment(
     if (booking.vendorId && booking.eventDate) {
       fetch(`${MARKETPLACE_SERVICE_URL}/api/v1/vendors/${booking.vendorId}/book-slot`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: authHeader || '' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: authHeader || '',
+          'x-internal-secret': process.env.INTERNAL_API_SECRET || '',
+        },
         body: JSON.stringify({ date: booking.eventDate, slot: booking.timeSlot || '' }),
-      }).catch(() => { /* vendor availability will still show the slot until they refresh — not fatal */ });
+      }).catch((err) => {
+        console.warn('[booking-payment-service] book-slot error on payment confirmation:', err);
+      });
     }
   }
 
@@ -343,36 +350,75 @@ app.post('/api/v1/bookings/quote', authMiddleware(), async (req: Request, res: R
   }
   const resolvedSlot = typeof timeSlot === 'string' ? timeSlot : '';
 
-  // Reject the request outright if the vendor has opened up specific dates and
-  // this isn't one of them — a vendor who has never set any availability is
-  // treated as open (nothing to check against), so this only blocks requests
-  // for a date the vendor has explicitly not made available.
-  if (vendorId) {
-    try {
-      const vendorRes = await fetch(`${MARKETPLACE_SERVICE_URL}/api/v1/vendors/${vendorId}`);
-      if (vendorRes.ok) {
-        const vendorJson = await vendorRes.json();
-        const vendor = vendorJson.data?.vendor;
-        if (vendor?.availableDates?.length > 0 && !vendor.availableDates.includes(resolvedEventDate)) {
-          return res.status(400).json({
-            success: false,
-            message: `${vendor.businessName} hasn't opened up ${resolvedEventDate} for booking. Please choose one of their available dates.`,
-            code: 'DATE_NOT_AVAILABLE',
-          });
-        }
-      }
-    } catch {
-      // Marketplace-service being briefly unreachable shouldn't block booking —
-      // fall through and allow it rather than hard-failing on an infra hiccup.
-    }
-  }
-
   // Store the canonical marketplace listing ID even if an older/mobile client
   // submitted the vendor account ID.
   let canonicalVendorId = vendorId;
   if (vendorId) {
     const resolvedVendor = await fetchVendor(String(vendorId));
     if (resolvedVendor?.id) canonicalVendorId = resolvedVendor.id;
+  }
+
+  // Double-booking check: prevent two customers from booking the same date and slot.
+  if (canonicalVendorId && resolvedEventDate) {
+    // 1. Check existing active bookings in booking-payment-service database.
+    const slotConflictQuery = resolvedSlot === 'fullday'
+      ? { $exists: true }
+      : resolvedSlot
+        ? { $in: [resolvedSlot, 'fullday', ''] }
+        : { $exists: true };
+
+    const conflictBooking = await BookingModel.findOne({
+      vendorId: canonicalVendorId,
+      eventDate: resolvedEventDate,
+      status: { $in: ['confirmed', 'in_progress', 'pending_payment', 'quote_requested'] },
+      timeSlot: slotConflictQuery,
+    });
+
+    if (conflictBooking) {
+      const slotName = slotLabel(resolvedSlot) || resolvedSlot || 'requested';
+      return res.status(409).json({
+        success: false,
+        message: `This date (${resolvedEventDate}) and ${slotName} session has already been booked by another customer. Please choose another date or session.`,
+        code: 'SLOT_ALREADY_BOOKED',
+      });
+    }
+
+    // 2. Check vendor's availability and booked slots in marketplace-service.
+    try {
+      const vendorRes = await fetch(`${MARKETPLACE_SERVICE_URL}/api/v1/vendors/${canonicalVendorId}`);
+      if (vendorRes.ok) {
+        const vendorJson = await vendorRes.json();
+        const vendor = vendorJson.data?.vendor;
+        if (vendor) {
+          if ((vendor.bookedDates || []).includes(resolvedEventDate)) {
+            return res.status(409).json({
+              success: false,
+              message: `${vendor.businessName} has already been booked by another customer on ${resolvedEventDate}. Please choose another date.`,
+              code: 'SLOT_ALREADY_BOOKED',
+            });
+          }
+
+          if (vendor?.availableDates?.length > 0 && !vendor.availableDates.includes(resolvedEventDate)) {
+            return res.status(400).json({
+              success: false,
+              message: `${vendor.businessName} hasn't opened up ${resolvedEventDate} for booking. Please choose one of their available dates.`,
+              code: 'DATE_NOT_AVAILABLE',
+            });
+          }
+
+          if (isSlotBooked(vendor, resolvedEventDate, resolvedSlot)) {
+            const slotName = slotLabel(resolvedSlot) || resolvedSlot || 'session';
+            return res.status(409).json({
+              success: false,
+              message: `This date (${resolvedEventDate}) and ${slotName} session has already been booked by another customer. Please choose another date or session.`,
+              code: 'SLOT_ALREADY_BOOKED',
+            });
+          }
+        }
+      }
+    } catch {
+      // Marketplace-service hiccup shouldn't block, but database conflict check above is definitive.
+    }
   }
 
   const booking = await BookingModel.create({
@@ -402,20 +448,19 @@ app.post('/api/v1/bookings/quote', authMiddleware(), async (req: Request, res: R
     referenceImages: Array.isArray(referenceImages) ? referenceImages : [],
   });
 
-  // A confirmed booking (advance claimed) takes that date off the vendor's
-  // availability so nobody else can book the same day. Best-effort: the booking
-  // already succeeded, so a failure here must not fail the request. Only closes
-  // when the vendor actually uses date-based availability (an enquiry-only
-  // quote_requested doesn't lock the date).
-  if (advancePaymentClaimed && canonicalVendorId && resolvedEventDate) {
-    // Block only the chosen slot (Morning/Afternoon/Evening) so the rest of the
-    // day stays open; with no slot this closes the whole date (book-slot handles both).
+  // Block the slot in marketplace-service immediately so other customers viewing
+  // this vendor instantly see that this session/date is booked.
+  if (canonicalVendorId && resolvedEventDate) {
     fetch(`${MARKETPLACE_SERVICE_URL}/api/v1/vendors/${canonicalVendorId}/book-slot`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: req.headers.authorization || '' },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: req.headers.authorization || '',
+        'x-internal-secret': process.env.INTERNAL_API_SECRET || '',
+      },
       body: JSON.stringify({ date: resolvedEventDate, slot: resolvedSlot }),
-    }).catch(() => {
-      /* vendor availability will still show the slot until they refresh — not fatal */
+    }).catch((err) => {
+      console.warn('[booking-payment-service] book-slot error:', err);
     });
   }
 
@@ -856,9 +901,15 @@ app.post('/api/v1/bookings/:id/payments/razorpay/order', authMiddleware(), async
         if (booking.vendorId && booking.eventDate) {
           fetch(`${MARKETPLACE_SERVICE_URL}/api/v1/vendors/${booking.vendorId}/book-slot`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: req.headers.authorization || '' },
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: req.headers.authorization || '',
+              'x-internal-secret': process.env.INTERNAL_API_SECRET || '',
+            },
             body: JSON.stringify({ date: booking.eventDate, slot: booking.timeSlot || '' }),
-          }).catch(() => { /* vendor availability will still show the slot until they refresh — not fatal */ });
+          }).catch((err) => {
+            console.warn('[booking-payment-service] book-slot error on direct confirm:', err);
+          });
         }
       }
       return res.json({ success: true, data: { noPaymentNeeded: true, booking } });

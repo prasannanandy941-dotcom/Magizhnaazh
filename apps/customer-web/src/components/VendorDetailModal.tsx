@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Star, MapPin, Check, ShieldCheck, Upload, Calendar as CalendarIcon, MessageSquare, Send, CreditCard, Sparkles, Camera, Bus, Gift, ListChecks, Phone, Clock, Plus, Maximize2, Car, Mail, Printer, FileText } from 'lucide-react';
-import { Vendor, Review, Event, getVendorTrustBadges, getLiveDeals, bestDealForAmount, AVAILABILITY_SLOTS, isSlotBooked, openSlots, offeredSlotIds } from '../../../../packages/shared-types';
+import { Vendor, Review, Event, getVendorTrustBadges, getLiveDeals, bestDealForAmount, AVAILABILITY_SLOTS, isSlotBooked, openSlots, offeredSlotIds, slotLabel } from '../../../../packages/shared-types';
 import { fetchVendorById, uploadReferenceImage, fetchVendorReviews } from '../api';
 import { PortfolioGrid } from './Portfolio';
 import { DecorationGrid } from './DecorationThemes';
@@ -2587,10 +2587,11 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
 
         {/* Availability date picker lives only on the Gallery tab (not repeated
             under every tab) — same for every vendor. */}
-        {activeTab === 'gallery' && (hasFixedAvailability || (vendor.bookedDates?.length ?? 0) > 0) && (
+        {/* Availability date picker lives on Overview and Gallery tabs — same for every vendor with dates. */}
+        {(activeTab === 'overview' || activeTab === 'gallery') && (hasFixedAvailability || (vendor.bookedDates?.length ?? 0) > 0) && (
           <div className="px-6 py-4 border-t border-slate-800 bg-slate-900/60">
             <span className="text-[11px] font-bold text-slate-400 uppercase flex items-center gap-1.5 mb-2">
-              <CalendarIcon className="w-3.5 h-3.5 text-indigo-400" /> {vendor.businessName} is only open on these dates — pick one to book
+              <CalendarIcon className="w-3.5 h-3.5 text-indigo-400" /> {vendor.businessName} is open on these dates — pick one to book
             </span>
             <div className="flex flex-wrap gap-2">
               {vendor.availableDates.map((d) => (
@@ -2607,27 +2608,27 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                   {new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                 </button>
               ))}
-              {/* Already-booked dates — visible but not selectable. */}
+              {/* Already-booked dates — visible with explicit BOOKED tag, not selectable. */}
               {(vendor.bookedDates ?? []).map((d) => (
                 <span
                   key={d}
-                  className="px-3 py-1.5 rounded-full text-xs font-semibold border border-slate-800 bg-slate-950 text-slate-600 line-through cursor-not-allowed flex items-center gap-1"
-                  title="This date is already booked"
+                  className="px-3 py-1.5 rounded-full text-xs font-semibold border border-rose-900/40 bg-rose-950/20 text-rose-400 line-through cursor-not-allowed flex items-center gap-1.5"
+                  title="This date is already booked by another customer"
                 >
                   {new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                  <span className="not-italic no-underline text-[9px] text-rose-400 font-bold">BOOKED</span>
+                  <span className="not-italic no-underline text-[9px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 font-bold border border-rose-500/30">BOOKED</span>
                 </span>
               ))}
             </div>
             {vendor.availableDates.length === 0 && (vendor.bookedDates?.length ?? 0) > 0 && (
-              <p className="text-[11px] text-amber-400 mt-2">All listed dates are booked — check back or contact the vendor for other dates.</p>
+              <p className="text-[11px] text-amber-400 mt-2">All listed dates are booked by other customers — check back or contact the vendor for other dates.</p>
             )}
 
             {/* Time-slot picker for the chosen date — a booked slot leaves the rest of the day open. */}
             {selectedEventDate && (
               <div className="mt-4">
                 <span className="text-[11px] font-bold text-slate-400 uppercase flex items-center gap-1.5 mb-2">
-                  <Clock className="w-3.5 h-3.5 text-indigo-400" /> Pick a time slot for {new Date(selectedEventDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                  <Clock className="w-3.5 h-3.5 text-indigo-400" /> Pick a session for {new Date(selectedEventDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
                 </span>
                 <div className="flex flex-wrap gap-2">
                   {AVAILABILITY_SLOTS.filter((s) => offeredSlotIds(vendor, selectedEventDate).includes(s.id)).map((s) => {
@@ -2639,21 +2640,28 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                         type="button"
                         disabled={booked}
                         onClick={() => setSelectedSlot(s.id)}
-                        className={`px-3.5 py-2 rounded-xl text-xs font-semibold border text-center transition-colors ${
+                        className={`px-3.5 py-2 rounded-xl text-xs font-semibold border text-center transition-colors flex items-center gap-1.5 ${
                           booked
-                            ? 'bg-slate-950 border-slate-800 text-slate-600 line-through cursor-not-allowed'
+                            ? 'bg-rose-950/20 border-rose-900/40 text-rose-400/80 cursor-not-allowed line-through'
                             : active
                               ? 'bg-indigo-600 border-indigo-600 text-white font-bold'
                               : 'bg-slate-900 border-slate-800 text-slate-300 hover:border-indigo-500/50'
                         }`}
                       >
-                        {s.label}{booked ? ' — Booked' : ''}
+                        <span>{s.label}</span>
+                        {booked && (
+                          <span className="not-italic no-underline text-[9px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 font-bold border border-rose-500/30">
+                            Booked by another customer
+                          </span>
+                        )}
                       </button>
                     );
                   })}
                 </div>
                 {openSlots(vendor, selectedEventDate).length === 0 && (
-                  <p className="text-[11px] text-amber-400 mt-2">All slots on this date are booked — pick another date.</p>
+                  <p className="text-xs text-rose-400 font-semibold mt-2.5 bg-rose-950/30 border border-rose-900/40 rounded-lg p-2.5 flex items-center gap-1.5">
+                    ⚠️ This date has already been booked by another customer. Please choose another date.
+                  </p>
                 )}
               </div>
             )}
@@ -2741,12 +2749,17 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                 Pick an available date above to book
               </div>
             )}
+            {selectedEventDate && selectedSlot && isSlotBooked(vendor, selectedEventDate, selectedSlot) && (
+              <div className="mt-1.5 flex items-center justify-center sm:justify-start gap-1 text-[11px] text-rose-400 font-semibold">
+                ⚠️ This session is already booked by another customer. Please choose another date or session.
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-3 w-full sm:w-auto">
             <button
               onClick={handleBookAndPayClick}
-              disabled={(hasFixedAvailability && !selectedEventDate) || referencePrice === 0}
+              disabled={(hasFixedAvailability && !selectedEventDate) || referencePrice === 0 || (selectedEventDate && selectedSlot ? isSlotBooked(vendor, selectedEventDate, selectedSlot) : false)}
               className="shine-sweep w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold text-xs shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <CreditCard className="w-4 h-4" /> Book & Pay Advance
@@ -2804,6 +2817,90 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                     <span className="text-emerald-300 font-bold">{(selectedBookingEvent?.guestCount || activeEventGuestCount || 0).toLocaleString('en-IN')} people</span>
                   </div>
                 )}
+
+                {/* Booking Date & Session confirmation */}
+                <div className="text-xs pb-2.5 mb-2.5 border-b border-slate-800 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-400">Date & Session:</span>
+                    <span className="text-indigo-300 font-bold">
+                      {selectedEventDate ? new Date(selectedEventDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'No date selected'}
+                      {selectedSlot ? ` (${slotLabel(selectedSlot)})` : ''}
+                    </span>
+                  </div>
+
+                  {(hasFixedAvailability || (vendor.availableDates?.length ?? 0) > 0) && (
+                    <div className="space-y-1.5 pt-1">
+                      <span className="text-[10px] text-slate-400 uppercase font-bold block">Choose Open Date:</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {vendor.availableDates.map((d) => (
+                          <button
+                            key={d}
+                            type="button"
+                            onClick={() => setSelectedEventDate(d)}
+                            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-colors ${
+                              selectedEventDate === d
+                                ? 'bg-indigo-600 border-indigo-600 text-white font-bold'
+                                : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-500'
+                            }`}
+                          >
+                            {new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                          </button>
+                        ))}
+                        {(vendor.bookedDates ?? []).map((d) => (
+                          <span
+                            key={d}
+                            className="px-2 py-1 rounded-lg text-[10px] font-semibold border border-rose-900/40 bg-rose-950/20 text-rose-400 line-through cursor-not-allowed flex items-center gap-1"
+                            title="Already booked by another customer"
+                          >
+                            {new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                            <span className="not-italic no-underline text-[8px] bg-rose-500/20 px-1 rounded text-rose-300 font-bold">BOOKED</span>
+                          </span>
+                        ))}
+                      </div>
+
+                      {selectedEventDate && (
+                        <div className="pt-1.5">
+                          <span className="text-[10px] text-slate-400 uppercase font-bold block mb-1">Session / Slot:</span>
+                          <div className="flex flex-wrap gap-1.5">
+                            {AVAILABILITY_SLOTS.filter((s) => offeredSlotIds(vendor, selectedEventDate).includes(s.id)).map((s) => {
+                              const booked = isSlotBooked(vendor, selectedEventDate, s.id);
+                              const active = selectedSlot === s.id;
+                              return (
+                                <button
+                                  key={s.id}
+                                  type="button"
+                                  disabled={booked}
+                                  onClick={() => setSelectedSlot(s.id)}
+                                  className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-colors flex items-center gap-1 ${
+                                    booked
+                                      ? 'bg-rose-950/20 border-rose-900/40 text-rose-400/80 line-through cursor-not-allowed'
+                                      : active
+                                        ? 'bg-indigo-600 border-indigo-600 text-white font-bold'
+                                        : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-500'
+                                  }`}
+                                >
+                                  <span>{s.label}</span>
+                                  {booked && <span className="not-italic no-underline text-[8px] text-rose-300 font-bold">(Booked)</span>}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {selectedEventDate && selectedSlot && isSlotBooked(vendor, selectedEventDate, selectedSlot) && (
+                    <div className="p-2.5 rounded-xl bg-rose-950/40 border border-rose-800/60 text-[11px] text-rose-300 font-medium">
+                      ⚠️ This date and session has already been booked by another customer. Please choose another date or session.
+                    </div>
+                  )}
+                  {hasFixedAvailability && !selectedEventDate && (
+                    <div className="p-2.5 rounded-xl bg-amber-950/40 border border-amber-800/60 text-[11px] text-amber-300 font-medium">
+                      ⚠️ Please select an available event date above to proceed.
+                    </div>
+                  )}
+                </div>
                 {(selectedPkg || selectedOptions.length > 0) ? (
                   <div className="space-y-2 text-sm">
                     {selectedPkg && (
@@ -2870,6 +2967,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
 
               <button
                 type="button"
+                disabled={Boolean(hasFixedAvailability && !selectedEventDate) || Boolean(selectedEventDate && selectedSlot && isSlotBooked(vendor, selectedEventDate, selectedSlot))}
                 onClick={() => {
                   onBookVendor(
                     vendor,
@@ -2902,7 +3000,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                   );
                   setAdvancePanelOpen(false);
                 }}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold text-sm shadow-md flex items-center justify-center gap-2"
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold text-sm shadow-md flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Confirm Order
               </button>

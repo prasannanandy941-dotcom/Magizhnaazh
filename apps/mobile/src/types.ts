@@ -64,6 +64,10 @@ export interface Vendor {
   contactPhone?: string;
   upiId?: string;
   policies?: { advancePercentage?: number; advanceAmount?: number };
+  availableDates?: string[];
+  bookedDates?: string[];
+  bookedSlots?: { date: string; slot: string }[];
+  availableSlots?: Record<string, string[]>;
 }
 
 export interface EventItem {
@@ -86,5 +90,6 @@ export interface Booking {
   amount?: number;
   status?: string;
   eventDate?: string;
+  timeSlot?: string;
   createdAt?: string;
 }

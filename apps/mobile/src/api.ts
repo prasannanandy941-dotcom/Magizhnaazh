@@ -163,6 +163,7 @@ export async function createBooking(token: string, input: {
   packageName?: string;
   price: number;
   eventDate?: string;
+  timeSlot?: string;
   notes?: string;
   advancePaymentClaimed?: boolean;
 }): Promise<Booking> {
