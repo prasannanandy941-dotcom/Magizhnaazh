@@ -153,9 +153,16 @@ export default function VendorDetailScreen() {
     </ScrollView>
 
       <View style={styles.footer}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.footerLabel} numberOfLines={1}>{selectedPkg ? selectedPkg.packageName : 'Starting price'}</Text>
-          <Text style={styles.footerAdvance}>Advance ₹{advance.toLocaleString('en-IN')}</Text>
+        <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: space.md }}>
+          <View>
+            <Text style={styles.footerLabel}>Advance</Text>
+            <Text style={styles.footerAdvance}>₹{advance.toLocaleString('en-IN')}</Text>
+          </View>
+          <View style={{ width: 1, height: 26, backgroundColor: colors.border }} />
+          <View>
+            <Text style={styles.footerLabel}>Total bill</Text>
+            <Text style={styles.footerTotal}>₹{price.toLocaleString('en-IN')}</Text>
+          </View>
         </View>
         <TouchableOpacity style={styles.bookBtn} onPress={() => setShowBook(true)}>
           <Text style={styles.bookBtnText}>Book & Pay Advance</Text>
@@ -315,8 +322,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.lg, paddingVertical: space.md,
     borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.surface,
   },
-  footerLabel: { fontSize: 12, color: colors.textMuted, fontWeight: '600' },
+  footerLabel: { fontSize: 11, color: colors.textMuted, fontWeight: '600', textTransform: 'uppercase' },
   footerAdvance: { fontSize: 16, fontWeight: '800', color: colors.gold },
+  footerTotal: { fontSize: 16, fontWeight: '800', color: colors.text },
   bookBtn: { backgroundColor: colors.primary, paddingHorizontal: 18, paddingVertical: 14, borderRadius: radius.md },
   bookBtnText: { color: colors.onPrimary, fontWeight: '800', fontSize: 14 },
   // booking modal

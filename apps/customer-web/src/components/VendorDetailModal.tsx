@@ -2704,30 +2704,40 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
 
         <div className="relative px-6 py-4 border-t border-amber-500/20 bg-gradient-to-r from-[#241541] via-[#1a1030] to-[#241541] flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="pointer-events-none absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-400/60 to-transparent"></div>
-          <div>
-            {/* The advance-and-pay footer shows only the advance amount + the
-                Book button. The selected package/hall summary now lives inside
-                the Packages tab itself. */}
-            <span className="text-[11px] font-bold text-amber-300/80 uppercase">{advanceLabel}</span>
-            <div className="text-white font-bold text-lg">
-              ₹{advanceAmountDue.toLocaleString('en-IN')}
-            </div>
-            {referencePrice > 0 ? (
-              <div className="text-xs text-slate-400">
-                Total bill: <span className="text-slate-200 font-semibold">₹{netPrice.toLocaleString('en-IN')}</span>
+          <div className="w-full sm:w-auto">
+            <div className="flex items-center justify-center sm:justify-start gap-5">
+              <div className="text-center sm:text-left">
+                <span className="text-[11px] font-bold text-amber-300/80 uppercase block">{advanceLabel}</span>
+                <div className="text-white font-bold text-lg leading-tight">
+                  ₹{advanceAmountDue.toLocaleString('en-IN')}
+                </div>
               </div>
-            ) : (
-              <div className="text-xs text-amber-400/90 font-medium">
+
+              {referencePrice > 0 ? (
+                <>
+                  <div className="h-8 w-px bg-amber-500/30 shrink-0" />
+                  <div className="text-center sm:text-left">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase block">Total bill</span>
+                    <div className="text-slate-200 font-bold text-lg leading-tight">
+                      ₹{netPrice.toLocaleString('en-IN')}
+                    </div>
+                  </div>
+                </>
+              ) : null}
+            </div>
+
+            {referencePrice === 0 && (
+              <div className="text-xs text-amber-400/90 font-medium text-center sm:text-left mt-1">
                 Select items or a package to calculate advance
               </div>
             )}
             {customRequest && (
-              <div className="mt-1 flex items-center gap-1 text-[11px] text-emerald-400 font-semibold">
+              <div className="mt-1.5 flex items-center justify-center sm:justify-start gap-1 text-[11px] text-emerald-400 font-semibold">
                 <Check className="w-3 h-3" /> Your request will be shared with the vendor
               </div>
             )}
             {hasFixedAvailability && !selectedEventDate && (
-              <div className="mt-1 flex items-center gap-1 text-[11px] text-rose-400 font-semibold">
+              <div className="mt-1.5 flex items-center justify-center sm:justify-start gap-1 text-[11px] text-rose-400 font-semibold">
                 Pick an available date above to book
               </div>
             )}
