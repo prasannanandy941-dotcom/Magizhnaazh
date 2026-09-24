@@ -424,7 +424,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto">
       <div className="glass-card max-w-4xl w-full rounded-3xl border border-amber-500/30 shadow-2xl shadow-[0_0_60px_-15px_rgba(245,158,11,0.4)] overflow-hidden my-8 max-h-[90vh] flex flex-col bg-gradient-to-b from-[#1b1030] via-[#140b22] to-[#0d0716] relative isolate">
         <GoldSparkles count={42} />
-        <div className="relative px-6 py-4 border-b border-amber-500/20 flex items-center justify-between bg-gradient-to-r from-[#241541] via-[#1a1030] to-[#241541]">
+        <div className="relative shrink-0 px-6 py-4 border-b border-amber-500/20 flex items-center justify-between bg-gradient-to-r from-[#241541] via-[#1a1030] to-[#241541]">
           <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-400/60 to-transparent"></div>
           <div>
             <span className="text-xs font-semibold text-amber-400 uppercase tracking-wider">{vendor.category}</span>
@@ -439,7 +439,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
           </button>
         </div>
 
-        <div className="flex items-center gap-4 px-6 border-b border-amber-500/15 bg-[#120a1e]/70 overflow-x-auto no-scrollbar">
+        <div className="shrink-0 flex items-center gap-4 px-6 border-b border-amber-500/15 bg-[#120a1e]/70 overflow-x-auto no-scrollbar">
           <button
             onClick={() => setActiveTab('overview')}
             className={`shrink-0 whitespace-nowrap py-3 font-semibold text-xs border-b-2 transition-colors ${
@@ -565,7 +565,11 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
           </button>
         </div>
 
-        <div className="p-6 overflow-y-auto flex-1">
+        {/* One scroll area for the tab body AND the date picker / special request
+            below it, so on short phone screens those sections scroll instead of
+            squashing the tab bar and body. */}
+        <div className="flex-1 min-h-0 overflow-y-auto">
+        <div className="p-6">
           {activeTab === 'overview' && (
             <div className="space-y-6">
               <div className="h-72 w-full rounded-2xl overflow-hidden bg-slate-900 relative">
@@ -2715,7 +2719,8 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
           </div>
         )}
 
-        <div className="relative px-6 py-4 border-t border-amber-500/20 bg-gradient-to-r from-[#241541] via-[#1a1030] to-[#241541] flex flex-col sm:flex-row items-center justify-between gap-4">
+        </div>
+        <div className="relative shrink-0 px-6 py-4 border-t border-amber-500/20 bg-gradient-to-r from-[#241541] via-[#1a1030] to-[#241541] flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="pointer-events-none absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-400/60 to-transparent"></div>
           <div className="w-full sm:w-auto">
             <div className="flex items-center justify-center sm:justify-start gap-5">
