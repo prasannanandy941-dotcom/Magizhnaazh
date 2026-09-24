@@ -2589,10 +2589,9 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
 
         </div>
 
-        {/* Availability date picker lives only on the Gallery tab (not repeated
-            under every tab) — same for every vendor. */}
-        {/* Availability date picker lives on Overview and Gallery tabs — same for every vendor with dates. */}
-        {(activeTab === 'overview' || activeTab === 'gallery') && (hasFixedAvailability || (vendor.bookedDates?.length ?? 0) > 0) && (
+        {/* Availability date picker lives ONLY on the Gallery tab (not on
+            Overview or any other tab) — same for every vendor. */}
+        {activeTab === 'gallery' && (hasFixedAvailability || (vendor.bookedDates?.length ?? 0) > 0) && (
           <div className="px-6 py-4 border-t border-slate-800 bg-slate-900/60">
             <span className="text-[11px] font-bold text-slate-400 uppercase flex items-center gap-1.5 mb-2">
               <CalendarIcon className="w-3.5 h-3.5 text-indigo-400" /> {vendor.businessName} is open on these dates — pick one to book
