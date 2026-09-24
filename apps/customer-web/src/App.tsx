@@ -744,7 +744,7 @@ export function App() {
         )}
 
         {activeTab === 'orders' && (
-          <MyOrders isAuthenticated={!!user} onSignIn={() => setShowAuthModal(true)} />
+          <MyOrders isAuthenticated={!!user} onSignIn={() => setShowAuthModal(true)} events={events} />
         )}
 
         {activeTab === 'feedback' && (
@@ -803,6 +803,7 @@ export function App() {
                   vendorCategory: v.category,
                   customerName: user?.name,
                   eventId: eventId || activeEvent.id,
+                  eventName: events.find((e) => e.id === (eventId || activeEvent.id))?.title || activeEvent.title,
                   packageId: pkgId,
                   packageName: pkg?.packageName,
                   price: p,

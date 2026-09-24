@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { ClipboardList, RefreshCw, Loader2, CheckCircle2, Circle, IndianRupee, LogIn, Star, Send, FileText, Wallet, XCircle } from 'lucide-react';
-import { Booking, Review, slotLabelWithTime } from '../../../../packages/shared-types';
+import { ClipboardList, PartyPopper, RefreshCw, Loader2, CheckCircle2, Circle, IndianRupee, LogIn, Star, Send, FileText, Wallet, XCircle } from 'lucide-react';
+import { Booking, Event, Review, slotLabelWithTime } from '../../../../packages/shared-types';
 import { fetchMyBookings, fetchMyReviews, submitReview, fetchBookingInvoice, cancelBooking, submitBookingComplaint } from '../api';
 import { payBookingWithRazorpay } from '../utils/razorpayCheckout';
 import { loadRazorpayCheckout } from '../utils/loadRazorpay';
@@ -50,7 +50,10 @@ function bookingHasMoneyAtStake(b: Booking): boolean {
   return (b.advanceAmountPaid || 0) > 0 || (b.payments || []).some((p) => p.status === 'claimed');
 }
 
-export const MyOrders: React.FC<{ isAuthenticated: boolean; onSignIn: () => void }> = ({ isAuthenticated, onSignIn }) => {
+export const MyOrders: React.FC<{ isAuthenticated: boolean; onSignIn: () => void; events?: Event[] }> = ({ isAuthenticated, onSignIn, events = [] }) => {
+  // Which of the customer's events a booking is for — saved on the booking at
+  // booking time, or looked up from their events for older bookings.
+  const eventNameFor = (b: Booking) => b.eventName || events.find((e) => e.id === b.eventId)?.title || '';
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [reviews, setReviews] = useState<Record<string, Review>>({});
   const [loading, setLoading] = useState(true);
@@ -183,6 +186,13 @@ export const MyOrders: React.FC<{ isAuthenticated: boolean; onSignIn: () => void
                         {STATUS_LABEL[b.status] || b.status}
                       </span>
                     </div>
+                    {eventNameFor(b) && (
+                      <p className="mt-1.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 text-xs">
+                        <PartyPopper className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                        <span className="text-slate-400">For event:</span>
+                        <strong className="text-amber-300">{eventNameFor(b)}</strong>
+                      </p>
+                    )}
                     <p className="text-xs text-slate-400 mt-1">
                       <strong className="text-slate-200">{b.vendorName}</strong> · {b.vendorCategory} · Event date: <strong className="text-amber-400">{b.eventDate}</strong>
                       {b.timeSlot && <> · <span className="text-indigo-300">{slotLabelWithTime(b.timeSlot)}</span></>}

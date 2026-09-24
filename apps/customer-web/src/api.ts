@@ -397,6 +397,7 @@ export function createBookingQuote(input: {
   vendorCategory?: string;
   customerName?: string;
   eventId: string;
+  eventName?: string;
   packageId?: string;
   packageName?: string;
   price?: number;

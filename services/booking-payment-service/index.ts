@@ -340,7 +340,7 @@ async function cleanupDemoBookings() {
 app.post('/api/v1/bookings/quote', authMiddleware(), async (req: Request, res: Response) => {
   // The customer-web client sends this as `notes` (its own custom-request text
   // field); accept `specialInstructions` too for any other caller.
-  const { eventId, vendorId, vendorName, vendorCategory, packageId, packageName, price, eventDate, guestCount, timeSlot, notes, specialInstructions, selectedOptions, referenceImages, advancePaymentClaimed } = req.body;
+  const { eventId, eventName, vendorId, vendorName, vendorCategory, packageId, packageName, price, eventDate, guestCount, timeSlot, notes, specialInstructions, selectedOptions, referenceImages, advancePaymentClaimed } = req.body;
 
   const agreedPrice = Number(price) || 50000;
   const resolvedEventDate = eventDate || '2026-12-15';
@@ -407,6 +407,7 @@ app.post('/api/v1/bookings/quote', authMiddleware(), async (req: Request, res: R
     id: `bk-${Date.now()}`,
     bookingNumber: `BK-${Date.now()}`,
     eventId: eventId || 'evt-101',
+    eventName: typeof eventName === 'string' ? eventName.trim().slice(0, 200) : '',
     customerId: req.user!.sub,
     customerName: (req.body.customerName || req.user!.email || '').trim(),
     vendorId: canonicalVendorId || 'vnd-1',

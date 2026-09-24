@@ -5085,6 +5085,9 @@ export function App() {
                           </span>
                         </div>
 
+                        {b.eventName && (
+                          <p className="text-xs text-slate-400 mt-1">Event: <strong className="text-amber-300">{b.eventName}</strong></p>
+                        )}
                         <p className="text-xs text-slate-400 mt-1">
                           Package: <strong className="text-slate-200">{b.packageName}</strong> • Event date: <strong className="text-amber-400">{b.eventDate}</strong>{b.timeSlot ? <> • <span className="text-indigo-300">{slotLabelWithTime(b.timeSlot)}</span></> : null}
                         </p>

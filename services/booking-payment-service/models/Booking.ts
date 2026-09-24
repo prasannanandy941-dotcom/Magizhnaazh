@@ -34,6 +34,7 @@ const bookingSchema = new Schema<Booking>({
   id: { type: String, required: true, unique: true },
   bookingNumber: { type: String, required: true, unique: true },
   eventId: { type: String, required: true },
+  eventName: { type: String, default: '' },
   customerId: { type: String, required: true },
   vendorId: { type: String, required: true },
   vendorName: { type: String, default: '' },

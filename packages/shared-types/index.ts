@@ -1264,6 +1264,9 @@ export interface Booking {
   id: string;
   bookingNumber: string;
   eventId: string;
+  // Title of the customer's event this booking is for (e.g. "Priya's Wedding"),
+  // saved at booking time so customers with several events can tell them apart.
+  eventName?: string;
   customerId: string;
   vendorId: string;
   vendorName: string;
