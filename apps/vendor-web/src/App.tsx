@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Store, Star, Upload, Check, LogOut, Loader2, Plus, SlidersHorizontal, ChevronDown, ChevronLeft, ChevronRight, Receipt, X, Bell, ShieldCheck, Clock as ClockIcon, AlertCircle, FileText, CalendarDays, Sparkles, Car, Mail, Printer, Gift, Building2, Fingerprint, UtensilsCrossed, CreditCard, Save, CheckCircle2, Shield } from 'lucide-react';
-import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, VendorDeal, OfferedOptionItem, CateringFoodItem, CateringCourseItem, VENDOR_CATEGORIES, CATEGORY_OPTIONS, CATERING_OPTION_STYLE, MEDIA_QUALITY_OPTIONS, MEDIA_EQUIPMENT_OPTIONS, mediaExtraField, isDealLive, CATERING_MENU_TIERS, CATERING_FOOD_TYPES, CATERING_CUISINES, CATERING_COURSES, CATERING_LIVE_COUNTERS, CATERING_SERVICE_STYLES, BUFFET_PLATE_TYPES, BANANA_LEAF_TYPES, slotLabelWithTime, AVAILABILITY_SLOTS, offeredSlotIds, VENUE_SESSIONS, VENUE_HALL_TYPES, VENUE_HALL_CLASSES, VENUE_CATERING_POLICIES, VENUE_FEATURES, DECORATION_TIERS, DECORATION_THEMES, DECORATION_AREAS, DECORATION_FLOWER_TYPES, MAKEUP_TYPES, MAKEUP_FINISHES, MEDIA_TIERS, MEDIA_COVERAGE, MEDIA_STYLES, TRANSPORT_TIERS, TRANSPORT_VEHICLE_TYPES, TRANSPORT_PRICING_BASIS, TRANSPORT_USES, PRIEST_CEREMONY_TYPES, PRIEST_LANGUAGES, INVITATION_TIERS, INVITATION_TYPES, INVITATION_DESIGNS, INVITATION_ADDONS, INVITATION_LANGUAGES, PRINTING_PRODUCTS, PRINTING_FINISHES, RETURN_GIFTS_TIERS, RETURN_GIFT_TYPES, ENTERTAINMENT_ACT_TYPES, MUSIC_DJ_TIERS, MUSIC_DJ_TYPES, MUSIC_DJ_VENUE_TYPES, LIGHTING_TIERS, LIGHTING_TYPES, FLOWERS_VARIETIES, FLOWERS_ITEMS, FLOWERS_KINDS, MEHENDI_TIERS, MEHENDI_TYPES, MEHENDI_INTRICACY, EVENT_HOST_EVENT_TYPES, EVENT_HOST_LANGUAGES, EVENT_HOST_MODES, SECURITY_TYPES, SECURITY_GENDERS, RENTAL_ITEMS, UTENSILS_MATERIALS, UTENSILS_VESSEL_TYPES, WEDDING_PLANNER_SCOPES, CORPORATE_EVENT_TYPES, CORPORATE_ADDONS } from '../../../packages/shared-types';
+import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, VendorDeal, OfferedOptionItem, CateringFoodItem, CateringCourseItem, VENDOR_CATEGORIES, CATEGORY_OPTIONS, CATERING_OPTION_STYLE, MEDIA_QUALITY_OPTIONS, MEDIA_EQUIPMENT_OPTIONS, mediaExtraField, isDealLive, CATERING_MENU_TIERS, CATERING_FOOD_TYPES, CATERING_CUISINES, CATERING_COURSES, CATERING_LIVE_COUNTERS, CATERING_SERVICE_STYLES, BUFFET_PLATE_TYPES, BANANA_LEAF_TYPES, slotLabelWithTime, AVAILABILITY_SLOTS, offeredSlotIds, supportsSlotCapacity, MAX_SLOT_CAPACITY, VENUE_SESSIONS, VENUE_HALL_TYPES, VENUE_HALL_CLASSES, VENUE_CATERING_POLICIES, VENUE_FEATURES, DECORATION_TIERS, DECORATION_THEMES, DECORATION_AREAS, DECORATION_FLOWER_TYPES, MAKEUP_TYPES, MAKEUP_FINISHES, MEDIA_TIERS, MEDIA_COVERAGE, MEDIA_STYLES, TRANSPORT_TIERS, TRANSPORT_VEHICLE_TYPES, TRANSPORT_PRICING_BASIS, TRANSPORT_USES, PRIEST_CEREMONY_TYPES, PRIEST_LANGUAGES, INVITATION_TIERS, INVITATION_TYPES, INVITATION_DESIGNS, INVITATION_ADDONS, INVITATION_LANGUAGES, PRINTING_PRODUCTS, PRINTING_FINISHES, RETURN_GIFTS_TIERS, RETURN_GIFT_TYPES, ENTERTAINMENT_ACT_TYPES, MUSIC_DJ_TIERS, MUSIC_DJ_TYPES, MUSIC_DJ_VENUE_TYPES, LIGHTING_TIERS, LIGHTING_TYPES, FLOWERS_VARIETIES, FLOWERS_ITEMS, FLOWERS_KINDS, MEHENDI_TIERS, MEHENDI_TYPES, MEHENDI_INTRICACY, EVENT_HOST_EVENT_TYPES, EVENT_HOST_LANGUAGES, EVENT_HOST_MODES, SECURITY_TYPES, SECURITY_GENDERS, RENTAL_ITEMS, UTENSILS_MATERIALS, UTENSILS_VESSEL_TYPES, WEDDING_PLANNER_SCOPES, CORPORATE_EVENT_TYPES, CORPORATE_ADDONS } from '../../../packages/shared-types';
 import type { Complaint } from '../../../packages/shared-types';
 import { STATIC_CITY_GROUPS } from '../../../packages/shared-utils';
 import { AuthGate } from './components/AuthGate';
@@ -258,6 +258,8 @@ export function App() {
   const [availableDates, setAvailableDates] = useState<string[]>([]);
   // Which time slots the vendor offers per date (date -> slot ids).
   const [availableSlots, setAvailableSlots] = useState<Record<string, string[]>>({});
+  // How many bookings each slot can take per date (date -> slot id -> count).
+  const [slotCapacity, setSlotCapacity] = useState<Record<string, Record<string, number>>>({});
   const [newDate, setNewDate] = useState('');
   const [savingAvailability, setSavingAvailability] = useState(false);
   const [availabilityNotice, setAvailabilityNotice] = useState('');
@@ -403,6 +405,7 @@ export function App() {
         setOfferedOptionQuality(v.offeredOptionQuality || {});
         setAvailableDates(v.availableDates || []);
         setAvailableSlots(v.availableSlots || {});
+        setSlotCapacity(v.slotCapacity || {});
         setPackages(v.packages || []);
         setDeals(v.deals || []);
         // Build the private calendar-subscribe URL for this vendor.
@@ -4284,7 +4287,14 @@ export function App() {
   const removeDate = (d: string) => {
     setAvailableDates((prev) => prev.filter((x) => x !== d));
     setAvailableSlots((prev) => { const next = { ...prev }; delete next[d]; return next; });
+    setSlotCapacity((prev) => { const next = { ...prev }; delete next[d]; return next; });
   };
+  // Set how many functions the vendor can take in a slot on a date.
+  const setDateSlotCapacity = (date: string, slot: string, value: number) =>
+    setSlotCapacity((prev) => ({
+      ...prev,
+      [date]: { ...(prev[date] || {}), [slot]: Math.min(MAX_SLOT_CAPACITY, Math.max(1, Math.floor(value) || 1)) },
+    }));
   // Toggle whether the vendor offers a given slot on a given date.
   const toggleDateSlot = (date: string, slot: string) =>
     setAvailableSlots((prev) => {
@@ -4298,11 +4308,14 @@ export function App() {
     setSavingAvailability(true);
     setAvailabilityNotice('');
     try {
-      const res = await updateVendor(token, myVendor.id, { availableDates, availableSlots } as any);
+      const payload: any = { availableDates, availableSlots };
+      if (supportsSlotCapacity(myVendor.category)) payload.slotCapacity = slotCapacity;
+      const res = await updateVendor(token, myVendor.id, payload);
       if (res.data?.vendor) {
         setMyVendor(res.data.vendor);
         setAvailableDates(res.data.vendor.availableDates || []);
         setAvailableSlots(res.data.vendor.availableSlots || {});
+        setSlotCapacity(res.data.vendor.slotCapacity || {});
       }
       setAvailabilityNotice('Availability saved — customers see only your open dates.');
     } catch (err: any) {
@@ -10430,6 +10443,9 @@ export function App() {
             <div>
               <h3 className="font-bold text-xl text-white">Availability Calendar</h3>
               <p className="text-xs text-slate-400 mt-1">Add the dates you're open to book. Customers can only request these dates. Confirmed booking dates are blocked automatically.</p>
+              {supportsSlotCapacity(myVendor?.category) && (
+                <p className="text-xs text-amber-300/90 mt-1.5">Have more than one team? Set how many functions you can handle in each slot — e.g. Morning × 4 lets four customers book the same morning. A Full Day booking also uses one Morning, Afternoon and Evening spot.</p>
+              )}
             </div>
 
             <div className="flex items-end gap-2">
@@ -10490,6 +10506,37 @@ export function App() {
                         })}
                       </div>
                       {offered.length === 0 && <p className="text-[10px] text-amber-400 mt-1.5">No slots selected — customers can't book this date. Pick at least one.</p>}
+                      {supportsSlotCapacity(myVendor?.category) && offered.length > 0 && (
+                        <div className="mt-3 pt-3 border-t border-slate-800/80">
+                          <p className="text-[11px] text-slate-400 mb-2">How many functions can you handle in each slot?</p>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {AVAILABILITY_SLOTS.filter((s) => offered.includes(s.id)).map((s) => {
+                              const cap = slotCapacity[d]?.[s.id] || 1;
+                              const bookedCount = (myVendor?.bookedSlots || []).filter((b) => b.date === d && (b.slot || 'fullday') === s.id).length;
+                              return (
+                                <div key={s.id} className="flex items-center justify-between gap-2 rounded-xl bg-slate-950/40 border border-slate-800 px-3 py-2">
+                                  <div className="min-w-0">
+                                    <p className="text-xs font-semibold text-slate-200">{s.label}</p>
+                                    {bookedCount > 0 && <p className="text-[10px] text-slate-500">{bookedCount} booked</p>}
+                                  </div>
+                                  <div className="flex items-center gap-1.5">
+                                    <button type="button" onClick={() => setDateSlotCapacity(d, s.id, cap - 1)} disabled={cap <= 1}
+                                      aria-label={`Fewer ${s.label} functions`}
+                                      className="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 text-white font-bold disabled:opacity-40">−</button>
+                                    <input type="number" min={1} max={MAX_SLOT_CAPACITY} value={cap}
+                                      onChange={(e) => setDateSlotCapacity(d, s.id, Number(e.target.value))}
+                                      aria-label={`${s.label} functions`}
+                                      className="w-12 p-1 rounded-lg bg-slate-900 border border-slate-700 text-center text-sm text-white font-bold" />
+                                    <button type="button" onClick={() => setDateSlotCapacity(d, s.id, cap + 1)} disabled={cap >= MAX_SLOT_CAPACITY}
+                                      aria-label={`More ${s.label} functions`}
+                                      className="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 text-white font-bold disabled:opacity-40">+</button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}

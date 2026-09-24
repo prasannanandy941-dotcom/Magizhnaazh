@@ -504,7 +504,11 @@ const vendorSchema = new Schema<Vendor>({
   availableSlots: { type: Schema.Types.Mixed, default: {} },
   bookedDates: { type: [String], default: [] },
   // Per-date time slots already booked (e.g. { date, slot: 'morning' }).
-  bookedSlots: { type: [{ date: String, slot: String, _id: false }], default: [] },
+  // bookingId ties an entry to the booking that took it (several per slot when
+  // the vendor's capacity allows).
+  bookedSlots: { type: [{ date: String, slot: String, bookingId: String, _id: false }], default: [] },
+  // Bookings each slot can take per date (date -> slot id -> count). Missing = 1.
+  slotCapacity: { type: Schema.Types.Mixed, default: {} },
   policies: {
     cancellation: { type: String, default: '' },
     refund: { type: String, default: '' },

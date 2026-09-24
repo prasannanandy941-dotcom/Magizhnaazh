@@ -11,7 +11,7 @@ import { authMiddleware, requireRole } from '../../packages/shared-utils/auth';
 import { requestLogger } from '../../packages/shared-utils/logging';
 import { registerHealthRoute } from '../../packages/shared-utils/health';
 import { LocalStorageProvider } from '../../packages/local-storage-provider';
-import { AVAILABILITY_SLOTS, offeredSlotIds } from '../../packages/shared-types';
+import { AVAILABILITY_SLOTS, MAX_SLOT_CAPACITY, isDateFullyBooked } from '../../packages/shared-types';
 import { serviceUrl } from '../../packages/shared-utils/serviceUrl';
 import { VENDOR_CATEGORIES } from '../../packages/shared-types';
 import { INDIA_STATES_AND_CITIES } from '../../packages/shared-utils/indiaLocations';
@@ -501,66 +501,57 @@ app.post('/api/v1/vendors/:id/book-date', allowInternalOrAuth, async (req: Reque
   res.json({ success: true, data: { availableDates: vendor.availableDates, bookedDates: vendor.bookedDates } });
 });
 
-// Close a single TIME SLOT on a date (Morning/Afternoon/Evening). Booking one
-// slot leaves the others on that day open. When every slot on the date is taken
-// (or a full-day slot is booked), the whole date is closed (added to bookedDates).
-// Called server-to-server by the booking service.
+// Record a booking against a TIME SLOT on a date (Morning/Afternoon/Evening/
+// Full Day). A slot takes as many bookings as the vendor's capacity for it
+// (1 unless they raised it); once every offered slot on the date is full, the
+// whole date is closed (added to bookedDates). Idempotent per bookingId, since
+// the booking service calls this both when the booking is placed and again
+// when its advance is confirmed. Called server-to-server by the booking service.
 app.post('/api/v1/vendors/:id/book-slot', allowInternalOrAuth, async (req: Request, res: Response) => {
-  const { date, slot } = req.body;
+  const { date, bookingId } = req.body;
   if (!date) return res.status(400).json({ success: false, message: 'date is required.' });
   const vendor = await VendorModel.findOne({ id: req.params.id });
   if (!vendor) return res.status(404).json({ success: false, message: 'Vendor not found.' });
 
-  if (!slot || slot === 'fullday') {
-    // No slot or fullday → block the whole day.
+  const slot = req.body.slot || 'fullday';
+  const slots = Array.isArray(vendor.bookedSlots) ? vendor.bookedSlots : [];
+  const alreadyRecorded = bookingId
+    ? slots.some((b) => b.bookingId === bookingId)
+    : slots.some((b) => b.date === date && b.slot === slot);
+  if (!alreadyRecorded) {
+    vendor.bookedSlots = [...slots, bookingId ? { date, slot, bookingId } : { date, slot }];
+    vendor.markModified('bookedSlots');
+  }
+
+  if (isDateFullyBooked(vendor as any, date)) {
     vendor.availableDates = (vendor.availableDates || []).filter((d) => d !== date);
     if (!(vendor.bookedDates || []).includes(date)) vendor.bookedDates = [...(vendor.bookedDates || []), date];
-    const slots = Array.isArray(vendor.bookedSlots) ? vendor.bookedSlots : [];
-    if (!slots.some((b) => b.date === date && b.slot === 'fullday')) {
-      vendor.bookedSlots = [...slots, { date, slot: 'fullday' }];
-      vendor.markModified('bookedSlots');
-    }
-  } else {
-    const slots = Array.isArray(vendor.bookedSlots) ? vendor.bookedSlots : [];
-    if (!slots.some((b) => b.date === date && b.slot === slot)) {
-      vendor.bookedSlots = [...slots, { date, slot }];
-      vendor.markModified('bookedSlots');
-    }
-    // If every offered session on this date is now booked, or if fullday was booked, close the whole date.
-    const bookedForDate = new Set((vendor.bookedSlots || []).filter((b) => b.date === date).map((b) => b.slot));
-    const offered = offeredSlotIds(vendor as any, date);
-    const sessionOffered = offered.filter((s) => s !== 'fullday');
-    const allSessionsBooked = sessionOffered.length > 0 && sessionOffered.every((s) => bookedForDate.has(s));
-
-    if (bookedForDate.has('fullday') || allSessionsBooked) {
-      vendor.availableDates = (vendor.availableDates || []).filter((d) => d !== date);
-      if (!(vendor.bookedDates || []).includes(date)) vendor.bookedDates = [...(vendor.bookedDates || []), date];
-    }
   }
   await vendor.save();
   res.json({ success: true, data: { availableDates: vendor.availableDates, bookedDates: vendor.bookedDates, bookedSlots: vendor.bookedSlots } });
 });
 
-// Reverse of book-slot: reopen a date/slot that was closed for a booking which
-// has since been cancelled or refunded, so the vendor doesn't lose that day.
+// Reverse of book-slot: free the spot a booking held once it's cancelled or
+// refunded, and reopen the date if it's no longer fully booked.
 // Called server-to-server by booking-payment-service's /cancel route.
 app.post('/api/v1/vendors/:id/unbook-slot', allowInternalOrAuth, async (req: Request, res: Response) => {
-  const { date, slot } = req.body;
+  const { date, bookingId } = req.body;
   if (!date) return res.status(400).json({ success: false, message: 'date is required.' });
   const vendor = await VendorModel.findOne({ id: req.params.id });
   if (!vendor) return res.status(404).json({ success: false, message: 'Vendor not found.' });
 
-  if (slot) {
-    vendor.bookedSlots = (vendor.bookedSlots || []).filter((b) => !(b.date === date && (b.slot === slot || (slot === 'fullday' && b.slot === 'fullday'))));
+  const slot = req.body.slot || 'fullday';
+  const slots = Array.isArray(vendor.bookedSlots) ? [...vendor.bookedSlots] : [];
+  let idx = bookingId ? slots.findIndex((b) => b.bookingId === bookingId) : -1;
+  // Entries recorded before bookingIds existed: free one untagged spot.
+  if (idx === -1) idx = slots.findIndex((b) => b.date === date && b.slot === slot && !b.bookingId);
+  if (idx !== -1) {
+    slots.splice(idx, 1);
+    vendor.bookedSlots = slots as any;
     vendor.markModified('bookedSlots');
   }
-  // Check if remaining booked slots for this date still mean the whole date is booked
-  const remainingBooked = (vendor.bookedSlots || []).filter((b) => b.date === date).map((b) => b.slot);
-  const offered = offeredSlotIds(vendor as any, date);
-  const sessionOffered = offered.filter((s) => s !== 'fullday');
-  const stillFullyBooked = remainingBooked.includes('fullday') || (sessionOffered.length > 0 && sessionOffered.every((s) => remainingBooked.includes(s)));
 
-  if (!stillFullyBooked) {
+  if (!isDateFullyBooked(vendor as any, date)) {
     vendor.bookedDates = (vendor.bookedDates || []).filter((d) => d !== date);
     if (!(vendor.availableDates || []).includes(date)) vendor.availableDates = [...(vendor.availableDates || []), date];
   }
@@ -641,6 +632,30 @@ app.put('/api/v1/vendors/:id', authMiddleware(), async (req: Request, res: Respo
   if (req.body.availableSlots !== undefined && typeof req.body.availableSlots === 'object') {
     (vendor as any).availableSlots = req.body.availableSlots;
     vendor.markModified('availableSlots');
+  }
+  if (req.body.slotCapacity !== undefined && req.body.slotCapacity && typeof req.body.slotCapacity === 'object') {
+    // Keep only whole numbers 1..MAX per known slot id.
+    const validSlots = new Set<string>(AVAILABILITY_SLOTS.map((s) => s.id));
+    const cleaned: Record<string, Record<string, number>> = {};
+    for (const [date, perSlot] of Object.entries(req.body.slotCapacity as Record<string, any>)) {
+      if (!perSlot || typeof perSlot !== 'object') continue;
+      for (const [slotId, raw] of Object.entries(perSlot)) {
+        const n = Math.floor(Number(raw));
+        if (!validSlots.has(slotId) || !Number.isFinite(n) || n < 1) continue;
+        (cleaned[date] ||= {})[slotId] = Math.min(n, MAX_SLOT_CAPACITY);
+      }
+    }
+    (vendor as any).slotCapacity = cleaned;
+    vendor.markModified('slotCapacity');
+  }
+  // A date closed as fully booked reopens if the vendor re-lists it with more
+  // capacity (or more slots) than its current bookings use.
+  if (Array.isArray(availableDates) || req.body.slotCapacity !== undefined || req.body.availableSlots !== undefined) {
+    const reopened = (vendor.bookedDates || []).filter((d) =>
+      (vendor.availableDates || []).includes(d)
+      && (vendor.bookedSlots || []).some((b) => b.date === d)
+      && !isDateFullyBooked(vendor as any, d));
+    if (reopened.length) vendor.bookedDates = (vendor.bookedDates || []).filter((d) => !reopened.includes(d));
   }
   if (Array.isArray(offeredOptions)) (vendor as any).offeredOptions = offeredOptions;
   if (offeredOptionPrices !== undefined) {

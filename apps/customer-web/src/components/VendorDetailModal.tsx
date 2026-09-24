@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Star, MapPin, Check, ShieldCheck, Upload, Calendar as CalendarIcon, MessageSquare, Send, CreditCard, Sparkles, Camera, Bus, Gift, ListChecks, Phone, Clock, Plus, Maximize2, Car, Mail, Printer, FileText } from 'lucide-react';
-import { Vendor, Review, Event, getVendorTrustBadges, getLiveDeals, bestDealForAmount, AVAILABILITY_SLOTS, isSlotBooked, openSlots, offeredSlotIds, slotLabel } from '../../../../packages/shared-types';
+import { Vendor, Review, Event, getVendorTrustBadges, getLiveDeals, bestDealForAmount, AVAILABILITY_SLOTS, isSlotBooked, openSlots, offeredSlotIds, slotLabel, slotsLeft, slotCapacityFor } from '../../../../packages/shared-types';
 import { fetchVendorById, uploadReferenceImage, fetchVendorReviews } from '../api';
 import { PortfolioGrid } from './Portfolio';
 import { DecorationGrid } from './DecorationThemes';
@@ -253,7 +253,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
     const open = openSlots(vendor, selectedEventDate);
     setSelectedSlot(open.length ? open[0].id : '');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedEventDate, vendor.bookedSlots, vendor.bookedDates]);
+  }, [selectedEventDate, vendor.bookedSlots, vendor.bookedDates, vendor.slotCapacity]);
 
   // "Book & Pay Advance" opens a small panel showing exactly what this
   // vendor's advance requirement comes to in rupees, a way to call the
@@ -2649,6 +2649,11 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                         }`}
                       >
                         <span>{s.label}</span>
+                        {!booked && slotCapacityFor(vendor, selectedEventDate, s.id) > 1 && (
+                          <span className={`text-[9px] font-bold ${active ? 'text-indigo-100' : 'text-emerald-400'}`}>
+                            {slotsLeft(vendor, selectedEventDate, s.id)} left
+                          </span>
+                        )}
                         {booked && (
                           <span className="not-italic no-underline text-[9px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 font-bold border border-rose-500/30">
                             Booked by another customer
@@ -2880,6 +2885,9 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                                   }`}
                                 >
                                   <span>{s.label}</span>
+                                  {!booked && slotCapacityFor(vendor, selectedEventDate, s.id) > 1 && (
+                                    <span className={`text-[8px] font-bold ${active ? 'text-indigo-100' : 'text-emerald-400'}`}>({slotsLeft(vendor, selectedEventDate, s.id)} left)</span>
+                                  )}
                                   {booked && <span className="not-italic no-underline text-[8px] text-rose-300 font-bold">(Booked)</span>}
                                 </button>
                               );

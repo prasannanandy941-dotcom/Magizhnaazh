@@ -66,7 +66,8 @@ export interface Vendor {
   policies?: { advancePercentage?: number; advanceAmount?: number };
   availableDates?: string[];
   bookedDates?: string[];
-  bookedSlots?: { date: string; slot: string }[];
+  bookedSlots?: { date: string; slot: string; bookingId?: string }[];
+  slotCapacity?: Record<string, Record<string, number>>;
   availableSlots?: Record<string, string[]>;
 }
 

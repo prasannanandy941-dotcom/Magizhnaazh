@@ -749,6 +749,10 @@ export interface Vendor {
   // Time-of-day slots already booked, per date. Lets a single date be partly
   // booked — e.g. Morning taken while Afternoon/Evening stay open.
   bookedSlots?: BookedSlot[];
+  // How many bookings each slot can take, per date (date -> slot id -> count).
+  // Missing = 1. Only honoured for SLOT_CAPACITY_CATEGORIES — a decorator with
+  // 4 teams can take 4 Morning functions on the same day.
+  slotCapacity?: Record<string, Record<string, number>>;
   policies: {
     cancellation: string;
     refund: string;
@@ -928,7 +932,10 @@ export function getVendorTrustBadges(vendor: Pick<Vendor, 'isVerified' | 'rating
 // One booked time-of-day slot on a specific date.
 export interface BookedSlot {
   date: string; // ISO date (YYYY-MM-DD)
-  slot: string; // AvailabilitySlot id: 'morning' | 'afternoon' | 'evening'
+  slot: string; // AvailabilitySlot id: 'morning' | 'afternoon' | 'evening' | 'fullday'
+  // The booking that took this spot. Lets one slot hold several bookings (for
+  // vendors with capacity > 1) and makes book/unbook idempotent per booking.
+  bookingId?: string;
 }
 
 // The time-of-day slots a date can be booked in. Booking one leaves the others
@@ -944,29 +951,87 @@ export const AVAILABILITY_SLOTS = [
 
 export type AvailabilitySlotId = (typeof AVAILABILITY_SLOTS)[number]['id'];
 
-// Whether a given (date, slot) is unavailable — either the whole day is booked
-// (legacy full-day block) or that specific slot is taken.
-export function isSlotBooked(
-  vendor: Pick<Vendor, 'bookedDates' | 'bookedSlots'>,
-  date: string,
-  slot: string,
-): boolean {
+// Categories whose vendors can take several bookings in the same slot (e.g. a
+// decorator with 4 teams handling 4 Morning functions). Every other category —
+// Venue, Pujari/Priest, Lights & Sounds, Cleaning, Corporate Event Services —
+// stays at one booking per slot.
+export const SLOT_CAPACITY_CATEGORIES: string[] = [
+  'Catering',
+  'Decoration',
+  'Makeup & Beauty',
+  'Media',
+  'Transport',
+  'Invitation',
+  'Printing',
+  'Return Gifts',
+  'Entertainment',
+  'Music/DJ',
+  'Flowers',
+  'Mehendi',
+  'Event Host/Anchor',
+  'Security',
+  'Utensils for Rent',
+  'Wedding Planner',
+  'Rental Equipment',
+];
+
+export const MAX_SLOT_CAPACITY = 50;
+
+export function supportsSlotCapacity(category?: string): boolean {
+  return !!category && SLOT_CAPACITY_CATEGORIES.includes(category);
+}
+
+type SlotVendor = Partial<Pick<Vendor, 'category' | 'bookedDates' | 'bookedSlots' | 'availableSlots' | 'slotCapacity'>>;
+
+const SESSION_SLOT_IDS = ['morning', 'afternoon', 'evening'];
+
+// How many bookings the vendor accepts in this slot on this date (min 1).
+export function slotCapacityFor(vendor: SlotVendor, date: string, slot: string): number {
+  if (!supportsSlotCapacity(vendor.category)) return 1;
+  const n = Math.floor(Number(vendor.slotCapacity?.[date]?.[slot || 'fullday']));
+  return Number.isFinite(n) && n >= 1 ? Math.min(n, MAX_SLOT_CAPACITY) : 1;
+}
+
+// How many more bookings this (date, slot) can take. A Full Day booking also
+// occupies one Morning, Afternoon and Evening spot, so a session's usage counts
+// full-day bookings too, and a Full Day needs a free spot in every session.
+// With every capacity at 1 this is the original one-booking-per-slot rule.
+export function slotsLeft(vendor: SlotVendor, date: string, slot: string): number {
+  const s = slot || 'fullday';
+  const entries = (vendor.bookedSlots || []).filter((b) => b.date === date);
+  const count = (id: string) => entries.filter((b) => (b.slot || 'fullday') === id).length;
+  const fullDay = count('fullday');
+  const sessionLeft = (id: string) => slotCapacityFor(vendor, date, id) - count(id) - fullDay;
+  if (s !== 'fullday') return Math.max(0, sessionLeft(s));
+  const offered = offeredSlotIds(vendor, date);
+  let left = slotCapacityFor(vendor, date, 'fullday') - fullDay;
+  for (const id of SESSION_SLOT_IDS) {
+    if (offered.includes(id) || count(id) > 0) left = Math.min(left, sessionLeft(id));
+  }
+  return Math.max(0, left);
+}
+
+// Whether a given (date, slot) is unavailable — either the whole day is closed
+// or the slot has no capacity left.
+export function isSlotBooked(vendor: SlotVendor, date: string, slot: string): boolean {
   if ((vendor.bookedDates || []).includes(date)) return true;
-  const booked = (vendor.bookedSlots || []).filter((b) => b.date === date).map((b) => b.slot);
-  if (booked.includes('fullday')) return true;
-  if (slot === 'fullday' && booked.length > 0) return true;
-  return booked.includes(slot);
+  return slotsLeft(vendor, date, slot) <= 0;
+}
+
+// True when every slot the vendor offers on this date is out of capacity.
+export function isDateFullyBooked(vendor: SlotVendor, date: string): boolean {
+  return offeredSlotIds(vendor, date).every((id) => slotsLeft(vendor, date, id) <= 0);
 }
 
 // The slot ids the vendor OFFERS on a date (defaults to all slots when the
 // vendor hasn't restricted the date to specific slots).
-export function offeredSlotIds(vendor: Pick<Vendor, 'availableSlots'>, date: string): string[] {
+export function offeredSlotIds(vendor: Pick<Vendor, 'availableSlots'> | SlotVendor, date: string): string[] {
   const chosen = vendor.availableSlots?.[date];
   return chosen && chosen.length ? chosen : AVAILABILITY_SLOTS.map((s) => s.id);
 }
 
 // The slots still open on a date: offered by the vendor AND not already booked.
-export function openSlots(vendor: Pick<Vendor, 'bookedDates' | 'bookedSlots' | 'availableSlots'>, date: string) {
+export function openSlots(vendor: SlotVendor, date: string) {
   const offered = offeredSlotIds(vendor, date);
   return AVAILABILITY_SLOTS.filter((s) => offered.includes(s.id) && !isSlotBooked(vendor, date, s.id));
 }

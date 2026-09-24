@@ -10,7 +10,7 @@ import { useAuth } from '../auth';
 import type { Vendor, VendorPackage, VenuePackageDetails, EventItem } from '../types';
 import type { RootStackParamList, RootNav } from '../navTypes';
 import { colors, radius, space, fonts } from '../theme';
-import { AVAILABILITY_SLOTS, isSlotBooked, offeredSlotIds, openSlots, slotLabel } from '../slots';
+import { AVAILABILITY_SLOTS, isSlotBooked, offeredSlotIds, openSlots, slotCapacityFor, slotLabel, slotsLeft } from '../slots';
 
 const { width } = Dimensions.get('window');
 
@@ -242,7 +242,7 @@ function BookModal({ visible, onClose, vendor, token, selectedPkg, price, advanc
     if (!selectedDate) { setSelectedSlot(''); return; }
     const open = openSlots(vendor, selectedDate);
     setSelectedSlot(open.length ? open[0].id : '');
-  }, [selectedDate, vendor.bookedSlots, vendor.bookedDates]);
+  }, [selectedDate, vendor.bookedSlots, vendor.bookedDates, vendor.slotCapacity]);
 
   const onSelectEvent = (e: EventItem) => {
     setEventId(e.id);
@@ -377,6 +377,7 @@ function BookModal({ visible, onClose, vendor, token, selectedPkg, price, advanc
                           booked && styles.slotChipTextBooked,
                         ]}>
                           {s.label}
+                          {!booked && slotCapacityFor(vendor, selectedDate, s.id) > 1 ? ` · ${slotsLeft(vendor, selectedDate, s.id)} left` : ''}
                         </Text>
                         {booked && <Text style={styles.badgeBooked}>Booked</Text>}
                       </TouchableOpacity>
