@@ -172,7 +172,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onSearch, openEventWiz
 
           <button
             type="submit"
-            className="shine-sweep w-full h-full py-4 px-6 bg-gradient-to-r from-[#c9a648] via-[#d4af37] to-[#b8860b] hover:from-[#d4af37] hover:to-[#c9a648] text-[#1a0a14] font-bold rounded-2xl shadow-xl shadow-[#d4af37]/25 flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
+            className="hero-search-btn shine-sweep w-full h-full py-4 px-6 bg-gradient-to-r from-[#c9a648] via-[#d4af37] to-[#b8860b] hover:from-[#d4af37] hover:to-[#c9a648] text-[#1a0a14] font-bold rounded-2xl shadow-xl shadow-[#d4af37]/25 flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
             <Search className="w-5 h-5" />
             <span>Search Vendors</span>

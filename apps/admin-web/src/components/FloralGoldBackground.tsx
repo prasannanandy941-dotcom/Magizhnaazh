@@ -1,4 +1,5 @@
 import React from 'react';
+import { SilkBackground } from '../../../../packages/shared-ui/SilkBackground';
 
 /**
  * FloralGoldBackground
@@ -9,6 +10,8 @@ import React from 'react';
  */
 export const FloralGoldBackground: React.FC = () => {
   return (
+    <>
+    <SilkBackground />
     <div className="floral-gold-bg absolute inset-0 overflow-hidden pointer-events-none select-none">
       {/* Base deep wine/burgundy gradient wash (light theme swaps in a blush-ivory wash) */}
       <div
@@ -174,6 +177,7 @@ export const FloralGoldBackground: React.FC = () => {
         />
       </svg>
     </div>
+    </>
   );
 };
 
