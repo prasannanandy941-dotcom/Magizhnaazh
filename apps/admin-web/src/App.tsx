@@ -127,12 +127,8 @@ export function App() {
   };
 
   if (!user || !token) {
-    return (
-      <>
-        <AuthGate onAuthSuccess={handleAuthSuccess} />
-        <ThemeToggle app="admin" className="fixed top-4 right-4 z-[60]" />
-      </>
-    );
+    // No theme toggle on the sign-in screen — it's in the navbar once signed in.
+    return <AuthGate onAuthSuccess={handleAuthSuccess} />;
   }
 
   return (
