@@ -70,7 +70,14 @@ function lightSurface(h, s, l, a) {
   }
   return null;
 }
+// Box outlines are black in the light theme. Only clearly coloured borders
+// (selected chips, active tabs, error/success states) keep their colour.
+const INK_BORDER = 'rgb(20 16 30)';
 function lightBorder(h, s, l, a) {
+  if (a >= 0.6 && s >= 35 && l >= 25 && l <= 75) return null;
+  return INK_BORDER;
+}
+function lightRing(h, s, l, a) {
   if (l < 45) return hsl(h, Math.min(s, 45) * 0.6, clamp(100 - l * 0.6, 78, 93), Math.max(a, 0.6));
   if (l > 85 && a <= 0.35) return hsl(h, s, 100 - l, Math.max(a, 0.12));
   return null;
@@ -166,7 +173,7 @@ for (const [full, m] of [...tokens.entries()].sort()) {
       else decl = `border-color: ${c} !important;`;
     }
   } else if (kind === 'ring') {
-    const c = lightBorder(h, s, l, a);
+    const c = lightRing(h, s, l, a);
     if (c) decl = `--tw-ring-color: ${c} !important;`;
   } else if (kind === 'text' || kind === 'placeholder' || kind === 'caret' || kind === 'decoration') {
     const c = lightText(h, s, l);
@@ -213,16 +220,23 @@ ${L} { color-scheme: light; }
 ${L} { background: transparent !important; }
 ${L} body, ${L} body[class] { background: #fbf6f4 !important; color: #1f1a2b; }
 ${L} input[type="date"], ${L} input[type="time"], ${L} input[type="datetime-local"], ${L} input[type="month"] { color-scheme: light; }
-/* Light theme swaps the dark floral backdrop for the auspicious one. */
-.auspicious-bg { display: none; }
-${L} .auspicious-bg { display: block; }
-${L} .floral-gold-bg { display: none; }
+/* Same floral backdrop as dark mode (florals, hearts, sparkles, confetti), on a
+   blush-ivory wash instead of deep wine. */
+${L} .floral-base {
+  background: radial-gradient(ellipse 80% 60% at 50% -10%, #f5cfdd 0%, #fae6ee 40%, #fdf3f6 72%, #fffafb 100%) !important;
+}
+${L} .floral-corner { opacity: 0.55 !important; }
+/* Boxes without an explicit border colour get black outlines too (zero-specificity
+   element selector, so any coloured border utility still wins). */
+:where(html[data-theme="light"]) :is(div, section, article, aside, header, footer, nav, main, form, fieldset, label, span, a, button, input, select, textarea, table, thead, tbody, tr, th, td, ul, ol, li, img, hr, details, summary) {
+  border-color: ${INK_BORDER};
+}
 ${L} .glass-card, ${L} .glass-card-gold {
   background: rgba(255, 255, 255, 0.92) !important;
-  border-color: rgba(31, 26, 43, 0.1) !important;
+  border-color: ${INK_BORDER} !important;
   box-shadow: 0 1px 3px rgba(31, 26, 43, 0.06);
 }
-${L} .glass-card-gold { border-color: rgba(212, 175, 55, 0.4) !important; }
+${L} .glass-card-gold { border-color: ${INK_BORDER} !important; }
 ${L} .glass-card-hover:hover, ${L} .glass-card-gold-hover:hover { background: #ffffff !important; }
 ${L} input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]), ${L} select, ${L} textarea { color: #1f1a2b; }
 ${L} select option { background: #ffffff; color: #1f1a2b; }

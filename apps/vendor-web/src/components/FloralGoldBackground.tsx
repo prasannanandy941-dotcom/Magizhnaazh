@@ -1,5 +1,4 @@
 import React from 'react';
-import { AuspiciousBackground } from '../../../../packages/shared-ui/AuspiciousBackground';
 
 /**
  * FloralGoldBackground
@@ -10,12 +9,10 @@ import { AuspiciousBackground } from '../../../../packages/shared-ui/AuspiciousB
  */
 export const FloralGoldBackground: React.FC = () => {
   return (
-    <>
-    <AuspiciousBackground />
     <div className="floral-gold-bg absolute inset-0 overflow-hidden pointer-events-none select-none">
-      {/* Base deep wine/burgundy gradient wash */}
+      {/* Base deep wine/burgundy gradient wash (light theme swaps in a blush-ivory wash) */}
       <div
-        className="absolute inset-0"
+        className="floral-base absolute inset-0"
         style={{
           background:
             'radial-gradient(ellipse 80% 60% at 50% -10%, #5c1030 0%, #2a0a1c 45%, #1a0a14 75%, #12060b 100%)',
@@ -36,7 +33,7 @@ export const FloralGoldBackground: React.FC = () => {
 
       {/* Corner floral ornament — top left */}
       <svg
-        className="absolute -top-6 -left-6 w-40 h-40 sm:w-56 sm:h-56 opacity-[0.26]"
+        className="floral-corner absolute -top-6 -left-6 w-40 h-40 sm:w-56 sm:h-56 opacity-[0.26]"
         viewBox="0 0 200 200"
         fill="none"
       >
@@ -45,7 +42,7 @@ export const FloralGoldBackground: React.FC = () => {
 
       {/* Corner floral ornament — top right (mirrored) */}
       <svg
-        className="absolute -top-6 -right-6 w-40 h-40 sm:w-56 sm:h-56 opacity-[0.26] -scale-x-100"
+        className="floral-corner absolute -top-6 -right-6 w-40 h-40 sm:w-56 sm:h-56 opacity-[0.26] -scale-x-100"
         viewBox="0 0 200 200"
         fill="none"
       >
@@ -54,7 +51,7 @@ export const FloralGoldBackground: React.FC = () => {
 
       {/* Corner floral ornament — bottom left (flipped) */}
       <svg
-        className="absolute -bottom-10 -left-6 w-36 h-36 sm:w-52 sm:h-52 opacity-[0.18] -scale-y-100"
+        className="floral-corner absolute -bottom-10 -left-6 w-36 h-36 sm:w-52 sm:h-52 opacity-[0.18] -scale-y-100"
         viewBox="0 0 200 200"
         fill="none"
       >
@@ -63,7 +60,7 @@ export const FloralGoldBackground: React.FC = () => {
 
       {/* Corner floral ornament — bottom right (flipped + mirrored) */}
       <svg
-        className="absolute -bottom-10 -right-6 w-36 h-36 sm:w-52 sm:h-52 opacity-[0.18] -scale-x-100 -scale-y-100"
+        className="floral-corner absolute -bottom-10 -right-6 w-36 h-36 sm:w-52 sm:h-52 opacity-[0.18] -scale-x-100 -scale-y-100"
         viewBox="0 0 200 200"
         fill="none"
       >
@@ -177,7 +174,6 @@ export const FloralGoldBackground: React.FC = () => {
         />
       </svg>
     </div>
-    </>
   );
 };
 

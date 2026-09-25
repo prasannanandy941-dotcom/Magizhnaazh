@@ -9,40 +9,7 @@ input::-ms-clear {
   display: none;
 }
 
-/* ---------------------------------------------------------------------------
-   Light theme. The admin UI is built on the Tailwind slate scale + .glass-card,
-   so a site-wide light mode is achieved by remapping those tokens under
-   html[data-theme="light"]. The choice is driven by the admin monitor toggle
-   and persisted in platform settings (shared with the customer app).
---------------------------------------------------------------------------- */
-html[data-theme='light'] body {
-  background: #f4f2f7;
-  color: #1e293b;
-}
-html[data-theme='light'] .glass-card {
-  background: rgba(255, 255, 255, 0.82) !important;
-  border-color: rgba(15, 23, 42, 0.1) !important;
-}
-/* Text scale */
-html[data-theme='light'] .text-white { color: #0f172a !important; }
-html[data-theme='light'] .text-slate-100 { color: #1e293b !important; }
-html[data-theme='light'] .text-slate-200 { color: #27324a !important; }
-html[data-theme='light'] .text-slate-300 { color: #334155 !important; }
-html[data-theme='light'] .text-slate-400 { color: #475569 !important; }
-html[data-theme='light'] .text-slate-500 { color: #64748b !important; }
-/* Surfaces */
-html[data-theme='light'] .bg-slate-950,
-html[data-theme='light'] .bg-slate-900,
-html[data-theme='light'] .bg-slate-900\/80,
-html[data-theme='light'] .bg-slate-900\/70,
-html[data-theme='light'] .bg-slate-900\/60,
-html[data-theme='light'] .bg-slate-950\/70,
-html[data-theme='light'] .bg-slate-950\/60 { background-color: #ffffff !important; }
-html[data-theme='light'] .bg-slate-800 { background-color: #e2e8f0 !important; }
-/* Borders */
-html[data-theme='light'] .border-slate-800,
-html[data-theme='light'] .border-slate-700 { border-color: #d8dee9 !important; }
-
+/* Light theme: packages/shared-ui/light-theme.css (generated) covers every colour utility. */
 @layer utilities {
   .glass-card {
     background: rgba(15, 23, 42, 0.75);
