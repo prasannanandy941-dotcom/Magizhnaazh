@@ -227,7 +227,8 @@ ${L} input[type="date"], ${L} input[type="time"], ${L} input[type="datetime-loca
 ${L} .floral-base {
   background: radial-gradient(ellipse 80% 60% at 50% -10%, #f5cfdd 0%, #fae6ee 40%, #fdf3f6 72%, #fffafb 100%) !important;
 }
-${L} .floral-corner { opacity: 0.55 !important; }
+/* Corner flower/vine ornaments and the bottom vine line are dark-mode only. */
+${L} .floral-corner, ${L} .floral-vine { display: none !important; }
 /* Boxes without an explicit border colour get black outlines too (zero-specificity
    element selector, so any coloured border utility still wins). */
 :where(html[data-theme="light"]) :is(div, section, article, aside, header, footer, nav, main, form, fieldset, label, span, a, button, input, select, textarea, table, thead, tbody, tr, th, td, ul, ol, li, img, hr, details, summary) {

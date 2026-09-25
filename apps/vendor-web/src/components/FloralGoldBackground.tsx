@@ -162,7 +162,7 @@ export const FloralGoldBackground: React.FC = () => {
 
       {/* Subtle bottom vine line */}
       <svg
-        className="absolute bottom-0 left-0 w-full h-16 opacity-[0.18]"
+        className="floral-vine absolute bottom-0 left-0 w-full h-16 opacity-[0.18]"
         viewBox="0 0 1200 60"
         preserveAspectRatio="none"
         fill="none"
