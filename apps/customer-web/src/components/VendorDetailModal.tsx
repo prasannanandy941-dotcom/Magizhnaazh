@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Star, MapPin, Check, ShieldCheck, Upload, Calendar as CalendarIcon, MessageSquare, Send, CreditCard, Sparkles, Camera, Bus, Gift, ListChecks, Phone, Clock, Plus, Maximize2, Car, Mail, Printer, FileText } from 'lucide-react';
 import { Vendor, Review, Event, getVendorTrustBadges, getLiveDeals, bestDealForAmount, AVAILABILITY_SLOTS, isSlotBooked, openSlots, offeredSlotIds, slotLabel, slotsLeft, slotCapacityFor } from '../../../../packages/shared-types';
 import { fetchVendorById, uploadReferenceImage, fetchVendorReviews } from '../api';
@@ -135,7 +135,11 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialVendor.id]);
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'portfolio' | 'themes' | 'looks' | 'fleet' | 'gifts' | 'options' | 'services' | 'amenities' | 'packages' | 'gallery' | 'availability' | 'reviews' | 'upload'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'portfolio' | 'themes' | 'looks' | 'fleet' | 'gifts' | 'options' | 'services' | 'amenities' | 'packages' | 'gallery' | 'availability' | 'reviews' | 'upload'>(
+    // Open straight on the vendor's dates when they've listed any, so a customer
+    // sees at a glance whether the vendor is free before looking further.
+    () => ((initialVendor.availableDates?.length ?? 0) > 0 || (initialVendor.bookedDates?.length ?? 0) > 0 ? 'availability' : 'overview'),
+  );
   const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewsLoaded, setReviewsLoaded] = useState(false);
 
@@ -244,7 +248,15 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
   // package id. The chosen tier's price is used for the booking.
   const [selectedTierByPkg, setSelectedTierByPkg] = useState<Record<string, { name: string; price: number }>>({});
   const hasFixedAvailability = (vendor.availableDates?.length ?? 0) > 0;
-  const [selectedEventDate, setSelectedEventDate] = useState(hasFixedAvailability ? vendor.availableDates[0] : '');
+  // On phones the tab row scrolls sideways — keep the Availability tab in view
+  // when the modal opens on it.
+  const availabilityTabRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (activeTab === 'availability') availabilityTabRef.current?.scrollIntoView({ block: 'nearest', inline: 'center' });
+  }, [activeTab]);
+  // No date pre-picked: the customer taps one of the vendor's dates, and the
+  // session picker and booking options then appear for it.
+  const [selectedEventDate, setSelectedEventDate] = useState('');
   // Time-of-day slot the customer picks for the chosen date (Morning/Afternoon/Evening).
   const [selectedSlot, setSelectedSlot] = useState('');
   // Whenever the date changes, reset the slot to the first one still open.
@@ -547,6 +559,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
           </button>
 
           <button
+            ref={availabilityTabRef}
             onClick={() => setActiveTab('availability')}
             className={`shrink-0 whitespace-nowrap py-3 font-semibold text-xs border-b-2 transition-colors flex items-center gap-1 ${
               activeTab === 'availability' ? 'border-amber-500 text-amber-400' : 'border-transparent text-slate-400 hover:text-white'
