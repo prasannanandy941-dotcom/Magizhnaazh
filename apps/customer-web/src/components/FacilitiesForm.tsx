@@ -353,7 +353,7 @@ export function FacilityImagePreview({ active }: { active: string[] }) {
               className="group relative rounded-xl overflow-hidden h-28 border border-slate-800 cursor-zoom-in text-left focus:outline-none focus:ring-2 focus:ring-indigo-500"
               title={`View ${filter.label} (${imgs.length} photos)`}
             >
-              <img
+              <img loading="lazy" decoding="async"
                 src={imgs[0]}
                 alt={filter.label}
                 className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
@@ -394,7 +394,7 @@ export function FacilityImagePreview({ active }: { active: string[] }) {
             >
               {lightbox.images.map((src, i) => (
                 <div key={i} className="snap-center shrink-0 w-full flex items-center justify-center">
-                  <img
+                  <img loading="lazy" decoding="async"
                     src={src}
                     alt={`${lightbox.label} ${i + 1}`}
                     className="w-full max-h-[78vh] object-contain select-none"

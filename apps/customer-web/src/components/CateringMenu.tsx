@@ -199,7 +199,7 @@ export const CateringMenuViewer: React.FC<{
             return (
               <div key={cat.id} className="snap-center shrink-0 w-full">
                 <div className="relative h-44 sm:h-56 w-full bg-slate-950">
-                  <img src={cat.image} alt={cat.title} className="w-full h-full object-cover" draggable={false} />
+                  <img loading="lazy" decoding="async" src={cat.image} alt={cat.title} className="w-full h-full object-cover" draggable={false} />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/20 to-transparent" />
                   <span className={`absolute top-4 left-4 flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${s.badge}`}>
                     <span className={`w-2 h-2 rounded-full ${s.dot}`} /> {s.label}
@@ -218,7 +218,7 @@ export const CateringMenuViewer: React.FC<{
                       >
                         <div className="w-14 h-14 rounded-lg overflow-hidden bg-slate-900 border border-slate-800 shrink-0">
                           {it.image ? (
-                            <img src={it.image} alt={it.name} className="w-full h-full object-cover" />
+                            <img loading="lazy" decoding="async" src={it.image} alt={it.name} className="w-full h-full object-cover" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-slate-600">
                               <ImageOff className="w-4 h-4" />

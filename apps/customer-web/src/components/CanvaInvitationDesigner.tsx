@@ -415,7 +415,7 @@ export const CanvaInvitationDesigner: React.FC<CanvaInvitationDesignerProps> = (
                         isSelected ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-950' : ''
                       }`}
                     >
-                      <img
+                      <img loading="lazy" decoding="async"
                         src={qrImageUrl}
                         alt="RSVP QR code"
                         className="w-20 h-20 object-contain"

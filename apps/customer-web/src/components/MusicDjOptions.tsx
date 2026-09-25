@@ -184,7 +184,7 @@ export const MusicOptionViewer: React.FC<{ option: MusicOption; onClose: () => v
           <div ref={trackRef} onScroll={onScroll} className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar">
             {images.map((src, i) => (
               <div key={i} className="snap-center shrink-0 w-full h-60 sm:h-80 bg-slate-950">
-                <img src={src} alt={`${option.title} ${i + 1}`} className="w-full h-full object-cover" draggable={false} />
+                <img loading="lazy" decoding="async" src={src} alt={`${option.title} ${i + 1}`} className="w-full h-full object-cover" draggable={false} />
               </div>
             ))}
           </div>

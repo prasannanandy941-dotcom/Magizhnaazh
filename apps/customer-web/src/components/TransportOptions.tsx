@@ -152,7 +152,7 @@ export const TransportViewer: React.FC<{ option: TransportOption; onClose: () =>
           <div ref={trackRef} onScroll={onScroll} className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar">
             {images.map((src, i) => (
               <div key={i} className="snap-center shrink-0 w-full h-60 sm:h-80 bg-slate-950">
-                <img src={src} alt={`${option.title} ${i + 1}`} className="w-full h-full object-cover" draggable={false} />
+                <img loading="lazy" decoding="async" src={src} alt={`${option.title} ${i + 1}`} className="w-full h-full object-cover" draggable={false} />
               </div>
             ))}
           </div>
@@ -330,7 +330,7 @@ export const TransportGrid: React.FC<{
                 className="absolute inset-0 w-full h-full text-left focus:outline-none focus:ring-2 focus:ring-sky-500 cursor-pointer"
                 title={`View ${o.title}`}
               >
-                <img
+                <img loading="lazy" decoding="async"
                   src={THUMB(o.images[0])}
                   alt={o.title}
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"

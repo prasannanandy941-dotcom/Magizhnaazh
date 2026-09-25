@@ -28,7 +28,7 @@ export const BannersTab: React.FC<{ token: string }> = ({ token }) => {
         {
           label: 'Preview',
           render: (b) => (
-            <img src={b.imageUrl} alt={b.title} className="w-20 h-10 object-cover rounded-lg border border-slate-800" onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')} />
+            <img loading="lazy" decoding="async" src={b.imageUrl} alt={b.title} className="w-20 h-10 object-cover rounded-lg border border-slate-800" onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')} />
           ),
         },
         { label: 'Title', render: (b) => <span className="font-bold text-white">{b.title}</span> },

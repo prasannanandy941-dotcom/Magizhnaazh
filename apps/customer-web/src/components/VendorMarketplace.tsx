@@ -10,6 +10,7 @@ import type { LucideIcon } from 'lucide-react';
 import { Vendor, VendorCategory, VENDOR_CATEGORIES, getLiveDeals, openSlots } from '../../../../packages/shared-types';
 import { STATIC_CITY_GROUPS } from '../../../../packages/shared-utils';
 import { FacilityChips, filterVenuesByFacilities } from './FacilitiesForm';
+import { useInfiniteList, LoadMoreSentinel } from '../../../../packages/shared-ui/lazy';
 import { CateringMenuChips } from './CateringMenu';
 import { PortfolioChips } from './Portfolio';
 import { DecorationChips } from './DecorationThemes';
@@ -232,6 +233,14 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
   const dateMatches = eventDate ? filteredVendors.filter(freeOnEventDate) : [];
   const narrowToDate = !!eventDate && dateMatches.length > 0 && !showAllDates;
   const displayedVendors = narrowToDate ? dateMatches : filteredVendors;
+  // Infinite scroll: draw 12 vendor cards first, then 12 more each time the
+  // bottom of the grid comes into view. Resets to the first 12 when any
+  // filter, search, sort or the event-date view changes.
+  const vendorPage = useInfiniteList(
+    displayedVendors,
+    12,
+    [selectedCategory, searchQuery, sortBy, selectedCity, maxBudget, activeOptions.join('|'), activeFacilities.join('|'), narrowToDate].join('~'),
+  );
   const eventDateLabel = eventDate
     ? new Date(`${eventDate}T00:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
     : '';
@@ -453,7 +462,7 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {displayedVendors.map((vendor) => {
+        {vendorPage.visible.map((vendor) => {
           const isWishlisted = wishlist.includes(vendor.id);
           const isCompared = selectedCompareIds.includes(vendor.id);
 
@@ -463,7 +472,7 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
               className="glass-card glass-card-hover rounded-3xl overflow-hidden border border-amber-500/25 shadow-[0_0_40px_-20px_rgba(245,158,11,0.5)] hover:border-amber-400/50 hover:shadow-[0_0_45px_-14px_rgba(245,158,11,0.55)] transition-all flex flex-col group"
             >
               <div className="relative h-56 w-full overflow-hidden bg-slate-900">
-                <img
+                <img loading="lazy" decoding="async"
                   src={getVendorCoverImage(vendor)}
                   alt={vendor.businessName}
                   onError={(e) => {
@@ -565,6 +574,13 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
           );
         })}
       </div>
+      <LoadMoreSentinel
+        sentinelRef={vendorPage.sentinelRef}
+        hasMore={vendorPage.hasMore}
+        onClick={vendorPage.showMore}
+        shown={vendorPage.shown}
+        total={vendorPage.total}
+      />
 
       {selectedCompareIds.length > 0 && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-slate-900/95 border border-indigo-500/40 backdrop-blur-xl px-6 py-3.5 rounded-2xl shadow-2xl flex items-center gap-6 animate-bounce">

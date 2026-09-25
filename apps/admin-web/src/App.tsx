@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { ThemeToggle, applyDefaultTheme } from '../../../packages/shared-ui/theme';
 import {
   ShieldCheck,
@@ -24,24 +24,28 @@ import {
 import { User } from '../../../packages/shared-types';
 import { AuthGate } from './components/AuthGate';
 import { FloralGoldBackground } from './components/FloralGoldBackground';
-import { DashboardTab } from './components/DashboardTab';
-import { UsersTab } from './components/UsersTab';
-import { VendorsTab } from './components/VendorsTab';
-import { CategoriesTab } from './components/CategoriesTab';
-import { LocationsTab } from './components/LocationsTab';
-import { EventsTab } from './components/EventsTab';
-import { BookingsTab } from './components/BookingsTab';
-import { ReviewsTab } from './components/ReviewsTab';
-import { FeedbackTab } from './components/FeedbackTab';
-import { ComplaintsTab } from './components/ComplaintsTab';
-import { InvitationTemplatesTab } from './components/InvitationTemplatesTab';
-import { BannersTab } from './components/BannersTab';
-import { CouponsTab } from './components/CouponsTab';
-import { SettingsTab } from './components/SettingsTab';
-import { SettlementsTab } from './components/SettlementsTab';
-import { AnalyticsTab } from './components/AnalyticsTab';
-import { EcosystemMonitor } from './components/EcosystemMonitor';
 import { fetchSettings, GATEWAY_URL } from './api';
+import { lazyNamed, LazyFallback } from '../../../packages/shared-ui/lazy';
+
+// Each admin tab is lazy-loaded: its code downloads the first time the tab is
+// opened, so signing in only downloads the shell + the Dashboard.
+const DashboardTab = lazyNamed(() => import('./components/DashboardTab'), 'DashboardTab');
+const UsersTab = lazyNamed(() => import('./components/UsersTab'), 'UsersTab');
+const VendorsTab = lazyNamed(() => import('./components/VendorsTab'), 'VendorsTab');
+const CategoriesTab = lazyNamed(() => import('./components/CategoriesTab'), 'CategoriesTab');
+const LocationsTab = lazyNamed(() => import('./components/LocationsTab'), 'LocationsTab');
+const EventsTab = lazyNamed(() => import('./components/EventsTab'), 'EventsTab');
+const BookingsTab = lazyNamed(() => import('./components/BookingsTab'), 'BookingsTab');
+const ReviewsTab = lazyNamed(() => import('./components/ReviewsTab'), 'ReviewsTab');
+const FeedbackTab = lazyNamed(() => import('./components/FeedbackTab'), 'FeedbackTab');
+const ComplaintsTab = lazyNamed(() => import('./components/ComplaintsTab'), 'ComplaintsTab');
+const InvitationTemplatesTab = lazyNamed(() => import('./components/InvitationTemplatesTab'), 'InvitationTemplatesTab');
+const BannersTab = lazyNamed(() => import('./components/BannersTab'), 'BannersTab');
+const CouponsTab = lazyNamed(() => import('./components/CouponsTab'), 'CouponsTab');
+const SettingsTab = lazyNamed(() => import('./components/SettingsTab'), 'SettingsTab');
+const SettlementsTab = lazyNamed(() => import('./components/SettlementsTab'), 'SettlementsTab');
+const AnalyticsTab = lazyNamed(() => import('./components/AnalyticsTab'), 'AnalyticsTab');
+const EcosystemMonitor = lazyNamed(() => import('./components/EcosystemMonitor'), 'EcosystemMonitor');
 
 // Site-wide default theme (set from the System Monitor, shared with the
 // customer site). The admin's own navbar choice overrides it on their device.
@@ -206,6 +210,7 @@ export function App() {
 
         {/* Main content */}
         <main className="flex-1 px-4 sm:px-6 py-8 max-w-6xl">
+          <Suspense fallback={<LazyFallback />}>
           {activeTab === 'dashboard' && <DashboardTab token={token} />}
           {activeTab === 'monitor' && (
             <div className="space-y-6">
@@ -231,6 +236,7 @@ export function App() {
           {activeTab === 'settlements' && <SettlementsTab token={token} />}
           {activeTab === 'settings' && <SettingsTab token={token} />}
           {activeTab === 'analytics' && <AnalyticsTab token={token} />}
+          </Suspense>
         </main>
       </div>
     </div>

@@ -1,23 +1,27 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { applyDefaultTheme } from '../../../packages/shared-ui/theme';
 import { Role, User, Vendor, Event, Booking, Invitation, Guest, EventFeedback } from '../../../packages/shared-types';
 import { playNotificationSound } from './notificationSound';
 import { Header } from './components/Header';
-import { AuthModal } from './components/AuthModal';
 import { HeroSection } from './components/HeroSection';
 import { VendorMarketplace } from './components/VendorMarketplace';
-import { VendorDetailModal } from './components/VendorDetailModal';
-import { VendorCompareModal } from './components/VendorCompareModal';
-import { WishlistModal } from './components/WishlistModal';
-import { EventWizardModal } from './components/EventWizardModal';
-import { SmartBudgetPlanner } from './components/SmartBudgetPlanner';
-import { CanvaInvitationDesigner } from './components/CanvaInvitationDesigner';
-import { ShareLinkModal } from './components/ShareLinkModal';
 import { inviteUrl } from './publicUrl';
-import { GuestManagement } from './components/GuestManagement';
-import { MyOrders } from './components/MyOrders';
-import { FeedbackModule } from './components/FeedbackModule';
 import { FloralGoldBackground } from './components/FloralGoldBackground';
+import { lazyNamed, LazyFallback } from '../../../packages/shared-ui/lazy';
+
+// Lazy-loaded screens and popups: each becomes its own JS file that downloads
+// only when first opened, so the marketplace (the landing screen) loads faster.
+const AuthModal = lazyNamed(() => import('./components/AuthModal'), 'AuthModal');
+const VendorDetailModal = lazyNamed(() => import('./components/VendorDetailModal'), 'VendorDetailModal');
+const VendorCompareModal = lazyNamed(() => import('./components/VendorCompareModal'), 'VendorCompareModal');
+const WishlistModal = lazyNamed(() => import('./components/WishlistModal'), 'WishlistModal');
+const EventWizardModal = lazyNamed(() => import('./components/EventWizardModal'), 'EventWizardModal');
+const SmartBudgetPlanner = lazyNamed(() => import('./components/SmartBudgetPlanner'), 'SmartBudgetPlanner');
+const CanvaInvitationDesigner = lazyNamed(() => import('./components/CanvaInvitationDesigner'), 'CanvaInvitationDesigner');
+const ShareLinkModal = lazyNamed(() => import('./components/ShareLinkModal'), 'ShareLinkModal');
+const GuestManagement = lazyNamed(() => import('./components/GuestManagement'), 'GuestManagement');
+const MyOrders = lazyNamed(() => import('./components/MyOrders'), 'MyOrders');
+const FeedbackModule = lazyNamed(() => import('./components/FeedbackModule'), 'FeedbackModule');
 import { Footer } from './components/Footer';
 import { INVITATION_TEMPLATES } from '../../../packages/canvas-engine';
 import {
@@ -582,6 +586,7 @@ export function App() {
       )}
 
       <main className="flex-1 relative z-10">
+        <Suspense fallback={<LazyFallback />}>
         {activeTab === 'marketplace' && (
           <>
             <HeroSection
@@ -780,6 +785,7 @@ export function App() {
             }}
           />
         )}
+        </Suspense>
       </main>
 
       <Footer
@@ -788,6 +794,8 @@ export function App() {
         onOpenSignIn={() => setShowAuthModal(true)}
       />
 
+      {/* Popups load their code on first open; nothing shows while it downloads. */}
+      <Suspense fallback={null}>
       {selectedVendorForModal && (
         <VendorDetailModal
           vendor={selectedVendorForModal}
@@ -964,6 +972,7 @@ export function App() {
         <AuthModal onClose={() => setShowAuthModal(false)} onAuthSuccess={handleAuthSuccess} />
       )}
 
+      </Suspense>
     </div>
   );
 }

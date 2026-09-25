@@ -140,7 +140,7 @@ export const PortfolioGalleryViewer: React.FC<{
         >
           {images.map((src, i) => (
             <div key={i} className="snap-center shrink-0 w-full flex items-center justify-center">
-              <img
+              <img loading="lazy" decoding="async"
                 src={src}
                 alt={`${style.title} ${i + 1}`}
                 className="w-full max-h-[80vh] object-contain select-none"
@@ -269,7 +269,7 @@ export const PortfolioGrid: React.FC<{
                 className="absolute inset-0 w-full h-full text-left focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
                 title={`View ${s.title}`}
               >
-                <img
+                <img loading="lazy" decoding="async"
                   src={THUMB(s.images[0])}
                   alt={s.title}
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"

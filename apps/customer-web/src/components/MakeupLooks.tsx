@@ -175,7 +175,7 @@ export const MakeupLookViewer: React.FC<{ look: MakeupLook; onClose: () => void;
           <div ref={trackRef} onScroll={onScroll} className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar">
             {images.map((src, i) => (
               <div key={i} className="snap-center shrink-0 w-full h-60 sm:h-80 bg-slate-950">
-                <img src={src} alt={`${look.title} ${i + 1}`} className="w-full h-full object-cover" draggable={false} />
+                <img loading="lazy" decoding="async" src={src} alt={`${look.title} ${i + 1}`} className="w-full h-full object-cover" draggable={false} />
               </div>
             ))}
           </div>
@@ -352,7 +352,7 @@ export const MakeupGrid: React.FC<{
                 className="absolute inset-0 w-full h-full text-left focus:outline-none focus:ring-2 focus:ring-rose-500 cursor-pointer"
                 title={`View ${l.title}`}
               >
-                <img
+                <img loading="lazy" decoding="async"
                   src={THUMB(l.images[0])}
                   alt={l.title}
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"

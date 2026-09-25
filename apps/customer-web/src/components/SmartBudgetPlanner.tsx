@@ -402,7 +402,7 @@ export const SmartBudgetPlanner: React.FC<SmartBudgetPlannerProps> = ({
                       className="text-left rounded-2xl overflow-hidden bg-slate-900/70 border border-slate-800 hover:border-indigo-400/60 transition-colors group"
                     >
                       {vendor.galleryImages?.[0] ? (
-                        <img src={vendor.galleryImages[0]} alt="" className="w-full h-28 object-cover" />
+                        <img loading="lazy" decoding="async" src={vendor.galleryImages[0]} alt="" className="w-full h-28 object-cover" />
                       ) : (
                         <div className="w-full h-28 bg-gradient-to-br from-indigo-900/50 to-slate-900 flex items-center justify-center text-xs text-slate-400">
                           {vendor.category}

@@ -127,7 +127,7 @@ const CategoryGalleryViewer: React.FC<{ option: CategoryOption; items?: OfferedO
       <div className="relative w-full max-w-4xl" onClick={(e) => e.stopPropagation()}>
 
         <div className="rounded-2xl border border-slate-800 shadow-2xl bg-slate-900 overflow-hidden flex items-center justify-center">
-          <img
+          <img loading="lazy" decoding="async"
             src={images[index]}
             alt={`${option.title} ${index + 1}`}
             className={`w-full object-contain select-none ${menuItems.length > 0 ? 'max-h-[55vh]' : 'max-h-[80vh]'}`}
@@ -146,7 +146,7 @@ const CategoryGalleryViewer: React.FC<{ option: CategoryOption; items?: OfferedO
                 <li key={i} className="flex items-center justify-between gap-3 py-2">
                   <span className="flex items-center gap-2.5 text-sm text-slate-200">
                     {item.photo && (
-                      <img
+                      <img loading="lazy" decoding="async"
                         src={item.photo}
                         alt={item.name}
                         className="h-8 w-8 object-cover rounded border border-slate-800 shrink-0"
@@ -303,7 +303,7 @@ export const GenericCategoryGrid: React.FC<{
                 className="absolute inset-0 w-full h-full text-left focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
                 title={`View ${o.title}`}
               >
-                <img src={thumbnailSrc} alt={o.title} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
+                <img loading="lazy" decoding="async" src={thumbnailSrc} alt={o.title} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent" />
                 {!onToggle && cateringStyle && (
                   <span className={`absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold ${cateringStyle.badge}`}>

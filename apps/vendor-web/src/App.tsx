@@ -1,13 +1,16 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { ThemeToggle } from '../../../packages/shared-ui/theme';
+import { lazyNamed, LazyFallback, useInfiniteList, LoadMoreSentinel } from '../../../packages/shared-ui/lazy';
+
+// Lazy: the sign-in screen's code downloads only for signed-out visitors, so a
+// signed-in vendor opening the dashboard never downloads it.
+const AuthGate = lazyNamed(() => import('./components/AuthGate'), 'AuthGate');
 import { Store, Star, Upload, Check, LogOut, Loader2, Plus, SlidersHorizontal, ChevronDown, ChevronLeft, ChevronRight, Receipt, X, Bell, ShieldCheck, Clock as ClockIcon, AlertCircle, FileText, CalendarDays, Sparkles, Car, Mail, Printer, Gift, Building2, Fingerprint, UtensilsCrossed, CreditCard, Save, CheckCircle2, Shield } from 'lucide-react';
 import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, VendorDeal, OfferedOptionItem, CateringFoodItem, CateringCourseItem, VENDOR_CATEGORIES, CATEGORY_OPTIONS, CATERING_OPTION_STYLE, MEDIA_QUALITY_OPTIONS, MEDIA_EQUIPMENT_OPTIONS, mediaExtraField, isDealLive, CATERING_MENU_TIERS, CATERING_FOOD_TYPES, CATERING_CUISINES, CATERING_COURSES, CATERING_LIVE_COUNTERS, CATERING_SERVICE_STYLES, BUFFET_PLATE_TYPES, BANANA_LEAF_TYPES, slotLabelWithTime, AVAILABILITY_SLOTS, offeredSlotIds, supportsSlotCapacity, MAX_SLOT_CAPACITY, VENUE_SESSIONS, VENUE_HALL_TYPES, VENUE_HALL_CLASSES, VENUE_CATERING_POLICIES, VENUE_FEATURES, DECORATION_TIERS, DECORATION_THEMES, DECORATION_AREAS, DECORATION_FLOWER_TYPES, MAKEUP_TYPES, MAKEUP_FINISHES, MEDIA_TIERS, MEDIA_COVERAGE, MEDIA_STYLES, TRANSPORT_TIERS, TRANSPORT_VEHICLE_TYPES, TRANSPORT_PRICING_BASIS, TRANSPORT_USES, PRIEST_CEREMONY_TYPES, PRIEST_LANGUAGES, INVITATION_TIERS, INVITATION_TYPES, INVITATION_DESIGNS, INVITATION_ADDONS, INVITATION_LANGUAGES, PRINTING_PRODUCTS, PRINTING_FINISHES, RETURN_GIFTS_TIERS, RETURN_GIFT_TYPES, ENTERTAINMENT_ACT_TYPES, MUSIC_DJ_TIERS, MUSIC_DJ_TYPES, MUSIC_DJ_VENUE_TYPES, LIGHTING_TIERS, LIGHTING_TYPES, FLOWERS_VARIETIES, FLOWERS_ITEMS, FLOWERS_KINDS, MEHENDI_TIERS, MEHENDI_TYPES, MEHENDI_INTRICACY, EVENT_HOST_EVENT_TYPES, EVENT_HOST_LANGUAGES, EVENT_HOST_MODES, SECURITY_TYPES, SECURITY_GENDERS, RENTAL_ITEMS, UTENSILS_MATERIALS, UTENSILS_VESSEL_TYPES, WEDDING_PLANNER_SCOPES, CORPORATE_EVENT_TYPES, CORPORATE_ADDONS } from '../../../packages/shared-types';
 import type { Complaint } from '../../../packages/shared-types';
 import { STATIC_CITY_GROUPS } from '../../../packages/shared-utils';
-import { AuthGate } from './components/AuthGate';
 import { FloralGoldBackground } from './components/FloralGoldBackground';
 import { fetchMyVendor, createVendor, updateVendor, fetchVendorBookings, fetchVendorBookingsSilent, confirmBooking, sendCounterQuote, updateBookingStatus, updateSpendBreakdown, refundBooking, fetchVendorReviews, replyToReview, submitVerification, confirmBookingPayment, fetchBookingInvoice, fetchCalendarToken, onboardRazorpayRoute, refreshRazorpayStatus, verifyPanKyc, startAadhaarKyc, getAadhaarKycStatus, fetchVendorComplaints, GATEWAY_URL } from './api';
-import { openInvoicePrintWindow } from './invoice';
 import { playNotificationSound } from './notificationSound';
 import { getItemSuggestions, getAmenitySuggestions, suggestionListId } from './itemSuggestions';
 
@@ -1109,7 +1112,7 @@ export function App() {
                   {item.photo ? (
                     <div className="flex items-center gap-1.5">
                       <div className="relative h-9 w-9 rounded-lg overflow-hidden border border-slate-800 bg-slate-950 shrink-0">
-                        <img src={item.photo} alt="item" className="w-full h-full object-cover" />
+                        <img loading="lazy" decoding="async" src={item.photo} alt="item" className="w-full h-full object-cover" />
                       </div>
                       <button
                         type="button"
@@ -1171,7 +1174,7 @@ export function App() {
                   {(offeredOptionImages[opt] || []).map((url) => (
                     isImg(url) ? (
                       <div key={url} className="relative h-14 w-14 rounded-lg overflow-hidden border border-slate-800 bg-slate-950">
-                        <img src={url} alt="option" className="w-full h-full object-cover" />
+                        <img loading="lazy" decoding="async" src={url} alt="option" className="w-full h-full object-cover" />
                         <button type="button" onClick={() => removeOptionImage(opt, url)} className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-slate-950/80 text-slate-300 hover:text-rose-400 flex items-center justify-center" title="Remove">
                           <X className="w-2.5 h-2.5" />
                         </button>
@@ -2245,7 +2248,7 @@ export function App() {
         </div>
         {img && (
           <div className="relative">
-            <img src={img} alt={name} className="w-10 h-10 rounded-lg object-cover border border-slate-800" />
+            <img loading="lazy" decoding="async" src={img} alt={name} className="w-10 h-10 rounded-lg object-cover border border-slate-800" />
             <button type="button" onClick={() => removeDecorImage(p.id, slot)}
               className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-slate-800 text-slate-300 hover:text-rose-400 flex items-center justify-center" aria-label="Remove image">
               <X className="w-2.5 h-2.5" />
@@ -4516,7 +4519,11 @@ export function App() {
     if (!token) return;
     try {
       const res = await fetchBookingInvoice(token, bookingId);
-      if (res.data?.invoice) openInvoicePrintWindow(res.data.invoice);
+      if (res.data?.invoice) {
+        // Lazy: the invoice printer's code downloads only when a vendor opens an invoice.
+        const { openInvoicePrintWindow } = await import('./invoice');
+        openInvoicePrintWindow(res.data.invoice);
+      }
     } catch (err: any) {
       alert(err?.message || 'Could not load the invoice.');
     }
@@ -4526,9 +4533,24 @@ export function App() {
   const totalEarnings = confirmedBookings.reduce((acc, b) => acc + b.advanceAmountPaid, 0);
   const [earningsExpanded, setEarningsExpanded] = useState(false);
 
+  // Bookings shown under the Active / Cancelled toggle, drawn 10 at a time
+  // (infinite scroll). Hooks must run before the signed-out early return below.
+  const visibleBookings = bookings.filter((b) =>
+    bookingTab === 'active'
+      ? b.status !== 'cancelled' && b.status !== 'refunded'
+      : b.status === 'cancelled' || b.status === 'refunded'
+  );
+  const bookingsPage = useInfiniteList(visibleBookings, 10, bookingTab);
+  // Reviews, also 10 at a time.
+  const reviewsPage = useInfiniteList(reviews, 10);
+
   if (!user) {
     // No theme toggle on the sign-in screen — it's in the navbar once signed in.
-    return <AuthGate onAuthSuccess={handleAuthSuccess} />;
+    return (
+      <Suspense fallback={<LazyFallback />}>
+        <AuthGate onAuthSuccess={handleAuthSuccess} />
+      </Suspense>
+    );
   }
 
   return (
@@ -5010,6 +5032,11 @@ export function App() {
                           onClick={() => {
                             setOpenComplaint(null);
                             setBookingTab('active');
+                            // The booking may be beyond the first batch — render it before scrolling.
+                            const idx = bookings
+                              .filter((b) => b.status !== 'cancelled' && b.status !== 'refunded')
+                              .findIndex((b) => b.id === openComplaint.bookingId);
+                            if (idx >= 0) bookingsPage.showUpTo(idx);
                             setTimeout(() => document.getElementById(`booking-${openComplaint.bookingId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 0);
                           }}
                           className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white hover:bg-indigo-500"
@@ -5065,18 +5092,13 @@ export function App() {
                   <Loader2 className="w-4 h-4 animate-spin" /> Loading bookings...
                 </div>
               ) : (() => {
-                const visibleBookings = bookings.filter((b) =>
-                  bookingTab === 'active'
-                    ? b.status !== 'cancelled' && b.status !== 'refunded'
-                    : b.status === 'cancelled' || b.status === 'refunded'
-                );
                 return visibleBookings.length === 0 ? (
                   <div className="p-8 text-center text-xs text-slate-500">
                     {bookingTab === 'active' ? 'No active bookings yet.' : 'No cancelled or refunded bookings yet.'}
                   </div>
                 ) : (
                 <div className="divide-y divide-slate-800/80">
-                  {visibleBookings.map((b) => (
+                  {bookingsPage.visible.map((b) => (
                     <div id={`booking-${b.id}`} key={b.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-900/40">
                       <div>
                         <div className="flex items-center gap-2">
@@ -5129,7 +5151,7 @@ export function App() {
                                       </div>
                                     </div>
                                   ) : (
-                                    <img src={img} alt="Customer reference" className="h-16 w-16 object-cover rounded-lg border border-slate-700 hover:border-amber-500 transition-colors" />
+                                    <img loading="lazy" decoding="async" src={img} alt="Customer reference" className="h-16 w-16 object-cover rounded-lg border border-slate-700 hover:border-amber-500 transition-colors" />
                                   )}
                                 </a>
                               ))}
@@ -5253,6 +5275,7 @@ export function App() {
                       </div>
                     </div>
                   ))}
+                  <LoadMoreSentinel sentinelRef={bookingsPage.sentinelRef} hasMore={bookingsPage.hasMore} onClick={bookingsPage.showMore} shown={bookingsPage.shown} total={bookingsPage.total} />
                 </div>
                 );
               })()}
@@ -5287,7 +5310,7 @@ export function App() {
               </div>
             ) : (
               <div className="space-y-3">
-                {reviews.map((r) => (
+                {reviewsPage.visible.map((r) => (
                   <div key={r.id} className="glass-card p-5 rounded-2xl border border-slate-800">
                     <div className="flex items-center justify-between gap-3 flex-wrap">
                       <div className="flex items-center gap-2">
@@ -5373,6 +5396,7 @@ export function App() {
                     )}
                   </div>
                 ))}
+                <LoadMoreSentinel sentinelRef={reviewsPage.sentinelRef} hasMore={reviewsPage.hasMore} onClick={reviewsPage.showMore} shown={reviewsPage.shown} total={reviewsPage.total} />
               </div>
             )}
           </div>
@@ -5406,7 +5430,7 @@ export function App() {
               ))}
               {myVendor.galleryImages.map((img, idx) => (
                 <div key={`img-${idx}`} className="h-44 rounded-2xl overflow-hidden bg-slate-900 border border-slate-800">
-                  <img src={img} alt={`Portfolio ${idx}`} className="w-full h-full object-cover" />
+                  <img loading="lazy" decoding="async" src={img} alt={`Portfolio ${idx}`} className="w-full h-full object-cover" />
                 </div>
               ))}
             </div>
@@ -5937,7 +5961,7 @@ export function App() {
                               <div>
                                 <label className="block text-[10px] text-slate-400 mb-1">Upload photo</label>
                                 <div className="flex items-center gap-2.5">
-                                  {imgUrl ? (<div className="relative"><img src={imgUrl} alt={g} className="w-16 h-12 rounded-lg object-cover border border-slate-700" /><button type="button" onClick={() => removeSecurityImage(p.id, g)} className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px]">✕</button></div>) : null}
+                                  {imgUrl ? (<div className="relative"><img loading="lazy" decoding="async" src={imgUrl} alt={g} className="w-16 h-12 rounded-lg object-cover border border-slate-700" /><button type="button" onClick={() => removeSecurityImage(p.id, g)} className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px]">✕</button></div>) : null}
                                   <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold cursor-pointer border border-slate-700">
                                     {isUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 text-amber-400" />}
                                     {imgUrl ? 'Change photo' : 'Upload photo'}
@@ -6002,7 +6026,7 @@ export function App() {
                             <div className="grid grid-cols-4 gap-2 mb-3">
                               {p.images.map((url) => (
                                 <div key={url} className="relative group rounded-lg overflow-hidden border border-slate-800 h-20 bg-slate-950">
-                                  <img src={url} alt="Menu page" className="w-full h-full object-cover" />
+                                  <img loading="lazy" decoding="async" src={url} alt="Menu page" className="w-full h-full object-cover" />
                                   <button
                                     type="button"
                                     onClick={() => removePackageImage(p.id, url)}
@@ -6095,7 +6119,7 @@ export function App() {
 
                                       <div className="flex items-center gap-2.5">
                                         {p.catering?.foodTypeImages?.[f] ? (
-                                          <div className="relative"><img src={p.catering.foodTypeImages[f]} alt={f} className="w-14 h-11 rounded object-cover border border-slate-700" /><button type="button" onClick={() => removeCateringImage(p.id, 'foodTypeImages', f)} className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px]">✕</button></div>
+                                          <div className="relative"><img loading="lazy" decoding="async" src={p.catering.foodTypeImages[f]} alt={f} className="w-14 h-11 rounded object-cover border border-slate-700" /><button type="button" onClick={() => removeCateringImage(p.id, 'foodTypeImages', f)} className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px]">✕</button></div>
                                         ) : null}
                                         <label className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold cursor-pointer border border-slate-700">
                                           {uploadingCateringImg === `${p.id}:foodTypeImages:${f}` ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 text-amber-400" />}
@@ -6196,7 +6220,7 @@ export function App() {
 
                                       <div className="flex items-center gap-2.5">
                                         {p.catering?.cuisineImages?.[c] ? (
-                                          <div className="relative"><img src={p.catering.cuisineImages[c]} alt={c} className="w-14 h-11 rounded object-cover border border-slate-700" /><button type="button" onClick={() => removeCateringImage(p.id, 'cuisineImages', c)} className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px]">✕</button></div>
+                                          <div className="relative"><img loading="lazy" decoding="async" src={p.catering.cuisineImages[c]} alt={c} className="w-14 h-11 rounded object-cover border border-slate-700" /><button type="button" onClick={() => removeCateringImage(p.id, 'cuisineImages', c)} className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px]">✕</button></div>
                                         ) : null}
                                         <label className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold cursor-pointer border border-slate-700">
                                           {uploadingCateringImg === `${p.id}:cuisineImages:${c}` ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 text-amber-400" />}
@@ -6347,7 +6371,7 @@ export function App() {
                                           <div className="shrink-0">
                                             {item.photo ? (
                                               <div className="relative h-9 w-9 rounded-lg overflow-hidden border border-slate-700 bg-slate-900 group">
-                                                <img src={item.photo} alt={item.name || 'Dish'} className="w-full h-full object-cover" />
+                                                <img loading="lazy" decoding="async" src={item.photo} alt={item.name || 'Dish'} className="w-full h-full object-cover" />
                                                 <button
                                                   type="button"
                                                   onClick={() => updateCateringCourseItem(p.id, course, itemIdx, 'photo', '')}
@@ -6484,7 +6508,7 @@ export function App() {
                                                 <div className="shrink-0">
                                                   {item.photo ? (
                                                     <div className="relative h-9 w-9 rounded-lg overflow-hidden border border-slate-700 bg-slate-900 group">
-                                                      <img src={item.photo} alt={item.name || 'Item'} className="w-full h-full object-cover" />
+                                                      <img loading="lazy" decoding="async" src={item.photo} alt={item.name || 'Item'} className="w-full h-full object-cover" />
                                                       <button
                                                         type="button"
                                                         onClick={() => updateCateringLiveCounterItem(p.id, lc, itemIdx, 'photo', '')}
@@ -6613,7 +6637,7 @@ export function App() {
                                               />
                                             </div>
                                             {p.catering?.plateTypeImages?.[pt] ? (
-                                              <div className="relative"><img src={p.catering.plateTypeImages[pt]} alt={pt} className="w-12 h-10 rounded object-cover border border-slate-700" /><button type="button" onClick={() => removeCateringImage(p.id, 'plateTypeImages', pt)} className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px]">✕</button></div>
+                                              <div className="relative"><img loading="lazy" decoding="async" src={p.catering.plateTypeImages[pt]} alt={pt} className="w-12 h-10 rounded object-cover border border-slate-700" /><button type="button" onClick={() => removeCateringImage(p.id, 'plateTypeImages', pt)} className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px]">✕</button></div>
                                             ) : (
                                               <label className="cursor-pointer inline-flex items-center gap-1 text-[10px] text-slate-300 px-2 py-1.5 rounded-lg border border-slate-700 bg-slate-950 hover:border-amber-500">
                                                 {uploadingCateringImg === `${p.id}:plateTypeImages:${pt}` ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 text-amber-400" />}
@@ -6666,7 +6690,7 @@ export function App() {
                                               />
                                             </div>
                                             {p.catering?.leafTypeImages?.[lt] ? (
-                                              <div className="relative"><img src={p.catering.leafTypeImages[lt]} alt={lt} className="w-12 h-10 rounded object-cover border border-slate-700" /><button type="button" onClick={() => removeCateringImage(p.id, 'leafTypeImages', lt)} className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px]">✕</button></div>
+                                              <div className="relative"><img loading="lazy" decoding="async" src={p.catering.leafTypeImages[lt]} alt={lt} className="w-12 h-10 rounded object-cover border border-slate-700" /><button type="button" onClick={() => removeCateringImage(p.id, 'leafTypeImages', lt)} className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px]">✕</button></div>
                                             ) : (
                                               <label className="cursor-pointer inline-flex items-center gap-1 text-[10px] text-slate-300 px-2 py-1.5 rounded-lg border border-slate-700 bg-slate-950 hover:border-emerald-500">
                                                 {uploadingCateringImg === `${p.id}:leafTypeImages:${lt}` ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 text-emerald-400" />}
@@ -7005,7 +7029,7 @@ export function App() {
                                 <div className="mt-2 flex items-center gap-2">
                                   {p.venue?.cateringImage && (
                                     <div className="relative">
-                                      <img src={p.venue.cateringImage} alt="Catering" className="w-12 h-12 rounded-lg object-cover border border-slate-800" />
+                                      <img loading="lazy" decoding="async" src={p.venue.cateringImage} alt="Catering" className="w-12 h-12 rounded-lg object-cover border border-slate-800" />
                                       <button type="button" onClick={() => removeVenueImage(p.id, 'catering')}
                                         className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-slate-800 text-slate-300 hover:text-rose-400 flex items-center justify-center" aria-label="Remove image">
                                         <X className="w-2.5 h-2.5" />
@@ -7049,7 +7073,7 @@ export function App() {
                                     <div className="flex items-center gap-2">
                                       {p.venue?.featureImages?.[field] && (
                                         <div className="relative">
-                                          <img src={p.venue.featureImages[field]} alt={label} className="w-10 h-10 rounded-lg object-cover border border-slate-800" />
+                                          <img loading="lazy" decoding="async" src={p.venue.featureImages[field]} alt={label} className="w-10 h-10 rounded-lg object-cover border border-slate-800" />
                                           <button type="button" onClick={() => removeVenueImage(p.id, field)}
                                             className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-slate-800 text-slate-300 hover:text-rose-400 flex items-center justify-center" aria-label="Remove image">
                                             <X className="w-2.5 h-2.5" />
@@ -7139,7 +7163,7 @@ export function App() {
                               </div>
                               {p.decoration?.mandapImage && (
                                 <div className="relative">
-                                  <img src={p.decoration.mandapImage} alt="Mandap" className="w-10 h-10 rounded-lg object-cover border border-slate-800" />
+                                  <img loading="lazy" decoding="async" src={p.decoration.mandapImage} alt="Mandap" className="w-10 h-10 rounded-lg object-cover border border-slate-800" />
                                   <button type="button" onClick={() => removeDecorImage(p.id, 'mandap:')}
                                     className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-slate-800 text-slate-300 hover:text-rose-400 flex items-center justify-center" aria-label="Remove image">
                                     <X className="w-2.5 h-2.5" />
@@ -7177,7 +7201,7 @@ export function App() {
                                     </div>
                                     {imgUrl && (
                                       <div className="relative">
-                                        <img src={imgUrl} alt={label} className="w-10 h-10 rounded-lg object-cover border border-slate-800" />
+                                        <img loading="lazy" decoding="async" src={imgUrl} alt={label} className="w-10 h-10 rounded-lg object-cover border border-slate-800" />
                                         <button type="button" onClick={() => removeDecorImage(p.id, `${field}:`)}
                                           className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-slate-800 text-slate-300 hover:text-rose-400 flex items-center justify-center" aria-label="Remove image">
                                           <X className="w-2.5 h-2.5" />
@@ -7226,7 +7250,7 @@ export function App() {
                                       </div>
                                       {img && (
                                         <div className="relative">
-                                          <img src={img} alt={t} className="w-10 h-10 rounded-lg object-cover border border-slate-800" />
+                                          <img loading="lazy" decoding="async" src={img} alt={t} className="w-10 h-10 rounded-lg object-cover border border-slate-800" />
                                           <button type="button" onClick={() => removeMakeupTypeImage(p.id, t)}
                                             className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-slate-800 text-slate-300 hover:text-rose-400 flex items-center justify-center" aria-label="Remove image">
                                             <X className="w-2.5 h-2.5" />
@@ -7351,7 +7375,7 @@ export function App() {
                                       </div>
                                       {img && (
                                         <div className="relative">
-                                          <img src={img} alt={s} className="w-10 h-10 rounded-lg object-cover border border-slate-800" />
+                                          <img loading="lazy" decoding="async" src={img} alt={s} className="w-10 h-10 rounded-lg object-cover border border-slate-800" />
                                           <button type="button" onClick={() => removeMediaImage(p.id, `style:${s}`)}
                                             className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-slate-800 text-slate-300 hover:text-rose-400 flex items-center justify-center" aria-label="Remove image">
                                             <X className="w-2.5 h-2.5" />
@@ -7392,7 +7416,7 @@ export function App() {
                                 <div className="flex items-center gap-2">
                                   {p.media?.coverageImage && (
                                     <div className="relative">
-                                      <img src={p.media.coverageImage} alt="Coverage" className="w-10 h-10 rounded-lg object-cover border border-slate-800" />
+                                      <img loading="lazy" decoding="async" src={p.media.coverageImage} alt="Coverage" className="w-10 h-10 rounded-lg object-cover border border-slate-800" />
                                       <button type="button" onClick={() => removeMediaImage(p.id, 'coverage')}
                                         className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-slate-800 text-slate-300 hover:text-rose-400 flex items-center justify-center" aria-label="Remove image">
                                         <X className="w-2.5 h-2.5" />
@@ -7488,7 +7512,7 @@ export function App() {
                                     <div className="flex items-center gap-2">
                                       {p.media?.featureImages?.[field] && (
                                         <div className="relative">
-                                          <img src={p.media.featureImages[field]} alt={label} className="w-10 h-10 rounded-lg object-cover border border-slate-800" />
+                                          <img loading="lazy" decoding="async" src={p.media.featureImages[field]} alt={label} className="w-10 h-10 rounded-lg object-cover border border-slate-800" />
                                           <button type="button" onClick={() => removeMediaImage(p.id, `feature:${field}`)}
                                             className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-slate-800 text-slate-300 hover:text-rose-400 flex items-center justify-center" aria-label="Remove image">
                                             <X className="w-2.5 h-2.5" />
@@ -7664,7 +7688,7 @@ export function App() {
                                     <div className="flex items-center gap-2.5">
                                       {imgUrl ? (
                                         <div className="relative group">
-                                          <img src={imgUrl} alt={v} className="w-16 h-12 rounded-lg object-cover border border-slate-700" />
+                                          <img loading="lazy" decoding="async" src={imgUrl} alt={v} className="w-16 h-12 rounded-lg object-cover border border-slate-700" />
                                           <button
                                             type="button"
                                             onClick={() => removeTransportImage(p.id, `vehicle:${v}`)}
@@ -7938,7 +7962,7 @@ export function App() {
                                   <div className="flex items-center gap-2.5">
                                     {p.transport?.carDecorationImage ? (
                                       <div className="relative group">
-                                        <img src={p.transport.carDecorationImage} alt="Car decoration" className="w-16 h-12 rounded-lg object-cover border border-slate-700" />
+                                        <img loading="lazy" decoding="async" src={p.transport.carDecorationImage} alt="Car decoration" className="w-16 h-12 rounded-lg object-cover border border-slate-700" />
                                         <button
                                           type="button"
                                           onClick={() => removeTransportImage(p.id, 'decoration')}
@@ -8172,7 +8196,7 @@ export function App() {
                                       <div className="flex items-center gap-2.5">
                                         {imgUrl ? (
                                           <div className="relative group">
-                                            <img src={imgUrl} alt={t} className="w-16 h-12 rounded-lg object-cover border border-slate-700" />
+                                            <img loading="lazy" decoding="async" src={imgUrl} alt={t} className="w-16 h-12 rounded-lg object-cover border border-slate-700" />
                                             <button
                                               type="button"
                                               onClick={() => removeInvitationImage(p.id, t)}
@@ -8447,7 +8471,7 @@ export function App() {
                                       <div className="flex items-center gap-2.5">
                                         {pImg ? (
                                           <div className="relative group">
-                                            <img src={pImg} alt={pr} className="w-16 h-12 rounded-lg object-cover border border-slate-700" />
+                                            <img loading="lazy" decoding="async" src={pImg} alt={pr} className="w-16 h-12 rounded-lg object-cover border border-slate-700" />
                                             <button
                                               type="button"
                                               onClick={() => removePrintingImage(p.id, `product:${pr}`)}
@@ -8543,7 +8567,7 @@ export function App() {
                                       <div className="flex items-center gap-2.5">
                                         {imgUrl ? (
                                           <div className="relative group">
-                                            <img src={imgUrl} alt={f} className="w-16 h-12 rounded-lg object-cover border border-slate-700" />
+                                            <img loading="lazy" decoding="async" src={imgUrl} alt={f} className="w-16 h-12 rounded-lg object-cover border border-slate-700" />
                                             <button
                                               type="button"
                                               onClick={() => removePrintingImage(p.id, `finish:${f}`)}
@@ -8645,7 +8669,7 @@ export function App() {
                                   <div className="flex items-center gap-2.5">
                                     {p.printing?.designImage ? (
                                       <div className="relative group">
-                                        <img src={p.printing.designImage} alt="Design sample" className="w-16 h-12 rounded-lg object-cover border border-slate-700" />
+                                        <img loading="lazy" decoding="async" src={p.printing.designImage} alt="Design sample" className="w-16 h-12 rounded-lg object-cover border border-slate-700" />
                                         <button
                                           type="button"
                                           onClick={() => removePrintingImage(p.id, 'design')}
@@ -8776,7 +8800,7 @@ export function App() {
                                     <div className="flex items-center gap-2.5">
                                       {imgUrl ? (
                                         <div className="relative group">
-                                          <img src={imgUrl} alt={g} className="w-16 h-12 rounded-lg object-cover border border-slate-700" />
+                                          <img loading="lazy" decoding="async" src={imgUrl} alt={g} className="w-16 h-12 rounded-lg object-cover border border-slate-700" />
                                           <button
                                             type="button"
                                             onClick={() => removeReturnGiftImage(p.id, g)}
@@ -8978,7 +9002,7 @@ export function App() {
                                     <div>
                                       <label className="block text-[10px] text-slate-400 mb-1">Upload photo</label>
                                       <div className="flex items-center gap-2.5">
-                                        {imgUrl ? (<div className="relative"><img src={imgUrl} alt={a} className="w-16 h-12 rounded-lg object-cover border border-slate-700" /><button type="button" onClick={() => removeEntertainmentImage(p.id, a)} className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px]">✕</button></div>) : null}
+                                        {imgUrl ? (<div className="relative"><img loading="lazy" decoding="async" src={imgUrl} alt={a} className="w-16 h-12 rounded-lg object-cover border border-slate-700" /><button type="button" onClick={() => removeEntertainmentImage(p.id, a)} className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px]">✕</button></div>) : null}
                                         <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold cursor-pointer border border-slate-700">
                                           {isUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 text-amber-400" />}
                                           {imgUrl ? 'Change photo' : 'Upload photo'}
@@ -9062,7 +9086,7 @@ export function App() {
                                   <div className="flex items-center gap-2">
                                     {imgUrl && (
                                       <div className="relative">
-                                        <img src={imgUrl} alt={t} className="w-12 h-10 rounded object-cover border border-slate-700" />
+                                        <img loading="lazy" decoding="async" src={imgUrl} alt={t} className="w-12 h-10 rounded object-cover border border-slate-700" />
                                         <button type="button" onClick={() => removeMusicDjImage(p.id, `type:${t}`)} className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px]">✕</button>
                                       </div>
                                     )}
@@ -9110,7 +9134,7 @@ export function App() {
                                       </div>
                                       {imgUrl && (
                                         <div className="relative">
-                                          <img src={imgUrl} alt={label} className="w-10 h-10 rounded-lg object-cover border border-slate-800" />
+                                          <img loading="lazy" decoding="async" src={imgUrl} alt={label} className="w-10 h-10 rounded-lg object-cover border border-slate-800" />
                                           <button type="button" onClick={() => removeMusicDjImage(p.id, image)} className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-rose-500 text-white flex items-center justify-center text-[10px]">✕</button>
                                         </div>
                                       )}
@@ -9217,7 +9241,7 @@ export function App() {
                                     <div className="flex items-center gap-2.5">
                                       {imgUrl ? (
                                         <div className="relative group">
-                                          <img src={imgUrl} alt={l} className="w-16 h-12 rounded-lg object-cover border border-slate-700" />
+                                          <img loading="lazy" decoding="async" src={imgUrl} alt={l} className="w-16 h-12 rounded-lg object-cover border border-slate-700" />
                                           <button
                                             type="button"
                                             onClick={() => removeLightingImage(p.id, l)}
@@ -9448,7 +9472,7 @@ export function App() {
                                       <div className="flex items-center gap-2.5">
                                         {imgUrl ? (
                                           <div className="relative group">
-                                            <img src={imgUrl} alt={v} className="w-16 h-12 rounded-lg object-cover border border-slate-700" />
+                                            <img loading="lazy" decoding="async" src={imgUrl} alt={v} className="w-16 h-12 rounded-lg object-cover border border-slate-700" />
                                             <button
                                               type="button"
                                               onClick={() => removeFlowersImage(p.id, 'variety', v)}
@@ -9525,7 +9549,7 @@ export function App() {
                                       <div className="flex items-center gap-2.5">
                                         {cv.image ? (
                                           <div className="relative group">
-                                            <img src={cv.image} alt={cv.name || 'item'} className="w-16 h-12 rounded-lg object-cover border border-slate-700" />
+                                            <img loading="lazy" decoding="async" src={cv.image} alt={cv.name || 'item'} className="w-16 h-12 rounded-lg object-cover border border-slate-700" />
                                             <button
                                               type="button"
                                               onClick={() => removeFlowersImage(p.id, 'customVariety', cIdx)}
@@ -9642,7 +9666,7 @@ export function App() {
                                       <div className="flex items-center gap-2.5">
                                         {imgUrl ? (
                                           <div className="relative group">
-                                            <img src={imgUrl} alt={it} className="w-16 h-12 rounded-lg object-cover border border-slate-700" />
+                                            <img loading="lazy" decoding="async" src={imgUrl} alt={it} className="w-16 h-12 rounded-lg object-cover border border-slate-700" />
                                             <button
                                               type="button"
                                               onClick={() => removeFlowersImage(p.id, 'item', it)}
@@ -9719,7 +9743,7 @@ export function App() {
                                       <div className="flex items-center gap-2.5">
                                         {ci.image ? (
                                           <div className="relative group">
-                                            <img src={ci.image} alt={ci.name || 'item'} className="w-16 h-12 rounded-lg object-cover border border-slate-700" />
+                                            <img loading="lazy" decoding="async" src={ci.image} alt={ci.name || 'item'} className="w-16 h-12 rounded-lg object-cover border border-slate-700" />
                                             <button
                                               type="button"
                                               onClick={() => removeFlowersImage(p.id, 'customItem', cIdx)}
@@ -9879,7 +9903,7 @@ export function App() {
                                     <div>
                                       <label className="block text-[10px] text-slate-400 mb-1">Upload {t.toLowerCase()} photo</label>
                                       <div className="flex items-center gap-2.5">
-                                        {imgUrl ? (<div className="relative"><img src={imgUrl} alt={t} className="w-16 h-12 rounded-lg object-cover border border-slate-700" /><button type="button" onClick={() => removeMehendiImage(p.id, 'tier', t)} className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px]">✕</button></div>) : null}
+                                        {imgUrl ? (<div className="relative"><img loading="lazy" decoding="async" src={imgUrl} alt={t} className="w-16 h-12 rounded-lg object-cover border border-slate-700" /><button type="button" onClick={() => removeMehendiImage(p.id, 'tier', t)} className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px]">✕</button></div>) : null}
                                         <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold cursor-pointer border border-slate-700">
                                           {isUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 text-amber-400" />}
                                           {imgUrl ? 'Change photo' : 'Upload photo'}
@@ -9918,7 +9942,7 @@ export function App() {
                                     <div>
                                       <label className="block text-[10px] text-slate-400 mb-1">Upload photo</label>
                                       <div className="flex items-center gap-2.5">
-                                        {imgUrl ? (<div className="relative"><img src={imgUrl} alt={i} className="w-16 h-12 rounded-lg object-cover border border-slate-700" /><button type="button" onClick={() => removeMehendiImage(p.id, 'intricacy', i)} className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px]">✕</button></div>) : null}
+                                        {imgUrl ? (<div className="relative"><img loading="lazy" decoding="async" src={imgUrl} alt={i} className="w-16 h-12 rounded-lg object-cover border border-slate-700" /><button type="button" onClick={() => removeMehendiImage(p.id, 'intricacy', i)} className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px]">✕</button></div>) : null}
                                         <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold cursor-pointer border border-slate-700">
                                           {isUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 text-amber-400" />}
                                           {imgUrl ? 'Change photo' : 'Upload photo'}
@@ -10068,7 +10092,7 @@ export function App() {
                                   <div>
                                     <label className="block text-[10px] text-slate-400 mb-1">Upload photo</label>
                                     <div className="flex items-center gap-2.5">
-                                      {imgUrl ? (<div className="relative"><img src={imgUrl} alt={it} className="w-16 h-12 rounded-lg object-cover border border-slate-700" /><button type="button" onClick={() => removeRentalImage(p.id, it)} className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px]">✕</button></div>) : null}
+                                      {imgUrl ? (<div className="relative"><img loading="lazy" decoding="async" src={imgUrl} alt={it} className="w-16 h-12 rounded-lg object-cover border border-slate-700" /><button type="button" onClick={() => removeRentalImage(p.id, it)} className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px]">✕</button></div>) : null}
                                       <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold cursor-pointer border border-slate-700">
                                         {isUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 text-amber-400" />}
                                         {imgUrl ? 'Change photo' : 'Upload photo'}
@@ -10345,7 +10369,7 @@ export function App() {
                             <div className="grid grid-cols-4 gap-2 mb-3">
                               {p.images.map((url) => (
                                 <div key={url} className="relative group rounded-lg overflow-hidden border border-slate-800 h-20 bg-slate-950">
-                                  <img src={url} alt="Package asset" className="w-full h-full object-cover" />
+                                  <img loading="lazy" decoding="async" src={url} alt="Package asset" className="w-full h-full object-cover" />
                                   <button
                                     type="button"
                                     onClick={() => removePackageImage(p.id, url)}

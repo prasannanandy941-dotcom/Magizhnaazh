@@ -659,7 +659,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
           {activeTab === 'overview' && (
             <div className="space-y-6">
               <div className="h-72 w-full rounded-2xl overflow-hidden bg-slate-900 relative">
-                <img src={selectedImage} alt={vendor.businessName} onError={(e) => { const fb = categoryCoverImage(vendor.category); if (e.currentTarget.src !== fb) e.currentTarget.src = fb; }} className="w-full h-full object-cover" />
+                <img loading="lazy" decoding="async" src={selectedImage} alt={vendor.businessName} onError={(e) => { const fb = categoryCoverImage(vendor.category); if (e.currentTarget.src !== fb) e.currentTarget.src = fb; }} className="w-full h-full object-cover" />
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -799,7 +799,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                       <div className="flex gap-2 overflow-x-auto pb-1 mb-3">
                         {optionImages.map((url) => (
                           /\.(png|jpe?g|gif|svg|webp|bmp|avif)(\?|#|$)/i.test(url) ? (
-                            <img
+                            <img loading="lazy" decoding="async"
                               key={url}
                               src={url}
                               alt={o}
@@ -842,7 +842,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                                   {picked && <Check className="w-3 h-3 text-slate-950" />}
                                 </span>
                                 {item.photo && (
-                                  <img
+                                  <img loading="lazy" decoding="async"
                                     src={item.photo}
                                     alt={item.name}
                                     onClick={(e) => {
@@ -999,7 +999,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                               className="h-full w-full object-cover"
                             />
                           ) : (
-                            <img
+                            <img loading="lazy" decoding="async"
                               src={url}
                               alt={`${pkg.packageName} ${index + 1}`}
                               className="h-full w-full object-cover"
@@ -1054,7 +1054,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                                 {genders.map((g) => (
                                   <div key={g} className="flex items-center justify-between gap-2 text-[11px]">
                                     <span className="flex items-center gap-2 text-slate-300">
-                                      {s.genderImages?.[g] ? <img src={s.genderImages[g]} alt={g} className="w-8 h-8 rounded object-cover border border-slate-700" /> : null}
+                                      {s.genderImages?.[g] ? <img loading="lazy" decoding="async" src={s.genderImages[g]} alt={g} className="w-8 h-8 rounded object-cover border border-slate-700" /> : null}
                                       {s.genderNames?.[g] || g}
                                     </span>
                                     {typeof s.genderPrices?.[g] === 'number' && <span className="text-amber-300 font-semibold">{inr(s.genderPrices[g])}</span>}
@@ -1151,7 +1151,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                                       <div className="flex flex-wrap gap-2 mt-1.5">
                                         {entries.map(([k, u]) => (
                                           <div key={k} className="text-center">
-                                            <img src={u as string} alt={k} className="w-16 h-12 rounded object-cover border border-slate-700" />
+                                            <img loading="lazy" decoding="async" src={u as string} alt={k} className="w-16 h-12 rounded object-cover border border-slate-700" />
                                             <span className="block text-[9px] text-slate-400 mt-0.5 max-w-[64px] truncate">{k}</span>
                                           </div>
                                         ))}
@@ -1178,7 +1178,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                                         <span className={`text-[10px] font-bold uppercase ${labelColor}`}>
                                           {type} Items ({list.length})
                                         </span>
-                                        {c.foodTypeImages?.[type] && <img src={c.foodTypeImages[type]} alt={type} onClick={() => setLightboxImage(c.foodTypeImages![type])} className="w-9 h-7 rounded object-cover border border-slate-700 ml-1 cursor-pointer" />}
+                                        {c.foodTypeImages?.[type] && <img loading="lazy" decoding="async" src={c.foodTypeImages[type]} alt={type} onClick={() => setLightboxImage(c.foodTypeImages![type])} className="w-9 h-7 rounded object-cover border border-slate-700 ml-1 cursor-pointer" />}
                                       </div>
                                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                                         {list.map((it, idx) => (
@@ -1206,7 +1206,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                                         <span className="text-[10px] font-bold uppercase text-indigo-300">
                                           {type} Items ({list.length})
                                         </span>
-                                        {c.cuisineImages?.[type] && <img src={c.cuisineImages[type]} alt={type} onClick={() => setLightboxImage(c.cuisineImages![type])} className="w-9 h-7 rounded object-cover border border-slate-700 ml-1 cursor-pointer" />}
+                                        {c.cuisineImages?.[type] && <img loading="lazy" decoding="async" src={c.cuisineImages[type]} alt={type} onClick={() => setLightboxImage(c.cuisineImages![type])} className="w-9 h-7 rounded object-cover border border-slate-700 ml-1 cursor-pointer" />}
                                       </div>
                                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                                         {list.map((it, idx) => (
@@ -1242,7 +1242,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                                           <div key={idx} className="flex items-center justify-between gap-2 text-[11px] bg-slate-950/70 p-1.5 rounded-lg border border-slate-800/70">
                                             <div className="flex items-center gap-2 min-w-0">
                                               {it.photo && (
-                                                <img src={it.photo} alt={it.name || 'Dish'} className="w-8 h-8 rounded object-cover border border-slate-800 shrink-0" />
+                                                <img loading="lazy" decoding="async" src={it.photo} alt={it.name || 'Dish'} className="w-8 h-8 rounded object-cover border border-slate-800 shrink-0" />
                                               )}
                                               <span className="text-slate-200 font-medium truncate">{it.name || 'Dish'}</span>
                                             </div>
@@ -1276,7 +1276,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                                           <div key={idx} className="flex items-center justify-between gap-2 text-[11px] bg-slate-950/70 p-1.5 rounded-lg border border-slate-800/70">
                                             <div className="flex items-center gap-2 min-w-0">
                                               {it.photo && (
-                                                <img src={it.photo} alt={it.name || 'Counter item'} className="w-8 h-8 rounded object-cover border border-slate-800 shrink-0" />
+                                                <img loading="lazy" decoding="async" src={it.photo} alt={it.name || 'Counter item'} className="w-8 h-8 rounded object-cover border border-slate-800 shrink-0" />
                                               )}
                                               <span className="text-slate-200 font-medium truncate">{it.name}</span>
                                             </div>
@@ -1405,7 +1405,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                             {v.cateringImage && (
                               <div>
                                 <span className="text-[10px] text-slate-400">{v.cateringPolicy === 'In-house only' ? 'Menu' : 'Catering'}</span>
-                                <img src={v.cateringImage} alt="Catering" className="mt-1 w-20 h-20 rounded-lg object-cover border border-slate-800" />
+                                <img loading="lazy" decoding="async" src={v.cateringImage} alt="Catering" className="mt-1 w-20 h-20 rounded-lg object-cover border border-slate-800" />
                               </div>
                             )}
                             {amenities.some(([, val]) => val !== undefined) && (
@@ -1418,7 +1418,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                             {featureImgs.length > 0 && (
                               <div className="flex flex-wrap gap-2">
                                 {featureImgs.map(([label, , key]) => (
-                                  <img key={key} src={v.featureImages![key]} alt={label} title={label} className="w-16 h-16 rounded-lg object-cover border border-slate-800" />
+                                  <img loading="lazy" decoding="async" key={key} src={v.featureImages![key]} alt={label} title={label} className="w-16 h-16 rounded-lg object-cover border border-slate-800" />
                                 ))}
                               </div>
                             )}
@@ -1456,7 +1456,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                             </div>
                             {imgs.length > 0 && (
                               <div className="flex flex-wrap gap-2">
-                                {imgs.map(([label, url]) => <img key={label} src={url} alt={label} title={label} className="w-16 h-16 rounded-lg object-cover border border-slate-800" />)}
+                                {imgs.map(([label, url]) => <img loading="lazy" decoding="async" key={label} src={url} alt={label} title={label} className="w-16 h-16 rounded-lg object-cover border border-slate-800" />)}
                               </div>
                             )}
                             {incl.some(([, v]) => v !== undefined) && (
@@ -1492,7 +1492,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                             </div>
                             {imgs.length > 0 && (
                               <div className="flex flex-wrap gap-2">
-                                {imgs.map(([label, url]) => <img key={label} src={url} alt={label} title={label} className="w-16 h-16 rounded-lg object-cover border border-slate-800" />)}
+                                {imgs.map(([label, url]) => <img loading="lazy" decoding="async" key={label} src={url} alt={label} title={label} className="w-16 h-16 rounded-lg object-cover border border-slate-800" />)}
                               </div>
                             )}
                             {incl.some(([, v]) => v !== undefined) && (
@@ -1539,7 +1539,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                             </div>
                             {imgs.length > 0 && (
                               <div className="flex flex-wrap gap-2">
-                                {imgs.map(([label, url]) => <img key={label} src={url} alt={label} title={label} className="w-16 h-16 rounded-lg object-cover border border-slate-800" />)}
+                                {imgs.map(([label, url]) => <img loading="lazy" decoding="async" key={label} src={url} alt={label} title={label} className="w-16 h-16 rounded-lg object-cover border border-slate-800" />)}
                               </div>
                             )}
                             {featureLabels.some(([, v]) => v !== undefined) && (
@@ -1584,7 +1584,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                                     return (
                                       <div key={v} className="flex items-center gap-2 p-2 rounded-xl bg-slate-950/60 border border-slate-800">
                                         {img ? (
-                                          <img src={img} alt={v} className="w-12 h-10 rounded-lg object-cover border border-slate-700 shrink-0" />
+                                          <img loading="lazy" decoding="async" src={img} alt={v} className="w-12 h-10 rounded-lg object-cover border border-slate-700 shrink-0" />
                                         ) : (
                                           <div className="w-12 h-10 rounded-lg bg-slate-800 flex items-center justify-center text-slate-500 shrink-0">
                                             <Car className="w-5 h-5" />
@@ -1640,7 +1640,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                             {t.carDecoration && (t.carDecorationType || t.carDecorationImage) && (
                               <div className="p-2 rounded-xl bg-slate-950/40 border border-slate-800 flex items-center gap-2.5">
                                 {t.carDecorationImage && (
-                                  <img src={t.carDecorationImage} alt="Car decoration" className="w-14 h-11 rounded-lg object-cover border border-slate-700 shrink-0" />
+                                  <img loading="lazy" decoding="async" src={t.carDecorationImage} alt="Car decoration" className="w-14 h-11 rounded-lg object-cover border border-slate-700 shrink-0" />
                                 )}
                                 <div className="text-[11px]">
                                   <span className="text-slate-400 block font-semibold">Decoration style:</span>
@@ -1710,7 +1710,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                                     return (
                                       <div key={t} className="flex items-center gap-2 p-2 rounded-xl bg-slate-950/60 border border-slate-800">
                                         {img ? (
-                                          <img src={img} alt={t} className="w-12 h-10 rounded-lg object-cover border border-slate-700 shrink-0" />
+                                          <img loading="lazy" decoding="async" src={img} alt={t} className="w-12 h-10 rounded-lg object-cover border border-slate-700 shrink-0" />
                                         ) : (
                                           <div className="w-12 h-10 rounded-lg bg-slate-800 flex items-center justify-center text-slate-500 shrink-0">
                                             <Mail className="w-5 h-5" />
@@ -1775,7 +1775,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                                     return (
                                       <div key={pName} className="flex items-start gap-2.5 p-2 rounded-xl bg-slate-950/60 border border-slate-800">
                                         {pImg ? (
-                                          <img src={pImg} alt={pName} className="w-12 h-12 rounded-lg object-cover border border-slate-700 shrink-0" />
+                                          <img loading="lazy" decoding="async" src={pImg} alt={pName} className="w-12 h-12 rounded-lg object-cover border border-slate-700 shrink-0" />
                                         ) : (
                                           <div className="w-12 h-12 rounded-lg bg-slate-800 flex items-center justify-center text-slate-500 shrink-0">
                                             <Printer className="w-5 h-5" />
@@ -1804,7 +1804,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                                     return (
                                       <div key={f} className="flex items-center gap-2.5 p-2 rounded-xl bg-slate-950/60 border border-slate-800">
                                         {fImg ? (
-                                          <img src={fImg} alt={f} className="w-10 h-10 rounded-lg object-cover border border-slate-700 shrink-0" />
+                                          <img loading="lazy" decoding="async" src={fImg} alt={f} className="w-10 h-10 rounded-lg object-cover border border-slate-700 shrink-0" />
                                         ) : (
                                           <div className="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center text-slate-500 shrink-0">
                                             <Sparkles className="w-4 h-4" />
@@ -1830,7 +1830,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                                   <div className="text-slate-300 text-[10px] mt-0.5">{pr.designDescription}</div>
                                 ) : null}
                                 {pr.designIncluded && pr.designImage ? (
-                                  <img src={pr.designImage} alt="Design sample" className="mt-1.5 w-16 h-12 rounded-lg object-cover border border-slate-700" />
+                                  <img loading="lazy" decoding="async" src={pr.designImage} alt="Design sample" className="mt-1.5 w-16 h-12 rounded-lg object-cover border border-slate-700" />
                                 ) : null}
                               </div>
                             )}
@@ -1873,7 +1873,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                                     return (
                                       <div key={gName} className="flex items-start gap-2.5 p-2 rounded-xl bg-slate-950/60 border border-slate-800">
                                         {img ? (
-                                          <img src={img} alt={gName} className="w-12 h-12 rounded-lg object-cover border border-slate-700 shrink-0" />
+                                          <img loading="lazy" decoding="async" src={img} alt={gName} className="w-12 h-12 rounded-lg object-cover border border-slate-700 shrink-0" />
                                         ) : (
                                           <div className="w-12 h-12 rounded-lg bg-slate-800 flex items-center justify-center text-slate-500 shrink-0">
                                             <Gift className="w-5 h-5" />
@@ -1952,7 +1952,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                                 {acts.map((a) => (
                                   <div key={a} className="flex items-center justify-between gap-2 text-[11px]">
                                     <span className="flex items-center gap-2 text-slate-300">
-                                      {en.actTypeImages?.[a] ? <img src={en.actTypeImages[a]} alt={a} className="w-8 h-8 rounded object-cover border border-slate-700" /> : null}
+                                      {en.actTypeImages?.[a] ? <img loading="lazy" decoding="async" src={en.actTypeImages[a]} alt={a} className="w-8 h-8 rounded object-cover border border-slate-700" /> : null}
                                       {a}
                                     </span>
                                     {typeof en.actTypePrices?.[a] === 'number' && <span className="text-amber-300 font-semibold">{inr(en.actTypePrices[a])}</span>}
@@ -1995,7 +1995,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                                 {types.map((t) => (
                                   <div key={t} className="flex items-center justify-between gap-2 text-[11px]">
                                     <span className="flex items-center gap-2 text-slate-300">
-                                      {md.typeImages?.[t] ? <img src={md.typeImages[t]} alt={t} className="w-8 h-8 rounded object-cover border border-slate-700" /> : null}
+                                      {md.typeImages?.[t] ? <img loading="lazy" decoding="async" src={md.typeImages[t]} alt={t} className="w-8 h-8 rounded object-cover border border-slate-700" /> : null}
                                       {t}
                                     </span>
                                     {typeof md.typePrices?.[t] === 'number' && <span className="text-amber-300 font-semibold">{inr(md.typePrices[t])}</span>}
@@ -2043,7 +2043,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                                     return (
                                       <div key={lName} className="flex items-start gap-2.5 p-2 rounded-xl bg-slate-950/60 border border-slate-800">
                                         {img ? (
-                                          <img src={img} alt={lName} className="w-12 h-12 rounded-lg object-cover border border-slate-700 shrink-0" />
+                                          <img loading="lazy" decoding="async" src={img} alt={lName} className="w-12 h-12 rounded-lg object-cover border border-slate-700 shrink-0" />
                                         ) : (
                                           <div className="w-12 h-12 rounded-lg bg-slate-800 flex items-center justify-center text-slate-500 shrink-0">
                                             <Sparkles className="w-5 h-5 text-amber-400" />
@@ -2111,7 +2111,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                                     return (
                                       <div key={`fv-${v}`} className="flex items-start gap-2.5 p-2 rounded-xl bg-slate-950/60 border border-slate-800">
                                         {img ? (
-                                          <img src={img} alt={v} className="w-12 h-12 rounded-lg object-cover border border-slate-700 shrink-0" />
+                                          <img loading="lazy" decoding="async" src={img} alt={v} className="w-12 h-12 rounded-lg object-cover border border-slate-700 shrink-0" />
                                         ) : (
                                           <div className="w-12 h-12 rounded-lg bg-slate-800 flex items-center justify-center text-amber-400 shrink-0">
                                             <Sparkles className="w-5 h-5 text-amber-400" />
@@ -2126,7 +2126,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                                   {customVars.map((cv, idx) => (
                                     <div key={`fcv-${idx}`} className="flex items-start gap-2.5 p-2 rounded-xl bg-slate-950/60 border border-slate-800">
                                       {cv.image ? (
-                                        <img src={cv.image} alt={cv.name || 'item'} className="w-12 h-12 rounded-lg object-cover border border-slate-700 shrink-0" />
+                                        <img loading="lazy" decoding="async" src={cv.image} alt={cv.name || 'item'} className="w-12 h-12 rounded-lg object-cover border border-slate-700 shrink-0" />
                                       ) : (
                                         <div className="w-12 h-12 rounded-lg bg-slate-800 flex items-center justify-center text-amber-400 shrink-0">
                                           <Sparkles className="w-5 h-5 text-amber-400" />
@@ -2159,7 +2159,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                                     return (
                                       <div key={`fi-${it}`} className="flex items-start gap-2.5 p-2 rounded-xl bg-slate-950/60 border border-slate-800">
                                         {img ? (
-                                          <img src={img} alt={it} className="w-12 h-12 rounded-lg object-cover border border-slate-700 shrink-0" />
+                                          <img loading="lazy" decoding="async" src={img} alt={it} className="w-12 h-12 rounded-lg object-cover border border-slate-700 shrink-0" />
                                         ) : (
                                           <div className="w-12 h-12 rounded-lg bg-slate-800 flex items-center justify-center text-amber-400 shrink-0">
                                             <Sparkles className="w-5 h-5 text-amber-400" />
@@ -2174,7 +2174,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                                   {customItems.map((ci, idx) => (
                                     <div key={`fci-${idx}`} className="flex items-start gap-2.5 p-2 rounded-xl bg-slate-950/60 border border-slate-800">
                                       {ci.image ? (
-                                        <img src={ci.image} alt={ci.name || 'item'} className="w-12 h-12 rounded-lg object-cover border border-slate-700 shrink-0" />
+                                        <img loading="lazy" decoding="async" src={ci.image} alt={ci.name || 'item'} className="w-12 h-12 rounded-lg object-cover border border-slate-700 shrink-0" />
                                       ) : (
                                         <div className="w-12 h-12 rounded-lg bg-slate-800 flex items-center justify-center text-amber-400 shrink-0">
                                           <Sparkles className="w-5 h-5 text-amber-400" />
@@ -2221,7 +2221,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                         const pricedRow = (label: string, price: any, img?: string) => (
                           <div key={label} className="flex items-center justify-between gap-2 text-[11px]">
                             <span className="flex items-center gap-2 text-slate-300">
-                              {img ? <img src={img} alt={label} className="w-8 h-8 rounded object-cover border border-slate-700" /> : null}
+                              {img ? <img loading="lazy" decoding="async" src={img} alt={label} className="w-8 h-8 rounded object-cover border border-slate-700" /> : null}
                               {label}
                             </span>
                             {price !== undefined && <span className="text-amber-300 font-semibold">{inr(price)}</span>}
@@ -2305,7 +2305,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                                   return (
                                     <div key={it} className="flex items-center justify-between gap-2 text-[11px]">
                                       <span className="flex items-center gap-2 text-slate-300">
-                                        {img ? <img src={img} alt={it} className="w-8 h-8 rounded object-cover border border-slate-700" /> : null}
+                                        {img ? <img loading="lazy" decoding="async" src={img} alt={it} className="w-8 h-8 rounded object-cover border border-slate-700" /> : null}
                                         <span>{it}{qty ? ` ×${qty}` : ''}{detail ? ` · ${detail}` : ''}</span>
                                       </span>
                                       {typeof price === 'number' && <span className="text-amber-300 font-semibold">{inr(price)}</span>}
@@ -2515,7 +2515,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                         picked ? 'border-emerald-500 ring-2 ring-emerald-500/40' : 'border-slate-800 hover:border-indigo-500'
                       }`}
                     >
-                      <img
+                      <img loading="lazy" decoding="async"
                         src={img}
                         alt={`Gallery ${idx}`}
                         onError={(e) => {
@@ -2650,7 +2650,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                             </div>
                           </div>
                         ) : (
-                          <img
+                          <img loading="lazy" decoding="async"
                             src={url}
                             alt="Reference"
                             onClick={() => setLightboxImage(url)}
@@ -3178,7 +3178,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
               className="max-w-full max-h-[90vh] rounded-xl object-contain shadow-2xl"
             />
           ) : (
-            <img
+            <img loading="lazy" decoding="async"
               src={lightboxImage}
               alt={`${vendor.businessName} photo`}
               onClick={(e) => e.stopPropagation()}
