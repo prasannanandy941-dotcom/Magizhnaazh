@@ -228,6 +228,22 @@ ${L} input[type="date"], ${L} input[type="time"], ${L} input[type="datetime-loca
 .blush-bg { display: none; }
 ${L} .blush-bg { display: block; }
 ${L} .floral-gold-bg > :not(.blush-bg) { display: none !important; }
+/* Hanging diyas and bells (customer + vendor only; packages/shared-ui/HangingDiyas.tsx). */
+.hanging-diyas { display: none; }
+${L} .hanging-diyas { display: block; }
+${L} .hd-item { transform-origin: 50% 0; animation: hd-sway 5.5s ease-in-out infinite; }
+@keyframes hd-sway { 0%, 100% { transform: rotate(-2.5deg); } 50% { transform: rotate(2.5deg); } }
+@media (max-width: 767px) {
+  ${L} .hd-item { animation-name: hd-sway-sm; }
+  @keyframes hd-sway-sm { 0%, 100% { transform: scale(0.72) rotate(-2.5deg); } 50% { transform: scale(0.72) rotate(2.5deg); } }
+}
+${L} .hd-flame { transform-box: fill-box; transform-origin: 50% 100%; animation: hd-flicker 1.6s ease-in-out infinite; }
+@keyframes hd-flicker { 0%, 100% { transform: scale(1, 1); opacity: 1; } 30% { transform: scale(0.9, 1.08); } 60% { transform: scale(1.06, 0.94); opacity: 0.88; } }
+${L} .hd-glow { animation: hd-glow 2.4s ease-in-out infinite; }
+@keyframes hd-glow { 0%, 100% { opacity: 0.75; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  ${L} .hd-item, ${L} .hd-flame, ${L} .hd-glow { animation: none; }
+}
 /* Boxes without an explicit border colour get black outlines too (zero-specificity
    element selector, so any coloured border utility still wins). */
 :where(html[data-theme="light"]) :is(div, section, article, aside, header, footer, nav, main, form, fieldset, label, span, a, button, input, select, textarea, table, thead, tbody, tr, th, td, ul, ol, li, img, hr, details, summary) {

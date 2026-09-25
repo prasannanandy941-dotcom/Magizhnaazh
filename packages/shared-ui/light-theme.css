@@ -13,6 +13,22 @@ html[data-theme="light"] input[type="date"], html[data-theme="light"] input[type
 .blush-bg { display: none; }
 html[data-theme="light"] .blush-bg { display: block; }
 html[data-theme="light"] .floral-gold-bg > :not(.blush-bg) { display: none !important; }
+/* Hanging diyas and bells (customer + vendor only; packages/shared-ui/HangingDiyas.tsx). */
+.hanging-diyas { display: none; }
+html[data-theme="light"] .hanging-diyas { display: block; }
+html[data-theme="light"] .hd-item { transform-origin: 50% 0; animation: hd-sway 5.5s ease-in-out infinite; }
+@keyframes hd-sway { 0%, 100% { transform: rotate(-2.5deg); } 50% { transform: rotate(2.5deg); } }
+@media (max-width: 767px) {
+  html[data-theme="light"] .hd-item { animation-name: hd-sway-sm; }
+  @keyframes hd-sway-sm { 0%, 100% { transform: scale(0.72) rotate(-2.5deg); } 50% { transform: scale(0.72) rotate(2.5deg); } }
+}
+html[data-theme="light"] .hd-flame { transform-box: fill-box; transform-origin: 50% 100%; animation: hd-flicker 1.6s ease-in-out infinite; }
+@keyframes hd-flicker { 0%, 100% { transform: scale(1, 1); opacity: 1; } 30% { transform: scale(0.9, 1.08); } 60% { transform: scale(1.06, 0.94); opacity: 0.88; } }
+html[data-theme="light"] .hd-glow { animation: hd-glow 2.4s ease-in-out infinite; }
+@keyframes hd-glow { 0%, 100% { opacity: 0.75; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme="light"] .hd-item, html[data-theme="light"] .hd-flame, html[data-theme="light"] .hd-glow { animation: none; }
+}
 /* Boxes without an explicit border colour get black outlines too (zero-specificity
    element selector, so any coloured border utility still wins). */
 :where(html[data-theme="light"]) :is(div, section, article, aside, header, footer, nav, main, form, fieldset, label, span, a, button, input, select, textarea, table, thead, tbody, tr, th, td, ul, ol, li, img, hr, details, summary) {

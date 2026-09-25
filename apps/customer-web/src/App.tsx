@@ -7,6 +7,7 @@ import { HeroSection } from './components/HeroSection';
 import { VendorMarketplace } from './components/VendorMarketplace';
 import { inviteUrl } from './publicUrl';
 import { FloralGoldBackground } from './components/FloralGoldBackground';
+import { HangingDiyas } from '../../../packages/shared-ui/HangingDiyas';
 import { lazyNamed, LazyFallback } from '../../../packages/shared-ui/lazy';
 
 // Lazy-loaded screens and popups: each becomes its own JS file that downloads
@@ -566,6 +567,7 @@ export function App() {
       {/* App-wide gold + olive floral backdrop, fixed behind all scrolling content */}
       <div id="app-bg" className="fixed inset-0 -z-10">
         <FloralGoldBackground />
+        <HangingDiyas />
       </div>
 
       <Header
