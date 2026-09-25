@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { App } from './App';
 import { PublicInviteRoute } from './components/PublicInviteRoute';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import '../../../packages/shared-ui/light-theme.css';
 import './index.css';
 
 // No router dependency — the app only ever needs to distinguish the public,

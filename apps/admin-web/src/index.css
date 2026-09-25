@@ -22,10 +22,6 @@ html[data-theme='light'] body {
   background: #f4f2f7;
   color: #1e293b;
 }
-/* Dim the dark celebration backdrop so it doesn't fight the light surfaces. */
-html[data-theme='light'] #app-bg {
-  opacity: 0.05;
-}
 html[data-theme='light'] .glass-card {
   background: rgba(255, 255, 255, 0.82) !important;
   border-color: rgba(15, 23, 42, 0.1) !important;

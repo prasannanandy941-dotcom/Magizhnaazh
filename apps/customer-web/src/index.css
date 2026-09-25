@@ -76,7 +76,7 @@ html[data-theme='light'] body {
   color: #3a1524;
 }
 /* Dim the dark floral backdrop so it doesn't fight the light surfaces. */
-html[data-theme='light'] #app-bg { opacity: 0.06; }
+/* Floral backdrop dimming lives in packages/shared-ui/light-theme.css (.floral-gold-bg). */
 
 /* Dark wine surfaces → warm light surfaces */
 html[data-theme='light'] .bg-\[\#1a0a14\],

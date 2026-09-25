@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { ThemeToggle } from '../../../packages/shared-ui/theme';
 import { Store, Star, Upload, Check, LogOut, Loader2, Plus, SlidersHorizontal, ChevronDown, ChevronLeft, ChevronRight, Receipt, X, Bell, ShieldCheck, Clock as ClockIcon, AlertCircle, FileText, CalendarDays, Sparkles, Car, Mail, Printer, Gift, Building2, Fingerprint, UtensilsCrossed, CreditCard, Save, CheckCircle2, Shield } from 'lucide-react';
 import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, VendorDeal, OfferedOptionItem, CateringFoodItem, CateringCourseItem, VENDOR_CATEGORIES, CATEGORY_OPTIONS, CATERING_OPTION_STYLE, MEDIA_QUALITY_OPTIONS, MEDIA_EQUIPMENT_OPTIONS, mediaExtraField, isDealLive, CATERING_MENU_TIERS, CATERING_FOOD_TYPES, CATERING_CUISINES, CATERING_COURSES, CATERING_LIVE_COUNTERS, CATERING_SERVICE_STYLES, BUFFET_PLATE_TYPES, BANANA_LEAF_TYPES, slotLabelWithTime, AVAILABILITY_SLOTS, offeredSlotIds, supportsSlotCapacity, MAX_SLOT_CAPACITY, VENUE_SESSIONS, VENUE_HALL_TYPES, VENUE_HALL_CLASSES, VENUE_CATERING_POLICIES, VENUE_FEATURES, DECORATION_TIERS, DECORATION_THEMES, DECORATION_AREAS, DECORATION_FLOWER_TYPES, MAKEUP_TYPES, MAKEUP_FINISHES, MEDIA_TIERS, MEDIA_COVERAGE, MEDIA_STYLES, TRANSPORT_TIERS, TRANSPORT_VEHICLE_TYPES, TRANSPORT_PRICING_BASIS, TRANSPORT_USES, PRIEST_CEREMONY_TYPES, PRIEST_LANGUAGES, INVITATION_TIERS, INVITATION_TYPES, INVITATION_DESIGNS, INVITATION_ADDONS, INVITATION_LANGUAGES, PRINTING_PRODUCTS, PRINTING_FINISHES, RETURN_GIFTS_TIERS, RETURN_GIFT_TYPES, ENTERTAINMENT_ACT_TYPES, MUSIC_DJ_TIERS, MUSIC_DJ_TYPES, MUSIC_DJ_VENUE_TYPES, LIGHTING_TIERS, LIGHTING_TYPES, FLOWERS_VARIETIES, FLOWERS_ITEMS, FLOWERS_KINDS, MEHENDI_TIERS, MEHENDI_TYPES, MEHENDI_INTRICACY, EVENT_HOST_EVENT_TYPES, EVENT_HOST_LANGUAGES, EVENT_HOST_MODES, SECURITY_TYPES, SECURITY_GENDERS, RENTAL_ITEMS, UTENSILS_MATERIALS, UTENSILS_VESSEL_TYPES, WEDDING_PLANNER_SCOPES, CORPORATE_EVENT_TYPES, CORPORATE_ADDONS } from '../../../packages/shared-types';
 import type { Complaint } from '../../../packages/shared-types';
@@ -4526,13 +4527,18 @@ export function App() {
   const [earningsExpanded, setEarningsExpanded] = useState(false);
 
   if (!user) {
-    return <AuthGate onAuthSuccess={handleAuthSuccess} />;
+    return (
+      <>
+        <AuthGate onAuthSuccess={handleAuthSuccess} />
+        <ThemeToggle app="vendor" className="fixed top-4 right-4 z-[60]" />
+      </>
+    );
   }
 
   return (
     <div className="relative min-h-screen text-slate-100 flex flex-col font-sans">
       {/* App-wide romantic-celebration backdrop, fixed behind all scrolling content */}
-      <div className="fixed inset-0 -z-10">
+      <div id="app-bg" className="fixed inset-0 -z-10">
         <FloralGoldBackground />
       </div>
 
@@ -4554,10 +4560,11 @@ export function App() {
             </div>
           </div>
 
-          <div className="flex items-center gap-4 text-xs font-semibold">
+          <div className="flex items-center gap-3 sm:gap-4 text-xs font-semibold">
             <span className="hidden sm:block text-slate-400">
               Signed in as <strong className="text-amber-300">{user.name}</strong>
             </span>
+            <ThemeToggle app="vendor" />
             <button
               onClick={handleLogout}
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-950/60 border border-rose-500/30 hover:border-rose-500/60 hover:bg-rose-500/10 text-rose-400 font-bold text-xs transition-colors"

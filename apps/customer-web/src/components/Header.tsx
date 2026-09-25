@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { ThemeToggle } from '../../../../packages/shared-ui/theme';
 import { Sparkles, Calendar, Heart, Store, User as UserIcon, LogIn, LogOut, ChevronDown, ClipboardList, Menu, X } from 'lucide-react';
 import { User } from '../../../../packages/shared-types';
 
@@ -162,6 +163,8 @@ export const Header: React.FC<HeaderProps> = ({
             <Sparkles className="w-3.5 h-3.5" />
             Create Event
           </button>
+
+          <ThemeToggle app="customer" />
 
           <button
             onClick={onOpenWishlist}

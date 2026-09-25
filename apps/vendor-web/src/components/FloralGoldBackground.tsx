@@ -9,7 +9,7 @@ import React from 'react';
  */
 export const FloralGoldBackground: React.FC = () => {
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none select-none">
+    <div className="floral-gold-bg absolute inset-0 overflow-hidden pointer-events-none select-none">
       {/* Base deep wine/burgundy gradient wash */}
       <div
         className="absolute inset-0"

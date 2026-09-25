@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ThemeToggle, applyDefaultTheme } from '../../../packages/shared-ui/theme';
 import {
   ShieldCheck,
   LogOut,
@@ -42,10 +43,9 @@ import { AnalyticsTab } from './components/AnalyticsTab';
 import { EcosystemMonitor } from './components/EcosystemMonitor';
 import { fetchSettings, GATEWAY_URL } from './api';
 
+// Site-wide default theme (set from the System Monitor, shared with the
+// customer site). The admin's own navbar choice overrides it on their device.
 const THEME_KEY = 'magizhnaazh_theme';
-function applyTheme(theme: 'light' | 'dark') {
-  document.documentElement.setAttribute('data-theme', theme);
-}
 
 type TabKey =
   | 'dashboard' | 'monitor' | 'users' | 'vendors' | 'categories' | 'locations' | 'events' | 'bookings'
@@ -99,14 +99,14 @@ export function App() {
 
   useEffect(() => {
     const local = (localStorage.getItem(THEME_KEY) as 'light' | 'dark' | null) || 'dark';
-    applyTheme(local);
+    applyDefaultTheme('admin', local);
     if (!token) return;
     fetchSettings(token)
       .then((res) => {
         const serverTheme = res.data?.settings.theme;
         if (serverTheme && serverTheme !== local) {
           localStorage.setItem(THEME_KEY, serverTheme);
-          applyTheme(serverTheme);
+          applyDefaultTheme('admin', serverTheme);
         }
       })
       .catch(() => {/* keep local theme */});
@@ -127,7 +127,12 @@ export function App() {
   };
 
   if (!user || !token) {
-    return <AuthGate onAuthSuccess={handleAuthSuccess} />;
+    return (
+      <>
+        <AuthGate onAuthSuccess={handleAuthSuccess} />
+        <ThemeToggle app="admin" className="fixed top-4 right-4 z-[60]" />
+      </>
+    );
   }
 
   return (
@@ -150,10 +155,11 @@ export function App() {
             </div>
           </div>
 
-          <div className="flex items-center gap-4 text-xs font-semibold">
+          <div className="flex items-center gap-3 sm:gap-4 text-xs font-semibold">
             <span className="hidden sm:block text-slate-400">
               <strong className="text-slate-200">{user.name}</strong>
             </span>
+            <ThemeToggle app="admin" />
             <button
               onClick={handleLogout}
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-rose-500/40 text-rose-400 font-bold text-xs transition-colors"

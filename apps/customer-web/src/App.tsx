@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { applyDefaultTheme } from '../../../packages/shared-ui/theme';
 import { Role, User, Vendor, Event, Booking, Invitation, Guest, EventFeedback } from '../../../packages/shared-types';
 import { playNotificationSound } from './notificationSound';
 import { Header } from './components/Header';
@@ -292,8 +293,9 @@ export function App() {
   // Uses the last-seen value from localStorage immediately to avoid a flash,
   // then reconciles with the server.
   useEffect(() => {
+    // The customer's own choice (navbar toggle) always wins over the site default.
     const local = (localStorage.getItem('magizhnaazh_theme') as 'light' | 'dark' | null) || 'dark';
-    document.documentElement.setAttribute('data-theme', local);
+    applyDefaultTheme('customer', local);
 
     let cancelled = false;
     fetchPublicSettings()
@@ -302,7 +304,7 @@ export function App() {
         const theme = res.data?.settings.theme;
         if (theme) {
           localStorage.setItem('magizhnaazh_theme', theme);
-          document.documentElement.setAttribute('data-theme', theme);
+          applyDefaultTheme('customer', theme);
         }
       })
       .catch(() => {/* keep local theme */});
