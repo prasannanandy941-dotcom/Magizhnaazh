@@ -54,6 +54,15 @@ const STATUS_NOTICE: Record<string, string> = {
 // placeholder instead of the Felix demo — its empty id makes the invitation
 // effect skip link generation, so a share link only ever gets minted from an
 // event the customer actually created.
+// Send a message to the Magizhnaazh mobile app when the site runs inside it.
+// Returns false in a normal browser (or an older app build without the bridge).
+function postToNativeApp(message: { type: 'login-required' | 'logout' }): boolean {
+  const w = window as any;
+  if (!w.__MAGIZH_NATIVE_AUTH || !w.ReactNativeWebView) return false;
+  w.ReactNativeWebView.postMessage(JSON.stringify(message));
+  return true;
+}
+
 const EMPTY_EVENT: Event = {
   id: '',
   userId: '',
@@ -497,7 +506,17 @@ export function App() {
     localStorage.removeItem('accessToken');
     setUser(null);
     triggerNotification('Signed out.');
+    // Inside the mobile app, sign the app's own native session out too.
+    postToNativeApp({ type: 'logout' });
   };
+
+  // Inside the Magizhnaazh mobile app (which sets __MAGIZH_NATIVE_AUTH), sign-in
+  // happens on the app's native screen — native Google Sign-In works there,
+  // unlike inside a WebView — so hand the request over instead of showing the
+  // web modal. The app reloads the site already logged in afterwards.
+  useEffect(() => {
+    if (showAuthModal && postToNativeApp({ type: 'login-required' })) setShowAuthModal(false);
+  }, [showAuthModal]);
 
   const pendingActionRef = useRef<(() => void) | null>(null);
 

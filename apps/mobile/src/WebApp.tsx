@@ -13,19 +13,39 @@ const SITE_URL = 'https://event.porulontech.com/customer/';
 const CHROME_UA =
   'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36';
 
-export function WebApp({ token, user }: { token?: string | null; user?: unknown }) {
+export function WebApp({ token, user, onLoginRequired, onLogout }: {
+  token?: string | null;
+  user?: unknown;
+  // The site asks the app to sign in / out (see postToNativeApp in customer-web).
+  onLoginRequired?: () => void;
+  onLogout?: () => void;
+}) {
   const ref = useRef<WebView>(null);
   const canGoBack = useRef(false);
   const [loading, setLoading] = useState(true);
 
   // Seed the website's own auth storage from our native session, so it opens
   // already logged in (the site reads `accessToken` + `user` from localStorage).
-  const injectedBefore = token
-    ? `try {
-         window.localStorage.setItem('accessToken', ${JSON.stringify(token)});
-         window.localStorage.setItem('user', ${JSON.stringify(JSON.stringify(user ?? null))});
-       } catch (e) {} true;`
-    : 'true;';
+  // Without a session it opens as a guest (any stale web session cleared), and
+  // __MAGIZH_NATIVE_AUTH tells the site to send sign-in requests back to us.
+  const injectedBefore = `try {
+       window.__MAGIZH_NATIVE_AUTH = true;
+       ${token
+         ? `window.localStorage.setItem('accessToken', ${JSON.stringify(token)});
+            window.localStorage.setItem('user', ${JSON.stringify(JSON.stringify(user ?? null))});`
+         : `window.localStorage.removeItem('accessToken');
+            window.localStorage.removeItem('user');`}
+     } catch (e) {} true;`;
+
+  const onMessage = (event: { nativeEvent: { data: string } }) => {
+    try {
+      const msg = JSON.parse(event.nativeEvent.data);
+      if (msg?.type === 'login-required') onLoginRequired?.();
+      else if (msg?.type === 'logout') onLogout?.();
+    } catch {
+      /* not one of our messages */
+    }
+  };
 
   // Android hardware back button navigates the web history instead of exiting.
   useEffect(() => {
@@ -65,6 +85,7 @@ export function WebApp({ token, user }: { token?: string | null; user?: unknown 
         originWhitelist={['*']}
         userAgent={CHROME_UA}
         injectedJavaScriptBeforeContentLoaded={injectedBefore}
+        onMessage={onMessage}
         javaScriptEnabled
         domStorageEnabled
         thirdPartyCookiesEnabled
