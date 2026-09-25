@@ -251,6 +251,17 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
   // On phones the tab row scrolls sideways — keep the Availability tab in view
   // when the modal opens on it.
   const availabilityTabRef = useRef<HTMLButtonElement>(null);
+  // Availability-first screen: when the vendor has listed dates, the modal opens
+  // showing ONLY those dates. Tapping a date reveals the full vendor details
+  // (tabs, sessions, booking) with that date already chosen.
+  const [showDateGate, setShowDateGate] = useState(
+    () => (initialVendor.availableDates?.length ?? 0) > 0 || (initialVendor.bookedDates?.length ?? 0) > 0,
+  );
+  const pickGateDate = (d: string) => {
+    setSelectedEventDate(d);
+    setActiveTab('availability');
+    setShowDateGate(false);
+  };
   useEffect(() => {
     if (activeTab === 'availability') availabilityTabRef.current?.scrollIntoView({ block: 'nearest', inline: 'center' });
   }, [activeTab]);
@@ -451,7 +462,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
           </button>
         </div>
 
-        <div className="shrink-0 flex items-center gap-4 px-6 border-b border-amber-500/15 bg-[#120a1e]/70 overflow-x-auto no-scrollbar">
+        <div className={`${showDateGate ? 'hidden' : 'flex'} shrink-0 items-center gap-4 px-6 border-b border-amber-500/15 bg-[#120a1e]/70 overflow-x-auto no-scrollbar`}>
           <button
             onClick={() => setActiveTab('overview')}
             className={`shrink-0 whitespace-nowrap py-3 font-semibold text-xs border-b-2 transition-colors ${
@@ -590,7 +601,48 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
         {/* One scroll area for the tab body AND the date picker / special request
             below it, so on short phone screens those sections scroll instead of
             squashing the tab bar and body. */}
-        <div className="flex-1 min-h-0 overflow-y-auto">
+        {showDateGate && (
+          <div className="flex-1 min-h-0 overflow-y-auto p-6">
+            <div className="flex items-center gap-2 mb-1">
+              <CalendarIcon className="w-5 h-5 text-amber-400" />
+              <h3 className="font-display font-bold text-lg text-white">Availability</h3>
+            </div>
+            <p className="text-xs text-slate-400 mb-5">
+              {vendor.availableDates.length > 0
+                ? <>Dates {vendor.businessName} is open for booking. Tap a date to see sessions, packages and booking options.</>
+                : <>All of {vendor.businessName}'s listed dates are already booked.</>}
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {vendor.availableDates.map((d) => (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => pickGateDate(d)}
+                  className="px-3 py-3 rounded-2xl border border-indigo-500/40 bg-indigo-600/15 text-indigo-100 font-bold text-sm hover:bg-indigo-600 hover:text-white hover:border-indigo-500 transition-colors"
+                >
+                  {new Date(d).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+                </button>
+              ))}
+              {(vendor.bookedDates ?? []).map((d) => (
+                <span
+                  key={d}
+                  title="This date is already booked by another customer"
+                  className="px-3 py-3 rounded-2xl border border-rose-900/40 bg-rose-950/20 text-rose-400 font-semibold text-sm text-center cursor-not-allowed flex flex-col items-center gap-1"
+                >
+                  <span className="line-through">{new Date(d).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 font-bold border border-rose-500/30">BOOKED</span>
+                </span>
+              ))}
+            </div>
+            {vendor.availableDates.length === 0 && (
+              <button type="button" onClick={() => setShowDateGate(false)}
+                className="mt-5 text-xs font-semibold text-amber-400 hover:text-amber-300 underline underline-offset-2">
+                View {vendor.businessName}'s details anyway
+              </button>
+            )}
+          </div>
+        )}
+        <div className={`${showDateGate ? 'hidden' : ''} flex-1 min-h-0 overflow-y-auto`}>
         <div className={activeTab === 'availability' && (hasFixedAvailability || (vendor.bookedDates?.length ?? 0) > 0) ? '' : 'p-6'}>
           {activeTab === 'availability' && !hasFixedAvailability && (vendor.bookedDates?.length ?? 0) === 0 && (
             <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-5 text-center">
@@ -2748,7 +2800,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
         )}
 
         </div>
-        <div className="relative shrink-0 px-6 py-4 border-t border-amber-500/20 bg-gradient-to-r from-[#241541] via-[#1a1030] to-[#241541] flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className={`${showDateGate ? 'hidden' : 'flex'} relative shrink-0 px-6 py-4 border-t border-amber-500/20 bg-gradient-to-r from-[#241541] via-[#1a1030] to-[#241541] flex-col sm:flex-row items-center justify-between gap-4`}>
           <div className="pointer-events-none absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-400/60 to-transparent"></div>
           <div className="w-full sm:w-auto">
             <div className="flex items-center justify-center sm:justify-start gap-5">
