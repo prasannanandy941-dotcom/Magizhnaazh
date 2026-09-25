@@ -1,8 +1,56 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { Sparkles, Type, Palette, QrCode, Download, Share2, Eye, Plus, Trash2, Layout, RotateCw, Check, Pencil } from 'lucide-react';
 import { CanvasElement, Invitation } from '../../../../packages/shared-types';
 import { INVITATION_TEMPLATES } from '../../../../packages/canvas-engine';
 import { inviteUrl } from '../publicUrl';
+
+// Shrinks a text element's font until its longest word fits the card width, so
+// a big or wide font (e.g. a script font at 44px) never spills outside the card.
+// The customer's chosen size is the maximum; it only ever gets smaller to fit.
+function useFitFontSize(ref: React.RefObject<HTMLElement>, size: number, deps: unknown[]) {
+  const [fitted, setFitted] = useState(size);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const fit = () => {
+      let s = size;
+      el.style.fontSize = `${s}px`;
+      while (s > 10 && el.scrollWidth > el.clientWidth + 1) {
+        s -= 1;
+        el.style.fontSize = `${s}px`;
+      }
+      setFitted(s);
+    };
+    fit();
+    // Web fonts can finish loading after the first measure — re-fit then.
+    let cancelled = false;
+    (document as any).fonts?.ready?.then(() => { if (!cancelled) fit(); });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [size, ...deps]);
+  return fitted;
+}
+
+// The measured element is an inner block span holding only the text, so the
+// edit pencil (which sits just outside the corner) isn't counted as overflow.
+function FitText({ content, fontFamily, fontSize, color, className, onClick, children }: {
+  content: string;
+  fontFamily: string;
+  fontSize: number;
+  color: string;
+  className: string;
+  onClick: () => void;
+  children?: React.ReactNode;
+}) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const fitted = useFitFontSize(ref, fontSize, [content, fontFamily]);
+  return (
+    <div onClick={onClick} style={{ fontFamily, color }} title="Click to edit this text" className={`${className} w-full`}>
+      <span ref={ref} className="block" style={{ fontSize: `${fitted}px` }}>{content}</span>
+      {children}
+    </div>
+  );
+}
 
 interface CanvaInvitationDesignerProps {
   invitation: Invitation;
@@ -337,25 +385,22 @@ export const CanvaInvitationDesigner: React.FC<CanvaInvitationDesignerProps> = (
                           <span className="h-px w-10 bg-gradient-to-l from-transparent to-amber-200/50" />
                         </div>
                       )}
-                      <div
+                      <FitText
                         onClick={() => setSelectedElId(el.id)}
-                        style={{
-                          fontFamily: el.fontFamily || 'sans-serif',
-                          fontSize: `${el.fontSize || 16}px`,
-                          color: el.color || '#ffffff',
-                        }}
-                        title="Click to edit this text"
+                        content={el.content || ''}
+                        fontFamily={el.fontFamily || 'sans-serif'}
+                        fontSize={el.fontSize || 16}
+                        color={el.color || '#ffffff'}
                         className={`group/el relative cursor-pointer transition-all leading-tight font-semibold max-w-full tracking-wide ${
                           isSelected
                             ? 'ring-2 ring-indigo-400 ring-offset-2 ring-offset-slate-950/50 px-2 py-1 rounded-lg'
                             : 'px-2 py-1 rounded-lg border border-dashed border-transparent hover:border-amber-200/40'
                         }`}
                       >
-                        {el.content}
                         {!isSelected && (
                           <Pencil className="w-3 h-3 absolute -top-2 -right-2 text-slate-950 bg-amber-200 rounded-full p-0.5 opacity-0 group-hover/el:opacity-100 transition-opacity" />
                         )}
-                      </div>
+                      </FitText>
                     </React.Fragment>
                   );
                 }
