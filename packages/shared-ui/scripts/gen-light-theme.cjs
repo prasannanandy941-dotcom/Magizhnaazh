@@ -63,9 +63,9 @@ function lightSurface(h, s, l, a) {
   // deep accents (emerald-600/700, teal-600, indigo-700 buttons) keep their colour.
   if (l < 38 && (s < 60 || l < 22 || a < 0.8)) {
     // Dark surface -> light tint, keeping a whisper of the hue.
-    // Frosted glass: translucent white so the silk backdrop shows through.
-    const nl = clamp(100 - l * 0.2, 96, 100);
-    return hsl(h, Math.min(s, 45) * 0.4, nl, a * 0.72);
+    // Clean white cards/panels on the blush backdrop.
+    const nl = clamp(100 - l * 0.2, 97, 100);
+    return hsl(h, Math.min(s, 45) * 0.35, nl, a >= 1 ? 0.96 : a);
   }
   if (l > 85 && a <= 0.35) {
     // Faint white overlay on dark UI -> faint dark overlay on light UI.
@@ -75,7 +75,7 @@ function lightSurface(h, s, l, a) {
 }
 // Box outlines are soft wine-tinted lines in the light theme. Only clearly coloured borders
 // (selected chips, active tabs, error/success states) keep their colour.
-const INK_BORDER = 'rgba(122, 40, 72, 0.16)'; // soft wine-tinted outline (silk theme)
+const INK_BORDER = 'rgba(160, 110, 100, 0.22)'; // soft warm outline (blush theme)
 function lightBorder(h, s, l, a) {
   if (a >= 0.6 && s >= 35 && l >= 25 && l <= 75) return null;
   return INK_BORDER;
@@ -221,33 +221,25 @@ ${L} { color-scheme: light; }
    -z-10 backdrop. A background on <html> would turn body into an opaque
    sheet covering the backdrop. */
 ${L} { background: transparent !important; }
-${L} body, ${L} body[class] { background: #f8f1ea !important; color: #3a1a2a; }
+${L} body, ${L} body[class] { background: #f6e3de !important; color: #3a1a2a; }
 ${L} input[type="date"], ${L} input[type="time"], ${L} input[type="datetime-local"], ${L} input[type="month"] { color-scheme: light; }
-/* Light theme = pastel silk backdrop (packages/shared-ui/SilkBackground.tsx);
+/* Light theme = warm blush backdrop with bokeh (packages/shared-ui/BlushBackground.tsx);
    the dark theme keeps its wine floral backdrop. */
-.silk-bg { display: none; }
-${L} .silk-bg { display: block; }
-${L} .floral-gold-bg > :not(.silk-bg) { display: none !important; }
-/* Deep wine primary call-to-action (hero "Search Vendors"). */
-${L} .hero-search-btn {
-  background-image: linear-gradient(135deg, #7a1f45 0%, #5e1433 100%) !important;
-  color: #f8e3ea !important;
-  box-shadow: 0 12px 28px -12px rgba(94, 20, 51, 0.55) !important;
-}
+.blush-bg { display: none; }
+${L} .blush-bg { display: block; }
+${L} .floral-gold-bg > :not(.blush-bg) { display: none !important; }
 /* Boxes without an explicit border colour get black outlines too (zero-specificity
    element selector, so any coloured border utility still wins). */
 :where(html[data-theme="light"]) :is(div, section, article, aside, header, footer, nav, main, form, fieldset, label, span, a, button, input, select, textarea, table, thead, tbody, tr, th, td, ul, ol, li, img, hr, details, summary) {
   border-color: ${INK_BORDER};
 }
 ${L} .glass-card, ${L} .glass-card-gold {
-  background: rgba(255, 255, 255, 0.55) !important;
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
-  border-color: rgba(255, 255, 255, 0.8) !important;
-  box-shadow: 0 10px 30px -14px rgba(122, 40, 72, 0.25) !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  border-color: rgba(236, 214, 208, 0.95) !important;
+  box-shadow: 0 10px 28px -14px rgba(150, 90, 80, 0.32), 0 1px 2px rgba(150, 90, 80, 0.06) !important;
 }
 ${L} .glass-card-gold { border-color: rgba(212, 175, 55, 0.35) !important; }
-${L} .glass-card-hover:hover, ${L} .glass-card-gold-hover:hover { background: rgba(255, 255, 255, 0.72) !important; }
+${L} .glass-card-hover:hover, ${L} .glass-card-gold-hover:hover { background: #ffffff !important; box-shadow: 0 16px 34px -16px rgba(150, 90, 80, 0.4) !important; }
 ${L} input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]), ${L} select, ${L} textarea { color: #1f1a2b; }
 ${L} select option { background: #ffffff; color: #1f1a2b; }
 ${L} ::-webkit-scrollbar-track { background: #efe9f0; }
