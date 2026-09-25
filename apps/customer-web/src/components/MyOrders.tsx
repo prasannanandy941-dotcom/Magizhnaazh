@@ -5,6 +5,7 @@ import { fetchMyBookings, fetchMyReviews, submitReview, fetchBookingInvoice, can
 import { payBookingWithRazorpay } from '../utils/razorpayCheckout';
 import { loadRazorpayCheckout } from '../utils/loadRazorpay';
 import { openInvoicePrintWindow } from './invoice';
+import { indexBy } from '../../../../packages/shared-utils/dataStructures';
 
 // Work-progress stages a confirmed booking moves through — mirrors the
 // vendor-side tracker in vendor-web/App.tsx. Applies to every vendor
@@ -53,7 +54,10 @@ function bookingHasMoneyAtStake(b: Booking): boolean {
 export const MyOrders: React.FC<{ isAuthenticated: boolean; onSignIn: () => void; events?: Event[] }> = ({ isAuthenticated, onSignIn, events = [] }) => {
   // Which of the customer's events a booking is for — saved on the booking at
   // booking time, or looked up from their events for older bookings.
-  const eventNameFor = (b: Booking) => b.eventName || events.find((e) => e.id === b.eventId)?.title || '';
+  // HashMap eventId -> event, built once, so each booking card looks its event
+  // up in O(1) instead of scanning the events array.
+  const eventsById = React.useMemo(() => indexBy(events, (e) => e.id), [events]);
+  const eventNameFor = (b: Booking) => b.eventName || eventsById.get(b.eventId)?.title || '';
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [reviews, setReviews] = useState<Record<string, Review>>({});
   const [loading, setLoading] = useState(true);

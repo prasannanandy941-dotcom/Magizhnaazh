@@ -355,6 +355,11 @@ export function fetchPublicSettings(): Promise<PublicSettingsResponse> {
 // Fetch one vendor fresh from the backend — public, no auth required. Used to
 // refresh a single vendor's detail modal so vendor-side edits (availability,
 // packages, options, gallery) show up immediately without a full page reload.
+// Vendors customers often booked for the same event as this one (graph-based).
+export function fetchVendorRecommendations(vendorId: string): Promise<{ success: boolean; data?: { recommendations: { vendorId: string; sharedEvents: number }[] } }> {
+  return publicFetch(`/api/v1/bookings/recommendations/${encodeURIComponent(vendorId)}`, { method: 'GET' });
+}
+
 export function fetchVendorById(vendorId: string): Promise<VendorResponse> {
   return publicFetch<VendorResponse>(`/api/v1/vendors/${vendorId}`, { method: 'GET' });
 }

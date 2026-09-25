@@ -798,7 +798,10 @@ export function App() {
       <Suspense fallback={null}>
       {selectedVendorForModal && (
         <VendorDetailModal
+          key={selectedVendorForModal.id}
           vendor={selectedVendorForModal}
+          allVendors={vendors}
+          onOpenVendor={(v) => setSelectedVendorForModal(v)}
           onClose={() => setSelectedVendorForModal(null)}
           isAuthenticated={!!user}
           onRequireAuth={() => setShowAuthModal(true)}
@@ -927,7 +930,7 @@ export function App() {
 
       {showCompareModal && (
         <VendorCompareModal
-          vendors={vendors.filter((v) => selectedCompareIds.includes(v.id))}
+          vendors={(() => { const ids = new Set(selectedCompareIds); return vendors.filter((v) => ids.has(v.id)); })()}
           onClose={() => setShowCompareModal(false)}
           onSelectVendor={(v) => setSelectedVendorForModal(v)}
         />
@@ -935,7 +938,7 @@ export function App() {
 
       {showWishlistModal && (
         <WishlistModal
-          vendors={vendors.filter((v) => wishlist.includes(v.id))}
+          vendors={(() => { const ids = new Set(wishlist); return vendors.filter((v) => ids.has(v.id)); })()}
           onClose={() => setShowWishlistModal(false)}
           onRemove={toggleWishlist}
           onSelectVendor={(v) => {

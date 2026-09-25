@@ -180,11 +180,13 @@ export const AnalyticsTab: React.FC<{ token: string }> = ({ token }) => {
   // Top vendors by revenue within filtered bookings
   const vendorRevenue: Record<string, number> = {};
   filteredBookings.forEach((b) => { vendorRevenue[b.vendorId] = (vendorRevenue[b.vendorId] || 0) + b.agreedPrice; });
+  // HashMap vendorId -> vendor for the Top Vendors rows (O(1) per row).
+  const vendorsById = new Map(vendors.map((v) => [v.id, v] as const));
   const topVendors = Object.entries(vendorRevenue)
     .sort(([, a], [, b]) => b - a)
     .slice(0, 5)
     .map(([vendorId, revenue]) => {
-      const vendor = vendors.find((v) => v.id === vendorId);
+      const vendor = vendorsById.get(vendorId);
       return { name: vendor?.businessName || 'Unknown Vendor', category: vendor?.category || '', revenue };
     });
 

@@ -11,6 +11,13 @@ import { Vendor, VendorCategory, VENDOR_CATEGORIES, getLiveDeals, openSlots } fr
 import { STATIC_CITY_GROUPS } from '../../../../packages/shared-utils';
 import { FacilityChips, filterVenuesByFacilities } from './FacilitiesForm';
 import { useInfiniteList, LoadMoreSentinel } from '../../../../packages/shared-ui/lazy';
+import { Trie } from '../../../../packages/shared-utils/dataStructures';
+
+// A search-box suggestion: a vendor, a category or a city.
+type Suggestion =
+  | { kind: 'vendor'; label: string; vendor: Vendor }
+  | { kind: 'category'; label: string }
+  | { kind: 'city'; label: string };
 import { CateringMenuChips } from './CateringMenu';
 import { PortfolioChips } from './Portfolio';
 import { DecorationChips } from './DecorationThemes';
@@ -101,6 +108,48 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
   const groups = cityGroups && cityGroups.length > 0 ? cityGroups : STATIC_CITY_GROUPS;
   const [selectedCategory, setSelectedCategory] = useState<string>(selectedCategoryProp || 'All');
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // Trie for search-as-you-type. Built once per vendor list: every word of a
+  // vendor's name, its category and its city are inserted, so typing "mug"
+  // finds "Caterings of Mughals" and "cat" finds the Catering category.
+  const searchTrie = useMemo(() => {
+    const trie = new Trie<Suggestion>();
+    const shared = new Map<string, Suggestion>(); // one object per category/city so the Trie dedupes them
+    const once = (key: string, make: () => Suggestion) => {
+      if (!shared.has(key)) shared.set(key, make());
+      return shared.get(key)!;
+    };
+    for (const v of vendors) {
+      const vendorSuggestion: Suggestion = { kind: 'vendor', label: v.businessName, vendor: v };
+      trie.insert(v.businessName, vendorSuggestion);
+      for (const word of v.businessName.split(/\s+/)) if (word.length > 1) trie.insert(word, vendorSuggestion);
+      const cat = once(`category:${v.category}`, () => ({ kind: 'category', label: v.category }));
+      trie.insert(v.category, cat);
+      const city = v.location?.city;
+      if (city) trie.insert(city, once(`city:${city.toLowerCase()}`, () => ({ kind: 'city', label: city })));
+    }
+    return trie;
+  }, [vendors]);
+  const suggestions = searchInput.trim() ? searchTrie.search(searchInput, 8) : [];
+
+  const pickSuggestion = (sg: Suggestion) => {
+    setShowSuggestions(false);
+    if (sg.kind === 'vendor') {
+      setSearchInput('');
+      onSelectVendor(sg.vendor);
+    } else if (sg.kind === 'category') {
+      setSearchInput('');
+      setSearchQuery('');
+      setSelectedCategory(sg.label);
+      onCategoryChange?.(sg.label);
+    } else {
+      setSearchInput('');
+      setSearchQuery('');
+      onCityChange(sg.label);
+    }
+  };
   const [sortBy, setSortBy] = useState<'rating' | 'price_low' | 'price_high'>('rating');
   const [activeFacilities, setActiveFacilities] = useState<string[]>([]);
   // Selected sub-category option chips (e.g. Catering → Veg / Non-Veg). Clicking
@@ -171,9 +220,12 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
   const filteredVendors = filterVenuesByFacilities(
     vendors.filter((v) => {
       const matchCat = selectedCategory === 'All' || v.category === selectedCategory;
+      const q = searchQuery.toLowerCase();
       const matchSearch =
-        v.businessName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        v.description.toLowerCase().includes(searchQuery.toLowerCase());
+        v.businessName.toLowerCase().includes(q) ||
+        v.description.toLowerCase().includes(q) ||
+        v.category.toLowerCase().includes(q) ||
+        (v.location?.city || '').toLowerCase().includes(q);
       const matchCity = selectedCity === 'All' || v.location.city.toLowerCase() === selectedCity.toLowerCase();
       const matchBudget = maxBudget === null || v.startingPrice <= maxBudget;
       // Sub-category option filter: keep only vendors that offer every selected
@@ -233,6 +285,10 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
   const dateMatches = eventDate ? filteredVendors.filter(freeOnEventDate) : [];
   const narrowToDate = !!eventDate && dateMatches.length > 0 && !showAllDates;
   const displayedVendors = narrowToDate ? dateMatches : filteredVendors;
+  // Sets: each card asks "is this vendor wishlisted / in compare?" — Set.has
+  // is O(1), versus scanning the id array with .includes() for every card.
+  const wishlistSet = useMemo(() => new Set(wishlist), [wishlist]);
+  const compareSet = useMemo(() => new Set(selectedCompareIds), [selectedCompareIds]);
   // Infinite scroll: draw 12 vendor cards first, then 12 more each time the
   // bottom of the grid comes into view. Resets to the first 12 when any
   // filter, search, sort or the event-date view changes.
@@ -260,6 +316,40 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
+          {/* Search with Trie-powered suggestions */}
+          <div className="relative w-full sm:w-72">
+            <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="search"
+              value={searchInput}
+              onChange={(e) => { setSearchInput(e.target.value); setShowSuggestions(true); if (!e.target.value) setSearchQuery(''); }}
+              onFocus={() => setShowSuggestions(true)}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { setSearchQuery(searchInput.trim()); setShowSuggestions(false); } }}
+              placeholder="Search vendors, categories, cities…"
+              aria-label="Search vendors"
+              className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 text-xs placeholder:text-slate-500 focus:outline-none focus:border-amber-400/60"
+            />
+            {showSuggestions && suggestions.length > 0 && (
+              <ul className="absolute z-30 mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 shadow-xl overflow-hidden" role="listbox">
+                {suggestions.map((sg, i) => (
+                  <li key={`${sg.kind}-${sg.label}-${i}`}>
+                    <button
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => pickSuggestion(sg)}
+                      className="w-full text-left px-3 py-2 text-xs flex items-center justify-between gap-2 hover:bg-slate-800"
+                    >
+                      <span className="text-slate-200 truncate">{sg.label}</span>
+                      <span className="shrink-0 text-[10px] uppercase font-bold text-slate-500">
+                        {sg.kind === 'vendor' ? (sg.vendor.category) : sg.kind}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
           <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs">
             <MapPin className="w-3.5 h-3.5 text-indigo-400" />
             <select
@@ -463,8 +553,8 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {vendorPage.visible.map((vendor) => {
-          const isWishlisted = wishlist.includes(vendor.id);
-          const isCompared = selectedCompareIds.includes(vendor.id);
+          const isWishlisted = wishlistSet.has(vendor.id);
+          const isCompared = compareSet.has(vendor.id);
 
           return (
             <div

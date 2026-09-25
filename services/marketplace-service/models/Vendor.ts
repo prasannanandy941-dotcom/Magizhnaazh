@@ -612,5 +612,8 @@ const vendorSchema = new Schema<Vendor>({
 vendorSchema.index({ location: '2dsphere' });
 vendorSchema.index({ businessName: 'text', description: 'text' });
 vendorSchema.index({ category: 1, 'location.city': 1 });
+// B-tree index: the vendor dashboard loads its own listing by userId on every
+// visit (GET /vendors/mine) — indexed lookup instead of scanning every vendor.
+vendorSchema.index({ userId: 1 });
 
 export const VendorModel = model<Vendor>('Vendor', vendorSchema);

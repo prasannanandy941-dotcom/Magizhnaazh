@@ -78,5 +78,11 @@ const bookingSchema = new Schema<Booking>({
 
 bookingSchema.index({ customerId: 1 });
 bookingSchema.index({ vendorId: 1 });
+// B-tree compound index for the double-booking check run on every new booking
+// (find this vendor's bookings on this date with an active status) — Mongo
+// jumps straight to the matching entries instead of scanning all bookings.
+bookingSchema.index({ vendorId: 1, eventDate: 1, status: 1 });
+// For "often booked together": all vendors booked for the same event.
+bookingSchema.index({ eventId: 1 });
 
 export const BookingModel = model<Booking>('Booking', bookingSchema);

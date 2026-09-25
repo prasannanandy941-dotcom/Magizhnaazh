@@ -998,8 +998,15 @@ export function slotCapacityFor(vendor: SlotVendor, date: string, slot: string):
 // With every capacity at 1 this is the original one-booking-per-slot rule.
 export function slotsLeft(vendor: SlotVendor, date: string, slot: string): number {
   const s = slot || 'fullday';
-  const entries = (vendor.bookedSlots || []).filter((b) => b.date === date);
-  const count = (id: string) => entries.filter((b) => (b.slot || 'fullday') === id).length;
+  // Frequency map slot -> bookings on this date, built in one pass (instead of
+  // re-filtering the booking list for every slot we ask about).
+  const counts = new Map<string, number>();
+  for (const b of vendor.bookedSlots || []) {
+    if (b.date !== date) continue;
+    const id = b.slot || 'fullday';
+    counts.set(id, (counts.get(id) || 0) + 1);
+  }
+  const count = (id: string) => counts.get(id) || 0;
   const fullDay = count('fullday');
   const sessionLeft = (id: string) => slotCapacityFor(vendor, date, id) - count(id) - fullDay;
   if (s !== 'fullday') return Math.max(0, sessionLeft(s));

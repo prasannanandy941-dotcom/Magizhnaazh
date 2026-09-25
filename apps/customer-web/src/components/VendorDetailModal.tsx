@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { X, Star, MapPin, Check, ShieldCheck, Upload, Calendar as CalendarIcon, MessageSquare, Send, CreditCard, Sparkles, Camera, Bus, Gift, ListChecks, Phone, Clock, Plus, Maximize2, Car, Mail, Printer, FileText } from 'lucide-react';
 import { Vendor, Review, Event, getVendorTrustBadges, getLiveDeals, bestDealForAmount, AVAILABILITY_SLOTS, isSlotBooked, openSlots, offeredSlotIds, slotLabel, slotsLeft, slotCapacityFor } from '../../../../packages/shared-types';
-import { fetchVendorById, uploadReferenceImage, fetchVendorReviews } from '../api';
+import { fetchVendorById, uploadReferenceImage, fetchVendorReviews, fetchVendorRecommendations } from '../api';
+import { indexBy } from '../../../../packages/shared-utils/dataStructures';
 import { PortfolioGrid } from './Portfolio';
 import { DecorationGrid } from './DecorationThemes';
 import { MakeupGrid } from './MakeupLooks';
@@ -83,6 +84,9 @@ interface VendorDetailModalProps {
   activeEventGuestCount?: number;
   // Opens event creation wizard when customer wants to create an event
   onRequestCreateEvent?: () => void;
+  // Every marketplace vendor + a way to open one — for "Often booked together".
+  allVendors?: Vendor[];
+  onOpenVendor?: (vendor: Vendor) => void;
   onBookVendor: (
     vendor: Vendor,
     packageId?: string,
@@ -99,6 +103,8 @@ interface VendorDetailModalProps {
 
 export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
   vendor: initialVendor,
+  allVendors = [],
+  onOpenVendor,
   onClose,
   onBookVendor,
   isAuthenticated,
@@ -123,6 +129,21 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
   // gallery, options) show up immediately instead of only after a full page
   // reload of the marketplace.
   const [vendor, setVendor] = useState(initialVendor);
+
+  // "Often booked together" (graph neighbours from the booking service). The
+  // API returns vendor ids; a HashMap of all vendors turns them into cards in O(1) each.
+  const [recommendationIds, setRecommendationIds] = useState<{ vendorId: string; sharedEvents: number }[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    fetchVendorRecommendations(initialVendor.id)
+      .then((res) => { if (!cancelled) setRecommendationIds(res.data?.recommendations || []); })
+      .catch(() => { /* optional section — hide on failure */ });
+    return () => { cancelled = true; };
+  }, [initialVendor.id]);
+  const vendorsById = useMemo(() => indexBy(allVendors, (v) => v.id), [allVendors]);
+  const oftenBookedWith = recommendationIds
+    .map((r) => ({ vendor: vendorsById.get(r.vendorId), sharedEvents: r.sharedEvents }))
+    .filter((r): r is { vendor: Vendor; sharedEvents: number } => !!r.vendor);
   useEffect(() => {
     setVendor(initialVendor);
     fetchVendorById(initialVendor.id)
@@ -2763,6 +2784,28 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
         )}
 
         {/* Special request lives only on the Overview tab, for every vendor. */}
+        {activeTab === 'overview' && oftenBookedWith.length > 0 && (
+          <div className="px-6 py-4 border-t border-slate-800 bg-slate-900/60">
+            <h4 className="text-xs font-bold text-slate-400 uppercase mb-3 flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Often booked together
+            </h4>
+            <div className="flex flex-wrap gap-2">
+              {oftenBookedWith.map(({ vendor: v, sharedEvents }) => (
+                <button
+                  key={v.id}
+                  type="button"
+                  onClick={() => onOpenVendor?.(v)}
+                  className="px-3 py-1.5 rounded-full border border-slate-700 bg-slate-900 text-xs text-slate-200 hover:border-amber-400/60 flex items-center gap-1.5"
+                  title={`Booked together for ${sharedEvents} event${sharedEvents === 1 ? '' : 's'}`}
+                >
+                  <span className="font-semibold">{v.businessName}</span>
+                  <span className="text-[10px] text-slate-500">{v.category}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {activeTab === 'overview' && (
           <div className="px-6 py-4 border-t border-slate-800 bg-slate-900/60">
             <h4 className="text-xs font-bold text-slate-400 uppercase mb-3">Special Request (optional)</h4>

@@ -14,6 +14,7 @@ import { BookingModel } from './models/Booking';
 import { PlatformSettingsModel, getSettings } from './models/PlatformSettings';
 import { CouponModel } from './models/Coupon';
 import { isSlotBooked, slotLabel } from '../../packages/shared-types';
+import { JobQueue, buildCoBookingGraph, topNeighbours } from '../../packages/shared-utils/dataStructures';
 import { createMarketplaceOrder, getRazorpayInstance, verifyPaymentSignature, verifyWebhookSignature } from './utils/razorpay';
 
 const app = express();
@@ -64,6 +65,36 @@ function payoutEligibleOn(eventDate: string, holdDays: number): string {
   const t = Date.parse(eventDate);
   if (isNaN(t)) return '';
   return new Date(t + holdDays * 86400000).toISOString();
+}
+
+// Queue for keeping the vendor's calendar in sync (block a slot when a booking
+// is placed/paid, free it when cancelled). Jobs run in order and are retried
+// with backoff, so a brief marketplace-service outage doesn't leave a booked
+// slot open for someone else to double-book.
+const slotSyncQueue = new JobQueue('slot-sync');
+
+
+function syncSlot(
+  kind: 'book' | 'unbook',
+  vendorId: string,
+  body: { date: string; slot: string; bookingId: string },
+  authorization: string,
+) {
+  slotSyncQueue.add(`${kind}-slot ${vendorId} ${body.date} ${body.slot || 'fullday'}`, async () => {
+    const r = await fetch(`${MARKETPLACE_SERVICE_URL}/api/v1/vendors/${vendorId}/${kind}-slot`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: authorization,
+        'x-internal-secret': process.env.INTERNAL_API_SECRET || '',
+      },
+      body: JSON.stringify(body),
+    });
+    // 5xx / network errors throw -> retried. A 4xx (e.g. vendor deleted) won't
+    // succeed on retry, so it's logged and dropped.
+    if (r.status >= 500) throw new Error(`HTTP ${r.status}`);
+    if (!r.ok) console.warn(`[slot-sync] ${kind}-slot ${vendorId} rejected: HTTP ${r.status}`);
+  });
 }
 
 // Fetch the marketplace vendor record referenced by a booking (or null).
@@ -176,17 +207,7 @@ async function applyVerifiedRazorpayPayment(
   if (params.type === 'advance' && booking.status !== 'confirmed') {
     booking.status = 'confirmed';
     if (booking.vendorId && booking.eventDate) {
-      fetch(`${MARKETPLACE_SERVICE_URL}/api/v1/vendors/${booking.vendorId}/book-slot`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: authHeader || '',
-          'x-internal-secret': process.env.INTERNAL_API_SECRET || '',
-        },
-        body: JSON.stringify({ date: booking.eventDate, slot: booking.timeSlot || '', bookingId: booking.id }),
-      }).catch((err) => {
-        console.warn('[booking-payment-service] book-slot error on payment confirmation:', err);
-      });
+      syncSlot('book', booking.vendorId, { date: booking.eventDate, slot: booking.timeSlot || '', bookingId: booking.id }, authHeader || '');
     }
   }
 
@@ -434,17 +455,7 @@ app.post('/api/v1/bookings/quote', authMiddleware(), async (req: Request, res: R
   // Block the slot in marketplace-service immediately so other customers viewing
   // this vendor instantly see that this session/date is booked.
   if (canonicalVendorId && resolvedEventDate) {
-    fetch(`${MARKETPLACE_SERVICE_URL}/api/v1/vendors/${canonicalVendorId}/book-slot`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: req.headers.authorization || '',
-        'x-internal-secret': process.env.INTERNAL_API_SECRET || '',
-      },
-      body: JSON.stringify({ date: resolvedEventDate, slot: resolvedSlot, bookingId: booking.id }),
-    }).catch((err) => {
-      console.warn('[booking-payment-service] book-slot error:', err);
-    });
+    syncSlot('book', canonicalVendorId, { date: resolvedEventDate, slot: resolvedSlot, bookingId: booking.id }, req.headers.authorization || '');
   }
 
   const { commissionRate } = await getSettings();
@@ -514,6 +525,25 @@ app.get('/api/v1/bookings', authMiddleware(), async (req: Request, res: Response
 
 // 3. Booking detail — also used server-to-server by guest-feedback-service to
 //    verify a completed booking before accepting a vendor review.
+// "Often booked together" — vendors that customers booked for the same event
+// as this vendor. Built as a weighted graph (see buildCoBookingGraph): vendors
+// are nodes, sharing an event adds weight to their edge. Public, and returns
+// only vendor ids + counts (no customer data). The graph is rebuilt at most
+// every 5 minutes rather than on every request.
+let coBookingCache: { graph: ReturnType<typeof buildCoBookingGraph>; builtAt: number } | null = null;
+app.get('/api/v1/bookings/recommendations/:vendorId', async (req: Request, res: Response) => {
+  if (!coBookingCache || Date.now() - coBookingCache.builtAt > 5 * 60 * 1000) {
+    const rows = await BookingModel.find(
+      { status: { $nin: ['cancelled', 'refunded'] } },
+      { eventId: 1, vendorId: 1, _id: 0 },
+    ).lean();
+    coBookingCache = { graph: buildCoBookingGraph(rows as { eventId: string; vendorId: string }[]), builtAt: Date.now() };
+  }
+  const recommendations = topNeighbours(coBookingCache.graph, req.params.vendorId, 6)
+    .map(({ id, weight }) => ({ vendorId: id, sharedEvents: weight }));
+  res.json({ success: true, data: { recommendations } });
+});
+
 app.get('/api/v1/bookings/:id', async (req: Request, res: Response) => {
   const booking = await BookingModel.findOne({ id: req.params.id });
   if (!booking) return res.status(404).json({ success: false, message: 'Booking not found.' });
@@ -660,15 +690,7 @@ app.put('/api/v1/bookings/:id/cancel', authMiddleware(), async (req: Request, re
   // reopen it on the vendor's calendar — best-effort, cancellation already
   // succeeded either way.
   if (heldSlot && booking.vendorId && booking.eventDate) {
-    fetch(`${MARKETPLACE_SERVICE_URL}/api/v1/vendors/${booking.vendorId}/unbook-slot`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: req.headers.authorization || '',
-        'x-internal-secret': process.env.INTERNAL_API_SECRET || '',
-      },
-      body: JSON.stringify({ date: booking.eventDate, slot: booking.timeSlot || '', bookingId: booking.id }),
-    }).catch(() => { /* the vendor can still reopen the date manually */ });
+    syncSlot('unbook', booking.vendorId, { date: booking.eventDate, slot: booking.timeSlot || '', bookingId: booking.id }, req.headers.authorization || '');
   }
 
   res.json({
@@ -888,17 +910,7 @@ app.post('/api/v1/bookings/:id/payments/razorpay/order', authMiddleware(), async
         booking.status = 'confirmed';
         await booking.save();
         if (booking.vendorId && booking.eventDate) {
-          fetch(`${MARKETPLACE_SERVICE_URL}/api/v1/vendors/${booking.vendorId}/book-slot`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: req.headers.authorization || '',
-              'x-internal-secret': process.env.INTERNAL_API_SECRET || '',
-            },
-            body: JSON.stringify({ date: booking.eventDate, slot: booking.timeSlot || '', bookingId: booking.id }),
-          }).catch((err) => {
-            console.warn('[booking-payment-service] book-slot error on direct confirm:', err);
-          });
+          syncSlot('book', booking.vendorId, { date: booking.eventDate, slot: booking.timeSlot || '', bookingId: booking.id }, req.headers.authorization || '');
         }
       }
       return res.json({ success: true, data: { noPaymentNeeded: true, booking } });
