@@ -59,7 +59,9 @@ function resolveColor(name) {
 
 // Role-based light mapping. Returns a CSS colour string, or null to leave as-is.
 function lightSurface(h, s, l, a) {
-  if (l < 38) {
+  // Dark, dull surfaces (slate, wine) and near-black tints get lightened. Vivid
+  // deep accents (emerald-600/700, teal-600, indigo-700 buttons) keep their colour.
+  if (l < 38 && (s < 60 || l < 22 || a < 0.8)) {
     // Dark surface -> light tint, keeping a whisper of the hue.
     const nl = clamp(100 - l * 0.45, 86, 99);
     return hsl(h, Math.min(s, 45) * 0.6, nl, a);
