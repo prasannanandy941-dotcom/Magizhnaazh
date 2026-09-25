@@ -399,7 +399,7 @@ export const SmartBudgetPlanner: React.FC<SmartBudgetPlannerProps> = ({
                       key={vendor.id}
                       type="button"
                       onClick={() => onSelectVendor(vendor)}
-                      className="text-left rounded-2xl overflow-hidden bg-slate-900/70 border border-slate-800 hover:border-indigo-400/60 transition-colors group"
+                      className="vendor-card text-left rounded-2xl overflow-hidden bg-slate-900/70 border border-slate-800 hover:border-indigo-400/60 transition-colors group"
                     >
                       {vendor.galleryImages?.[0] ? (
                         <img loading="lazy" decoding="async" src={vendor.galleryImages[0]} alt="" className="w-full h-28 object-cover" />

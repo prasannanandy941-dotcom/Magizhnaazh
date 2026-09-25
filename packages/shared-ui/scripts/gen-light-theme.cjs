@@ -239,6 +239,17 @@ ${L} .glass-card, ${L} .glass-card-gold {
   box-shadow: 0 10px 28px -14px rgba(150, 90, 80, 0.32), 0 1px 2px rgba(150, 90, 80, 0.06) !important;
 }
 ${L} .glass-card-gold { border-color: rgba(212, 175, 55, 0.35) !important; }
+/* Vendor cards (marketplace + Smart Budget): crisp outline and clean shadow
+   instead of the dark theme's gold glow, which smudges on the blush backdrop. */
+${L} .vendor-card, ${L} .vendor-card[class] {
+  background: #ffffff !important;
+  border: 1px solid rgba(205, 160, 150, 0.6) !important;
+  box-shadow: 0 14px 30px -18px rgba(140, 80, 70, 0.45), 0 2px 6px -2px rgba(140, 80, 70, 0.12) !important;
+}
+${L} .vendor-card:hover, ${L} .vendor-card[class]:hover {
+  border-color: rgba(201, 160, 72, 0.85) !important;
+  box-shadow: 0 20px 38px -18px rgba(140, 80, 70, 0.5), 0 0 0 3px rgba(233, 184, 63, 0.14) !important;
+}
 ${L} .glass-card-hover:hover, ${L} .glass-card-gold-hover:hover { background: #ffffff !important; box-shadow: 0 16px 34px -16px rgba(150, 90, 80, 0.4) !important; }
 ${L} input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]), ${L} select, ${L} textarea { color: #1f1a2b; }
 ${L} select option { background: #ffffff; color: #1f1a2b; }
