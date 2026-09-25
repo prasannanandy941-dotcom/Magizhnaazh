@@ -75,7 +75,7 @@ function lightSurface(h, s, l, a) {
 }
 // Box outlines are soft wine-tinted lines in the light theme. Only clearly coloured borders
 // (selected chips, active tabs, error/success states) keep their colour.
-const INK_BORDER = 'rgba(160, 110, 100, 0.22)'; // soft warm outline (blush theme)
+const INK_BORDER = 'rgba(176, 120, 108, 0.55)'; // clearly visible warm outline (blush theme)
 function lightBorder(h, s, l, a) {
   if (a >= 0.6 && s >= 35 && l >= 25 && l <= 75) return null;
   return INK_BORDER;
@@ -235,10 +235,17 @@ ${L} .floral-gold-bg > :not(.blush-bg) { display: none !important; }
 }
 ${L} .glass-card, ${L} .glass-card-gold {
   background: rgba(255, 255, 255, 0.94) !important;
-  border-color: rgba(236, 214, 208, 0.95) !important;
+  border-color: ${INK_BORDER} !important;
   box-shadow: 0 10px 28px -14px rgba(150, 90, 80, 0.32), 0 1px 2px rgba(150, 90, 80, 0.06) !important;
 }
 ${L} .glass-card-gold { border-color: rgba(212, 175, 55, 0.35) !important; }
+/* Boxes that were drawn in dark mode with only a darker background (no border
+   class) would vanish white-on-white — give every rounded panel with a
+   surface background a thin outline. A ring (box-shadow) rather than a border,
+   so nothing shifts in size. */
+${L} :is([class^="rounded"], [class*=" rounded"]):is([class^="bg-slate-9"], [class*=" bg-slate-9"], [class^="bg-slate-8"], [class*=" bg-slate-8"], [class^="bg-slate-7"], [class*=" bg-slate-7"], [class^="bg-[#1"], [class*=" bg-[#1"], [class^="bg-[#2"], [class*=" bg-[#2"], [class^="bg-[#0"], [class*=" bg-[#0"], [class^="bg-white/"], [class*=" bg-white/"], [class^="bg-black/"], [class*=" bg-black/"]):not([class*="border"]):not(.rounded-full):not(img):not(.vendor-card) {
+  box-shadow: 0 0 0 1px ${INK_BORDER};
+}
 /* Vendor cards (marketplace + Smart Budget): crisp outline and clean shadow
    instead of the dark theme's gold glow, which smudges on the blush backdrop. */
 ${L} .vendor-card, ${L} .vendor-card[class] {
