@@ -136,9 +136,10 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
   }, [initialVendor.id]);
 
   const [activeTab, setActiveTab] = useState<'overview' | 'portfolio' | 'themes' | 'looks' | 'fleet' | 'gifts' | 'options' | 'services' | 'amenities' | 'packages' | 'gallery' | 'availability' | 'reviews' | 'upload'>(
-    // Open straight on the vendor's dates when they've listed any, so a customer
-    // sees at a glance whether the vendor is free before looking further.
-    () => ((initialVendor.availableDates?.length ?? 0) > 0 || (initialVendor.bookedDates?.length ?? 0) > 0 ? 'availability' : 'overview'),
+    // A logged-out visitor opens straight on the vendor's dates when they've
+    // listed any, so they see at a glance whether the vendor is free before
+    // looking further. Logged-in customers get the normal Overview.
+    () => (!isAuthenticated && ((initialVendor.availableDates?.length ?? 0) > 0 || (initialVendor.bookedDates?.length ?? 0) > 0) ? 'availability' : 'overview'),
   );
   const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewsLoaded, setReviewsLoaded] = useState(false);
@@ -251,11 +252,11 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
   // On phones the tab row scrolls sideways — keep the Availability tab in view
   // when the modal opens on it.
   const availabilityTabRef = useRef<HTMLButtonElement>(null);
-  // Availability-first screen: when the vendor has listed dates, the modal opens
-  // showing ONLY those dates. Tapping a date reveals the full vendor details
+  // Availability-first screen (logged-out visitors only): when the vendor has
+  // listed dates, the modal opens showing ONLY those dates. Tapping a date reveals the full vendor details
   // (tabs, sessions, booking) with that date already chosen.
   const [showDateGate, setShowDateGate] = useState(
-    () => (initialVendor.availableDates?.length ?? 0) > 0 || (initialVendor.bookedDates?.length ?? 0) > 0,
+    () => !isAuthenticated && ((initialVendor.availableDates?.length ?? 0) > 0 || (initialVendor.bookedDates?.length ?? 0) > 0),
   );
   const pickGateDate = (d: string) => {
     setSelectedEventDate(d);
