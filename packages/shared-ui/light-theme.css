@@ -2,10 +2,16 @@
    Light theme for the customer, vendor and admin web apps (html[data-theme="light"]). */
 
 html[data-theme="light"] { color-scheme: light; }
-html[data-theme="light"], html[data-theme="light"] body { background: #f7f4f8 !important; color: #1f1a2b; }
+/* Page colour on <body> only: it then paints the canvas behind the fixed
+   -z-10 backdrop. A background on <html> would turn body into an opaque
+   sheet covering the backdrop. */
+html[data-theme="light"] { background: transparent !important; }
+html[data-theme="light"] body, html[data-theme="light"] body[class] { background: #fbf6f4 !important; color: #1f1a2b; }
 html[data-theme="light"] input[type="date"], html[data-theme="light"] input[type="time"], html[data-theme="light"] input[type="datetime-local"], html[data-theme="light"] input[type="month"] { color-scheme: light; }
-html[data-theme="light"] .floral-gold-bg { opacity: 0.08; }
-html[data-theme="light"] #app-bg { opacity: 1; }
+/* Light theme swaps the dark floral backdrop for the auspicious one. */
+.auspicious-bg { display: none; }
+html[data-theme="light"] .auspicious-bg { display: block; }
+html[data-theme="light"] .floral-gold-bg { display: none; }
 html[data-theme="light"] .glass-card, html[data-theme="light"] .glass-card-gold {
   background: rgba(255, 255, 255, 0.92) !important;
   border-color: rgba(31, 26, 43, 0.1) !important;

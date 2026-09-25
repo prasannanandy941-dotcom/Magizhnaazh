@@ -68,9 +68,6 @@ html[data-theme="light"] input[type="month"] {
    pinks/golds → darker readable tones. Brand CTA gradients (gold/rose buttons)
    and dark-on-gold button text are intentionally preserved.
 --------------------------------------------------------------------------- */
-html[data-theme='light'] {
-  background: #faf3f7;
-}
 html[data-theme='light'] body {
   background: #faf3f7;
   color: #3a1524;

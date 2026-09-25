@@ -15,9 +15,6 @@ input::-ms-clear {
    html[data-theme="light"]. The choice is driven by the admin monitor toggle
    and persisted in platform settings (shared with the customer app).
 --------------------------------------------------------------------------- */
-html[data-theme='light'] {
-  background: #f4f2f7;
-}
 html[data-theme='light'] body {
   background: #f4f2f7;
   color: #1e293b;
