@@ -135,7 +135,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialVendor.id]);
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'portfolio' | 'themes' | 'looks' | 'fleet' | 'gifts' | 'options' | 'services' | 'amenities' | 'packages' | 'gallery' | 'reviews' | 'upload'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'portfolio' | 'themes' | 'looks' | 'fleet' | 'gifts' | 'options' | 'services' | 'amenities' | 'packages' | 'gallery' | 'availability' | 'reviews' | 'upload'>('overview');
   const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewsLoaded, setReviewsLoaded] = useState(false);
 
@@ -547,6 +547,15 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
           </button>
 
           <button
+            onClick={() => setActiveTab('availability')}
+            className={`shrink-0 whitespace-nowrap py-3 font-semibold text-xs border-b-2 transition-colors flex items-center gap-1 ${
+              activeTab === 'availability' ? 'border-amber-500 text-amber-400' : 'border-transparent text-slate-400 hover:text-white'
+            }`}
+          >
+            <CalendarIcon className="w-3.5 h-3.5" /> Availability
+          </button>
+
+          <button
             onClick={() => setActiveTab('reviews')}
             className={`shrink-0 whitespace-nowrap py-3 font-semibold text-xs border-b-2 transition-colors ${
               activeTab === 'reviews' ? 'border-amber-500 text-amber-400' : 'border-transparent text-slate-400 hover:text-white'
@@ -569,7 +578,14 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
             below it, so on short phone screens those sections scroll instead of
             squashing the tab bar and body. */}
         <div className="flex-1 min-h-0 overflow-y-auto">
-        <div className="p-6">
+        <div className={activeTab === 'availability' && (hasFixedAvailability || (vendor.bookedDates?.length ?? 0) > 0) ? '' : 'p-6'}>
+          {activeTab === 'availability' && !hasFixedAvailability && (vendor.bookedDates?.length ?? 0) === 0 && (
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-5 text-center">
+              <CalendarIcon className="w-6 h-6 text-indigo-400 mx-auto mb-2" />
+              <p className="text-sm font-semibold text-slate-200">{vendor.businessName} hasn't listed specific dates.</p>
+              <p className="text-xs text-slate-400 mt-1">You can request your event date when you tap Book &amp; Pay Advance.</p>
+            </div>
+          )}
           {activeTab === 'overview' && (
             <div className="space-y-6">
               <div className="h-72 w-full rounded-2xl overflow-hidden bg-slate-900 relative">
@@ -2589,9 +2605,9 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
 
         </div>
 
-        {/* Availability date picker lives ONLY on the Gallery tab (not on
-            Overview or any other tab) — same for every vendor. */}
-        {activeTab === 'gallery' && (hasFixedAvailability || (vendor.bookedDates?.length ?? 0) > 0) && (
+        {/* Availability date picker lives ONLY on its own Availability tab —
+            same for every vendor. */}
+        {activeTab === 'availability' && (hasFixedAvailability || (vendor.bookedDates?.length ?? 0) > 0) && (
           <div className="px-6 py-4 border-t border-slate-800 bg-slate-900/60">
             <span className="text-[11px] font-bold text-slate-400 uppercase flex items-center gap-1.5 mb-2">
               <CalendarIcon className="w-3.5 h-3.5 text-indigo-400" /> {vendor.businessName} is open on these dates — pick one to book
