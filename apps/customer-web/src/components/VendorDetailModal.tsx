@@ -268,7 +268,11 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
   }, [activeTab]);
   // No date pre-picked: the customer taps one of the vendor's dates, and the
   // session picker and booking options then appear for it.
-  const [selectedEventDate, setSelectedEventDate] = useState('');
+  // (A logged-in customer's event date is pre-picked when the vendor is open on it.)
+  const [selectedEventDate, setSelectedEventDate] = useState(() => {
+    const d = (activeEventDate || '').slice(0, 10);
+    return d && (initialVendor.availableDates || []).includes(d) ? d : '';
+  });
   // Time-of-day slot the customer picks for the chosen date (Morning/Afternoon/Evening).
   const [selectedSlot, setSelectedSlot] = useState('');
   // Whenever the date changes, reset the slot to the first one still open.

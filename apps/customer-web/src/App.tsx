@@ -591,6 +591,8 @@ export function App() {
               maxBudget={marketplaceBudget}
               onCityChange={setMarketplaceCity}
               cityGroups={cityGroups}
+              eventDate={user && activeEvent.id ? activeEvent.date : undefined}
+              eventTitle={activeEvent.title}
             />
           </>
         )}

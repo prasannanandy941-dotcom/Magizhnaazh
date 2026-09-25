@@ -7,7 +7,7 @@ import {
   ChevronLeft, ChevronRight, X, Search, ChevronDown, Check,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { Vendor, VendorCategory, VENDOR_CATEGORIES, getLiveDeals } from '../../../../packages/shared-types';
+import { Vendor, VendorCategory, VENDOR_CATEGORIES, getLiveDeals, openSlots } from '../../../../packages/shared-types';
 import { STATIC_CITY_GROUPS } from '../../../../packages/shared-utils';
 import { FacilityChips, filterVenuesByFacilities } from './FacilitiesForm';
 import { CateringMenuChips } from './CateringMenu';
@@ -44,6 +44,10 @@ interface VendorMarketplaceProps {
   // Ordered [state, cities][] for the city filter — sourced from the backend's
   // serviceable cities (falls back to the full India catalogue).
   cityGroups?: [string, string[]][];
+  // The logged-in customer's current event date/title — when set, the list
+  // narrows to vendors still open on that date.
+  eventDate?: string;
+  eventTitle?: string;
 }
 
 const CATEGORIES: (VendorCategory | 'All')[] = ['All', ...VENDOR_CATEGORIES];
@@ -90,6 +94,8 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
   selectedCategory: selectedCategoryProp,
   onCategoryChange,
   cityGroups,
+  eventDate: rawEventDate,
+  eventTitle,
 }) => {
   const groups = cityGroups && cityGroups.length > 0 ? cityGroups : STATIC_CITY_GROUPS;
   const [selectedCategory, setSelectedCategory] = useState<string>(selectedCategoryProp || 'All');
@@ -215,6 +221,22 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
     return 0;
   });
 
+  // Vendors free on the customer's event date: they listed that date and still
+  // have at least one session open on it. If none are, fall back to everyone so
+  // the customer can pick another date from a vendor's calendar.
+  const eventDate = rawEventDate ? rawEventDate.slice(0, 10) : '';
+  const [showAllDates, setShowAllDates] = useState(false);
+  useEffect(() => { setShowAllDates(false); }, [eventDate]);
+  const freeOnEventDate = (v: Vendor) =>
+    !!eventDate && (v.availableDates || []).includes(eventDate) && openSlots(v, eventDate).length > 0;
+  const dateMatches = eventDate ? filteredVendors.filter(freeOnEventDate) : [];
+  const narrowToDate = !!eventDate && dateMatches.length > 0 && !showAllDates;
+  const displayedVendors = narrowToDate ? dateMatches : filteredVendors;
+  const eventDateLabel = eventDate
+    ? new Date(`${eventDate}T00:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+    : '';
+  const categoryWord = selectedCategory !== 'All' ? `${selectedCategory} ` : '';
+
   return (
     <div id="vendor-marketplace-section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
@@ -223,7 +245,7 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
             Explore Verified Vendors
           </h2>
           <p className="text-slate-400 text-sm mt-1">
-            Showing {filteredVendors.length} premium event partners
+            Showing {displayedVendors.length} premium event partners
             {selectedCity !== 'All' ? ` in ${selectedCity}` : ' across India'}
           </p>
         </div>
@@ -405,8 +427,33 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
         </div>
       )}
 
+      {eventDate && filteredVendors.length > 0 && (
+        dateMatches.length > 0 ? (
+          <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3">
+            <p className="text-sm text-emerald-100">
+              {narrowToDate ? (
+                <>Showing <strong>{dateMatches.length}</strong> {categoryWord}vendor{dateMatches.length === 1 ? '' : 's'} available on <strong className="text-amber-300">{eventDateLabel}</strong>{eventTitle ? <> for <strong>{eventTitle}</strong></> : null}.</>
+              ) : (
+                <>Showing all {categoryWord}vendors. <strong>{dateMatches.length}</strong> of them {dateMatches.length === 1 ? 'is' : 'are'} available on <strong className="text-amber-300">{eventDateLabel}</strong>.</>
+              )}
+            </p>
+            <button type="button" onClick={() => setShowAllDates((v) => !v)}
+              className="shrink-0 text-xs font-bold text-emerald-300 hover:text-emerald-200 underline underline-offset-2">
+              {narrowToDate ? 'Show all vendors' : `Only vendors free on ${eventDateLabel}`}
+            </button>
+          </div>
+        ) : (
+          <div className="mb-6 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+            <p className="text-sm text-amber-100">
+              No {categoryWord}vendors are available on your event date <strong className="text-amber-300">{eventDateLabel}</strong>{eventTitle ? <> ({eventTitle})</> : null}.
+            </p>
+            <p className="text-xs text-amber-200/80 mt-1">Showing all vendors instead — open a vendor to see their other available dates and pick one of those.</p>
+          </div>
+        )
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredVendors.map((vendor) => {
+        {displayedVendors.map((vendor) => {
           const isWishlisted = wishlist.includes(vendor.id);
           const isCompared = selectedCompareIds.includes(vendor.id);
 
