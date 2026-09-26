@@ -20,6 +20,9 @@ html[data-theme="light"] .hd-item { transform-origin: 50% 0; animation: hd-sway 
 @keyframes hd-sway { 0%, 100% { transform: rotate(-2.5deg); } 50% { transform: rotate(2.5deg); } }
 @media (max-width: 767px) {
   html[data-theme="light"] .hd-item { animation-name: hd-sway-sm; }
+  /* Phones: just a small bell tucked into each top corner, above the hero badge. */
+  html[data-theme="light"] .hd-item[style*="left"] { left: 10px !important; }
+  html[data-theme="light"] .hd-item[style*="right"] { right: 10px !important; }
   @keyframes hd-sway-sm { 0%, 100% { transform: scale(0.72) rotate(-2.5deg); } 50% { transform: scale(0.72) rotate(2.5deg); } }
 }
 html[data-theme="light"] .hd-flame { transform-box: fill-box; transform-origin: 50% 100%; animation: hd-flicker 1.6s ease-in-out infinite; }

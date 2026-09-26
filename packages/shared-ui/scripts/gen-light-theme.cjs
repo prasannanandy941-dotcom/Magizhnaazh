@@ -235,6 +235,9 @@ ${L} .hd-item { transform-origin: 50% 0; animation: hd-sway 5.5s ease-in-out inf
 @keyframes hd-sway { 0%, 100% { transform: rotate(-2.5deg); } 50% { transform: rotate(2.5deg); } }
 @media (max-width: 767px) {
   ${L} .hd-item { animation-name: hd-sway-sm; }
+  /* Phones: just a small bell tucked into each top corner, above the hero badge. */
+  ${L} .hd-item[style*="left"] { left: 10px !important; }
+  ${L} .hd-item[style*="right"] { right: 10px !important; }
   @keyframes hd-sway-sm { 0%, 100% { transform: scale(0.72) rotate(-2.5deg); } 50% { transform: scale(0.72) rotate(2.5deg); } }
 }
 ${L} .hd-flame { transform-box: fill-box; transform-origin: 50% 100%; animation: hd-flicker 1.6s ease-in-out infinite; }

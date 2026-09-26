@@ -11,9 +11,10 @@ import React from 'react';
 type Item = { kind: 'diya' | 'bell'; length: number; offset: number; delay: number; mobile: boolean };
 
 // Per side: a long diya, a short bell and a medium diya. On phones only the
-// first two show (smaller), so the decor never crowds the content.
+// small bell shows in each top corner — the long diya threads would run behind
+// the hero badge and look tangled.
 const ITEMS: Item[] = [
-  { kind: 'diya', length: 230, offset: 14, delay: 0, mobile: true },
+  { kind: 'diya', length: 230, offset: 14, delay: 0, mobile: false },
   { kind: 'bell', length: 140, offset: 44, delay: 0.8, mobile: true },
   { kind: 'diya', length: 330, offset: 74, delay: 1.6, mobile: false },
 ];
