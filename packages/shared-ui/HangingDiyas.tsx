@@ -8,6 +8,18 @@ import React from 'react';
 // Colours are inline on purpose — Tailwind colour classes here would be
 // remapped by the generated light theme.
 
+// True when the site is running inside the Magizhnaazh customer or vendor
+// mobile app (a WebView), where the hanging decor is not shown. New app builds
+// set a marker before the page loads; builds already installed are recognised
+// by the fixed Chrome user-agent string both apps send.
+const APP_USER_AGENT =
+  'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36';
+export function isInsideMobileApp(): boolean {
+  if (typeof window === 'undefined') return false;
+  const w = window as any;
+  return Boolean(w.__MAGIZH_NATIVE_AUTH || w.__MAGIZH_VENDOR_APP) || navigator.userAgent === APP_USER_AGENT;
+}
+
 type Item = { kind: 'diya' | 'bell'; length: number; offset: number; delay: number; mobile: boolean };
 
 // Per side: a long diya, a short bell and a medium diya. On phones only the

@@ -22,6 +22,7 @@ export function WebApp({ token, user }: { token?: string | null; user?: unknown 
   // Seed the vendor site's own auth storage from our native session, so it opens
   // already logged in (vendor-web reads these two keys from localStorage).
   const injectedBefore = `try {
+    window.__MAGIZH_VENDOR_APP = true; // tells the vendor site it's inside the app
     if (!window.localStorage.getItem('magizhnaazh_theme_choice_vendor')) {
       window.localStorage.setItem('magizhnaazh_theme_choice_vendor', 'light');
     }

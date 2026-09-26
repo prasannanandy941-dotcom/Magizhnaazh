@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { ThemeToggle } from '../../../packages/shared-ui/theme';
-import { HangingDiyas } from '../../../packages/shared-ui/HangingDiyas';
+import { HangingDiyas, isInsideMobileApp } from '../../../packages/shared-ui/HangingDiyas';
 import { lazyNamed, LazyFallback, useInfiniteList, LoadMoreSentinel } from '../../../packages/shared-ui/lazy';
 
 // Lazy: the sign-in screen's code downloads only for signed-out visitors, so a
@@ -4559,7 +4559,8 @@ export function App() {
       {/* App-wide romantic-celebration backdrop, fixed behind all scrolling content */}
       <div id="app-bg" className="fixed inset-0 -z-10">
         <FloralGoldBackground />
-        <HangingDiyas />
+        {/* Website only — not inside the vendor mobile app. */}
+        {!isInsideMobileApp() && <HangingDiyas />}
       </div>
 
       {/* Header — auspicious gold banner */}

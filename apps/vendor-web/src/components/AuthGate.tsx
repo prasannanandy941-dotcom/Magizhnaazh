@@ -4,7 +4,7 @@ import { User, VENDOR_CATEGORIES, VendorCategory } from '../../../../packages/sh
 import { STATIC_CITY_GROUPS, checkPassword, isPasswordStrong } from '../../../../packages/shared-utils';
 import { login, register, fetchMyVendor, createVendor, sendOtp, verifyOtp, forgotPassword, resetPassword, googleLogin } from '../api';
 import { FloralGoldBackground } from './FloralGoldBackground';
-import { HangingDiyas } from '../../../../packages/shared-ui/HangingDiyas';
+import { HangingDiyas, isInsideMobileApp } from '../../../../packages/shared-ui/HangingDiyas';
 import { GoogleSignInButton } from './GoogleSignInButton';
 
 interface AuthGateProps {
@@ -227,7 +227,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
     <div className="auth-light relative min-h-screen text-slate-100 flex items-start sm:items-center justify-center p-4 py-8 font-sans">
       <div className="fixed inset-0 -z-10">
         <FloralGoldBackground />
-        <HangingDiyas />
+        {!isInsideMobileApp() && <HangingDiyas />}
       </div>
       <div className={`glass-card w-full rounded-3xl border border-slate-800 shadow-2xl overflow-hidden ${wideForm ? 'max-w-3xl' : 'max-w-md'}`}>
         <div className="px-6 py-6 border-b border-slate-800 bg-slate-900/60 flex items-center gap-3">
