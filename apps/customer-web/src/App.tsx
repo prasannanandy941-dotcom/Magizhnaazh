@@ -299,7 +299,7 @@ export function App() {
   // then reconciles with the server.
   useEffect(() => {
     // The customer's own choice (navbar toggle) always wins over the site default.
-    const local = (localStorage.getItem('magizhnaazh_theme') as 'light' | 'dark' | null) || 'dark';
+    const local = (localStorage.getItem('magizhnaazh_theme') as 'light' | 'dark' | null) || 'light';
     applyDefaultTheme('customer', local);
 
     let cancelled = false;

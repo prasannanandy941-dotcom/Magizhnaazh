@@ -241,8 +241,24 @@ ${L} .hd-flame { transform-box: fill-box; transform-origin: 50% 100%; animation:
 @keyframes hd-flicker { 0%, 100% { transform: scale(1, 1); opacity: 1; } 30% { transform: scale(0.9, 1.08); } 60% { transform: scale(1.06, 0.94); opacity: 0.88; } }
 ${L} .hd-glow { animation: hd-glow 2.4s ease-in-out infinite; }
 @keyframes hd-glow { 0%, 100% { opacity: 0.75; } 50% { opacity: 1; } }
+/* Rising micro-delicate Magizham-Poo blossoms & luminous 24K gold bokeh orbs */
+${L} .mp-rising-blossom { animation: mp-rise-blossom 8.5s ease-in-out infinite; will-change: transform, opacity; }
+@keyframes mp-rise-blossom {
+  0% { transform: translateY(20px) translateX(0px) rotate(0deg) scale(0.85); opacity: 0; }
+  18% { opacity: 0.92; }
+  55% { transform: translateY(-85px) translateX(14px) rotate(110deg) scale(1); opacity: 0.95; }
+  85% { opacity: 0.8; }
+  100% { transform: translateY(-185px) translateX(-10px) rotate(220deg) scale(0.85); opacity: 0; }
+}
+${L} .mp-rising-bokeh { animation: mp-rise-bokeh 7s ease-in-out infinite; will-change: transform, opacity; }
+@keyframes mp-rise-bokeh {
+  0% { transform: translateY(25px) translateX(0px) scale(0.7); opacity: 0; }
+  25% { opacity: 0.88; }
+  60% { transform: translateY(-95px) translateX(-12px) scale(1.15); opacity: 0.95; }
+  100% { transform: translateY(-200px) translateX(10px) scale(0.75); opacity: 0; }
+}
 @media (prefers-reduced-motion: reduce) {
-  ${L} .hd-item, ${L} .hd-flame, ${L} .hd-glow { animation: none; }
+  ${L} .hd-item, ${L} .hd-flame, ${L} .hd-glow, ${L} .mp-rising-blossom, ${L} .mp-rising-bokeh { animation: none; }
 }
 /* Boxes without an explicit border colour get black outlines too (zero-specificity
    element selector, so any coloured border utility still wins). */

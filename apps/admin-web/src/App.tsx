@@ -1,5 +1,6 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { ThemeToggle, applyDefaultTheme } from '../../../packages/shared-ui/theme';
+import { HangingDiyas } from '../../../packages/shared-ui/HangingDiyas';
 import {
   ShieldCheck,
   LogOut,
@@ -102,7 +103,7 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    const local = (localStorage.getItem(THEME_KEY) as 'light' | 'dark' | null) || 'dark';
+    const local = (localStorage.getItem(THEME_KEY) as 'light' | 'dark' | null) || 'light';
     applyDefaultTheme('admin', local);
     if (!token) return;
     fetchSettings(token)
@@ -140,6 +141,7 @@ export function App() {
       {/* App-wide romantic-celebration backdrop, fixed behind all scrolling content */}
       <div id="app-bg" className="fixed inset-0 -z-10">
         <FloralGoldBackground />
+        <HangingDiyas />
       </div>
 
       {/* Header */}

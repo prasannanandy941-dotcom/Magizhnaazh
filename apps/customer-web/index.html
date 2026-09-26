@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -18,8 +18,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
       <script>
-      // Apply the saved light/dark theme before first paint (no dark flash).
-      try { var t = localStorage.getItem('magizhnaazh_theme_choice_customer')||localStorage.getItem('magizhnaazh_theme'); if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+      // Apply the saved light/dark theme before first paint (default to light).
+      try { var t = localStorage.getItem('magizhnaazh_theme_choice_customer')||localStorage.getItem('magizhnaazh_theme')||'light'; document.documentElement.setAttribute('data-theme', t === 'dark' ? 'dark' : 'light'); } catch (e) {}
     </script>
   </head>
   <body class="bg-slate-950 text-slate-100 antialiased min-h-screen">

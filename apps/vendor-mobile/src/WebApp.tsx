@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet, BackHandle
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import { colors } from './theme';
+import { RisingMagizhamOverlay } from './components/FloralBackground';
 
 // The live vendor portal — loaded inside the app so the mobile experience is
 // identical to the web, with every feature, always in sync with the site.
@@ -20,12 +21,16 @@ export function WebApp({ token, user }: { token?: string | null; user?: unknown 
 
   // Seed the vendor site's own auth storage from our native session, so it opens
   // already logged in (vendor-web reads these two keys from localStorage).
-  const injectedBefore = token
-    ? `try {
-         window.localStorage.setItem('magizhnaazh_vendor_token', ${JSON.stringify(token)});
-         window.localStorage.setItem('magizhnaazh_vendor_user', ${JSON.stringify(JSON.stringify(user ?? null))});
-       } catch (e) {} true;`
-    : 'true;';
+  const injectedBefore = `try {
+    if (!window.localStorage.getItem('magizhnaazh_theme_choice_vendor')) {
+      window.localStorage.setItem('magizhnaazh_theme_choice_vendor', 'light');
+    }
+    document.documentElement.setAttribute('data-theme', window.localStorage.getItem('magizhnaazh_theme_choice_vendor') || 'light');
+    ${token
+      ? `window.localStorage.setItem('magizhnaazh_vendor_token', ${JSON.stringify(token)});
+         window.localStorage.setItem('magizhnaazh_vendor_user', ${JSON.stringify(JSON.stringify(user ?? null))});`
+      : ''}
+  } catch (e) {} true;`;
 
   // Android hardware back button navigates the web history instead of exiting.
   useEffect(() => {
@@ -81,6 +86,9 @@ export function WebApp({ token, user }: { token?: string | null; user?: unknown 
           <ActivityIndicator color={colors.primary} size="large" />
         </View>
       )}
+
+      {/* Floating Micro-Delicate Rising Magizham-Poo & 24K Gold Bokeh Overlay */}
+      <RisingMagizhamOverlay />
 
       {/* Floating refresh — reloads the live site (e.g. after a deploy). */}
       <TouchableOpacity style={styles.refreshBtn} onPress={() => ref.current?.reload()} activeOpacity={0.8}>

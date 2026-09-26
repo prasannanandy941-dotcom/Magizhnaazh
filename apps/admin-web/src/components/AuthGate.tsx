@@ -3,6 +3,7 @@ import { ShieldCheck, LogIn, Loader2, Eye, EyeOff } from 'lucide-react';
 import { User } from '../../../../packages/shared-types';
 import { login, googleLogin } from '../api';
 import { FloralGoldBackground } from './FloralGoldBackground';
+import { HangingDiyas } from '../../../../packages/shared-ui/HangingDiyas';
 import { GoogleSignInButton } from './GoogleSignInButton';
 
 interface AuthGateProps {
@@ -61,6 +62,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
     <div className="relative min-h-screen text-slate-100 flex items-center justify-center p-4 font-sans">
       <div className="fixed inset-0 -z-10">
         <FloralGoldBackground />
+        <HangingDiyas />
       </div>
       <div className="bg-white max-w-md w-full rounded-3xl border border-slate-200 shadow-2xl overflow-hidden">
         <div className="px-6 py-6 border-b border-slate-200 bg-slate-50 flex items-center gap-3">

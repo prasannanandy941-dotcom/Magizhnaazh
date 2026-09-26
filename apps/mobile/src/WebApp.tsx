@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet, BackHandle
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import { colors } from './theme';
+import { RisingMagizhamOverlay } from './components/FloralBackground';
 
 // The live customer website — loaded inside the app so the mobile experience is
 // identical to the web, with every feature, always in sync with the site.
@@ -30,6 +31,11 @@ export function WebApp({ token, user, onLoginRequired, onLogout }: {
   // __MAGIZH_NATIVE_AUTH tells the site to send sign-in requests back to us.
   const injectedBefore = `try {
        window.__MAGIZH_NATIVE_AUTH = true;
+       if (!window.localStorage.getItem('magizhnaazh_theme_choice_customer')) {
+         window.localStorage.setItem('magizhnaazh_theme_choice_customer', 'light');
+         window.localStorage.setItem('magizhnaazh_theme', 'light');
+       }
+       document.documentElement.setAttribute('data-theme', window.localStorage.getItem('magizhnaazh_theme_choice_customer') || 'light');
        ${token
          ? `window.localStorage.setItem('accessToken', ${JSON.stringify(token)});
             window.localStorage.setItem('user', ${JSON.stringify(JSON.stringify(user ?? null))});`
@@ -145,6 +151,9 @@ export function WebApp({ token, user, onLoginRequired, onLogout }: {
           <ActivityIndicator color={colors.primary} size="large" />
         </View>
       )}
+
+      {/* Floating Micro-Delicate Rising Magizham-Poo & 24K Gold Bokeh Overlay */}
+      <RisingMagizhamOverlay />
 
       {/* Floating refresh — reloads the live site (e.g. after a deploy). */}
       <TouchableOpacity style={styles.refreshBtn} onPress={() => ref.current?.reload()} activeOpacity={0.8}>
