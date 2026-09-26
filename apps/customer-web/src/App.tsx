@@ -567,7 +567,9 @@ export function App() {
       {/* App-wide gold + olive floral backdrop, fixed behind all scrolling content */}
       <div id="app-bg" className="fixed inset-0 -z-10">
         <FloralGoldBackground />
-        <HangingDiyas />
+        {/* Hanging diyas/bells on the website only — not inside the customer
+            mobile app (which sets __MAGIZH_NATIVE_AUTH before the page loads). */}
+        {!(window as any).__MAGIZH_NATIVE_AUTH && <HangingDiyas />}
       </div>
 
       <Header
