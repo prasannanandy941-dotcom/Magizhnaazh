@@ -67,6 +67,35 @@ export function AvailabilityCalendar({
   const nextOpen = upcomingOpen.find((d) => monthIndex(d) > month);
   const expiredThisMonth = cells.filter((k) => k && stateOf(k) === 'expired').length;
 
+  // Legend filter: tap a legend item to highlight just those days (others dim)
+  // and list them across all months. Tap it again to clear.
+  type LegendKey = 'available' | 'limited' | 'booked' | 'unavailable' | 'expired';
+  const [filter, setFilter] = useState<LegendKey | null>(null);
+  const listedKeys = [...new Set([...available, ...booked])].sort();
+  const datesFor = (f: LegendKey) =>
+    f === 'unavailable' ? [] : listedKeys.filter((k) => stateOf(k) === f);
+  const filteredDates = filter ? datesFor(filter) : [];
+  const toggleFilter = (f: LegendKey) => {
+    const next = filter === f ? null : f;
+    setFilter(next);
+    // Jump to the first matching month if this one has none of them.
+    if (next && next !== 'unavailable') {
+      const matches = datesFor(next);
+      if (matches.length && !matches.some((k) => monthIndex(k) === month)) {
+        setMonth(Math.max(minMonth, Math.min(maxMonth, monthIndex(matches[0]))));
+      }
+    }
+  };
+  const fmt = (k: string) => new Date(`${k}T00:00:00`).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+  const LEGEND: { key: LegendKey; label: string; swatch: string }[] = [
+    { key: 'available', label: 'Available', swatch: 'bg-emerald-500/15 border border-emerald-500/50' },
+    { key: 'limited', label: 'Few slots left', swatch: 'bg-amber-500/15 border border-amber-500/50' },
+    { key: 'booked', label: 'Booked', swatch: 'bg-rose-950/30 border border-rose-900/50' },
+    { key: 'unavailable', label: 'Not available', swatch: 'border border-slate-700' },
+    { key: 'expired', label: 'Date passed', swatch: 'bg-slate-800/60 border border-dashed border-slate-600' },
+  ];
+  const matchesFilter = (state: DayState) => !filter || state === filter || (filter === 'unavailable' && state === 'past');
+
   const cellClass: Record<DayState, string> = {
     past: 'text-slate-600 cursor-not-allowed',
     expired: 'bg-slate-800/60 border border-dashed border-slate-600 text-slate-500 line-through cursor-not-allowed',
@@ -137,9 +166,9 @@ export function AvailabilityCalendar({
               onClick={() => clickable && onPick(key)}
               title={titleOf[state]}
               aria-label={`${day} ${monthLabel}: ${titleOf[state]}`}
-              className={`relative aspect-square max-h-12 w-full rounded-xl text-xs sm:text-sm flex items-center justify-center transition-colors ${
+              className={`relative aspect-square max-h-12 w-full rounded-xl text-xs sm:text-sm flex items-center justify-center transition-all ${
                 selected ? 'bg-indigo-600 border border-indigo-600 text-white font-bold' : cellClass[state]
-              }`}
+              } ${!matchesFilter(state) ? 'opacity-20' : filter ? 'ring-2 ring-amber-400/70' : ''}`}
             >
               {day}
               {key === todayKey && (
@@ -160,16 +189,62 @@ export function AvailabilityCalendar({
         </button>
       )}
 
-      {/* Legend */}
-      <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-[11px] text-slate-400">
-        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-emerald-500/15 border border-emerald-500/50" /> Available</span>
-        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-amber-500/15 border border-amber-500/50" /> Few slots left</span>
-        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-rose-950/30 border border-rose-900/50" /> Booked</span>
-        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded border border-slate-700" /> Not available</span>
-        {expiredThisMonth > 0 && (
-          <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-slate-800/60 border border-dashed border-slate-600" /> Date passed</span>
-        )}
+      {/* Legend — each item is a filter button */}
+      <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5 text-[11px] text-slate-400">
+        {LEGEND.filter((l) => l.key !== 'expired' || listedKeys.some((k) => stateOf(k) === 'expired')).map((l) => {
+          const active = filter === l.key;
+          return (
+            <button
+              key={l.key}
+              type="button"
+              onClick={() => toggleFilter(l.key)}
+              aria-pressed={active}
+              title={active ? 'Show all dates' : `Show only: ${l.label}`}
+              className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border transition-colors ${
+                active ? 'border-amber-400/70 bg-amber-500/10 text-amber-200 font-semibold' : 'border-transparent hover:border-slate-700'
+              }`}
+            >
+              <span className={`w-3 h-3 rounded ${l.swatch}`} /> {l.label}
+            </button>
+          );
+        })}
       </div>
+
+      {/* Dates matching the chosen legend item, across all months */}
+      {filter && (
+        <div className="mt-3 rounded-xl border border-slate-800 bg-slate-950/40 p-3">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <p className="text-[11px] font-bold uppercase text-slate-400">
+              {LEGEND.find((l) => l.key === filter)?.label} {filter !== 'unavailable' && `(${filteredDates.length})`}
+            </p>
+            <button type="button" onClick={() => setFilter(null)} className="text-[11px] font-semibold text-amber-400 hover:text-amber-300">
+              Show all
+            </button>
+          </div>
+          {filter === 'unavailable' ? (
+            <p className="text-xs text-slate-400">Every day that isn't coloured is not open for booking — they're highlighted above.</p>
+          ) : filteredDates.length === 0 ? (
+            <p className="text-xs text-slate-400">No dates in this group.</p>
+          ) : (
+            <div className="flex flex-wrap gap-1.5">
+              {filteredDates.map((k) => {
+                const bookable = filter === 'available' || filter === 'limited';
+                return (
+                  <button
+                    key={k}
+                    type="button"
+                    onClick={() => (bookable ? onPick(k) : setMonth(Math.max(minMonth, Math.min(maxMonth, monthIndex(k)))))}
+                    className={`px-2.5 py-1 rounded-lg text-xs border ${bookable ? cellClass[filter] : `${cellClass[filter]} !cursor-pointer`}`}
+                    title={bookable ? 'Tap to book this date' : 'Show on the calendar'}
+                  >
+                    {fmt(k)}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
