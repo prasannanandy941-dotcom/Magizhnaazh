@@ -3,6 +3,7 @@ import { X, Star, MapPin, Check, ShieldCheck, Upload, Calendar as CalendarIcon, 
 import { Vendor, Review, Event, getVendorTrustBadges, getLiveDeals, bestDealForAmount, AVAILABILITY_SLOTS, isSlotBooked, openSlots, offeredSlotIds, slotLabel, slotsLeft, slotCapacityFor } from '../../../../packages/shared-types';
 import { fetchVendorById, uploadReferenceImage, fetchVendorReviews, fetchVendorRecommendations } from '../api';
 import { indexBy } from '../../../../packages/shared-utils/dataStructures';
+import { AvailabilityCalendar } from './AvailabilityCalendar';
 import { PortfolioGrid } from './Portfolio';
 import { DecorationGrid } from './DecorationThemes';
 import { MakeupGrid } from './MakeupLooks';
@@ -279,6 +280,9 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
   const [showDateGate, setShowDateGate] = useState(
     () => !isAuthenticated && ((initialVendor.availableDates?.length ?? 0) > 0 || (initialVendor.bookedDates?.length ?? 0) > 0),
   );
+  // Any listed date from today onwards (past dates stay visible on the calendar, faded).
+  const todayIso = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  const hasUpcomingDates = (vendor.availableDates || []).some((d) => d >= todayIso);
   const pickGateDate = (d: string) => {
     setSelectedEventDate(d);
     setActiveTab('availability');
@@ -634,33 +638,12 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
               <h3 className="font-display font-bold text-lg text-white">Availability</h3>
             </div>
             <p className="text-xs text-slate-400 mb-5">
-              {vendor.availableDates.length > 0
-                ? <>Dates {vendor.businessName} is open for booking. Tap a date to see sessions, packages and booking options.</>
-                : <>All of {vendor.businessName}'s listed dates are already booked.</>}
+              {hasUpcomingDates
+                ? <>Coloured dates are open for booking. Tap one to see sessions, packages and booking options.</>
+                : <>{vendor.businessName} has no upcoming open dates right now.</>}
             </p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {vendor.availableDates.map((d) => (
-                <button
-                  key={d}
-                  type="button"
-                  onClick={() => pickGateDate(d)}
-                  className="px-3 py-3 rounded-2xl border border-indigo-500/40 bg-indigo-600/15 text-indigo-100 font-bold text-sm hover:bg-indigo-600 hover:text-white hover:border-indigo-500 transition-colors"
-                >
-                  {new Date(d).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
-                </button>
-              ))}
-              {(vendor.bookedDates ?? []).map((d) => (
-                <span
-                  key={d}
-                  title="This date is already booked by another customer"
-                  className="px-3 py-3 rounded-2xl border border-rose-900/40 bg-rose-950/20 text-rose-400 font-semibold text-sm text-center cursor-not-allowed flex flex-col items-center gap-1"
-                >
-                  <span className="line-through">{new Date(d).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</span>
-                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 font-bold border border-rose-500/30">BOOKED</span>
-                </span>
-              ))}
-            </div>
-            {vendor.availableDates.length === 0 && (
+            <AvailabilityCalendar vendor={vendor} onPick={pickGateDate} />
+            {!hasUpcomingDates && (
               <button type="button" onClick={() => setShowDateGate(false)}
                 className="mt-5 text-xs font-semibold text-amber-400 hover:text-amber-300 underline underline-offset-2">
                 View {vendor.businessName}'s details anyway
@@ -2701,35 +2684,9 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
         {activeTab === 'availability' && (hasFixedAvailability || (vendor.bookedDates?.length ?? 0) > 0) && (
           <div className="px-6 py-4 border-t border-slate-800 bg-slate-900/60">
             <span className="text-[11px] font-bold text-slate-400 uppercase flex items-center gap-1.5 mb-2">
-              <CalendarIcon className="w-3.5 h-3.5 text-indigo-400" /> {vendor.businessName} is open on these dates — pick one to book
+              <CalendarIcon className="w-3.5 h-3.5 text-indigo-400" /> Pick a date to book {vendor.businessName}
             </span>
-            <div className="flex flex-wrap gap-2">
-              {vendor.availableDates.map((d) => (
-                <button
-                  key={d}
-                  type="button"
-                  onClick={() => setSelectedEventDate(d)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-                    selectedEventDate === d
-                      ? 'bg-indigo-600 border-indigo-600 text-white'
-                      : 'bg-slate-900 border-slate-800 text-slate-300 hover:text-white hover:border-indigo-500/50'
-                  }`}
-                >
-                  {new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                </button>
-              ))}
-              {/* Already-booked dates — visible with explicit BOOKED tag, not selectable. */}
-              {(vendor.bookedDates ?? []).map((d) => (
-                <span
-                  key={d}
-                  className="px-3 py-1.5 rounded-full text-xs font-semibold border border-rose-900/40 bg-rose-950/20 text-rose-400 line-through cursor-not-allowed flex items-center gap-1.5"
-                  title="This date is already booked by another customer"
-                >
-                  {new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                  <span className="not-italic no-underline text-[9px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 font-bold border border-rose-500/30">BOOKED</span>
-                </span>
-              ))}
-            </div>
+            <AvailabilityCalendar vendor={vendor} selectedDate={selectedEventDate} onPick={setSelectedEventDate} />
             {vendor.availableDates.length === 0 && (vendor.bookedDates?.length ?? 0) > 0 && (
               <p className="text-[11px] text-amber-400 mt-2">All listed dates are booked by other customers — check back or contact the vendor for other dates.</p>
             )}

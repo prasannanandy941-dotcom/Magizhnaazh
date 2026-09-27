@@ -220,6 +220,7 @@ html[data-theme="light"] .border-rose-500\/30 { border-color: rgba(176, 120, 108
 html[data-theme="light"] .border-rose-500\/40 { border-color: rgba(176, 120, 108, 0.55) !important; }
 html[data-theme="light"] .border-rose-500\/50 { border-color: rgba(176, 120, 108, 0.55) !important; }
 html[data-theme="light"] .border-rose-900\/40 { border-color: rgba(176, 120, 108, 0.55) !important; }
+html[data-theme="light"] .border-rose-900\/50 { border-color: rgba(176, 120, 108, 0.55) !important; }
 html[data-theme="light"] .border-sky-500\/30 { border-color: rgba(176, 120, 108, 0.55) !important; }
 html[data-theme="light"] .border-sky-500\/40 { border-color: rgba(176, 120, 108, 0.55) !important; }
 html[data-theme="light"] .border-slate-200 { border-color: rgba(176, 120, 108, 0.55) !important; }

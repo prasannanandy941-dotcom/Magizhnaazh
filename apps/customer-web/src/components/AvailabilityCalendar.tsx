@@ -1,0 +1,164 @@
+import React, { useMemo, useState } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Vendor, openSlots, offeredSlotIds } from '../../../../packages/shared-types';
+
+// Month-view calendar of a vendor's availability, so a customer sees at a
+// glance which days are open, nearly full, booked or not offered — instead of
+// a long list of date buttons when a vendor opens a whole month.
+
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+const pad = (n: number) => String(n).padStart(2, '0');
+const toKey = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const monthIndex = (key: string) => {
+  const [y, m] = key.split('-').map(Number);
+  return y * 12 + (m - 1);
+};
+
+type DayState = 'past' | 'available' | 'limited' | 'booked' | 'unavailable';
+
+export function AvailabilityCalendar({
+  vendor,
+  selectedDate,
+  onPick,
+}: {
+  vendor: Vendor;
+  selectedDate?: string;
+  onPick: (date: string) => void;
+}) {
+  const todayKey = toKey(new Date());
+  const available = useMemo(() => new Set(vendor.availableDates || []), [vendor.availableDates]);
+  const booked = useMemo(() => new Set(vendor.bookedDates || []), [vendor.bookedDates]);
+
+  const stateOf = (key: string): DayState => {
+    if (key < todayKey) return 'past';
+    if (booked.has(key)) return 'booked';
+    if (!available.has(key)) return 'unavailable';
+    const open = openSlots(vendor, key).length;
+    if (open === 0) return 'booked';
+    return open < offeredSlotIds(vendor, key).length ? 'limited' : 'available';
+  };
+
+  // Upcoming open dates, sorted — used to pick the starting month and for
+  // the "next available" shortcut.
+  const upcomingOpen = useMemo(
+    () => [...available].filter((d) => d >= todayKey && stateOf(d) !== 'booked').sort(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [available, booked, todayKey, vendor.bookedSlots, vendor.slotCapacity],
+  );
+
+  // Navigable range: this month up to the last month with any listed date.
+  const allKeys = [...available, ...booked].filter((d) => d >= todayKey.slice(0, 7));
+  const minMonth = monthIndex(todayKey);
+  const maxMonth = Math.max(minMonth, ...allKeys.map(monthIndex));
+  const [month, setMonth] = useState(() => (upcomingOpen[0] ? monthIndex(upcomingOpen[0]) : minMonth));
+
+  const year = Math.floor(month / 12);
+  const mon = month % 12;
+  const first = new Date(year, mon, 1);
+  const daysInMonth = new Date(year, mon + 1, 0).getDate();
+  const cells: (string | null)[] = [
+    ...Array.from({ length: first.getDay() }, () => null),
+    ...Array.from({ length: daysInMonth }, (_, i) => toKey(new Date(year, mon, i + 1))),
+  ];
+  const monthLabel = first.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+  const openThisMonth = cells.filter((k) => k && (stateOf(k) === 'available' || stateOf(k) === 'limited')).length;
+  const nextOpen = upcomingOpen.find((d) => monthIndex(d) > month);
+
+  const cellClass: Record<DayState, string> = {
+    past: 'text-slate-600 cursor-not-allowed',
+    unavailable: 'text-slate-500 cursor-not-allowed',
+    booked: 'bg-rose-950/30 border border-rose-900/50 text-rose-400/80 line-through cursor-not-allowed',
+    available: 'bg-emerald-500/15 border border-emerald-500/50 text-emerald-200 font-bold hover:bg-emerald-500/30 cursor-pointer',
+    limited: 'bg-amber-500/15 border border-amber-500/50 text-amber-200 font-bold hover:bg-amber-500/30 cursor-pointer',
+  };
+  const titleOf: Record<DayState, string> = {
+    past: 'Past date',
+    unavailable: 'Not available',
+    booked: 'Already booked',
+    available: 'Available — tap to book',
+    limited: 'Few sessions left — tap to book',
+  };
+
+  return (
+    <div className="w-full max-w-md mx-auto rounded-2xl border border-slate-800 bg-slate-900/40 p-3 sm:p-4">
+      {/* Month header */}
+      <div className="flex items-center justify-between gap-2 mb-3">
+        <button
+          type="button"
+          onClick={() => setMonth((m) => m - 1)}
+          disabled={month <= minMonth}
+          aria-label="Previous month"
+          className="w-9 h-9 rounded-xl border border-slate-700 flex items-center justify-center text-slate-300 hover:border-amber-400/60 disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+        <div className="text-center">
+          <p className="font-display font-bold text-base text-white">{monthLabel}</p>
+          <p className="text-[11px] text-slate-400">
+            {openThisMonth > 0 ? `${openThisMonth} date${openThisMonth === 1 ? '' : 's'} open` : 'No open dates this month'}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setMonth((m) => m + 1)}
+          disabled={month >= maxMonth}
+          aria-label="Next month"
+          className="w-9 h-9 rounded-xl border border-slate-700 flex items-center justify-center text-slate-300 hover:border-amber-400/60 disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Weekday header + day grid */}
+      <div className="grid grid-cols-7 gap-1 sm:gap-1.5 text-center">
+        {WEEKDAYS.map((w) => (
+          <div key={w} className="text-[10px] sm:text-[11px] font-bold uppercase text-slate-500 py-1">{w}</div>
+        ))}
+        {cells.map((key, i) => {
+          if (!key) return <div key={`blank-${i}`} />;
+          const state = stateOf(key);
+          const clickable = state === 'available' || state === 'limited';
+          const selected = key === selectedDate;
+          const day = Number(key.slice(8));
+          return (
+            <button
+              key={key}
+              type="button"
+              disabled={!clickable}
+              onClick={() => clickable && onPick(key)}
+              title={titleOf[state]}
+              aria-label={`${day} ${monthLabel}: ${titleOf[state]}`}
+              className={`relative aspect-square max-h-12 w-full rounded-xl text-xs sm:text-sm flex items-center justify-center transition-colors ${
+                selected ? 'bg-indigo-600 border border-indigo-600 text-white font-bold' : cellClass[state]
+              }`}
+            >
+              {day}
+              {key === todayKey && (
+                <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-amber-400" />
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {openThisMonth === 0 && nextOpen && (
+        <button
+          type="button"
+          onClick={() => setMonth(monthIndex(nextOpen))}
+          className="mt-3 w-full text-xs font-semibold text-amber-400 hover:text-amber-300 underline underline-offset-2"
+        >
+          Next available: {new Date(`${nextOpen}T00:00:00`).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })} →
+        </button>
+      )}
+
+      {/* Legend */}
+      <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-[11px] text-slate-400">
+        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-emerald-500/15 border border-emerald-500/50" /> Available</span>
+        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-amber-500/15 border border-amber-500/50" /> Few slots left</span>
+        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-rose-950/30 border border-rose-900/50" /> Booked</span>
+        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded border border-slate-700" /> Not available</span>
+      </div>
+    </div>
+  );
+}
