@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { usePagination, Pagination } from '../../../../packages/shared-ui/pagination';
 import { Loader2, ChevronDown } from 'lucide-react';
 import { Vendor, VENDOR_CATEGORIES } from '../../../../packages/shared-types';
 import { fetchVendors } from '../api';
@@ -39,6 +40,9 @@ export const CategoriesTab: React.FC<{ token: string }> = () => {
     return map;
   }, [vendors]);
 
+  // Paging: 10 categories per page.
+  const pager = usePagination(VENDOR_CATEGORIES as string[], 10);
+
   return (
     <div className="space-y-6">
       <div>
@@ -57,7 +61,7 @@ export const CategoriesTab: React.FC<{ token: string }> = () => {
           </div>
         ) : (
           <div className="divide-y divide-slate-800/60">
-            {VENDOR_CATEGORIES.map((name) => {
+            {pager.pageItems.map((name) => {
               const list = byCategory[name] || [];
               const isOther = name === 'Other';
               const isOpen = expanded === name;
@@ -101,6 +105,7 @@ export const CategoriesTab: React.FC<{ token: string }> = () => {
                 </div>
               );
             })}
+            <Pagination pager={pager} label="categories" />
           </div>
         )}
       </div>

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { usePagination, Pagination } from '../../../../packages/shared-ui/pagination';
 import { Loader2, MapPin, RefreshCw, Database, Sparkles } from 'lucide-react';
 import { Booking, City, Event } from '../../../../packages/shared-types';
 import { fetchLocations, fetchBookings, fetchEvents } from '../api';
@@ -75,6 +76,9 @@ export const LocationsTab: React.FC<{ token: string }> = ({ token }) => {
     }
     return Object.values(byState).sort((a, b) => b.bookings - a.bookings);
   }, [bookings, eventCityById, cityToState]);
+
+  // Paging: 10 states per page.
+  const pager = usePagination(rows, 10, rows.length);
 
   const totalBookings = bookings.length;
   const statesWithActivity = rows.filter((r) => r.state !== 'Unknown').length;
@@ -155,7 +159,7 @@ export const LocationsTab: React.FC<{ token: string }> = ({ token }) => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
-                {rows.map((r) => (
+                {pager.pageItems.map((r) => (
                   <tr key={r.state} className="hover:bg-slate-900/40">
                     <td className="px-4 py-3 font-bold text-white">{r.state}</td>
                     <td className="px-4 py-3 text-right text-slate-200">{r.bookings}</td>
@@ -168,6 +172,7 @@ export const LocationsTab: React.FC<{ token: string }> = ({ token }) => {
                 ))}
               </tbody>
             </table>
+            <Pagination pager={pager} label="states" />
           </div>
         )}
       </div>

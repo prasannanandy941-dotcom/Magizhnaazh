@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { usePagination, Pagination } from '../../../../packages/shared-ui/pagination';
 import { Loader2, Wallet, CheckCircle2 } from 'lucide-react';
 import { fetchSettlements, markSettlement, Settlement, SettlementTotals } from '../api';
 
@@ -29,6 +30,8 @@ export const SettlementsTab: React.FC<{ token: string }> = ({ token }) => {
   };
 
   const rows = settlements.filter((s) => filter === 'all' || s.settlementStatus === filter);
+  // Paging: 10 settlements per page; back to page 1 when the filter changes.
+  const pager = usePagination(rows, 10, filter);
 
   return (
     <div className="space-y-6">
@@ -68,6 +71,7 @@ export const SettlementsTab: React.FC<{ token: string }> = ({ token }) => {
         ) : rows.length === 0 ? (
           <div className="p-8 text-center text-sm text-slate-400">No settlements to show.</div>
         ) : (
+          <>
           <table className="w-full">
             <thead>
               <tr className="text-left text-[11px] uppercase tracking-wide text-slate-500 border-b border-slate-800">
@@ -81,7 +85,7 @@ export const SettlementsTab: React.FC<{ token: string }> = ({ token }) => {
               </tr>
             </thead>
             <tbody>
-              {rows.map((s) => (
+              {pager.pageItems.map((s) => (
                 <tr key={s.bookingId} className="border-b border-slate-800/60 text-sm">
                   <td className="p-3">
                     <span className="text-white font-semibold">{s.bookingNumber}</span>
@@ -112,6 +116,8 @@ export const SettlementsTab: React.FC<{ token: string }> = ({ token }) => {
               ))}
             </tbody>
           </table>
+          <Pagination pager={pager} label="settlements" />
+          </>
         )}
       </div>
     </div>

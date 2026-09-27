@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { usePagination, Pagination } from '../../../../packages/shared-ui/pagination';
 import { 
   Ticket, 
   Tag, 
@@ -127,6 +128,11 @@ export const CouponsTab: React.FC<{ token: string }> = ({ token }) => {
       return true;
     });
   }, [allVendorDeals, statusFilter, categoryFilter, searchTerm]);
+
+  // Paging: vendor offers and platform coupons, 10 per page each. Offers go
+  // back to page 1 when a filter or the search changes.
+  const offersPager = usePagination(filteredDeals, 10, [statusFilter, categoryFilter, searchTerm].join('|'));
+  const couponsPager = usePagination(coupons, 10, coupons.length);
 
   // Stats
   const totalOffersCount = allVendorDeals.length;
@@ -450,7 +456,7 @@ export const CouponsTab: React.FC<{ token: string }> = ({ token }) => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/60 font-medium">
-                    {filteredDeals.map(({ vendorId, vendorName, vendorCategory, vendorCity, deal }) => {
+                    {offersPager.pageItems.map(({ vendorId, vendorName, vendorCategory, vendorCity, deal }) => {
                       const live = isDealLive(deal);
                       const isBusy = busyId === deal.id;
 
@@ -564,6 +570,7 @@ export const CouponsTab: React.FC<{ token: string }> = ({ token }) => {
                     })}
                   </tbody>
                 </table>
+                <Pagination pager={offersPager} label="offers" />
               </div>
             </div>
           )}
@@ -660,7 +667,7 @@ export const CouponsTab: React.FC<{ token: string }> = ({ token }) => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/60 font-medium">
-                    {coupons.map((c) => (
+                    {couponsPager.pageItems.map((c) => (
                       <tr key={c.id} className="hover:bg-slate-800/30 transition-colors">
                         <td className="py-3 px-4 font-mono font-bold text-white text-sm">{c.code}</td>
                         <td className="py-3 px-4 text-amber-400 font-bold font-mono">{c.discountPercent}% OFF</td>
@@ -689,6 +696,7 @@ export const CouponsTab: React.FC<{ token: string }> = ({ token }) => {
                     ))}
                   </tbody>
                 </table>
+                <Pagination pager={couponsPager} label="coupons" />
               </div>
             )}
           </div>
