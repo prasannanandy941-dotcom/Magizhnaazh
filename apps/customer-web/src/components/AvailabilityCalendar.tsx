@@ -67,8 +67,8 @@ export function AvailabilityCalendar({
   const nextOpen = upcomingOpen.find((d) => monthIndex(d) > month);
   const expiredThisMonth = cells.filter((k) => k && stateOf(k) === 'expired').length;
 
-  // Legend filter: tap a legend item to highlight just those days (others dim)
-  // and list them across all months. Tap it again to clear.
+  // Legend filter: tap a legend item to highlight just those days in the
+  // calendar (others dim). Tap it again to clear.
   type LegendKey = 'available' | 'limited' | 'booked' | 'unavailable' | 'expired';
   const [filter, setFilter] = useState<LegendKey | null>(null);
   const listedKeys = [...new Set([...available, ...booked])].sort();
@@ -86,7 +86,6 @@ export function AvailabilityCalendar({
       }
     }
   };
-  const fmt = (k: string) => new Date(`${k}T00:00:00`).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
   const LEGEND: { key: LegendKey; label: string; swatch: string }[] = [
     { key: 'available', label: 'Available', swatch: 'bg-gradient-to-br from-emerald-500 to-teal-600' },
     { key: 'limited', label: 'Few slots left', swatch: 'bg-gradient-to-br from-amber-400 to-orange-500' },
@@ -136,11 +135,15 @@ export function AvailabilityCalendar({
               openThisMonth > 0 ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30' : 'bg-slate-800/70 text-slate-400 border border-slate-700'
             }`}
           >
-            {openThisMonth > 0
-              ? `${openThisMonth} date${openThisMonth === 1 ? '' : 's'} open`
-              : expiredThisMonth > 0
-                ? 'Open dates this month have passed'
-                : 'No open dates this month'}
+            {filter && filter !== 'unavailable'
+              ? filteredDates.length > 0
+                ? `Showing ${LEGEND.find((l) => l.key === filter)?.label.toLowerCase()} (${filteredDates.length})`
+                : `No ${LEGEND.find((l) => l.key === filter)?.label.toLowerCase()} dates`
+              : openThisMonth > 0
+                ? `${openThisMonth} date${openThisMonth === 1 ? '' : 's'} open`
+                : expiredThisMonth > 0
+                  ? 'Open dates this month have passed'
+                  : 'No open dates this month'}
           </span>
         </div>
         <button
@@ -228,41 +231,6 @@ export function AvailabilityCalendar({
         })}
       </div>
 
-      {/* Dates matching the chosen legend item, across all months */}
-      {filter && (
-        <div className="mt-3 rounded-xl border border-slate-800 bg-slate-950/40 p-3">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <p className="text-[11px] font-bold uppercase text-slate-400">
-              {LEGEND.find((l) => l.key === filter)?.label} {filter !== 'unavailable' && `(${filteredDates.length})`}
-            </p>
-            <button type="button" onClick={() => setFilter(null)} className="text-[11px] font-semibold text-amber-400 hover:text-amber-300">
-              Show all
-            </button>
-          </div>
-          {filter === 'unavailable' ? (
-            <p className="text-xs text-slate-400">Every day that isn't coloured is not open for booking — they're highlighted above.</p>
-          ) : filteredDates.length === 0 ? (
-            <p className="text-xs text-slate-400">No dates in this group.</p>
-          ) : (
-            <div className="flex flex-wrap gap-1.5">
-              {filteredDates.map((k) => {
-                const bookable = filter === 'available' || filter === 'limited';
-                return (
-                  <button
-                    key={k}
-                    type="button"
-                    onClick={() => (bookable ? onPick(k) : setMonth(Math.max(minMonth, Math.min(maxMonth, monthIndex(k)))))}
-                    className={`px-2.5 py-1 rounded-lg text-xs border ${bookable ? cellClass[filter] : `${cellClass[filter]} !cursor-pointer`}`}
-                    title={bookable ? 'Tap to book this date' : 'Show on the calendar'}
-                  >
-                    {fmt(k)}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }
