@@ -209,7 +209,7 @@ export function App() {
         </div>
 
         {/* Main content */}
-        <main className="flex-1 px-4 sm:px-6 py-8 max-w-6xl">
+        <main className="flex-1 min-w-0 w-full px-4 sm:px-6 lg:px-8 py-8">
           <Suspense fallback={<LazyFallback />}>
           {activeTab === 'dashboard' && <DashboardTab token={token} />}
           {activeTab === 'monitor' && (

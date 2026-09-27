@@ -82,7 +82,7 @@ export const LocationsTab: React.FC<{ token: string }> = ({ token }) => {
   const inr = (n: number) => `₹${n.toLocaleString('en-IN')}`;
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
+    <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="font-display font-bold text-2xl text-white flex items-center gap-2">
