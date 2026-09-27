@@ -19,6 +19,7 @@ export const FeedbackTab: React.FC<{ token: string }> = ({ token }) => {
 
   return (
     <CrudListPanel
+      itemLabel="feedback entries"
       title="Guest Event Feedback"
       subtitle="Anonymous feedback submitted by event guests."
       items={feedback}

@@ -32,6 +32,7 @@ export const ComplaintsTab: React.FC<{ token: string }> = ({ token }) => {
 
   return (
     <CrudListPanel
+      itemLabel="complaints"
       title="Guest & Customer Complaints"
       subtitle="Complaints tied to bookings/events. Submission API exists (POST /api/v1/complaints) — no dedicated submission UI yet in customer-web."
       items={complaints}

@@ -25,6 +25,7 @@ export const EventsTab: React.FC<{ token: string }> = ({ token }) => {
 
   return (
     <CrudListPanel
+      itemLabel="events"
       title="Platform Events"
       subtitle="All events created across every customer account."
       items={events}

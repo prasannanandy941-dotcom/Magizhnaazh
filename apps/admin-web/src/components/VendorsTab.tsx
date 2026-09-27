@@ -41,6 +41,7 @@ export const VendorsTab: React.FC<{ token: string }> = ({ token }) => {
 
   return (
     <CrudListPanel
+      itemLabel="vendors"
       title="Vendor Partners"
       subtitle="Review verification requests, approve new listings, and suspend partners that violate platform policy."
       items={vendors}

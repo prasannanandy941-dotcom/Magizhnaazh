@@ -19,6 +19,7 @@ export const BannersTab: React.FC<{ token: string }> = ({ token }) => {
 
   return (
     <CrudListPanel
+      itemLabel="banners"
       title="Promotional Banners"
       subtitle="Homepage promotional banners shown to customers."
       items={banners}

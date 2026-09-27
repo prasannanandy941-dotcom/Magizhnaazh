@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Loader2, Plus, Trash2 } from 'lucide-react';
-import { useInfiniteList, LoadMoreSentinel } from '../../../../packages/shared-ui/lazy';
+import { usePagination, Pagination } from '../../../../packages/shared-ui/pagination';
 
 export interface CrudColumn<T> {
   label: string;
@@ -15,6 +15,8 @@ export interface CrudField {
 }
 
 interface CrudListPanelProps<T> {
+  // What the rows are, for the pager's "Showing 1–10 of 45 users" line.
+  itemLabel?: string;
   title: string;
   subtitle?: string;
   items: T[];
@@ -44,13 +46,14 @@ export function CrudListPanel<T>({
   addLabel = 'Add',
   emptyText = 'Nothing here yet.',
   toolbar,
+  itemLabel = 'records',
 }: CrudListPanelProps<T>) {
   const [formValues, setFormValues] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  // Infinite scroll: 20 rows first, 20 more as the table's bottom scrolls into
-  // view. Resets when the list size changes (a filter or search changed).
-  const page = useInfiniteList(items, 20, items.length);
+  // Paging: 10 rows per page (changeable) with page numbers under the table.
+  // Goes back to page 1 when the list size changes (a filter or search changed).
+  const pager = usePagination(items, 10, items.length);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -119,7 +122,7 @@ export function CrudListPanel<T>({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60 text-slate-300">
-                {page.visible.map((item) => (
+                {pager.pageItems.map((item) => (
                   <tr key={rowKey(item)} className="hover:bg-slate-900/40">
                     {columns.map((c) => (
                       <td key={c.label} className="p-4">{c.render(item)}</td>
@@ -136,7 +139,7 @@ export function CrudListPanel<T>({
                 )}
               </tbody>
             </table>
-            <LoadMoreSentinel sentinelRef={page.sentinelRef} hasMore={page.hasMore} onClick={page.showMore} shown={page.shown} total={page.total} />
+            <Pagination pager={pager} label={itemLabel} />
           </div>
         )}
       </div>

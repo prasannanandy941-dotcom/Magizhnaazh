@@ -19,6 +19,7 @@ export const ReviewsTab: React.FC<{ token: string }> = ({ token }) => {
 
   return (
     <CrudListPanel
+      itemLabel="reviews"
       title="Vendor Reviews"
       subtitle="Verified customer reviews of vendors. Remove any that violate platform policy."
       items={reviews}

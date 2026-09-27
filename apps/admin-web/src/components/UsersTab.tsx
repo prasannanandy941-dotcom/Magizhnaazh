@@ -69,6 +69,7 @@ export const UsersTab: React.FC<{ token: string; currentUserId: string }> = ({ t
 
   return (
     <CrudListPanel
+      itemLabel="users"
       title="Platform Users"
       subtitle="Every registered account — customers, vendors, and admins."
       toolbar={filterTabs}

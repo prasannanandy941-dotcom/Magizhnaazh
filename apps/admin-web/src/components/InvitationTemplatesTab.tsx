@@ -19,6 +19,7 @@ export const InvitationTemplatesTab: React.FC<{ token: string }> = ({ token }) =
 
   return (
     <CrudListPanel
+      itemLabel="templates"
       title="Invitation Templates"
       subtitle="Templates available in the Canva-style invitation designer. New ones start with a blank canvas — customers fill it in."
       items={templates}

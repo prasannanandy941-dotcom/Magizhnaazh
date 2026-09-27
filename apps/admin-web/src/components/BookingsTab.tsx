@@ -31,6 +31,7 @@ export const BookingsTab: React.FC<{ token: string }> = ({ token }) => {
 
   return (
     <CrudListPanel
+      itemLabel="bookings"
       title="Platform Bookings"
       subtitle="All vendor bookings across every event."
       items={bookings}
