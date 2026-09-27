@@ -88,9 +88,9 @@ export function AvailabilityCalendar({
   };
   const fmt = (k: string) => new Date(`${k}T00:00:00`).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
   const LEGEND: { key: LegendKey; label: string; swatch: string }[] = [
-    { key: 'available', label: 'Available', swatch: 'bg-emerald-500/15 border border-emerald-500/50' },
-    { key: 'limited', label: 'Few slots left', swatch: 'bg-amber-500/15 border border-amber-500/50' },
-    { key: 'booked', label: 'Booked', swatch: 'bg-rose-950/30 border border-rose-900/50' },
+    { key: 'available', label: 'Available', swatch: 'bg-gradient-to-br from-emerald-500 to-teal-600' },
+    { key: 'limited', label: 'Few slots left', swatch: 'bg-gradient-to-br from-amber-400 to-orange-500' },
+    { key: 'booked', label: 'Booked', swatch: 'bg-rose-500/20 border border-rose-500/50' },
     { key: 'unavailable', label: 'Not available', swatch: 'border border-slate-700' },
     { key: 'expired', label: 'Date passed', swatch: 'bg-slate-800/60 border border-dashed border-slate-600' },
   ];
@@ -98,11 +98,11 @@ export function AvailabilityCalendar({
 
   const cellClass: Record<DayState, string> = {
     past: 'text-slate-600 cursor-not-allowed',
-    expired: 'bg-slate-800/60 border border-dashed border-slate-600 text-slate-500 line-through cursor-not-allowed',
-    unavailable: 'text-slate-500 cursor-not-allowed',
-    booked: 'bg-rose-950/30 border border-rose-900/50 text-rose-400/80 line-through cursor-not-allowed',
-    available: 'bg-emerald-500/15 border border-emerald-500/50 text-emerald-200 font-bold hover:bg-emerald-500/30 cursor-pointer',
-    limited: 'bg-amber-500/15 border border-amber-500/50 text-amber-200 font-bold hover:bg-amber-500/30 cursor-pointer',
+    expired: 'bg-slate-800/50 border border-dashed border-slate-600 text-slate-500 line-through cursor-not-allowed',
+    unavailable: 'text-slate-400 cursor-not-allowed',
+    booked: 'bg-rose-500/15 border border-rose-500/40 text-rose-300 line-through decoration-2 cursor-not-allowed',
+    available: 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white font-bold shadow-md shadow-emerald-500/30 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-emerald-500/40 cursor-pointer',
+    limited: 'bg-gradient-to-br from-amber-400 to-orange-500 text-slate-950 font-bold shadow-md shadow-amber-500/30 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-amber-500/40 cursor-pointer',
   };
   const titleOf: Record<DayState, string> = {
     past: 'Past date',
@@ -114,43 +114,57 @@ export function AvailabilityCalendar({
   };
 
   return (
-    <div className="w-full max-w-md mx-auto rounded-2xl border border-slate-800 bg-slate-900/40 p-3 sm:p-4">
+    <div className="w-full max-w-md mx-auto rounded-3xl border border-amber-500/25 bg-gradient-to-b from-[#1f1233] to-[#120a1e] p-3 sm:p-5 shadow-xl shadow-amber-900/10">
       {/* Month header */}
-      <div className="flex items-center justify-between gap-2 mb-3">
+      <div className="flex items-center justify-between gap-2 mb-4">
         <button
           type="button"
           onClick={() => setMonth((m) => m - 1)}
           disabled={month <= minMonth}
           aria-label="Previous month"
-          className="w-9 h-9 rounded-xl border border-slate-700 flex items-center justify-center text-slate-300 hover:border-amber-400/60 disabled:opacity-30 disabled:cursor-not-allowed"
+          className="w-10 h-10 rounded-full border border-amber-500/30 bg-slate-900/60 flex items-center justify-center text-amber-300 hover:bg-amber-500/15 hover:border-amber-400/70 transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
         >
           <ChevronLeft className="w-4 h-4" />
         </button>
         <div className="text-center">
-          <p className="font-display font-bold text-base text-white">{monthLabel}</p>
-          <p className="text-[11px] text-slate-400">
+          <p className="font-display font-extrabold text-xl leading-tight bg-gradient-to-r from-amber-200 via-amber-400 to-amber-200 bg-clip-text text-transparent">
+            {first.toLocaleDateString('en-IN', { month: 'long' })}
+            <span className="ml-1.5 text-base font-bold">{year}</span>
+          </p>
+          <span
+            className={`inline-block mt-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+              openThisMonth > 0 ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30' : 'bg-slate-800/70 text-slate-400 border border-slate-700'
+            }`}
+          >
             {openThisMonth > 0
               ? `${openThisMonth} date${openThisMonth === 1 ? '' : 's'} open`
               : expiredThisMonth > 0
                 ? 'Open dates this month have passed'
                 : 'No open dates this month'}
-          </p>
+          </span>
         </div>
         <button
           type="button"
           onClick={() => setMonth((m) => m + 1)}
           disabled={month >= maxMonth}
           aria-label="Next month"
-          className="w-9 h-9 rounded-xl border border-slate-700 flex items-center justify-center text-slate-300 hover:border-amber-400/60 disabled:opacity-30 disabled:cursor-not-allowed"
+          className="w-10 h-10 rounded-full border border-amber-500/30 bg-slate-900/60 flex items-center justify-center text-amber-300 hover:bg-amber-500/15 hover:border-amber-400/70 transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
         >
           <ChevronRight className="w-4 h-4" />
         </button>
       </div>
 
       {/* Weekday header + day grid */}
-      <div className="grid grid-cols-7 gap-1 sm:gap-1.5 text-center">
-        {WEEKDAYS.map((w) => (
-          <div key={w} className="text-[10px] sm:text-[11px] font-bold uppercase text-slate-500 py-1">{w}</div>
+      <div className="grid grid-cols-7 gap-1.5 sm:gap-2 text-center">
+        {WEEKDAYS.map((w, i) => (
+          <div
+            key={w}
+            className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-wide py-1.5 rounded-lg bg-slate-900/50 ${
+              i === 0 ? 'text-rose-300' : i === 6 ? 'text-amber-300' : 'text-slate-400'
+            }`}
+          >
+            {w}
+          </div>
         ))}
         {cells.map((key, i) => {
           if (!key) return <div key={`blank-${i}`} />;
@@ -166,13 +180,17 @@ export function AvailabilityCalendar({
               onClick={() => clickable && onPick(key)}
               title={titleOf[state]}
               aria-label={`${day} ${monthLabel}: ${titleOf[state]}`}
-              className={`relative aspect-square max-h-12 w-full rounded-xl text-xs sm:text-sm flex items-center justify-center transition-all ${
-                selected ? 'bg-indigo-600 border border-indigo-600 text-white font-bold' : cellClass[state]
-              } ${!matchesFilter(state) ? 'opacity-20' : filter ? 'ring-2 ring-amber-400/70' : ''}`}
+              className={`relative aspect-square max-h-12 w-full rounded-2xl text-xs sm:text-sm flex items-center justify-center transition-all duration-200 ${
+                selected
+                  ? 'bg-gradient-to-br from-indigo-500 to-violet-600 text-white font-bold ring-4 ring-indigo-400/30 scale-105 shadow-lg shadow-indigo-500/40'
+                  : cellClass[state]
+              } ${key === todayKey && !selected ? 'ring-2 ring-amber-400/80' : ''} ${
+                !matchesFilter(state) ? 'opacity-20' : filter ? 'ring-2 ring-amber-400/70' : ''
+              }`}
             >
               {day}
               {key === todayKey && (
-                <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-amber-400" />
+                <span className="absolute -top-1.5 left-1/2 -translate-x-1/2 px-1 rounded bg-amber-400 text-[7px] font-extrabold uppercase leading-3 text-slate-950">Today</span>
               )}
             </button>
           );
