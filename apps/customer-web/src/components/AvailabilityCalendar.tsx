@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 import { Vendor, openSlots, offeredSlotIds } from '../../../../packages/shared-types';
 
 // Month-view calendar of a vendor's availability, so a customer sees at a
@@ -48,10 +48,12 @@ export function AvailabilityCalendar({
     [available, booked, todayKey, vendor.bookedSlots, vendor.slotCapacity],
   );
 
-  // Navigable range: this month up to the last month with any listed date.
+  // Navigable range: this month through the next 2 years (or further if the
+  // vendor has listed dates beyond that), so customers can plan any month.
   const allKeys = [...available, ...booked].filter((d) => d >= todayKey.slice(0, 7));
   const minMonth = monthIndex(todayKey);
-  const maxMonth = Math.max(minMonth, ...allKeys.map(monthIndex));
+  const maxMonth = Math.max(minMonth + 23, ...allKeys.map(monthIndex));
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [month, setMonth] = useState(() => (upcomingOpen[0] ? monthIndex(upcomingOpen[0]) : minMonth));
 
   const year = Math.floor(month / 12);
@@ -125,11 +127,18 @@ export function AvailabilityCalendar({
         >
           <ChevronLeft className="w-4 h-4" />
         </button>
-        <div className="text-center">
-          <p className="font-display font-extrabold text-xl leading-tight bg-gradient-to-r from-amber-200 via-amber-400 to-amber-200 bg-clip-text text-transparent">
+        <div className="text-center flex flex-col items-center">
+          <button
+            type="button"
+            onClick={() => setShowMonthPicker((v) => !v)}
+            aria-expanded={showMonthPicker}
+            title="Jump to a month"
+            className="font-display font-extrabold text-xl leading-tight bg-gradient-to-r from-amber-200 via-amber-400 to-amber-200 bg-clip-text text-transparent inline-flex items-center gap-1"
+          >
             {first.toLocaleDateString('en-IN', { month: 'long' })}
-            <span className="ml-1.5 text-base font-bold">{year}</span>
-          </p>
+            <span className="text-base font-bold">{year}</span>
+            <ChevronDown className={`w-4 h-4 text-amber-400 transition-transform ${showMonthPicker ? 'rotate-180' : ''}`} />
+          </button>
           <span
             className={`inline-block mt-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
               openThisMonth > 0 ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30' : 'bg-slate-800/70 text-slate-400 border border-slate-700'
@@ -156,6 +165,34 @@ export function AvailabilityCalendar({
           <ChevronRight className="w-4 h-4" />
         </button>
       </div>
+
+      {/* Quick month picker: every month in range, with open-date counts */}
+      {showMonthPicker && (
+        <div className="mb-4 grid grid-cols-3 sm:grid-cols-4 gap-1.5 max-h-60 overflow-y-auto rounded-2xl border border-slate-800 bg-slate-950/40 p-2">
+          {Array.from({ length: maxMonth - minMonth + 1 }, (_, i) => minMonth + i).map((mi) => {
+            const d = new Date(Math.floor(mi / 12), mi % 12, 1);
+            const openCount = upcomingOpen.filter((k) => monthIndex(k) === mi).length;
+            const current = mi === month;
+            return (
+              <button
+                key={mi}
+                type="button"
+                onClick={() => { setMonth(mi); setShowMonthPicker(false); }}
+                className={`relative px-2 py-2 rounded-xl text-xs font-semibold border transition-colors ${
+                  current
+                    ? 'bg-gradient-to-br from-indigo-500 to-violet-600 text-white border-indigo-500'
+                    : 'border-slate-800 text-slate-300 hover:border-amber-400/60'
+                }`}
+              >
+                {d.toLocaleDateString('en-IN', { month: 'short' })} {String(d.getFullYear()).slice(2)}
+                {openCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 min-w-4 h-4 px-1 rounded-full bg-emerald-500 text-[9px] font-bold text-white flex items-center justify-center">{openCount}</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Weekday header + day grid */}
       <div className="grid grid-cols-7 gap-1.5 sm:gap-2 text-center">
