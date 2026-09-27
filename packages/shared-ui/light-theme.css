@@ -154,6 +154,7 @@ html[data-theme="light"] .bg-slate-700\/40 { background-color: hsl(215.3 8.7% 97
 html[data-theme="light"] .bg-slate-700\/50 { background-color: hsl(215.3 8.7% 97.0% / 0.5) !important; }
 html[data-theme="light"] .bg-slate-800 { background-color: hsl(217.2 11.4% 97.0% / 0.96) !important; }
 html[data-theme="light"] .bg-slate-800\/50 { background-color: hsl(217.2 11.4% 97.0% / 0.5) !important; }
+html[data-theme="light"] .bg-slate-800\/60 { background-color: hsl(217.2 11.4% 97.0% / 0.6) !important; }
 html[data-theme="light"] .bg-slate-800\/80 { background-color: hsl(217.2 11.4% 97.0% / 0.8) !important; }
 html[data-theme="light"] .bg-slate-900 { background-color: hsl(222.2 15.7% 97.8% / 0.96) !important; }
 html[data-theme="light"] .bg-slate-900\/20 { background-color: hsl(222.2 15.7% 97.8% / 0.2) !important; }

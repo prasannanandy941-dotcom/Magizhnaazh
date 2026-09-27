@@ -15,7 +15,7 @@ const monthIndex = (key: string) => {
   return y * 12 + (m - 1);
 };
 
-type DayState = 'past' | 'available' | 'limited' | 'booked' | 'unavailable';
+type DayState = 'past' | 'expired' | 'available' | 'limited' | 'booked' | 'unavailable';
 
 export function AvailabilityCalendar({
   vendor,
@@ -31,7 +31,8 @@ export function AvailabilityCalendar({
   const booked = useMemo(() => new Set(vendor.bookedDates || []), [vendor.bookedDates]);
 
   const stateOf = (key: string): DayState => {
-    if (key < todayKey) return 'past';
+    // A date the vendor had opened (or that got booked) but which has now gone by.
+    if (key < todayKey) return available.has(key) || booked.has(key) ? 'expired' : 'past';
     if (booked.has(key)) return 'booked';
     if (!available.has(key)) return 'unavailable';
     const open = openSlots(vendor, key).length;
@@ -64,9 +65,11 @@ export function AvailabilityCalendar({
   const monthLabel = first.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
   const openThisMonth = cells.filter((k) => k && (stateOf(k) === 'available' || stateOf(k) === 'limited')).length;
   const nextOpen = upcomingOpen.find((d) => monthIndex(d) > month);
+  const expiredThisMonth = cells.filter((k) => k && stateOf(k) === 'expired').length;
 
   const cellClass: Record<DayState, string> = {
     past: 'text-slate-600 cursor-not-allowed',
+    expired: 'bg-slate-800/60 border border-dashed border-slate-600 text-slate-500 line-through cursor-not-allowed',
     unavailable: 'text-slate-500 cursor-not-allowed',
     booked: 'bg-rose-950/30 border border-rose-900/50 text-rose-400/80 line-through cursor-not-allowed',
     available: 'bg-emerald-500/15 border border-emerald-500/50 text-emerald-200 font-bold hover:bg-emerald-500/30 cursor-pointer',
@@ -74,6 +77,7 @@ export function AvailabilityCalendar({
   };
   const titleOf: Record<DayState, string> = {
     past: 'Past date',
+    expired: 'This open date has passed',
     unavailable: 'Not available',
     booked: 'Already booked',
     available: 'Available — tap to book',
@@ -96,7 +100,11 @@ export function AvailabilityCalendar({
         <div className="text-center">
           <p className="font-display font-bold text-base text-white">{monthLabel}</p>
           <p className="text-[11px] text-slate-400">
-            {openThisMonth > 0 ? `${openThisMonth} date${openThisMonth === 1 ? '' : 's'} open` : 'No open dates this month'}
+            {openThisMonth > 0
+              ? `${openThisMonth} date${openThisMonth === 1 ? '' : 's'} open`
+              : expiredThisMonth > 0
+                ? 'Open dates this month have passed'
+                : 'No open dates this month'}
           </p>
         </div>
         <button
@@ -158,6 +166,9 @@ export function AvailabilityCalendar({
         <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-amber-500/15 border border-amber-500/50" /> Few slots left</span>
         <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-rose-950/30 border border-rose-900/50" /> Booked</span>
         <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded border border-slate-700" /> Not available</span>
+        {expiredThisMonth > 0 && (
+          <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-slate-800/60 border border-dashed border-slate-600" /> Date passed</span>
+        )}
       </div>
     </div>
   );
