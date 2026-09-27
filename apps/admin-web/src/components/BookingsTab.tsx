@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Booking } from '../../../../packages/shared-types';
 import { fetchBookings } from '../api';
+import { useCachedList } from '../useCachedList';
 import { CrudListPanel } from './CrudListPanel';
 
 const STATUS_STYLES: Record<string, string> = {
@@ -17,17 +18,8 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 export const BookingsTab: React.FC<{ token: string }> = ({ token }) => {
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { items: bookings, setItems: setBookings, loading, refreshing, reload: load } = useCachedList<Booking>('bookings', async () => (await fetchBookings(token)).data?.bookings || []);
 
-  useEffect(() => {
-    (async () => {
-      setLoading(true);
-      const res = await fetchBookings(token);
-      setBookings(res.data?.bookings || []);
-      setLoading(false);
-    })();
-  }, []);
 
   return (
     <CrudListPanel
@@ -36,6 +28,7 @@ export const BookingsTab: React.FC<{ token: string }> = ({ token }) => {
       subtitle="All vendor bookings across every event."
       items={bookings}
       loading={loading}
+      refreshing={refreshing}
       rowKey={(b) => b.id}
       columns={[
         { label: 'Booking #', render: (b) => <span className="font-bold text-white font-mono">{b.bookingNumber}</span> },

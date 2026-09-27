@@ -21,6 +21,8 @@ interface CrudListPanelProps<T> {
   subtitle?: string;
   items: T[];
   loading: boolean;
+  // Background refresh with rows already on screen — shows a small note, not a spinner.
+  refreshing?: boolean;
   columns: CrudColumn<T>[];
   rowKey: (item: T) => string;
   rowAction?: (item: T) => React.ReactNode;
@@ -38,6 +40,7 @@ export function CrudListPanel<T>({
   subtitle,
   items,
   loading,
+  refreshing = false,
   columns,
   rowKey,
   rowAction,
@@ -73,7 +76,14 @@ export function CrudListPanel<T>({
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="font-display font-bold text-2xl text-white">{title}</h2>
+        <h2 className="font-display font-bold text-2xl text-white flex items-center gap-2">
+          {title}
+          {refreshing && (
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-400">
+              <Loader2 className="w-3 h-3 animate-spin" /> Refreshing…
+            </span>
+          )}
+        </h2>
         {subtitle && <p className="text-slate-400 text-sm mt-1">{subtitle}</p>}
       </div>
 
@@ -106,9 +116,17 @@ export function CrudListPanel<T>({
       )}
 
       <div className="glass-card rounded-3xl border border-slate-800 overflow-hidden">
-        {loading ? (
-          <div className="p-8 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
-            <Loader2 className="w-4 h-4 animate-spin" /> Loading...
+        {loading && items.length === 0 ? (
+          // First visit only: placeholder rows in the table's shape.
+          <div className="divide-y divide-slate-800/60" aria-busy="true" aria-label="Loading">
+            {Array.from({ length: 6 }, (_, i) => (
+              <div key={i} className="flex items-center gap-4 p-4 animate-pulse">
+                {columns.map((c) => (
+                  <div key={c.label} className="h-3 flex-1 rounded bg-slate-800" />
+                ))}
+                {rowAction && <div className="h-7 w-20 rounded-xl bg-slate-800" />}
+              </div>
+            ))}
           </div>
         ) : (
           <div className="overflow-x-auto">

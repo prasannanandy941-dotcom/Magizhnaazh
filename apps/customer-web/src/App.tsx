@@ -8,7 +8,7 @@ import { VendorMarketplace } from './components/VendorMarketplace';
 import { inviteUrl } from './publicUrl';
 import { FloralGoldBackground } from './components/FloralGoldBackground';
 import { HangingDiyas, isInsideMobileApp } from '../../../packages/shared-ui/HangingDiyas';
-import { lazyNamed, LazyFallback } from '../../../packages/shared-ui/lazy';
+import { lazyNamed, LazyFallback, preloadWhenIdle } from '../../../packages/shared-ui/lazy';
 
 // Lazy-loaded screens and popups: each becomes its own JS file that downloads
 // only when first opened, so the marketplace (the landing screen) loads faster.
@@ -178,6 +178,15 @@ function deduplicateVendors(list: Vendor[]): Vendor[] {
 }
 
 export function App() {
+  // After the marketplace is on screen, fetch the popups' and other screens'
+  // code in the background so the first "View Details" / tab click is instant.
+  useEffect(() => {
+    preloadWhenIdle([
+      VendorDetailModal, AuthModal, VendorCompareModal, WishlistModal, EventWizardModal, ShareLinkModal,
+      MyOrders, SmartBudgetPlanner, CanvaInvitationDesigner, GuestManagement, FeedbackModule,
+    ]);
+  }, []);
+
   const [activeTab, setActiveTab] = useState<string>('marketplace');
   const [marketplaceCategory, setMarketplaceCategory] = useState('All');
   const [vendors, setVendors] = useState<Vendor[]>([]);

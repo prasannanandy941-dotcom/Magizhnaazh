@@ -1,21 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { InvitationTemplateDoc } from '../../../../packages/shared-types';
 import { fetchInvitationTemplates, addInvitationTemplate, deleteInvitationTemplate } from '../api';
+import { useCachedList } from '../useCachedList';
 import { CrudListPanel, DeleteButton } from './CrudListPanel';
 
 export const InvitationTemplatesTab: React.FC<{ token: string }> = ({ token }) => {
-  const [templates, setTemplates] = useState<InvitationTemplateDoc[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { items: templates, setItems: setTemplates, loading, refreshing, reload: load } = useCachedList<InvitationTemplateDoc>('templates', async () => (await fetchInvitationTemplates()).data?.templates || []);
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  const load = async () => {
-    setLoading(true);
-    const res = await fetchInvitationTemplates();
-    setTemplates(res.data?.templates || []);
-    setLoading(false);
-  };
-
-  useEffect(() => { load(); }, []);
 
   return (
     <CrudListPanel
@@ -24,6 +16,7 @@ export const InvitationTemplatesTab: React.FC<{ token: string }> = ({ token }) =
       subtitle="Templates available in the Canva-style invitation designer. New ones start with a blank canvas — customers fill it in."
       items={templates}
       loading={loading}
+      refreshing={refreshing}
       rowKey={(t) => t.id}
       columns={[
         {
@@ -49,7 +42,7 @@ export const InvitationTemplatesTab: React.FC<{ token: string }> = ({ token }) =
       rowAction={(t) => (
         <DeleteButton
           busy={busyId === t.id}
-          onClick={async () => { setBusyId(t.id); await deleteInvitationTemplate(token, t.id); await load(); setBusyId(null); }}
+          onClick={async () => { setBusyId(t.id); await deleteInvitationTemplate(token, t.id); setTemplates((prev) => prev.filter((x) => x.id !== t.id)); setBusyId(null); }}
         />
       )}
       emptyText="No templates yet."

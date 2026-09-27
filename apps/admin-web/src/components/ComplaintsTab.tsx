@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Complaint, ComplaintStatus } from '../../../../packages/shared-types';
 import { fetchComplaints, updateComplaintStatus } from '../api';
+import { useCachedList } from '../useCachedList';
 import { CrudListPanel } from './CrudListPanel';
 
 const STATUS_STYLES: Record<ComplaintStatus, string> = {
@@ -10,18 +11,9 @@ const STATUS_STYLES: Record<ComplaintStatus, string> = {
 };
 
 export const ComplaintsTab: React.FC<{ token: string }> = ({ token }) => {
-  const [complaints, setComplaints] = useState<Complaint[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { items: complaints, setItems: setComplaints, loading, refreshing, reload: load } = useCachedList<Complaint>('complaints', async () => (await fetchComplaints(token)).data?.complaints || []);
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  const load = async () => {
-    setLoading(true);
-    const res = await fetchComplaints(token);
-    setComplaints(res.data?.complaints || []);
-    setLoading(false);
-  };
-
-  useEffect(() => { load(); }, []);
 
   const changeStatus = async (id: string, status: string) => {
     setBusyId(id);
@@ -37,6 +29,7 @@ export const ComplaintsTab: React.FC<{ token: string }> = ({ token }) => {
       subtitle="Complaints tied to bookings/events. Submission API exists (POST /api/v1/complaints) — no dedicated submission UI yet in customer-web."
       items={complaints}
       loading={loading}
+      refreshing={refreshing}
       rowKey={(c) => c.id}
       columns={[
         { label: 'Subject', render: (c) => <span className="font-bold text-white">{c.subject}</span> },

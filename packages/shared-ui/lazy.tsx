@@ -18,7 +18,25 @@ export function lazyNamed<M extends Record<string, unknown>, K extends keyof M>(
   loader: () => Promise<M>,
   name: K,
 ): M[K] {
-  return React.lazy(async () => ({ default: (await loader())[name] as React.ComponentType<unknown> })) as unknown as M[K];
+  const Comp = React.lazy(async () => ({ default: (await loader())[name] as React.ComponentType<unknown> }));
+  // .preload() starts downloading the chunk early (see preloadWhenIdle).
+  (Comp as unknown as { preload: () => Promise<M> }).preload = loader;
+  return Comp as unknown as M[K];
+}
+
+// Download lazy components' code in the background once the browser is idle,
+// so the first time someone opens them they appear instantly (no spinner) —
+// while the first screen still loads fast because they weren't in it.
+export function preloadWhenIdle(components: unknown[]) {
+  const run = () => {
+    for (const c of components) {
+      const preload = (c as { preload?: () => Promise<unknown> }).preload;
+      preload?.().catch(() => { /* retried on real use */ });
+    }
+  };
+  const w = window as unknown as { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => void };
+  if (w.requestIdleCallback) w.requestIdleCallback(run, { timeout: 3000 });
+  else setTimeout(run, 1500);
 }
 
 // Spinner shown while a lazy screen's code downloads.

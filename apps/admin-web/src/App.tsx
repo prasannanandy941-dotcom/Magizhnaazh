@@ -25,7 +25,7 @@ import { User } from '../../../packages/shared-types';
 import { AuthGate } from './components/AuthGate';
 import { FloralGoldBackground } from './components/FloralGoldBackground';
 import { fetchSettings, GATEWAY_URL } from './api';
-import { lazyNamed, LazyFallback } from '../../../packages/shared-ui/lazy';
+import { lazyNamed, LazyFallback, preloadWhenIdle } from '../../../packages/shared-ui/lazy';
 
 // Each admin tab is lazy-loaded: its code downloads the first time the tab is
 // opened, so signing in only downloads the shell + the Dashboard.
@@ -129,6 +129,17 @@ export function App() {
     setUser(null);
     setToken(null);
   };
+
+  // Once signed in, fetch every tab's code in the background so switching tabs
+  // never waits on a download.
+  useEffect(() => {
+    if (!user || !token) return;
+    preloadWhenIdle([
+      DashboardTab, UsersTab, VendorsTab, CategoriesTab, LocationsTab, EventsTab, BookingsTab, ReviewsTab,
+      FeedbackTab, ComplaintsTab, InvitationTemplatesTab, BannersTab, CouponsTab, SettingsTab, SettlementsTab,
+      AnalyticsTab, EcosystemMonitor,
+    ]);
+  }, [user, token]);
 
   if (!user || !token) {
     // No theme toggle on the sign-in screen — it's in the navbar once signed in.

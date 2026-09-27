@@ -1,21 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Banner } from '../../../../packages/shared-types';
 import { fetchBanners, addBanner, deleteBanner } from '../api';
+import { useCachedList } from '../useCachedList';
 import { CrudListPanel, DeleteButton } from './CrudListPanel';
 
 export const BannersTab: React.FC<{ token: string }> = ({ token }) => {
-  const [banners, setBanners] = useState<Banner[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { items: banners, setItems: setBanners, loading, refreshing, reload: load } = useCachedList<Banner>('banners', async () => (await fetchBanners()).data?.banners || []);
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  const load = async () => {
-    setLoading(true);
-    const res = await fetchBanners();
-    setBanners(res.data?.banners || []);
-    setLoading(false);
-  };
-
-  useEffect(() => { load(); }, []);
 
   return (
     <CrudListPanel
@@ -24,6 +16,7 @@ export const BannersTab: React.FC<{ token: string }> = ({ token }) => {
       subtitle="Homepage promotional banners shown to customers."
       items={banners}
       loading={loading}
+      refreshing={refreshing}
       rowKey={(b) => b.id}
       columns={[
         {
@@ -46,7 +39,7 @@ export const BannersTab: React.FC<{ token: string }> = ({ token }) => {
       rowAction={(b) => (
         <DeleteButton
           busy={busyId === b.id}
-          onClick={async () => { setBusyId(b.id); await deleteBanner(token, b.id); await load(); setBusyId(null); }}
+          onClick={async () => { setBusyId(b.id); await deleteBanner(token, b.id); setBanners((prev) => prev.filter((x) => x.id !== b.id)); setBusyId(null); }}
         />
       )}
       emptyText="No banners yet."

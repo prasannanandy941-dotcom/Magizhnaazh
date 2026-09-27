@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Event } from '../../../../packages/shared-types';
 import { fetchEvents } from '../api';
+import { useCachedList } from '../useCachedList';
 import { CrudListPanel } from './CrudListPanel';
 
 const STATUS_STYLES: Record<string, string> = {
@@ -11,17 +12,8 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 export const EventsTab: React.FC<{ token: string }> = ({ token }) => {
-  const [events, setEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { items: events, setItems: setEvents, loading, refreshing, reload: load } = useCachedList<Event>('events', async () => (await fetchEvents(token)).data?.events || []);
 
-  useEffect(() => {
-    (async () => {
-      setLoading(true);
-      const res = await fetchEvents(token);
-      setEvents(res.data?.events || []);
-      setLoading(false);
-    })();
-  }, []);
 
   return (
     <CrudListPanel
@@ -30,6 +22,7 @@ export const EventsTab: React.FC<{ token: string }> = ({ token }) => {
       subtitle="All events created across every customer account."
       items={events}
       loading={loading}
+      refreshing={refreshing}
       rowKey={(e) => e.id}
       columns={[
         { label: 'Title', render: (e) => <span className="font-bold text-white">{e.title}</span> },

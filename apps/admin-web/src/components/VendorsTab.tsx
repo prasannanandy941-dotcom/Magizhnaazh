@@ -2,21 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { Loader2, FileText } from 'lucide-react';
 import { Vendor } from '../../../../packages/shared-types';
 import { fetchVendors, toggleVendorVerification, toggleVendorSuspension, decideVendorVerification, GATEWAY_URL } from '../api';
+import { useCachedList } from '../useCachedList';
 import { CrudListPanel } from './CrudListPanel';
 
 export const VendorsTab: React.FC<{ token: string }> = ({ token }) => {
-  const [vendors, setVendors] = useState<Vendor[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { items: vendors, setItems: setVendors, loading, refreshing, reload: load } = useCachedList<Vendor>('vendors', async () => (await fetchVendors()).data?.vendors || []);
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  const load = async () => {
-    setLoading(true);
-    const res = await fetchVendors();
-    setVendors(res.data?.vendors || []);
-    setLoading(false);
-  };
-
-  useEffect(() => { load(); }, []);
 
   const runAction = async (id: string, action: (t: string, id: string) => Promise<any>) => {
     setBusyId(id);
@@ -46,6 +38,7 @@ export const VendorsTab: React.FC<{ token: string }> = ({ token }) => {
       subtitle="Review verification requests, approve new listings, and suspend partners that violate platform policy."
       items={vendors}
       loading={loading}
+      refreshing={refreshing}
       rowKey={(v) => v.id}
       columns={[
         { label: 'Business Name', render: (v) => <span className="font-bold text-white">{v.businessName}</span> },

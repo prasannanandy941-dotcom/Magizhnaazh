@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Loader2, Ban, CheckCircle2 } from 'lucide-react';
 import { AdminUser, fetchAllUsers, toggleUserSuspension } from '../api';
+import { useCachedList } from '../useCachedList';
 import { CrudListPanel } from './CrudListPanel';
 
 const ROLE_STYLES: Record<string, string> = {
@@ -21,19 +22,10 @@ const ROLE_FILTERS: { key: string; label: string }[] = [
 ];
 
 export const UsersTab: React.FC<{ token: string; currentUserId: string }> = ({ token, currentUserId }) => {
-  const [users, setUsers] = useState<AdminUser[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { items: users, setItems: setUsers, loading, refreshing, reload: load } = useCachedList<AdminUser>('users', async () => (await fetchAllUsers(token)).data?.users || []);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [roleFilter, setRoleFilter] = useState('all');
 
-  const load = async () => {
-    setLoading(true);
-    const res = await fetchAllUsers(token);
-    setUsers(res.data?.users || []);
-    setLoading(false);
-  };
-
-  useEffect(() => { load(); }, []);
 
   const toggleSuspend = async (id: string) => {
     setBusyId(id);
@@ -75,6 +67,7 @@ export const UsersTab: React.FC<{ token: string; currentUserId: string }> = ({ t
       toolbar={filterTabs}
       items={visibleUsers}
       loading={loading}
+      refreshing={refreshing}
       rowKey={(u) => u.id}
       columns={[
         { label: 'Name', render: (u) => <span className="font-bold text-white">{u.name}</span> },
