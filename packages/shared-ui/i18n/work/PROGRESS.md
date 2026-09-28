@@ -12,7 +12,7 @@ Goal: Magizhnaazh web apps (customer/vendor/admin) + mobile apps shown in 12 lan
 - Read `work/GLOSSARY.md` before translating (rules + key-term table).
 
 ## Translation status (chunk → done languages)
-- 01–08: all 11 languages ✔ (customer app done) (customer app = chunks 1–8, vendor 9–15, admin 15–17, server+shared 17–19)
+- 01–14: all 11 languages done. 15: ta, hi, te done; ml kn bn mr gu pa or as TODO, then 16–19. Known issue: id 2165 "Type DELETE to confirm" reads badly because key "Type" is a noun; fix the source to one text node.
 (next: 02 … 19 — chunks are in discovery order: customer strings first, then vendor, admin, server messages)
 
 ## Still TODO after translations
