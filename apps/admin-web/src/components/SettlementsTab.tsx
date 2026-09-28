@@ -1,26 +1,73 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { usePagination, Pagination } from '../../../../packages/shared-ui/pagination';
-import { Loader2, Wallet, CheckCircle2 } from 'lucide-react';
-import { fetchSettlements, markSettlement, Settlement, SettlementTotals } from '../api';
+import { Loader2, Wallet, CheckCircle2, RefreshCw, Truck, AlertTriangle, Clock } from 'lucide-react';
+import { fetchSettlements, markSettlement, syncSettlements, PayoutStage, Settlement, SettlementTotals, SettlementTransfer } from '../api';
 
 const rupee = (n: number) => `₹${(n || 0).toLocaleString('en-IN')}`;
+const shortDate = (iso?: string | null) => (iso ? new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '');
+
+type Filter = 'all' | 'pending' | 'in_transit' | 'settled';
+const IN_TRANSIT: PayoutStage[] = ['in_transit', 'transfer_pending', 'on_hold'];
+
+const STAGES: Record<PayoutStage, { label: string; tone: string; Icon: React.ElementType }> = {
+  settled: { label: 'Settled to vendor', tone: 'bg-emerald-500/20 text-emerald-300', Icon: CheckCircle2 },
+  manual_settled: { label: 'Settled (manual)', tone: 'bg-emerald-500/20 text-emerald-300', Icon: CheckCircle2 },
+  in_transit: { label: 'With Razorpay · awaiting bank', tone: 'bg-indigo-500/20 text-indigo-300', Icon: Truck },
+  transfer_pending: { label: 'Transfer processing', tone: 'bg-amber-500/20 text-amber-300', Icon: Clock },
+  on_hold: { label: 'Payout on hold', tone: 'bg-amber-500/20 text-amber-300', Icon: Clock },
+  transfer_failed: { label: 'Transfer failed', tone: 'bg-red-500/20 text-red-300', Icon: AlertTriangle },
+  manual: { label: 'Pending', tone: 'bg-amber-500/20 text-amber-300', Icon: Clock },
+};
+
+// One line of the Razorpay trail for a payment: what was routed to the vendor
+// and where it stands (transfer -> bank settlement, with UTR once credited).
+const transferLine = (t: SettlementTransfer): string => {
+  const what = `${t.type === 'advance' ? 'Advance' : 'Balance'} ${rupee(t.amount)}`;
+  if (t.status === 'failed') return `${what} · transfer failed${t.error ? `: ${t.error}` : ''}`;
+  if (t.settlementStatus === 'settled') return `${what} · credited to bank${t.settledAt ? ` ${shortDate(t.settledAt)}` : ''}${t.utr ? ` · UTR ${t.utr}` : t.settlementId ? ` · ${t.settlementId}` : ''}`;
+  if (t.settlementStatus === 'on_hold') return `${what} · on hold${t.onHoldUntil ? ` until ${shortDate(t.onHoldUntil)}` : ''}`;
+  if (t.status === 'processed') return `${what} · sent to vendor${t.processedAt ? ` ${shortDate(t.processedAt)}` : ''}, awaiting bank settlement`;
+  return `${what} · transfer ${t.status}`;
+};
 
 export const SettlementsTab: React.FC<{ token: string }> = ({ token }) => {
   const [settlements, setSettlements] = useState<Settlement[]>([]);
-  const [totals, setTotals] = useState<SettlementTotals>({ commission: 0, payout: 0, collected: 0, pendingPayout: 0 });
+  const [totals, setTotals] = useState<SettlementTotals>({ commission: 0, payout: 0, collected: 0, paidOut: 0, inTransit: 0, pendingPayout: 0 });
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
+  const [syncNote, setSyncNote] = useState('');
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [filter, setFilter] = useState<'all' | 'pending' | 'settled'>('all');
+  const [filter, setFilter] = useState<Filter>('all');
+  const didAutoSync = useRef(false);
 
   const load = async () => {
-    setLoading(true);
     const res = await fetchSettlements(token);
     setSettlements(res.data?.settlements || []);
     if (res.data?.totals) setTotals(res.data.totals);
+    setLastSyncedAt(res.data?.lastSyncedAt || null);
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  // Pull the latest transfer/settlement state from Razorpay, then re-read.
+  const sync = async () => {
+    setSyncing(true);
+    setSyncNote('');
+    const res = await syncSettlements(token);
+    setSyncNote(res.success ? `Synced with Razorpay (${res.data?.checked ?? 0} payment${res.data?.checked === 1 ? '' : 's'} checked).` : res.message || 'Could not reach Razorpay.');
+    await load();
+    setSyncing(false);
+  };
+
+  useEffect(() => {
+    // Show the register straight away, then refresh from Razorpay in the background.
+    load().then(() => {
+      if (!didAutoSync.current) {
+        didAutoSync.current = true;
+        sync();
+      }
+    });
+  }, []);
 
   const toggle = async (s: Settlement) => {
     setBusyId(s.bookingId);
@@ -29,23 +76,39 @@ export const SettlementsTab: React.FC<{ token: string }> = ({ token }) => {
     setBusyId(null);
   };
 
-  const rows = settlements.filter((s) => filter === 'all' || s.settlementStatus === filter);
+  const rows = settlements.filter((s) => {
+    if (filter === 'all') return true;
+    if (filter === 'in_transit') return IN_TRANSIT.includes(s.payoutStage);
+    return s.settlementStatus === filter;
+  });
   // Paging: 10 settlements per page; back to page 1 when the filter changes.
   const pager = usePagination(rows, 10, filter);
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="font-display font-bold text-2xl text-white">Vendor Settlements</h2>
-        <p className="text-slate-400 text-sm mt-1">Commission earned and payouts owed to vendors, per confirmed booking.</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="font-display font-bold text-2xl text-white">Vendor Settlements</h2>
+          <p className="text-slate-400 text-sm mt-1">Commission earned and vendor payouts per confirmed booking, tracked live from Razorpay — customer payment, transfer to the vendor, and bank settlement.</p>
+        </div>
+        <div className="text-right">
+          <button onClick={sync} disabled={syncing}
+            className="px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 font-bold text-xs inline-flex items-center gap-1.5 disabled:opacity-60">
+            <RefreshCw className={`w-3.5 h-3.5 ${syncing ? 'animate-spin' : ''}`} /> Sync with Razorpay
+          </button>
+          <span className="block text-[10px] text-slate-500 mt-1">
+            {syncNote || (lastSyncedAt ? `Last synced ${new Date(lastSyncedAt).toLocaleString('en-IN')}` : 'Updates automatically via Razorpay webhooks')}
+          </span>
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {[
           { label: 'Collected from customers', value: totals.collected, tone: 'text-emerald-400' },
           { label: 'Platform commission', value: totals.commission, tone: 'text-indigo-400' },
-          { label: 'Total vendor payouts', value: totals.payout, tone: 'text-white' },
-          { label: 'Payouts pending', value: totals.pendingPayout, tone: 'text-amber-400' },
+          { label: 'Settled to vendors', value: totals.paidOut, tone: 'text-white' },
+          { label: 'With Razorpay, in transit', value: totals.inTransit, tone: 'text-sky-400' },
+          { label: 'Payouts pending', value: Math.max(0, totals.pendingPayout - totals.inTransit), tone: 'text-amber-400' },
         ].map((c) => (
           <div key={c.label} className="glass-card p-5 rounded-2xl border border-slate-800">
             <span className="text-xs text-slate-400 block">{c.label}</span>
@@ -54,11 +117,11 @@ export const SettlementsTab: React.FC<{ token: string }> = ({ token }) => {
         ))}
       </div>
 
-      <div className="flex items-center gap-2">
-        {(['all', 'pending', 'settled'] as const).map((f) => (
+      <div className="flex items-center gap-2 flex-wrap">
+        {([['all', 'All'], ['pending', 'Pending'], ['in_transit', 'In transit'], ['settled', 'Settled']] as const).map(([f, label]) => (
           <button key={f} onClick={() => setFilter(f)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold capitalize ${filter === f ? 'bg-amber-500 text-slate-950' : 'bg-slate-900 border border-slate-800 text-slate-300'}`}>
-            {f}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold ${filter === f ? 'bg-amber-500 text-slate-950' : 'bg-slate-900 border border-slate-800 text-slate-300'}`}>
+            {label}
           </button>
         ))}
       </div>
@@ -85,35 +148,44 @@ export const SettlementsTab: React.FC<{ token: string }> = ({ token }) => {
               </tr>
             </thead>
             <tbody>
-              {pager.pageItems.map((s) => (
-                <tr key={s.bookingId} className="border-b border-slate-800/60 text-sm">
-                  <td className="p-3">
-                    <span className="text-white font-semibold">{s.bookingNumber}</span>
-                    <span className="block text-[10px] text-slate-500">{s.eventDate}</span>
-                  </td>
-                  <td className="p-3 text-slate-300">{s.vendorName}</td>
-                  <td className="p-3 text-right text-white">{rupee(s.agreedPrice)}</td>
-                  <td className="p-3 text-right text-indigo-300">{rupee(s.commission)}</td>
-                  <td className="p-3 text-right text-emerald-300 font-semibold">{rupee(s.vendorPayout)}</td>
-                  <td className="p-3">
-                    {s.settlementStatus === 'settled' ? (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 font-bold text-[10px]"><CheckCircle2 className="w-3 h-3" /> Settled</span>
-                    ) : (
-                      <span className="px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 font-bold text-[10px]">Pending</span>
-                    )}
-                    {!s.paidInFull && <span className="block text-[10px] text-slate-500 mt-1">Not fully collected</span>}
-                  </td>
-                  <td className="p-3">
-                    <button onClick={() => toggle(s)} disabled={busyId === s.bookingId}
-                      className={`px-3 py-1.5 rounded-xl font-bold text-[11px] inline-flex items-center gap-1.5 disabled:opacity-60 ${
-                        s.settlementStatus === 'settled' ? 'bg-slate-900 border border-slate-800 text-slate-300' : 'bg-emerald-500 text-slate-950'
-                      }`}>
-                      {busyId === s.bookingId && <Loader2 className="w-3 h-3 animate-spin" />}
-                      {s.settlementStatus === 'settled' ? 'Mark pending' : <><Wallet className="w-3.5 h-3.5" /> Mark settled</>}
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {pager.pageItems.map((s) => {
+                const stage = STAGES[s.payoutStage] || STAGES.manual;
+                return (
+                  <tr key={s.bookingId} className="border-b border-slate-800/60 text-sm align-top">
+                    <td className="p-3">
+                      <span className="text-white font-semibold">{s.bookingNumber}</span>
+                      <span className="block text-[10px] text-slate-500">{s.eventDate}</span>
+                    </td>
+                    <td className="p-3 text-slate-300">{s.vendorName}</td>
+                    <td className="p-3 text-right text-white">{rupee(s.agreedPrice)}</td>
+                    <td className="p-3 text-right text-indigo-300">{rupee(s.commission)}</td>
+                    <td className="p-3 text-right text-emerald-300 font-semibold">{rupee(s.vendorPayout)}</td>
+                    <td className="p-3">
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-bold text-[10px] ${stage.tone}`}>
+                        <stage.Icon className="w-3 h-3" /> {stage.label}
+                      </span>
+                      {!s.paidInFull && <span className="block text-[10px] text-slate-500 mt-1">Not fully collected</span>}
+                      {s.transfers.map((t) => (
+                        <span key={t.transferId || t.paymentId} className={`block text-[10px] mt-1 max-w-xs ${t.status === 'failed' ? 'text-red-300' : 'text-slate-500'}`}
+                          title={[t.transferId, t.settlementId].filter(Boolean).join(' · ')}>
+                          {transferLine(t)}
+                        </span>
+                      ))}
+                    </td>
+                    <td className="p-3">
+                      {s.canSettleManually && (
+                        <button onClick={() => toggle(s)} disabled={busyId === s.bookingId}
+                          className={`px-3 py-1.5 rounded-xl font-bold text-[11px] inline-flex items-center gap-1.5 disabled:opacity-60 ${
+                            s.settlementStatus === 'settled' ? 'bg-slate-900 border border-slate-800 text-slate-300' : 'bg-emerald-500 text-slate-950'
+                          }`}>
+                          {busyId === s.bookingId && <Loader2 className="w-3 h-3 animate-spin" />}
+                          {s.settlementStatus === 'settled' ? 'Mark pending' : <><Wallet className="w-3.5 h-3.5" /> Mark settled</>}
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
           <Pagination pager={pager} label="settlements" />

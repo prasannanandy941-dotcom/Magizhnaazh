@@ -1358,6 +1358,19 @@ export interface BookingPayment {
   // already auto-paid out and shouldn't be counted as a pending manual payout.
   razorpayTransferId?: string;
   razorpaySignatureVerified?: boolean;
+  // Route transfer lifecycle mirrored from Razorpay (amounts in rupees).
+  razorpayTransferAmount?: number;
+  razorpayTransferStatus?: string;
+  razorpayTransferError?: string;
+  razorpayTransferProcessedAt?: string;
+  razorpayTransferReversed?: number;
+  razorpayOnHold?: boolean;
+  razorpayOnHoldUntil?: string;
+  razorpaySettlementStatus?: string;
+  razorpaySettlementId?: string;
+  razorpaySettlementUtr?: string;
+  razorpaySettledAt?: string;
+  razorpaySyncedAt?: string;
 }
 
 // Structured GST invoice for a booking, computed server-side and rendered as a

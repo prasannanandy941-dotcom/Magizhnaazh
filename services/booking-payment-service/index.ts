@@ -15,7 +15,7 @@ import { PlatformSettingsModel, getSettings } from './models/PlatformSettings';
 import { CouponModel } from './models/Coupon';
 import { isSlotBooked, slotLabel } from '../../packages/shared-types';
 import { JobQueue, buildCoBookingGraph, topNeighbours } from '../../packages/shared-utils/dataStructures';
-import { createMarketplaceOrder, getRazorpayInstance, verifyPaymentSignature, verifyWebhookSignature } from './utils/razorpay';
+import { createMarketplaceOrder, fetchLinkedAccountSettlement, fetchPaymentTransfers, getRazorpayInstance, verifyPaymentSignature, verifyWebhookSignature } from './utils/razorpay';
 
 const app = express();
 const PORT = process.env.PORT || 8004;
@@ -212,6 +212,114 @@ async function applyVerifiedRazorpayPayment(
   }
 
   await booking.save();
+}
+
+// ---------------------------------------------------------------------------
+// Razorpay Route settlement tracking.
+// A customer payment is split at capture into a Route transfer to the vendor's
+// linked account; Razorpay later settles that balance to the vendor's bank.
+// Both steps are mirrored onto the payment ledger entry so the admin
+// Settlements page reflects them without anyone marking anything by hand.
+// ---------------------------------------------------------------------------
+
+const unixToIso = (t?: number | null) => (t ? new Date(t * 1000).toISOString() : undefined);
+
+// Ledger-entry fields derived from a Razorpay transfer entity.
+function transferFields(t: any): Record<string, any> {
+  const settled = t.settlement_status === 'settled';
+  return {
+    razorpayTransferId: t.id,
+    razorpayTransferAmount: (Number(t.amount) || 0) / 100,
+    razorpayTransferStatus: t.status || 'created',
+    razorpayTransferError: t.error?.description || '',
+    razorpayTransferProcessedAt: unixToIso(t.processed_at),
+    razorpayTransferReversed: (Number(t.amount_reversed) || 0) / 100,
+    razorpayOnHold: !!t.on_hold,
+    razorpayOnHoldUntil: unixToIso(t.on_hold_until),
+    razorpaySettlementStatus: settled ? 'settled' : t.on_hold ? 'on_hold' : 'pending',
+    razorpaySettlementId: t.recipient_settlement_id || undefined,
+    razorpaySyncedAt: new Date().toISOString(),
+  };
+}
+
+// Targeted write of one ledger entry's fields — a positional $set, so a sync
+// running alongside a customer/vendor payment edit can't clobber the array.
+async function setPaymentFields(bookingId: string, paymentEntryId: string, fields: Record<string, any>) {
+  const $set: Record<string, any> = {};
+  for (const [k, v] of Object.entries(fields)) if (v !== undefined) $set[`payments.$.${k}`] = v;
+  await BookingModel.updateOne({ id: bookingId, 'payments.id': paymentEntryId }, { $set });
+}
+
+// Pulls this payment's transfer (and, once Razorpay has settled it to the
+// vendor's bank, the settlement's UTR) from Razorpay and stores it. Returns
+// true when something was written.
+async function syncPaymentTransfer(booking: any, entry: any): Promise<boolean> {
+  if (!entry.razorpayPaymentId) return false;
+  const transfers = await fetchPaymentTransfers(entry.razorpayPaymentId);
+  const t = transfers.find((x: any) => x.id === entry.razorpayTransferId) || transfers[0];
+
+  if (!t) {
+    // Transfers are created at capture, so still none after an hour means this
+    // payment simply had no Route split (vendor not onboarded) — stop polling it.
+    const age = Date.now() - Date.parse(entry.confirmedAt || entry.claimedAt || '');
+    await setPaymentFields(booking.id, entry.id, {
+      razorpaySyncedAt: new Date().toISOString(),
+      ...(age > 3600_000 ? { razorpayTransferStatus: 'none' } : {}),
+    });
+    return false;
+  }
+
+  const fields = transferFields(t);
+  if (fields.razorpaySettlementStatus === 'settled') {
+    fields.razorpaySettledAt = entry.razorpaySettledAt || new Date().toISOString();
+    if (fields.razorpaySettlementId && !entry.razorpaySettlementUtr) {
+      const s = await fetchLinkedAccountSettlement(fields.razorpaySettlementId, t.recipient);
+      if (s?.utr) fields.razorpaySettlementUtr = s.utr;
+      if (s?.createdAt) fields.razorpaySettledAt = unixToIso(s.createdAt);
+    }
+  }
+  await setPaymentFields(booking.id, entry.id, fields);
+  return true;
+}
+
+// Payments whose Razorpay transfer/settlement is still open.
+const openTransferEntry = (p: any) =>
+  !!p.razorpayPaymentId &&
+  p.status === 'confirmed' &&
+  p.razorpaySettlementStatus !== 'settled' &&
+  !['failed', 'reversed', 'none'].includes(p.razorpayTransferStatus || '');
+
+// Refreshes every open Razorpay transfer from the Razorpay API. Called by the
+// admin's "Sync" button, the settlement.processed webhook and a periodic timer
+// — so the register stays right even if a webhook is missed.
+let syncRunning = false;
+async function syncRazorpaySettlements(): Promise<{ checked: number; updated: number; errors: number }> {
+  const result = { checked: 0, updated: 0, errors: 0 };
+  if (syncRunning || !process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) return result;
+  syncRunning = true;
+  try {
+    const bookings = await BookingModel.find({
+      payments: { $elemMatch: { razorpayPaymentId: { $exists: true, $ne: null }, razorpaySettlementStatus: { $ne: 'settled' } } },
+    }).sort({ createdAt: -1 }).limit(200);
+
+    const jobs: Array<[any, any]> = [];
+    for (const b of bookings) for (const p of b.payments || []) if (openTransferEntry(p)) jobs.push([b, p]);
+
+    for (let i = 0; i < jobs.length; i += 5) {
+      await Promise.all(jobs.slice(i, i + 5).map(async ([b, p]) => {
+        result.checked++;
+        try {
+          if (await syncPaymentTransfer(b, p)) result.updated++;
+        } catch (err: any) {
+          result.errors++;
+          console.warn('[Razorpay sync]', p.razorpayPaymentId, err?.error?.description || err?.message || err);
+        }
+      }));
+    }
+  } finally {
+    syncRunning = false;
+  }
+  return result;
 }
 
 async function seedIfEmpty() {
@@ -1051,20 +1159,35 @@ app.post('/api/v1/bookings/webhooks/razorpay', async (req: Request, res: Respons
         }
         await applyVerifiedRazorpayPayment(booking, { type, amount, razorpayOrderId: payment.order_id, razorpayPaymentId: payment.id });
       }
-    } else if (event === 'transfer.processed') {
+    } else if (event === 'transfer.processed' || event === 'transfer.failed') {
       const transfer = payload.payload?.transfer?.entity;
       const bookingId = transfer?.notes?.bookingId;
       const booking = bookingId ? await BookingModel.findOne({ id: bookingId }) : null;
-      const entry = booking && (booking.payments || []).find((p: any) => p.razorpayPaymentId === transfer?.source?.id);
+      const sourcePaymentId = typeof transfer?.source === 'string' ? transfer.source : transfer?.source?.id;
+      const entry = booking && (booking.payments || []).find((p: any) => p.razorpayPaymentId === sourcePaymentId);
       if (booking && entry) {
-        entry.razorpayTransferId = transfer.id;
-        booking.markModified('payments');
-        await booking.save();
+        await setPaymentFields(booking.id, entry.id, transferFields(transfer));
+      } else {
+        // Payment not in the ledger yet (this webhook beat payment.captured) —
+        // the periodic/admin sync picks the transfer up once it is.
+        console.warn(`[Razorpay Webhook] ${event} for an unknown payment`, transfer?.id);
       }
-    } else if (event === 'transfer.failed') {
-      // No transfer id gets stamped, so the settlement register naturally
-      // falls back to manual payout for this amount — just log for visibility.
-      console.warn('[Razorpay Webhook] transfer.failed', payload.payload?.transfer?.entity?.id);
+      if (event === 'transfer.failed') console.warn('[Razorpay Webhook] transfer.failed', transfer?.id, transfer?.error?.description);
+    } else if (event === 'settlement.processed') {
+      // Razorpay has paid a linked account's balance out to the vendor's bank.
+      // The event carries the settlement + UTR but not which transfers it
+      // covers, so re-sync the open ones (they now report the settlement id),
+      // then stamp the UTR on everything pointing at this settlement.
+      const settlement = payload.payload?.settlement?.entity;
+      if (settlement?.id) {
+        syncRazorpaySettlements()
+          .then(() => BookingModel.updateMany(
+            { 'payments.razorpaySettlementId': settlement.id },
+            { $set: { 'payments.$[e].razorpaySettlementUtr': settlement.utr || '', 'payments.$[e].razorpaySettledAt': unixToIso(settlement.created_at) || new Date().toISOString() } },
+            { arrayFilters: [{ 'e.razorpaySettlementId': settlement.id }] },
+          ))
+          .catch((err: any) => console.error('[Razorpay Webhook] settlement stamp error:', err?.message || err));
+      }
     }
   } catch (err: any) {
     console.error('[Razorpay Webhook] processing error:', err?.message || err);
@@ -1135,7 +1258,12 @@ app.get('/api/v1/bookings/:id/invoice', authMiddleware(), async (req: Request, r
   res.json({ success: true, data: { invoice } });
 });
 
-// 4h. Admin settlement register — per-booking commission and vendor payout.
+// 4h. Admin settlement register — per-booking commission and vendor payout,
+//     with the Razorpay Route trail (customer payment -> transfer to the vendor
+//     -> Razorpay's settlement to the vendor's bank, with UTR) for each payment.
+//     A booking counts as settled once Razorpay has settled everything to the
+//     vendor's bank; manual "Mark settled" remains for payouts made outside
+//     Razorpay (vendor not onboarded, transfer failed, cash/UPI payments).
 app.get('/api/v1/settlements', authMiddleware(), async (req: Request, res: Response) => {
   if (req.user!.role !== 'admin') {
     return res.status(403).json({ success: false, message: 'Admin access required.' });
@@ -1143,15 +1271,56 @@ app.get('/api/v1/settlements', authMiddleware(), async (req: Request, res: Respo
   const { commissionRate, vendorPayoutHoldDays } = await getSettings();
   const bookings = await BookingModel.find({ status: { $in: ['confirmed', 'in_progress', 'completed'] } }).sort({ createdAt: -1 }).limit(500);
   const now = Date.now();
+  let lastSyncedAt = '';
   const settlements = bookings.map((b) => {
     const commission = Math.round(b.agreedPrice * commissionRate);
+    const vendorPayout = Math.max(0, b.agreedPrice - commission);
     const eligibleOn = payoutEligibleOn(b.eventDate, vendorPayoutHoldDays);
-    // Payments Razorpay Route already auto-transferred to the vendor (tagged
-    // with a razorpayTransferId) aren't owed again through manual settlement —
-    // without this, the admin would be told to pay out money Razorpay already sent.
-    const alreadyAutoSettled = (b.payments || [])
-      .filter((p: any) => p.razorpayTransferId)
-      .reduce((s: number, p: any) => s + (Number(p.amount) || 0), 0);
+
+    const confirmed = (b.payments || []).filter((p: any) => p.status === 'confirmed');
+    // Entries written before transfer details were tracked only carry an id —
+    // assume the usual split until the next sync fills in the real numbers.
+    const transfers = confirmed
+      .filter((p: any) => p.razorpayTransferId || (p.razorpayTransferStatus && p.razorpayTransferStatus !== 'none'))
+      .map((p: any) => ({
+        paymentId: p.razorpayPaymentId || '',
+        transferId: p.razorpayTransferId || '',
+        type: p.type,
+        paidAmount: p.amount,
+        amount: p.razorpayTransferAmount ?? Math.round(p.amount * (1 - commissionRate)),
+        reversed: p.razorpayTransferReversed || 0,
+        status: p.razorpayTransferStatus || 'processed',
+        error: p.razorpayTransferError || '',
+        processedAt: p.razorpayTransferProcessedAt || null,
+        onHoldUntil: p.razorpayOnHold ? p.razorpayOnHoldUntil || null : null,
+        settlementStatus: p.razorpaySettlementStatus || 'pending',
+        settlementId: p.razorpaySettlementId || '',
+        utr: p.razorpaySettlementUtr || '',
+        settledAt: p.razorpaySettledAt || null,
+      }));
+    for (const p of confirmed as any[]) if (p.razorpaySyncedAt && p.razorpaySyncedAt > lastSyncedAt) lastSyncedAt = p.razorpaySyncedAt;
+
+    const live = transfers.filter((t) => t.status !== 'failed');
+    const routed = live.reduce((s, t) => s + Math.max(0, t.amount - t.reversed), 0);
+    const bankSettled = live.filter((t) => t.settlementStatus === 'settled').reduce((s, t) => s + Math.max(0, t.amount - t.reversed), 0);
+    // Confirmed payments Razorpay did not route to the vendor (no Route split,
+    // or the transfer failed) are still the admin's to pay out by hand.
+    const manualOwed = confirmed.some((p: any) => !live.some((t) => t.paymentId && t.paymentId === p.razorpayPaymentId));
+
+    const manuallySettled = b.settlementStatus === 'settled';
+    const razorpaySettled = live.length > 0 && !manualOwed && !!b.paidInFull && live.every((t) => t.settlementStatus === 'settled');
+    const settlementStatus: 'pending' | 'settled' = manuallySettled || razorpaySettled ? 'settled' : 'pending';
+
+    let payoutStage: string;
+    if (settlementStatus === 'settled') payoutStage = manuallySettled && !razorpaySettled ? 'manual_settled' : 'settled';
+    else if (transfers.some((t) => t.status === 'failed')) payoutStage = 'transfer_failed';
+    else if (live.some((t) => t.settlementStatus === 'on_hold')) payoutStage = 'on_hold';
+    else if (live.some((t) => ['created', 'pending'].includes(t.status))) payoutStage = 'transfer_pending';
+    else if (live.length > 0) payoutStage = 'in_transit';
+    else payoutStage = 'manual';
+
+    const paidOut = manuallySettled ? vendorPayout : Math.min(vendorPayout, bankSettled);
+    const inTransit = settlementStatus === 'settled' ? 0 : Math.min(Math.max(0, vendorPayout - paidOut), Math.max(0, routed - bankSettled));
     return {
       bookingId: b.id,
       bookingNumber: b.bookingNumber,
@@ -1160,10 +1329,18 @@ app.get('/api/v1/settlements', authMiddleware(), async (req: Request, res: Respo
       agreedPrice: b.agreedPrice,
       collected: b.advanceAmountPaid,
       commission,
-      alreadyAutoSettled,
-      vendorPayout: Math.max(0, b.agreedPrice - commission - alreadyAutoSettled),
+      vendorPayout,
+      paidOut,
+      inTransit,
+      pendingAmount: Math.max(0, vendorPayout - paidOut),
+      routedViaRazorpay: routed,
+      payoutStage,
+      // The admin can still settle by hand when part of the payout isn't
+      // Razorpay-managed, or to undo a manual settle.
+      canSettleManually: manuallySettled || manualOwed || live.length === 0,
+      transfers,
       paidInFull: b.paidInFull || false,
-      settlementStatus: b.settlementStatus || 'pending',
+      settlementStatus,
       settledAt: b.settledAt || null,
       eventDate: b.eventDate,
       payoutEligibleOn: eligibleOn,
@@ -1175,12 +1352,26 @@ app.get('/api/v1/settlements', authMiddleware(), async (req: Request, res: Respo
       acc.commission += s.commission;
       acc.payout += s.vendorPayout;
       acc.collected += s.collected;
-      if (s.settlementStatus === 'pending') acc.pendingPayout += s.vendorPayout;
+      acc.paidOut += s.paidOut;
+      acc.inTransit += s.inTransit;
+      acc.pendingPayout += s.pendingAmount;
       return acc;
     },
-    { commission: 0, payout: 0, collected: 0, pendingPayout: 0 }
+    { commission: 0, payout: 0, collected: 0, paidOut: 0, inTransit: 0, pendingPayout: 0 }
   );
-  res.json({ success: true, data: { settlements, totals } });
+  res.json({ success: true, data: { settlements, totals, lastSyncedAt: lastSyncedAt || null } });
+});
+
+// 4h-2. Admin pulls the latest transfer + settlement state from Razorpay.
+app.post('/api/v1/settlements/sync', authMiddleware(), async (req: Request, res: Response) => {
+  if (req.user!.role !== 'admin') {
+    return res.status(403).json({ success: false, message: 'Admin access required.' });
+  }
+  if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+    return res.status(503).json({ success: false, message: 'Razorpay is not configured on this server.' });
+  }
+  const result = await syncRazorpaySettlements();
+  res.json({ success: true, message: `Checked ${result.checked} payment(s) with Razorpay.`, data: result });
 });
 
 // 4i. Admin marks a booking's vendor payout as settled.
@@ -1395,6 +1586,11 @@ async function start() {
   if (process.env.SEED_DEMO_BOOKINGS === 'true') {
     await seedDemoBookings();
   }
+  // Safety net for missed/undelivered Razorpay webhooks: refresh open vendor
+  // transfers and settlements every 10 minutes.
+  setInterval(() => {
+    syncRazorpaySettlements().catch((err: any) => console.warn('[Razorpay sync] failed:', err?.message || err));
+  }, 10 * 60 * 1000);
   app.listen(PORT, () => {
     console.log(`[Booking & Payment Microservice] Running on http://localhost:${PORT}`);
   });

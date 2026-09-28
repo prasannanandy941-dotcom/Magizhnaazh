@@ -375,6 +375,25 @@ export function updateSettings(
 
 // --- Settlements (vendor payouts) ---
 
+export interface SettlementTransfer {
+  paymentId: string;
+  transferId: string;
+  type: 'advance' | 'balance';
+  paidAmount: number;
+  amount: number; // vendor share Razorpay routed
+  reversed: number;
+  status: string; // created | pending | processed | failed | reversed | partially_reversed
+  error: string;
+  processedAt: string | null;
+  onHoldUntil: string | null;
+  settlementStatus: 'pending' | 'on_hold' | 'settled';
+  settlementId: string;
+  utr: string;
+  settledAt: string | null;
+}
+
+export type PayoutStage = 'settled' | 'manual_settled' | 'in_transit' | 'transfer_pending' | 'on_hold' | 'transfer_failed' | 'manual';
+
 export interface Settlement {
   bookingId: string;
   bookingNumber: string;
@@ -384,16 +403,28 @@ export interface Settlement {
   collected: number;
   commission: number;
   vendorPayout: number;
+  paidOut: number;
+  inTransit: number;
+  pendingAmount: number;
+  routedViaRazorpay: number;
+  payoutStage: PayoutStage;
+  canSettleManually: boolean;
+  transfers: SettlementTransfer[];
   paidInFull: boolean;
   settlementStatus: 'pending' | 'settled';
   settledAt: string | null;
   eventDate: string;
 }
 
-export interface SettlementTotals { commission: number; payout: number; collected: number; pendingPayout: number; }
+export interface SettlementTotals { commission: number; payout: number; collected: number; paidOut: number; inTransit: number; pendingPayout: number; }
 
-export function fetchSettlements(token: string): Promise<{ success: boolean; data?: { settlements: Settlement[]; totals: SettlementTotals } }> {
+export function fetchSettlements(token: string): Promise<{ success: boolean; data?: { settlements: Settlement[]; totals: SettlementTotals; lastSyncedAt: string | null } }> {
   return authedFetch('/api/v1/settlements', token);
+}
+
+// Asks the server to pull the latest transfer + settlement state from Razorpay.
+export function syncSettlements(token: string): Promise<{ success: boolean; message?: string; data?: { checked: number; updated: number; errors: number } }> {
+  return authedFetch('/api/v1/settlements/sync', token, { method: 'POST' });
 }
 
 export function markSettlement(token: string, bookingId: string, settled: boolean) {

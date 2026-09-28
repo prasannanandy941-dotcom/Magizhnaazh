@@ -26,6 +26,21 @@ const paymentSchema = new Schema(
     razorpayPaymentId: String,
     razorpayTransferId: String,
     razorpaySignatureVerified: Boolean,
+    // Route transfer lifecycle, mirrored from Razorpay by syncTransferForPayment:
+    // customer payment -> transfer to the vendor's linked account -> Razorpay
+    // settles that balance to the vendor's bank (settlement id + UTR).
+    razorpayTransferAmount: Number, // rupees — the vendor's share actually routed
+    razorpayTransferStatus: String, // created | pending | processed | failed | reversed | partially_reversed
+    razorpayTransferError: String,
+    razorpayTransferProcessedAt: String,
+    razorpayTransferReversed: Number, // rupees
+    razorpayOnHold: Boolean,
+    razorpayOnHoldUntil: String,
+    razorpaySettlementStatus: String, // pending | on_hold | settled
+    razorpaySettlementId: String,
+    razorpaySettlementUtr: String,
+    razorpaySettledAt: String,
+    razorpaySyncedAt: String,
   },
   { _id: false }
 );

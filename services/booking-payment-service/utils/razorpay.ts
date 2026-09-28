@@ -54,6 +54,35 @@ export async function createMarketplaceOrder(params: CreateOrderParams) {
   return razorpay.orders.create(payload);
 }
 
+// The Route transfers Razorpay created off one captured payment (the vendor's
+// share). Empty when the payment had no transfer attached.
+export async function fetchPaymentTransfers(paymentId: string): Promise<any[]> {
+  const res: any = await getRazorpayInstance().payments.fetchTransfer(paymentId);
+  return Array.isArray(res?.items) ? res.items : [];
+}
+
+// A linked account's settlement (Razorpay -> vendor's bank), for its UTR. The
+// SDK can't send the X-Razorpay-Account header this call needs, so it goes over
+// plain HTTP. Best-effort: returns null on any failure.
+export async function fetchLinkedAccountSettlement(settlementId: string, accountId: string): Promise<{ utr?: string; createdAt?: number } | null> {
+  const keyId = process.env.RAZORPAY_KEY_ID;
+  const keySecret = process.env.RAZORPAY_KEY_SECRET;
+  if (!keyId || !keySecret || !settlementId || !accountId) return null;
+  try {
+    const r = await fetch(`https://api.razorpay.com/v1/settlements/${settlementId}`, {
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${keyId}:${keySecret}`).toString('base64')}`,
+        'X-Razorpay-Account': accountId,
+      },
+    });
+    if (!r.ok) return null;
+    const s: any = await r.json();
+    return { utr: s?.utr || undefined, createdAt: s?.created_at };
+  } catch {
+    return null;
+  }
+}
+
 export function verifyPaymentSignature(params: { orderId: string; paymentId: string; signature: string }): boolean {
   const secret = process.env.RAZORPAY_KEY_SECRET;
   if (!secret || !params.orderId || !params.paymentId || !params.signature) return false;
