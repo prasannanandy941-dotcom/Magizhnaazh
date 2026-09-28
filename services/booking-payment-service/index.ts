@@ -1319,6 +1319,15 @@ app.get('/api/v1/settlements', authMiddleware(), async (req: Request, res: Respo
     else if (live.length > 0) payoutStage = 'in_transit';
     else payoutStage = 'manual';
 
+    // Why this booking still needs the admin, when Razorpay isn't handling it.
+    let manualReason = '';
+    if (confirmed.length === 0) manualReason = 'nothing_collected';
+    else if (manualOwed) {
+      manualReason = confirmed.some((p: any) => p.razorpayPaymentId && !transfers.some((t) => t.paymentId === p.razorpayPaymentId))
+        ? 'vendor_not_on_route'
+        : confirmed.some((p: any) => !p.razorpayPaymentId) ? 'paid_outside_razorpay' : '';
+    }
+
     const paidOut = manuallySettled ? vendorPayout : Math.min(vendorPayout, bankSettled);
     const inTransit = settlementStatus === 'settled' ? 0 : Math.min(Math.max(0, vendorPayout - paidOut), Math.max(0, routed - bankSettled));
     return {
@@ -1335,9 +1344,10 @@ app.get('/api/v1/settlements', authMiddleware(), async (req: Request, res: Respo
       pendingAmount: Math.max(0, vendorPayout - paidOut),
       routedViaRazorpay: routed,
       payoutStage,
-      // The admin can still settle by hand when part of the payout isn't
-      // Razorpay-managed, or to undo a manual settle.
-      canSettleManually: manuallySettled || manualOwed || live.length === 0,
+      // The admin only settles by hand when money was collected that Razorpay
+      // did not route to the vendor (or to undo a manual settle).
+      canSettleManually: manuallySettled || manualOwed,
+      manualReason: settlementStatus === 'settled' ? '' : manualReason,
       transfers,
       paidInFull: b.paidInFull || false,
       settlementStatus,

@@ -409,6 +409,7 @@ export interface Settlement {
   routedViaRazorpay: number;
   payoutStage: PayoutStage;
   canSettleManually: boolean;
+  manualReason: '' | 'nothing_collected' | 'vendor_not_on_route' | 'paid_outside_razorpay';
   transfers: SettlementTransfer[];
   paidInFull: boolean;
   settlementStatus: 'pending' | 'settled';

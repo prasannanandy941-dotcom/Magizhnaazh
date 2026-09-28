@@ -30,6 +30,12 @@ const transferLine = (t: SettlementTransfer): string => {
   return `${what} · transfer ${t.status}`;
 };
 
+const MANUAL_REASONS: Record<string, string> = {
+  nothing_collected: 'Nothing collected from the customer yet',
+  vendor_not_on_route: 'Vendor is not connected to Razorpay Route — the money is in your Razorpay balance and must be paid out manually',
+  paid_outside_razorpay: 'Paid outside Razorpay (UPI / cash) — pay the vendor manually',
+};
+
 export const SettlementsTab: React.FC<{ token: string }> = ({ token }) => {
   const [settlements, setSettlements] = useState<Settlement[]>([]);
   const [totals, setTotals] = useState<SettlementTotals>({ commission: 0, payout: 0, collected: 0, paidOut: 0, inTransit: 0, pendingPayout: 0 });
@@ -165,6 +171,9 @@ export const SettlementsTab: React.FC<{ token: string }> = ({ token }) => {
                         <stage.Icon className="w-3 h-3" /> {stage.label}
                       </span>
                       {!s.paidInFull && <span className="block text-[10px] text-slate-500 mt-1">Not fully collected</span>}
+                      {s.manualReason && MANUAL_REASONS[s.manualReason] && (
+                        <span className="block text-[10px] text-amber-300/80 mt-1 max-w-xs">{MANUAL_REASONS[s.manualReason]}</span>
+                      )}
                       {s.transfers.map((t) => (
                         <span key={t.transferId || t.paymentId} className={`block text-[10px] mt-1 max-w-xs ${t.status === 'failed' ? 'text-red-300' : 'text-slate-500'}`}
                           title={[t.transferId, t.settlementId].filter(Boolean).join(' · ')}>
