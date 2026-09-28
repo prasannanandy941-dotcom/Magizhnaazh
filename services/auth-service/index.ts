@@ -17,6 +17,7 @@ import { isPasswordStrong, firstPasswordError } from '../../packages/shared-util
 import { Role } from '../../packages/shared-types';
 import { UserModel } from './models/User';
 import { OtpModel } from './models/Otp';
+import { serviceUrl } from '../../packages/shared-utils/serviceUrl';
 
 const app = express();
 const PORT = process.env.PORT || 8001;
@@ -655,6 +656,82 @@ app.get('/api/v1/auth/me', authMiddleware(), async (req: Request, res: Response)
     res.json({ success: true, data: { user } });
   } catch (err: any) {
     console.error('Fetch profile error:', err);
+    res.status(500).json({ success: false, message: err.message || 'Internal Server Error' });
+  }
+});
+
+// Permanently delete your own account (used by the vendor "Danger zone").
+// For a vendor this also deletes every marketplace listing they own. It is
+// blocked while they still have upcoming active bookings, since customers may
+// have paid advances for those events. Past bookings stay in customers'
+// history. Afterwards the same email/Google account can sign up fresh.
+const MARKETPLACE_SERVICE_URL = serviceUrl(process.env.MARKETPLACE_SERVICE_URL, 'http://localhost:8002');
+const BOOKING_SERVICE_URL = serviceUrl(process.env.BOOKING_PAYMENT_SERVICE_URL, 'http://localhost:8004');
+const ACTIVE_BOOKING_STATUSES = ['quote_requested', 'pending_payment', 'confirmed', 'in_progress'];
+
+app.delete('/api/v1/auth/me', authMiddleware(), async (req: Request, res: Response) => {
+  try {
+    const { confirm, password } = req.body || {};
+    if (confirm !== 'DELETE') {
+      return res.status(400).json({ success: false, message: 'Type DELETE to confirm.' });
+    }
+    const user = await UserModel.findOne({ id: req.user!.sub }).select('+passwordHash');
+    if (!user) return res.status(404).json({ success: false, message: 'Account not found.' });
+    if (user.role === 'admin') {
+      return res.status(403).json({ success: false, message: 'Admin accounts cannot be deleted here.' });
+    }
+    // Password accounts re-enter their password; Google accounts have none.
+    if ((user.authProvider || 'password') === 'password') {
+      const ok = typeof password === 'string' && password.length > 0 && (await bcrypt.compare(password, user.passwordHash));
+      // 403 (not 401): the web apps treat 401 as an expired session and sign out.
+      if (!ok) return res.status(403).json({ success: false, message: 'Password is incorrect.' });
+    }
+
+    const authorization = req.headers.authorization || '';
+    if (user.role === 'vendor') {
+      const ownedRes = await fetch(`${MARKETPLACE_SERVICE_URL}/api/v1/vendors/owned`, { headers: { Authorization: authorization } });
+      if (!ownedRes.ok && ownedRes.status !== 404) {
+        return res.status(502).json({ success: false, message: 'Could not reach your business listing. Please try again.' });
+      }
+      const listings: { id: string }[] = ownedRes.ok ? ((await ownedRes.json()).data?.vendors || []) : [];
+
+      // Block while upcoming bookings are still active.
+      const today = new Date().toISOString().slice(0, 10);
+      let upcoming = 0;
+      for (const listing of listings) {
+        const bRes = await fetch(`${BOOKING_SERVICE_URL}/api/v1/bookings?vendorId=${encodeURIComponent(listing.id)}`, {
+          headers: { Authorization: authorization },
+        });
+        if (!bRes.ok) {
+          return res.status(502).json({ success: false, message: 'Could not check your bookings. Please try again.' });
+        }
+        const bookings: { status: string; eventDate?: string }[] = (await bRes.json()).data?.bookings || [];
+        upcoming += bookings.filter((b) => ACTIVE_BOOKING_STATUSES.includes(b.status) && (b.eventDate || '') >= today).length;
+      }
+      if (upcoming > 0) {
+        return res.status(409).json({
+          success: false,
+          code: 'HAS_UPCOMING_BOOKINGS',
+          message: `You have ${upcoming} upcoming booking${upcoming === 1 ? '' : 's'}. Complete, cancel or refund ${upcoming === 1 ? 'it' : 'them'} before deleting your account.`,
+        });
+      }
+
+      for (const listing of listings) {
+        const dRes = await fetch(`${MARKETPLACE_SERVICE_URL}/api/v1/vendors/${encodeURIComponent(listing.id)}`, {
+          method: 'DELETE',
+          headers: { Authorization: authorization },
+        });
+        if (!dRes.ok && dRes.status !== 404) {
+          return res.status(502).json({ success: false, message: 'Could not delete your business listing. Please try again.' });
+        }
+      }
+    }
+
+    await UserModel.deleteOne({ id: user.id });
+    await OtpModel.deleteMany({ email: user.email });
+    res.json({ success: true, message: 'Your account has been permanently deleted.' });
+  } catch (err: any) {
+    console.error('Delete account error:', err);
     res.status(500).json({ success: false, message: err.message || 'Internal Server Error' });
   }
 });

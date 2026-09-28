@@ -140,6 +140,17 @@ export function register(input: {
   return postJson('/api/v1/auth/register', { ...input, role: 'vendor' });
 }
 
+export const REVOKED_TOKEN_KEY = 'magizhnaazh_vendor_revoked_token';
+
+// Inside the vendor mobile app (builds with the message bridge), tell the app
+// the session ended so it clears its own saved login too.
+export function notifyVendorAppSignedOut() {
+  const w = window as any;
+  if (w.__MAGIZH_VENDOR_APP && w.ReactNativeWebView) {
+    w.ReactNativeWebView.postMessage(JSON.stringify({ type: 'logout' }));
+  }
+}
+
 async function authedFetch(path: string, token: string, options: RequestInit = {}) {
   const { res, json } = await fetchJson(path, {
     ...options,
@@ -150,6 +161,10 @@ async function authedFetch(path: string, token: string, options: RequestInit = {
     },
   });
   if (res.status === 401) {
+    // Remember the rejected token: the vendor mobile app re-injects its saved
+    // token on every load, and without this the site would reload forever.
+    localStorage.setItem(REVOKED_TOKEN_KEY, token);
+    notifyVendorAppSignedOut();
     localStorage.removeItem('magizhnaazh_vendor_user');
     localStorage.removeItem('magizhnaazh_vendor_token');
     window.location.reload();
@@ -165,6 +180,12 @@ export interface MyVendorResponse {
   success: boolean;
   message?: string;
   data?: { vendor: Vendor };
+}
+
+// Permanently delete the signed-in vendor's account and business listing.
+// `password` is required for email/password accounts (not Google ones).
+export function deleteMyAccount(token: string, input: { confirm: string; password?: string }): Promise<{ success: boolean; message?: string }> {
+  return authedFetch('/api/v1/auth/me', token, { method: 'DELETE', body: JSON.stringify(input) });
 }
 
 export async function fetchMyVendor(token: string): Promise<MyVendorResponse> {

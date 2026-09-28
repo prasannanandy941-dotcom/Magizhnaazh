@@ -14,7 +14,7 @@ const SITE_URL = 'https://event.porulontech.com/vendor/';
 const CHROME_UA =
   'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36';
 
-export function WebApp({ token, user }: { token?: string | null; user?: unknown }) {
+export function WebApp({ token, user, onLogout }: { token?: string | null; user?: unknown; onLogout?: () => void }) {
   const ref = useRef<WebView>(null);
   const canGoBack = useRef(false);
   const [loading, setLoading] = useState(true);
@@ -54,6 +54,13 @@ export function WebApp({ token, user }: { token?: string | null; user?: unknown 
         originWhitelist={['*']}
         userAgent={CHROME_UA}
         injectedJavaScriptBeforeContentLoaded={injectedBefore}
+        onMessage={(event: { nativeEvent: { data: string } }) => {
+          try {
+            if (JSON.parse(event.nativeEvent.data)?.type === 'logout') onLogout?.();
+          } catch {
+            /* not one of our messages */
+          }
+        }}
         javaScriptEnabled
         domStorageEnabled
         thirdPartyCookiesEnabled

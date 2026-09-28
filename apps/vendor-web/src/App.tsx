@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { ThemeToggle } from '../../../packages/shared-ui/theme';
 import { HangingDiyas, isInsideMobileApp } from '../../../packages/shared-ui/HangingDiyas';
+import { DeleteAccountSection } from './components/DeleteAccountSection';
 import { lazyNamed, LazyFallback, useInfiniteList, LoadMoreSentinel } from '../../../packages/shared-ui/lazy';
 
 // Lazy: the sign-in screen's code downloads only for signed-out visitors, so a
@@ -11,7 +12,7 @@ import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, VendorD
 import type { Complaint } from '../../../packages/shared-types';
 import { STATIC_CITY_GROUPS } from '../../../packages/shared-utils';
 import { FloralGoldBackground } from './components/FloralGoldBackground';
-import { fetchMyVendor, createVendor, updateVendor, fetchVendorBookings, fetchVendorBookingsSilent, confirmBooking, sendCounterQuote, updateBookingStatus, updateSpendBreakdown, refundBooking, fetchVendorReviews, replyToReview, submitVerification, confirmBookingPayment, fetchBookingInvoice, fetchCalendarToken, onboardRazorpayRoute, refreshRazorpayStatus, verifyPanKyc, startAadhaarKyc, getAadhaarKycStatus, fetchVendorComplaints, GATEWAY_URL } from './api';
+import { fetchMyVendor, createVendor, updateVendor, fetchVendorBookings, fetchVendorBookingsSilent, confirmBooking, sendCounterQuote, updateBookingStatus, updateSpendBreakdown, refundBooking, fetchVendorReviews, replyToReview, submitVerification, confirmBookingPayment, fetchBookingInvoice, fetchCalendarToken, onboardRazorpayRoute, refreshRazorpayStatus, verifyPanKyc, startAadhaarKyc, getAadhaarKycStatus, fetchVendorComplaints, GATEWAY_URL, REVOKED_TOKEN_KEY, notifyVendorAppSignedOut } from './api';
 import { playNotificationSound } from './notificationSound';
 import { getItemSuggestions, getAmenitySuggestions, suggestionListId } from './itemSuggestions';
 
@@ -166,7 +167,15 @@ const ITEM_NAME_EXAMPLE: Record<string, string> = {
 const inr = (n: number) => `₹${(n ?? 0).toLocaleString('en-IN')}`;
 
 export function App() {
+  // A token the server already rejected (or a deleted account's) is ignored
+  // even if the vendor mobile app injects it again — show sign-in instead.
   const [user, setUser] = useState<User | null>(() => {
+    const t = localStorage.getItem('magizhnaazh_vendor_token');
+    if (t && t === localStorage.getItem(REVOKED_TOKEN_KEY)) {
+      localStorage.removeItem('magizhnaazh_vendor_user');
+      localStorage.removeItem('magizhnaazh_vendor_token');
+      return null;
+    }
     const stored = localStorage.getItem('magizhnaazh_vendor_user');
     return stored ? JSON.parse(stored) : null;
   });
@@ -180,6 +189,7 @@ export function App() {
   };
 
   const handleLogout = () => {
+    notifyVendorAppSignedOut();
     localStorage.removeItem('magizhnaazh_vendor_user');
     localStorage.removeItem('magizhnaazh_vendor_token');
     setUser(null);
@@ -11426,6 +11436,20 @@ export function App() {
               {savingProfile && <Loader2 className="w-4 h-4 animate-spin" />} Save Profile Changes
             </button>
           </div>
+
+          {token && (
+            <DeleteAccountSection
+              token={token}
+              businessName={myVendor?.businessName}
+              isGoogleAccount={user?.authProvider === 'google'}
+              onDeleted={() => {
+                localStorage.setItem(REVOKED_TOKEN_KEY, token);
+                notifyVendorAppSignedOut();
+                handleLogout();
+                window.alert('Your vendor account has been permanently deleted.');
+              }}
+            />
+          )}
           </div>
         )}
 

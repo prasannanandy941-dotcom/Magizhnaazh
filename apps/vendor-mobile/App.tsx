@@ -17,7 +17,7 @@ import { colors } from './src/theme';
 // WebView), then open the real vendor portal already logged in by seeding its
 // localStorage session. Best of both: native Google + the full vendor web app.
 function Gate() {
-  const { user, token, loading } = useAuth();
+  const { user, token, loading, logout } = useAuth();
   if (loading) return <Loader />;
   if (!user || !token) {
     return (
@@ -27,7 +27,9 @@ function Gate() {
       </View>
     );
   }
-  return <WebApp token={token} user={user} />;
+  // The vendor site asks the app to sign out (Sign Out, an expired session,
+  // or a deleted account) so the app doesn't keep re-injecting a dead login.
+  return <WebApp token={token} user={user} onLogout={logout} />;
 }
 
 function Loader() {
