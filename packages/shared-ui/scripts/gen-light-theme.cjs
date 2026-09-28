@@ -228,6 +228,24 @@ ${L} input[type="date"], ${L} input[type="time"], ${L} input[type="datetime-loca
 .blush-bg { display: none; }
 ${L} .blush-bg { display: block; }
 ${L} .floral-gold-bg > :not(.blush-bg) { display: none !important; }
+/* Sign-in cards (customer + admin) are designed light-first. In the dark theme
+   they switch to a dark card so the sign-in page matches the theme the person
+   last used (the choice is kept across sign-out). */
+html:not([data-theme="light"]) .auth-card, html:not([data-theme="light"]) .auth-card.bg-white {
+  background: linear-gradient(180deg, #221433 0%, #170d24 100%) !important;
+  border-color: rgba(212, 175, 55, 0.25) !important;
+}
+html:not([data-theme="light"]) .auth-card .bg-white { background-color: rgba(10, 6, 18, 0.65) !important; }
+html:not([data-theme="light"]) .auth-card .bg-slate-50 { background-color: #241638 !important; }
+html:not([data-theme="light"]) .auth-card .bg-slate-100 { background-color: #2c1b42 !important; }
+html:not([data-theme="light"]) .auth-card .bg-slate-200, html:not([data-theme="light"]) .auth-card .hover\\:bg-slate-200:hover { background-color: #36234f !important; }
+html:not([data-theme="light"]) .auth-card .border-slate-200, html:not([data-theme="light"]) .auth-card .border-slate-300 { border-color: rgba(255, 255, 255, 0.1) !important; }
+html:not([data-theme="light"]) .auth-card .border-slate-800 { border-color: rgba(212, 175, 55, 0.35) !important; }
+html:not([data-theme="light"]) .auth-card .text-slate-900, html:not([data-theme="light"]) .auth-card .text-slate-800, html:not([data-theme="light"]) .auth-card .text-slate-700,
+html:not([data-theme="light"]) .auth-card .hover\\:text-slate-900:hover { color: #f6eef8 !important; }
+html:not([data-theme="light"]) .auth-card .text-slate-600, html:not([data-theme="light"]) .auth-card .text-slate-500 { color: #b3a3c4 !important; }
+html:not([data-theme="light"]) .auth-card .placeholder\\:text-slate-500::placeholder { color: #8f7fa3 !important; }
+html:not([data-theme="light"]) .auth-card input, html:not([data-theme="light"]) .auth-card select, html:not([data-theme="light"]) .auth-card textarea { color-scheme: dark; }
 /* Hanging diyas and bells (customer + vendor only; packages/shared-ui/HangingDiyas.tsx). */
 .hanging-diyas { display: none; }
 ${L} .hanging-diyas { display: block; }

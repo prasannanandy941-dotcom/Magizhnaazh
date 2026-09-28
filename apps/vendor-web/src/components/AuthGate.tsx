@@ -224,7 +224,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
   const wideForm = mode === 'signup' || mode === 'google-setup';
 
   return (
-    <div className="auth-light relative min-h-screen text-slate-100 flex items-start sm:items-center justify-center p-4 py-8 font-sans">
+    <div className="relative min-h-screen text-slate-100 flex items-start sm:items-center justify-center p-4 py-8 font-sans">
       <div className="fixed inset-0 -z-10">
         <FloralGoldBackground />
         {!isInsideMobileApp() && <HangingDiyas />}

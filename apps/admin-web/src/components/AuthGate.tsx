@@ -62,7 +62,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
       <div className="fixed inset-0 -z-10">
         <FloralGoldBackground />
       </div>
-      <div className="bg-white max-w-md w-full rounded-3xl border border-slate-200 shadow-2xl overflow-hidden">
+      <div className="auth-card bg-white max-w-md w-full rounded-3xl border border-slate-200 shadow-2xl overflow-hidden">
         <div className="px-6 py-6 border-b border-slate-200 bg-slate-50 flex items-center gap-3">
           <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-[#e85d8a] via-[#d4af37] to-[#b8336a] flex items-center justify-center font-bold text-white shadow-lg">
             <ShieldCheck className="w-6 h-6" />
