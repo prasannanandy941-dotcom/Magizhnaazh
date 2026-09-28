@@ -411,16 +411,16 @@ export const CanvaInvitationDesigner: React.FC<CanvaInvitationDesignerProps> = (
                     <div
                       key={el.id}
                       onClick={() => setSelectedElId(el.id)}
-                      className={`w-28 h-28 bg-white p-2 rounded-2xl shadow-xl flex flex-col items-center justify-center cursor-pointer ${
+                      className={`w-32 min-h-28 bg-white px-2 py-2.5 rounded-2xl shadow-xl flex flex-col items-center justify-start cursor-pointer ${
                         isSelected ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-950' : ''
                       }`}
                     >
                       <img loading="lazy" decoding="async"
                         src={qrImageUrl}
                         alt="RSVP QR code"
-                        className="w-20 h-20 object-contain"
+                        className="w-20 h-20 shrink-0 object-contain"
                       />
-                      <span className="text-[9px] font-bold text-slate-950 uppercase mt-1">Scan for RSVP</span>
+                      <span className="text-[9px] font-bold text-slate-950 uppercase mt-1.5 leading-snug text-center">Scan for RSVP</span>
                     </div>
                   );
                 }
