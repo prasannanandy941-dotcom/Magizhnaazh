@@ -10,9 +10,9 @@ type Filter = 'all' | 'pending' | 'in_transit' | 'settled';
 const IN_TRANSIT: PayoutStage[] = ['in_transit', 'transfer_pending', 'on_hold'];
 
 const STAGES: Record<PayoutStage, { label: string; tone: string; Icon: React.ElementType }> = {
-  settled: { label: 'Settled to vendor', tone: 'bg-emerald-500/20 text-emerald-300', Icon: CheckCircle2 },
-  manual_settled: { label: 'Settled (manual)', tone: 'bg-emerald-500/20 text-emerald-300', Icon: CheckCircle2 },
-  in_transit: { label: 'With Razorpay · awaiting bank', tone: 'bg-indigo-500/20 text-indigo-300', Icon: Truck },
+  settled: { label: 'Whole payment credited to vendor', tone: 'bg-emerald-500/20 text-emerald-300', Icon: CheckCircle2 },
+  manual_settled: { label: 'Paid to vendor (manual)', tone: 'bg-emerald-500/20 text-emerald-300', Icon: CheckCircle2 },
+  in_transit: { label: 'Razorpay is sending to vendor', tone: 'bg-indigo-500/20 text-indigo-300', Icon: Truck },
   transfer_pending: { label: 'Transfer processing', tone: 'bg-amber-500/20 text-amber-300', Icon: Clock },
   on_hold: { label: 'Payout on hold', tone: 'bg-amber-500/20 text-amber-300', Icon: Clock },
   transfer_failed: { label: 'Transfer failed', tone: 'bg-red-500/20 text-red-300', Icon: AlertTriangle },
@@ -24,9 +24,9 @@ const STAGES: Record<PayoutStage, { label: string; tone: string; Icon: React.Ele
 const transferLine = (t: SettlementTransfer): string => {
   const what = `${t.type === 'advance' ? 'Advance' : 'Balance'} ${rupee(t.amount)}`;
   if (t.status === 'failed') return `${what} · transfer failed${t.error ? `: ${t.error}` : ''}`;
-  if (t.settlementStatus === 'settled') return `${what} · credited to bank${t.settledAt ? ` ${shortDate(t.settledAt)}` : ''}${t.utr ? ` · UTR ${t.utr}` : t.settlementId ? ` · ${t.settlementId}` : ''}`;
+  if (t.settlementStatus === 'settled') return `${what} · credited to vendor's bank${t.settledAt ? ` ${shortDate(t.settledAt)}` : ''}${t.utr ? ` · UTR ${t.utr}` : t.settlementId ? ` · ${t.settlementId}` : ''}`;
   if (t.settlementStatus === 'on_hold') return `${what} · on hold${t.onHoldUntil ? ` until ${shortDate(t.onHoldUntil)}` : ''}`;
-  if (t.status === 'processed') return `${what} · sent to vendor${t.processedAt ? ` ${shortDate(t.processedAt)}` : ''}, awaiting bank settlement`;
+  if (t.status === 'processed') return `${what} · received by vendor's Razorpay account${t.processedAt ? ` ${shortDate(t.processedAt)}` : ''}, bank credit pending`;
   return `${what} · transfer ${t.status}`;
 };
 
@@ -112,8 +112,8 @@ export const SettlementsTab: React.FC<{ token: string }> = ({ token }) => {
         {[
           { label: 'Collected from customers', value: totals.collected, tone: 'text-emerald-400' },
           { label: 'Platform commission', value: totals.commission, tone: 'text-indigo-400' },
-          { label: 'Settled to vendors', value: totals.paidOut, tone: 'text-white' },
-          { label: 'With Razorpay, in transit', value: totals.inTransit, tone: 'text-sky-400' },
+          { label: 'Credited to vendors', value: totals.paidOut, tone: 'text-white' },
+          { label: 'Razorpay sending to vendors', value: totals.inTransit, tone: 'text-sky-400' },
           { label: 'Payouts pending', value: Math.max(0, totals.pendingPayout - totals.inTransit), tone: 'text-amber-400' },
         ].map((c) => (
           <div key={c.label} className="glass-card p-5 rounded-2xl border border-slate-800">
@@ -124,7 +124,7 @@ export const SettlementsTab: React.FC<{ token: string }> = ({ token }) => {
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
-        {([['all', 'All'], ['pending', 'Pending'], ['in_transit', 'In transit'], ['settled', 'Settled']] as const).map(([f, label]) => (
+        {([['all', 'All'], ['pending', 'Pending'], ['in_transit', 'In transit'], ['settled', 'Credited']] as const).map(([f, label]) => (
           <button key={f} onClick={() => setFilter(f)}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold ${filter === f ? 'bg-amber-500 text-slate-950' : 'bg-slate-900 border border-slate-800 text-slate-300'}`}>
             {label}
