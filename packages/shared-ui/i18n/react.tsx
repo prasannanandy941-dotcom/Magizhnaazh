@@ -12,9 +12,9 @@ export function useLanguage(): LangCode {
 
 // Language names are always shown in their own script (that is what people look
 // for), so they are marked translate="no" and never touched by the translator.
-function LanguageGrid({ selected, suggested, onPick }: { selected: LangCode; suggested: LangCode | null; onPick: (c: LangCode) => void }) {
+function LanguageGrid({ selected, suggested, onPick, compact }: { selected: LangCode; suggested: LangCode | null; onPick: (c: LangCode) => void; compact?: boolean }) {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+    <div className={compact ? "grid grid-cols-2 gap-2" : "grid grid-cols-2 sm:grid-cols-3 gap-2"}>
       {LANGUAGES.map((l) => {
         const active = l.code === selected;
         return (
@@ -24,11 +24,11 @@ function LanguageGrid({ selected, suggested, onPick }: { selected: LangCode; sug
             onClick={() => onPick(l.code)}
             aria-pressed={active}
             translate="no"
-            className={`relative text-left rounded-xl border-2 px-3 py-2.5 transition-colors ${
+            className={`relative min-w-0 text-left rounded-xl border-2 px-3 py-2.5 pr-8 transition-colors ${
               active ? 'border-amber-500 bg-amber-50' : 'border-slate-200 bg-white hover:border-amber-300'
             }`}
           >
-            <span className="block text-base font-bold leading-snug text-slate-900">{l.nativeName}</span>
+            <span style={{ whiteSpace: "nowrap" }} className="block text-[15px] font-bold leading-normal text-slate-900">{l.nativeName}</span>
             <span className="block text-[11px] text-slate-500">
               {l.name}
               {!active && suggested === l.code ? ' ★' : ''}
@@ -56,7 +56,7 @@ export const LanguageModal: React.FC<{ onDone: () => void; onClose?: () => void 
 
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true">
-      <div className="w-full max-w-md max-h-[92vh] overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl relative">
+      <div className="w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl relative">
         {onClose && (
           <button type="button" onClick={onClose} aria-label="Close" className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-slate-100 text-slate-500">
             <X className="w-5 h-5" />
@@ -121,8 +121,9 @@ export const LanguageButton: React.FC<{ className?: string; buttonClassName?: st
         <span translate="no">{current.nativeName}</span>
       </button>
       {open && (
-        <div className={`absolute right-0 z-[110] w-72 max-w-[85vw] rounded-2xl bg-white border border-slate-200 shadow-2xl p-3 ${dropUp ? 'bottom-full mb-2' : 'top-full mt-2'}`}>
+        <div className={`absolute right-0 z-[110] w-80 max-w-[90vw] rounded-2xl bg-white border border-slate-200 shadow-2xl p-3 ${dropUp ? 'bottom-full mb-2' : 'top-full mt-2'}`}>
           <LanguageGrid
+            compact
             selected={lang}
             suggested={null}
             onPick={(code) => {
