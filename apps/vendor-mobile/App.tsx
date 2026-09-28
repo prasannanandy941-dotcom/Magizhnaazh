@@ -34,7 +34,7 @@ function Gate() {
 
 function Loader() {
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' }}>
+    <View style={{ flex: 1, backgroundColor: '#f6e3de', alignItems: 'center', justifyContent: 'center' }}>
       <ActivityIndicator color={colors.primary} size="large" />
     </View>
   );
@@ -51,7 +51,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <StatusBar style="light" />
+        <StatusBar style="dark" />
         <Gate />
       </AuthProvider>
     </SafeAreaProvider>

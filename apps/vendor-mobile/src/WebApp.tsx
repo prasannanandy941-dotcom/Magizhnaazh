@@ -3,7 +3,6 @@ import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet, BackHandle
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import { colors } from './theme';
-import { RisingMagizhamOverlay } from './components/FloralBackground';
 
 // The live vendor portal — loaded inside the app so the mobile experience is
 // identical to the web, with every feature, always in sync with the site.
@@ -11,13 +10,19 @@ const SITE_URL = 'https://event.porulontech.com/vendor/';
 
 // Present a normal Chrome-on-Android user agent so Google's "disallowed
 // user-agent" check doesn't block Sign in with Google inside the WebView.
+// The site's own page colour (light theme). The WebView and the area around it
+// use the same colour so nothing dark shows through before the page paints.
+const PAGE_BG = '#f6e3de';
+
 const CHROME_UA =
   'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36';
 
 export function WebApp({ token, user, onLogout }: { token?: string | null; user?: unknown; onLogout?: () => void }) {
   const ref = useRef<WebView>(null);
   const canGoBack = useRef(false);
-  const [loading, setLoading] = useState(true);
+  // Only the FIRST load is covered by the spinner. Toggling it on every
+  // navigation/redirect made the whole screen blink while the site was working.
+  const [firstLoad, setFirstLoad] = useState(true);
 
   // Seed the vendor site's own auth storage from our native session, so it opens
   // already logged in (vendor-web reads these two keys from localStorage).
@@ -73,9 +78,7 @@ export function WebApp({ token, user, onLogout }: { token?: string | null; user?
         mediaPlaybackRequiresUserAction={false}
         mediaCapturePermissionGrantType="grant"
         setSupportMultipleWindows={false}
-        startInLoadingState
-        onLoadStart={() => setLoading(true)}
-        onLoadEnd={() => setLoading(false)}
+        onLoadEnd={() => setFirstLoad(false)}
         onNavigationStateChange={(s) => { canGoBack.current = s.canGoBack; }}
         renderError={(domain, code, desc) => (
           <View style={styles.errorContainer}>
@@ -89,14 +92,15 @@ export function WebApp({ token, user, onLogout }: { token?: string | null; user?
           </View>
         )}
       />
-      {loading && (
+      {firstLoad && (
         <View style={styles.loader} pointerEvents="none">
           <ActivityIndicator color={colors.primary} size="large" />
         </View>
       )}
 
-      {/* Floating Micro-Delicate Rising Magizham-Poo & 24K Gold Bokeh Overlay */}
-      <RisingMagizhamOverlay />
+      {/* The rising flower/bokeh backdrop is drawn by the site itself. A second,
+          natively animated copy layered over the WebView made the page beneath
+          it re-composite and flash on Android, so it is not rendered here. */}
 
       {/* Floating refresh — reloads the live site (e.g. after a deploy). */}
       <TouchableOpacity style={styles.refreshBtn} onPress={() => ref.current?.reload()} activeOpacity={0.8}>
@@ -107,9 +111,9 @@ export function WebApp({ token, user, onLogout }: { token?: string | null; user?
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
-  web: { flex: 1, backgroundColor: colors.bg },
-  loader: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
+  safe: { flex: 1, backgroundColor: PAGE_BG },
+  web: { flex: 1, backgroundColor: PAGE_BG },
+  loader: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', backgroundColor: PAGE_BG },
   errorContainer: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: colors.bg,
