@@ -304,8 +304,8 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
 
   return (
     <div id="vendor-marketplace-section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-        <div>
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8">
+        <div className="min-w-0 lg:flex-1">
           <h2 className="font-display font-bold text-2xl sm:text-3xl text-white tracking-tight">
             Explore Verified Vendors
           </h2>
@@ -315,9 +315,9 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap lg:flex-nowrap lg:shrink-0 lg:justify-end items-center gap-3">
           {/* Search with Trie-powered suggestions */}
-          <div className="relative w-full sm:w-72">
+          <div className="relative w-full sm:w-72 lg:w-60">
             <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="search"
@@ -355,7 +355,7 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
             <select
               value={selectedCity}
               onChange={(e) => onCityChange(e.target.value)}
-              className="bg-transparent text-slate-200 font-semibold focus:outline-none cursor-pointer"
+              className="bg-transparent text-slate-200 font-semibold focus:outline-none cursor-pointer lg:max-w-[8.5rem]"
             >
               <option value="All" className="bg-slate-900">All Cities</option>
               {groups.map(([state, cities]) => (
@@ -375,7 +375,7 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="bg-transparent text-slate-200 font-semibold focus:outline-none cursor-pointer"
+              className="bg-transparent text-slate-200 font-semibold focus:outline-none cursor-pointer lg:max-w-[10rem]"
             >
               <option value="rating" className="bg-slate-900">Top Rated First</option>
               <option value="price_low" className="bg-slate-900">Price: Low to High</option>
