@@ -319,7 +319,16 @@ function ensureFont(code: LangCode) {
   style.textContent =
     `html[lang="${code}"] body { font-family: 'Inter', '${lang.font}', ui-sans-serif, system-ui, sans-serif; line-height: 1.55; }` +
     `html[lang="${code}"] th, html[lang="${code}"] label { overflow-wrap: break-word; }` +
-    `html[lang="${code}"] .whitespace-nowrap { white-space: normal; }`;
+    `html[lang="${code}"] .whitespace-nowrap { white-space: normal; }` +
+    // Indic scripts have tall stacked conjuncts: give headings room, drop negative
+    // tracking, use the script font for display text, and cap the heaviest weights
+    // (only 400-700 are loaded) and the largest sizes so headlines stay clean.
+    `html[lang="${code}"] .font-display { font-family: '${lang.font}', 'Inter', sans-serif; }` +
+    `html[lang="${code}"] h1, html[lang="${code}"] h2, html[lang="${code}"] h3, html[lang="${code}"] .font-display { line-height: 1.4 !important; letter-spacing: normal !important; }` +
+    `html[lang="${code}"] .font-extrabold, html[lang="${code}"] .font-black { font-weight: 700; }` +
+    `html[lang="${code}"] .text-4xl { font-size: 1.9rem; } html[lang="${code}"] .text-5xl { font-size: 2.3rem; }` +
+    `@media (min-width: 640px) { html[lang="${code}"] .sm\\:text-6xl { font-size: 2.9rem; } html[lang="${code}"] .sm\\:text-5xl { font-size: 2.5rem; } }` +
+    `@media (min-width: 1024px) { html[lang="${code}"] .lg\\:text-7xl { font-size: 3.4rem; } html[lang="${code}"] .lg\\:text-6xl { font-size: 3rem; } }`;
 }
 
 // ---------------------------------------------------------------- public API
