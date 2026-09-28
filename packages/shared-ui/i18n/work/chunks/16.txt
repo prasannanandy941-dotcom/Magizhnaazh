@@ -1,0 +1,180 @@
+2701 | No banners yet.
+2702 | Platform Bookings
+2703 | All vendor bookings across every event.
+2704 | Booking #
+2705 | Booked on
+2706 | Amount
+2707 | Cancel/Refund Reason
+2708 | No bookings yet.
+2709 | Vendor Categories
+2710 | The   ⟦The {…} categories a vendor can choose when they register. Vendors who pick <span>Other</span> are listed under that row so you can see what kind of vendor signed up.⟧
+2711 | categories a vendor can choose when they register. Vendors who pick   ⟦The {…} categories a vendor can choose when they register. Vendors who pick <span>Other</span> are listed under that row so you can see what kind of vendor signed up.⟧
+2712 | are listed under that row so you can see what kind of vendor signed up.   ⟦The {…} categories a vendor can choose when they register. Vendors who pick <span>Other</span> are listed under that row so you can see what kind of vendor signed up.⟧
+2713 | Loading...
+2714 | Guest & Customer Complaints
+2715 | Complaints tied to bookings/events. Submission API exists (POST /api/v1/complaints) — no dedicated submission UI yet in customer-web.
+2716 | Booking   ⟦Three rules only you can decide. Under each one is what it has produced across your real bookings ( {…} booking {…} , {…} vendor {…} , {…} booked).⟧
+2717 | Open
+2718 | In Review
+2719 | Resolved
+2720 | No complaints submitted yet.
+2721 | India
+2722 | Failed to update offer status.
+2723 | Are you sure you want to remove this vendor offer? Customers will no longer receive this discount.
+2724 | Failed to delete offer.
+2725 | Please select a vendor.
+2726 | Please provide an offer title.
+2727 | Discount value must be greater than 0.
+2728 | Percentage discount cannot exceed 100%.
+2729 | Failed to publish offer.
+2730 | Please enter a coupon code.
+2731 | Discount must be between 1% and 100%.
+2732 | Failed to create coupon.
+2733 | Are you sure you want to delete this coupon?
+2734 | Failed to delete coupon.
+2735 | Offers & Coupons Management
+2736 | Monitor and govern promotional offers published by vendors for customers, as well as platform discount codes.
+2737 | Publish Offer for Vendor
+2738 | Vendor Offers
+2739 | Total recorded vendor deals
+2740 | Live Offers
+2741 | Active on customer checkout
+2742 | Participating Vendors
+2743 | Vendors with active offers
+2744 | Platform Coupons
+2745 | Global promo codes
+2746 | Vendor Offers to Customers (   ⟦<Sparkles /> Vendor Offers to Customers ( {…} )⟧
+2747 | Platform Discount Coupons (   ⟦<Percent /> Platform Discount Coupons ( {…} )⟧
+2748 | Search by offer title, vendor name...
+2749 | Category:
+2750 | All Statuses
+2751 | Live Only
+2752 | Loading vendor offers...
+2753 | No Vendor Offers Found
+2754 | No offers match your search/filter criteria.
+2755 | Vendors haven't published any deals yet. You can publish one on their behalf using the button above.
+2756 | Vendor Partner
+2757 | Offer Title & Details
+2758 | Min. Booking
+2759 | Validity
+2760 | Actions
+2761 | Created:   ⟦Created: {…}⟧
+2762 | ₹{0} FLAT OFF
+2763 | Until   ⟦Until {…}⟧
+2764 | Ongoing / No expiry
+2765 | Pause offer
+2766 | Activate offer
+2767 | Delete offer
+2768 | offers
+2769 | Create Platform Coupon
+2770 | Generate site-wide promo codes that customers can apply at checkout.
+2771 | Coupon Code *
+2772 | e.g. WEDDING10
+2773 | Discount % *
+2774 | Expiry Date (Optional)
+2775 | Create Coupon Code   ⟦{…} Create Coupon Code⟧
+2776 | Active Platform Coupons
+2777 | No platform coupons created yet. Use the form on the left to add your first code.
+2778 | Coupon Code
+2779 | Expires
+2780 | Action
+2781 | % OFF   ⟦{…} % OFF⟧
+2782 | Never
+2783 | coupons
+2784 | Select Vendor *
+2785 | -- Choose a Vendor --
+2786 | e.g. Wedding Season 15% OFF
+2787 | Offer details / special conditions...
+2788 | Percent (%) *
+2789 | Amount (₹) *
+2790 | Min Order Amount (₹)
+2791 | Nothing here yet.
+2792 | records
+2793 | Could not save.
+2794 | Refreshing…
+2795 | Loading
+2796 | Platform Health & Analytics
+2797 | Super Governance Dashboard for Magizhnaazh Microservices
+2798 | Platform Commission
+2799 | Active Events
+2800 | {0} Events
+2801 | Vendor Partners
+2802 | {0} Vendors
+2803 | Total Bookings
+2804 | {0} Bookings
+2805 | Gross Booking Volume
+2806 | Revenue Flow
+2807 | Collected   ⟦<span /> Collected {…} %⟧
+2808 | Gross
+2809 | Commission
+2810 | No vendors onboarded yet.
+2811 | Recent Bookings
+2812 | Top-Rated Vendors
+2813 | No vendors yet.
+2814 | Collecting…
+2815 | Restart requested.
+2816 | Restart failed.
+2817 | Decoupled Microservices Ecosystem Monitor
+2818 | Slack
+2819 | In-app
+2820 | Up   ⟦{…} / {…} Up⟧
+2821 | Switch to {0} theme (applies site-wide)
+2822 | Refresh now
+2823 | Monitor service unreachable. Start it with   ⟦<AlertTriangle /> Monitor service unreachable. Start it with <code>npm run dev:monitor</code> .⟧
+2824 | npm run dev:monitor
+2825 | service   ⟦<AlertTriangle /> {…} service {…} DOWN⟧
+2826 | DOWN   ⟦<AlertTriangle /> {…} service {…} DOWN⟧
+2827 | — alerts dispatched via   ⟦{…} — alerts dispatched via {…} .⟧
+2828 | Loading services…
+2829 | Port :   ⟦Port : {…}⟧
+2830 | Restart this service
+2831 | Auto-restart is off — runs: {0}
+2832 | Restart   ⟦{…} Restart⟧
+2833 | Service Dependencies
+2834 | Recent Alerts
+2835 | {0} alerts {1}
+2836 | enabled
+2837 | not configured
+2838 | Platform Events
+2839 | All events created across every customer account.
+2840 | No events created yet.
+2841 | Guest Event Feedback
+2842 | Anonymous feedback submitted by event guests.
+2843 | Event
+2844 | Overall
+2845 | Comments
+2846 | No feedback submitted yet.
+2847 | templates
+2848 | Templates available in the Canva-style invitation designer. New ones start with a blank canvas — customers fill it in.
+2849 | Elements
+2850 | Template Name
+2851 | Minimalist Engagement
+2852 | Background Color
+2853 | Custom
+2854 | No templates yet.
+2855 | Bookings by State
+2856 | Where customer bookings are actually happening — grouped by the state of each event.
+2857 | States with Bookings
+2858 | Cities with Bookings
+2859 | State
+2860 | Value
+2861 | Cities
+2862 | states
+2863 | Vendor Reviews
+2864 | Verified customer reviews of vendors. Remove any that violate platform policy.
+2865 | Comment
+2866 | No reviews yet.
+2867 | Saved — new bookings use these rates immediately.
+2868 | Could not save settings.
+2869 | Loading settings...
+2870 | Platform Settings
+2871 | Three rules only you can decide. Under each one is what it has produced across your real bookings (   ⟦Three rules only you can decide. Under each one is what it has produced across your real bookings ( {…} booking {…} , {…} vendor {…} , {…} booked).⟧
+2872 | booked).   ⟦Three rules only you can decide. Under each one is what it has produced across your real bookings ( {…} booking {…} , {…} vendor {…} , {…} booked).⟧
+2873 | Platform Commission Rate
+2874 | Earned so far: {0}
+2875 | Advance Deposit Rate
+2876 | Advances collected so far: {0}
+2877 | GST Rate
+2878 | Tax portion of booked value: {0}
+2879 | Save Settings   ⟦{…} Save Settings⟧
+2880 | Want the full money breakdown by vendor, city and month? See the   ⟦Want the full money breakdown by vendor, city and month? See the <span>Analytics</span> tab.⟧

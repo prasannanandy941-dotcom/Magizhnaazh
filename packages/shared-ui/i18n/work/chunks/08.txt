@@ -1,0 +1,180 @@
+1261 | Attendees:
+1262 | Days:
+1263 | Choose a tier
+1264 | Tier
+1265 | ▶ Video
+1266 | Tap   ⟦Tap <span>View</span> to see a design full-screen, or <span>Select</span> the ones you like — your picks are sent to <span>{…}</span> with your booking.⟧
+1267 | to see a design full-screen, or   ⟦Tap <span>View</span> to see a design full-screen, or <span>Select</span> the ones you like — your picks are sent to <span>{…}</span> with your booking.⟧
+1268 | Select
+1269 | the ones you like — your picks are sent to   ⟦Tap <span>View</span> to see a design full-screen, or <span>Select</span> the ones you like — your picks are sent to <span>{…}</span> with your booking.⟧
+1270 | with your booking.   ⟦Tap <span>View</span> to see a design full-screen, or <span>Select</span> the ones you like — your picks are sent to <span>{…}</span> with your booking.⟧
+1271 | Gallery {0}
+1272 | selected — sent to the vendor with your booking.   ⟦<Check /> {…} design {…} selected — sent to the vendor with your booking.⟧
+1273 | Verified customer reviews
+1274 | From customers whose booking with   ⟦From customers whose booking with {…} was completed.⟧
+1275 | was completed.   ⟦From customers whose booking with {…} was completed.⟧
+1276 | review   ⟦{…} review {…}⟧
+1277 | Loading reviews…
+1278 | No reviews yet. Be the first to book and review this vendor.
+1279 | Response from   ⟦Response from {…}⟧
+1280 | Share reference files
+1281 | Upload photos or videos of what you want (a decoration style, a setup you like). They're attached to your booking, so   ⟦Upload photos or videos of what you want (a decoration style, a setup you like). They're attached to your booking, so <span>{…}</span> sees exactly what you're expecting after you confirm and pay the advance.⟧
+1282 | sees exactly what you're expecting after you confirm and pay the advance.   ⟦Upload photos or videos of what you want (a decoration style, a setup you like). They're attached to your booking, so <span>{…}</span> sees exactly what you're expecting after you confirm and pay the advance.⟧
+1283 | Uploading…
+1284 | Select Image/Video to Upload
+1285 | Your uploads (   ⟦Your uploads ( {…} )⟧
+1286 | Reference
+1287 | Remove   ⟦{…} Remove⟧
+1288 | Pick a date to book   ⟦<CalendarIcon /> Pick a date to book {…}⟧
+1289 | All listed dates are booked by other customers — check back or contact the vendor for other dates.
+1290 | Pick a session for   ⟦<Clock /> Pick a session for {…}⟧
+1291 | Booked by another customer
+1292 | ⚠️ This date has already been booked by another customer. Please choose another date.
+1293 | Often booked together
+1294 | Booked together for {0} event{1}
+1295 | Special Request (optional)
+1296 | Write a request for {0}
+1297 | Tell {0} exactly what you want
+1298 | This is shared with   ⟦This is shared with {…} along with your booking.⟧
+1299 | along with your booking.   ⟦This is shared with {…} along with your booking.⟧
+1300 | Your Selected Options
+1301 | Total bill
+1302 | Select items or a package to calculate advance
+1303 | Your request will be shared with the vendor
+1304 | Pick an available date above to book
+1305 | ⚠️ This session is already booked by another customer. Please choose another date or session.
+1306 | Book & Pay Advance
+1307 | Booking for event:
+1308 | Expected guests:   ⟦Expected guests: {…} people⟧
+1309 | people   ⟦{…} people⟧
+1310 | Date & Session:
+1311 | No date selected
+1312 | Choose Open Date:
+1313 | Already booked by another customer
+1314 | Session / Slot:
+1315 | left)   ⟦( {…} left)⟧
+1316 | (Booked)
+1317 | ⚠️ This date and session has already been booked by another customer. Please choose another date or session.
+1318 | ⚠️ Please select an available event date above to proceed.
+1319 | Selected items
+1320 | You pay
+1321 | Call   ⟦<Phone /> Call {…}⟧
+1322 | Return gift print customization: {0}
+1323 | Confirm Order
+1324 | For what event are you booking?
+1325 | Create your event first!
+1326 | Before paying the advance and booking   ⟦Before paying the advance and booking <span>{…}</span> , please create your event so we can link your booking dates, invoices, and budget to it. Once created, you will go directly to advance pay!⟧
+1327 | , please create your event so we can link your booking dates, invoices, and budget to it. Once created, you will go directly to advance pay!   ⟦Before paying the advance and booking <span>{…}</span> , please create your event so we can link your booking dates, invoices, and budget to it. Once created, you will go directly to advance pay!⟧
+1328 | Create Event Now
+1329 | Close image
+1330 | {0} photo
+1331 | Makeup & Beauty
+1332 | Return Gifts
+1333 | All
+1334 | Explore Verified Vendors
+1335 | Showing   ⟦Showing {…} premium event partners {…}⟧
+1336 | premium event partners   ⟦Showing {…} premium event partners {…}⟧
+1337 | in {0}
+1338 | across India
+1339 | Search vendors, categories, cities…
+1340 | All Cities
+1341 | Top Rated First
+1342 | Price: Low to High
+1343 | Price: High to Low
+1344 | Tap arrow to explore
+1345 | Scroll left to see previous categories
+1346 | Scroll right to look at remaining categories
+1347 | Filtering by:
+1348 | Clear
+1349 | No Vendors Listed Yet
+1350 | No Vendors Match Your Filters
+1351 | New verified vendor profiles created on the server will appear here live.
+1352 | No {0}vendors offer {1} yet.
+1353 | Try clearing your category or city filters to see more results.
+1354 | Clear option filters
+1355 | View All Categories
+1356 | available on   ⟦Showing <strong>{…}</strong> {…} vendor {…} available on <strong>{…}</strong> {…} .⟧
+1357 | Showing all   ⟦Showing all {…} vendors. <strong>{…}</strong> of them {…} available on <strong>{…}</strong> .⟧
+1358 | vendors.   ⟦Showing all {…} vendors. <strong>{…}</strong> of them {…} available on <strong>{…}</strong> .⟧
+1359 | of them   ⟦Showing all {…} vendors. <strong>{…}</strong> of them {…} available on <strong>{…}</strong> .⟧
+1360 | is
+1361 | are
+1362 | Show all vendors
+1363 | Only vendors free on {0}
+1364 | vendors are available on your event date   ⟦No {…} vendors are available on your event date <strong>{…}</strong> {…} .⟧
+1365 | Showing all vendors instead — open a vendor to see their other available dates and pick one of those.
+1366 | Verified
+1367 | 🎉 Offer
+1368 | Starting From
+1369 | View Details
+1370 | Compare Vendor
+1371 | Compare
+1372 | Vendors Selected for Comparison   ⟦{…} Vendors Selected for Comparison⟧
+1373 | Launch Comparison Table
+1374 | Your Wishlist
+1375 | Nothing saved yet — tap the heart icon on any vendor card to add it here.
+1376 | Remove from wishlist
+1377 | Could not start payment. Please try again.
+1378 | Could not load the payment window. Check your connection and try again.
+1379 | Payment could not be verified. Contact support with your payment ID.
+1380 | Session expired — please sign in again.
+1381 | Failed to load bookings.
+1382 | Counter Sent
+1383 | Advance Claimed — Confirm
+1384 | Facilities & Options
+1385 | 1 hall with 1 AC
+1386 | 1 hall with fans
+1387 | 1 VIP room
+1388 | 2 chairs
+1389 | 1 pair of garlands
+1390 | Bride & groom room
+1391 | 1 room
+1392 | 1 guest room
+1393 | 1 dormitory hall
+1394 | 1 washroom
+1395 | Full utensil set
+1396 | 1 RO unit
+1397 | Silver
+1398 | Gold
+1399 | Platinum
+1400 | Royal
+1401 | Premium 4K
+1402 | AC Banquet Hall
+1403 | Rose & Marigold Backdrop
+1404 | HD Bridal Makeup
+1405 | Candid Album / Cinematic Reel
+1406 | Innova Crysta (per trip)
+1407 | Wedding Homam Ritual
+1408 | Digital E-Invite Design
+1409 | Wedding Cards (per 100)
+1410 | Silver Coin Gift Box
+1411 | Live Band (2 hours)
+1412 | DJ Setup (4 hours)
+1413 | Fairy Light Setup
+1414 | Jasmine Garland (per metre)
+1415 | Bridal Mehendi (full hands)
+1416 | Wedding Anchor (per event)
+1417 | Bouncer (per guard)
+1418 | Deep Cleaning (per hall)
+1419 | Chairs (per 100)
+1420 | Cooking Vessel (per set)
+1421 | Full Planning Package
+1422 | Conference Setup
+1423 | Service item
+1424 | percent
+1425 | connected
+1426 | Could not reach the server.
+1427 | Dashboard
+1428 | Could not post your reply. Please try again.
+1429 | Upload failed — is the gateway running?
+1430 | Bank & Cashfree details saved successfully.
+1431 | Could not save bank details.
+1432 | Save your bank account number, IFSC and entity name above first.
+1433 | Enter your PAN above to connect Razorpay.
+1434 | Razorpay Route onboarding submitted — check status below.
+1435 | Onboarding did not complete — see status below.
+1436 | Failed to connect Razorpay.
+1437 | Could not refresh Razorpay status.
+1438 | Please enter a valid 15-character GSTIN number (e.g. 22AAAAA0000A1Z5).
+1439 | GSTIN format looks valid.
+1440 | Enter a valid 10-character PAN (e.g. ABCDE1234F).

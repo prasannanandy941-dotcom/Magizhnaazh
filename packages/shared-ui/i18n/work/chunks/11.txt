@@ -1,0 +1,180 @@
+1801 | Hours for Baraat
+1802 | e.g. 4 hours
+1803 | Price for Baraat (₹)
+1804 | Baraat
+1805 | Guests Transport Options
+1806 | How many persons (guests)
+1807 | e.g. 50 persons
+1808 | Price for Guests (₹)
+1809 | e.g. 10000
+1810 | Couple Transport
+1811 | Price for Couple (₹)
+1812 | Couple
+1813 | e.g. 6000
+1814 | Fleet Specifications & Package Price
+1815 | No. of vehicles
+1816 | Seats / vehicle
+1817 | Km / hours included
+1818 | Package price (₹)
+1819 | Driver + fuel included
+1820 | Driver + fuel price (₹)
+1821 | Type of decoration
+1822 | e.g. Fresh Flower Hood & Ribbon Garlands
+1823 | Decoration price (₹)
+1824 | e.g. 2500
+1825 | Upload decoration image
+1826 | Upload decoration photo
+1827 | Ceremony details & Pricing
+1828 | Ceremony type — price for each (leave blank if not offered)
+1829 | Language
+1830 | Community
+1831 | e.g. Iyer
+1832 | No. of priests
+1833 | Priests price (₹)
+1834 | Pooja items (samagri) price (₹)
+1835 | Blank if not included
+1836 | Muhurtham consultation
+1837 | Blank if not charged
+1838 | Invitation Details & Pricing
+1839 | design (₹)   ⟦Price for {…} design (₹)⟧
+1840 | Type (Select types to set price & upload sample)
+1841 | e.g. 1500
+1842 | Sample / Preview for   ⟦Sample / Preview for {…}⟧
+1843 | Change sample
+1844 | Upload {0} sample
+1845 | Price for RSVP link (₹)
+1846 | RSVP link
+1847 | Price for Invitation call by person (₹)
+1848 | Languages
+1849 | Price for languages / translation (₹)
+1850 | e.g. 1000
+1851 | Quantity (printed)
+1852 | Quantity
+1853 | e.g. 250
+1854 | Price for printed cards (₹)
+1855 | Design revisions
+1856 | revisions
+1857 | e.g. 3
+1858 | Delivery time
+1859 | e.g. 3 days
+1860 | Printing Specifications & Pricing
+1861 | Product (Select products to configure type, size, price & photos)
+1862 | Type of   ⟦Type of {…}⟧
+1863 | e.g. Vinyl / Star Flex / Backlit
+1864 | e.g. Photobook / Layflat
+1865 | e.g. Roll-up / X-standee
+1866 | e.g. Acrylic / Canvas / Wood
+1867 | e.g. Folded card / Postcard
+1868 | Size of   ⟦Size of {…}⟧
+1869 | e.g. 6x4 ft
+1870 | e.g. 12x18 inch
+1871 | e.g. 6x3 ft
+1872 | e.g. 4x6 inch
+1873 | Price of   ⟦Price of {…} (₹)⟧
+1874 | prices
+1875 | Upload sample photo for   ⟦Upload sample photo for {…}⟧
+1876 | Material / Finish (Select to configure price & material photo)
+1877 | Material   ⟦{…} Material⟧
+1878 | material (₹)   ⟦Price of {…} material (₹)⟧
+1879 | Upload image of   ⟦Upload image of {…} material⟧
+1880 | e.g. 2 days
+1881 | Design included
+1882 | Price of design (₹)
+1883 | What design
+1884 | e.g. Custom banner typography & graphics
+1885 | Upload design sample
+1886 | Change design photo
+1887 | Return Gift Specifications & Pricing
+1888 | Tier (per-piece budget)
+1889 | Gift Type (Select to configure item details, price & sample photo)
+1890 | Grams / Kgs
+1891 | Item name / style
+1892 | What plant
+1893 | Kind of hampers
+1894 | Types of sweets
+1895 | e.g. 250g / 500g / 1kg
+1896 | e.g. Silver coin 10g / Silver diya
+1897 | e.g. Velvet embroidered potli
+1898 | e.g. Money plant / Jade plant
+1899 | e.g. Festive luxury hamper
+1900 | e.g. Kaju katli / Ghee mysore pak
+1901 | details
+1902 | e.g. 350
+1903 | Count / pieces
+1904 | Price for count of gifts (₹)
+1905 | Packaging type
+1906 | e.g. Gift box / Jute bag / Tin box
+1907 | Price for packaging (₹)
+1908 | Minimum quantity
+1909 | e.g. 50
+1910 | Packing time (days)
+1911 | Bulk quantity discount
+1912 | e.g. 10% off above 200
+1913 | Customization (name / date print)
+1914 | customization
+1915 | Price for customization (₹)
+1916 | Customer will be prompted to enter the name / event date to print on the gift in the customer app.
+1917 | Act details & Pricing
+1918 | Act type (select to set price & upload photo)
+1919 | Equipment provided
+1920 | e.g. Sound system, stage lights, mics
+1921 | Equipment price (blank if N/A)
+1922 | Travel distance covered
+1923 | km
+1924 | Travel price (blank if N/A)
+1925 | Indoor / Outdoor
+1926 | — select, then set price / photo
+1927 | Number of hours
+1928 | hours
+1929 | Number of artists
+1930 | Sound system + speakers
+1931 | Lights & Sounds details & Pricing
+1932 | Lighting Type (Select options to configure item details, price & sample photo)
+1933 | What type of item is there
+1934 | e.g. Specific model / count for {0}
+1935 | Area covered
+1936 | e.g. Stage + entrance
+1937 | Price for area covered (₹)
+1938 | Number of fixtures (optional)
+1939 | e.g. 20
+1940 | Price for power backup (₹)
+1941 | e.g. 3000
+1942 | Setup + teardown included
+1943 | Price for setup & teardown (₹)
+1944 | Flower details & Pricing
+1945 | Variety / Tier (Select options to configure price & upload photo)
+1946 | variety
+1947 | Custom Item #   ⟦Custom Item # {…} {…}⟧
+1948 | e.g. Jasmine / Orchid
+1949 | Items (Select to configure price & upload image)
+1950 | e.g. Floral backdrop / Rose petal shower
+1951 | e.g. 4000
+1952 | Types of Price (Quantity, Delivery Timing, Function)
+1953 | Quantity & Price
+1954 | e.g. 10
+1955 | Price per unit (₹)
+1956 | Total = ₹   ⟦Total = ₹ {…}⟧
+1957 | Delivery Timing
+1958 | e.g. Morning 6 AM
+1959 | Delivery timing price (₹)
+1960 | Function / Ceremony
+1961 | Which function
+1962 | e.g. Muhurtham
+1963 | Function price (₹)
+1964 | Mehendi details & Pricing
+1965 | Tier (select to set price & upload photo)
+1966 | Design intricacy (select to set price & upload photo)
+1967 | intricacies
+1968 | intricacy
+1969 | Type — price for each (leave blank if not offered)
+1970 | Artists (guest stalls)
+1971 | Artists price (₹)
+1972 | Organic henna (₹)
+1973 | Travel (₹)
+1974 | Blank if N/A
+1975 | Solo or co-host
+1976 | Language(s)
+1977 | Number of events
+1978 | e.g. 1
+1979 | Games / scripting included
+1980 | Travel included

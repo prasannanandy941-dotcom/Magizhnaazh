@@ -1,0 +1,180 @@
+541 | Bindi & basic setting
+542 | HD
+543 | HD long-wear base
+544 | Dramatic eyes + lashes
+545 | Contour & highlight
+546 | Setting spray
+547 | Draping assist
+548 | Airbrush
+549 | Airbrush flawless base
+550 | Premium lashes
+551 | Full contour & baking
+552 | Saree draping + hair
+553 | Touch-up kit
+554 | Reception & Engagement
+555 | Evening glam
+556 | Base & eye makeup
+557 | Setting
+558 | HD glam base
+559 | Smokey / shimmer eyes
+560 | Lashes
+561 | Airbrush glam
+562 | Long-wear finish
+563 | Hair styling included
+564 | Party & Guest
+565 | Family / guests
+566 | Quick base
+567 | Eye & lip
+568 | HD base
+569 | Defined eyes + lashes
+570 | Contour
+571 | Airbrush finish
+572 | Glam eyes
+573 | Long-wear
+574 | Pre-Wedding
+575 | Dewy natural base
+576 | Soft eyes
+577 | Tinted lips
+578 | HD dewy base
+579 | Floral-tone eyes
+580 | Highlight
+581 | Hair braid
+582 | Airbrush glow
+583 | Haldi-proof waterproof
+584 | Floral hair styling
+585 | Hair & Saree Draping
+586 | Styling add-on
+587 | Basic
+588 | Blow-dry / straightening
+589 | Simple bun or braid
+590 | Basic saree pleats
+591 | Signature
+592 | Designer hairstyle
+593 | Hair accessories set
+594 | Designer saree draping
+595 | Bridal
+596 | Bridal hairdo + extensions
+597 | Flower / jewellery setting
+598 | Bridal drape + pinning
+599 | Dupatta setting
+600 | Ornaments & Jewellery
+601 | Bridal jewellery on rent
+602 | Imitation
+603 | Necklace + earrings
+604 | Maang Tikka
+605 | Sanitised & insured
+606 | Temple Set
+607 | Full temple set
+608 | Necklace + long haram
+609 | Jhumkas & vanki
+610 | Oddiyanam (waist belt)
+611 | Hair jada set
+612 | Kundan / Polki
+613 | Premium kundan set
+614 | Choker + long haram
+615 | Matha patti & nath
+616 | Hand & hair jewellery
+617 | Styling assistant
+618 | Pre-Bridal Skin & Hair
+619 | Prep sessions
+620 | Single
+621 | Cleanup / facial
+622 | Threading
+623 | Basic manicure
+624 | 3 facials over a month
+625 | Body Polishing
+626 | Mani + Pedi
+627 | Hair Spa
+628 | Bridal Package
+629 | Full pre-bridal facials
+630 | De-tan & polishing
+631 | Mani/Pedi + waxing
+632 | Hair spa + trim
+633 | Skin consultation
+634 | {0} makeup
+635 | Choose your finish
+636 | Looks   ⟦{…} looks⟧
+637 | Makeup by occasion & finish —   ⟦Makeup by occasion & finish — <span>{…} looks</span> , each with Classic / HD / Airbrush pricing.⟧
+638 | , each with Classic / HD / Airbrush pricing.   ⟦Makeup by occasion & finish — <span>{…} looks</span> , each with Classic / HD / Airbrush pricing.⟧
+639 | DJ Package
+640 | Reception / Sangeet
+641 | DJ for 3 hours
+642 | Standard sound system
+643 | Basic lighting
+644 | Standard
+645 | DJ for 5 hours
+646 | Premium sound system
+647 | Dance floor lighting
+648 | MC announcements
+649 | DJ for full event
+650 | Concert-grade sound
+651 | Laser + LED lighting
+652 | Live remix requests
+653 | Fog machine
+654 | Live Band
+655 | Wedding / Reception
+656 | Acoustic set
+657 | Bollywood + classical mix
+658 | Full 8-piece band
+659 | Custom song requests
+660 | Backup vocalists
+661 | Anchor / MC
+662 | Full event hosting
+663 | MC for 3 hours
+664 | Bilingual hosting
+665 | Basic script
+666 | MC for full event
+667 | Custom scripted intros
+668 | Crowd engagement games
+669 | Celebrity-style MC
+670 | Full event coordination
+671 | Games + prizes management
+672 | Sound & Lighting Setup
+673 | Venue-wide
+674 | 2 speakers + mixer
+675 | Basic stage lighting
+676 | Full PA system
+677 | Ambient + stage lighting
+678 | Wireless mics x2
+679 | Concert-grade PA
+680 | Full venue LED lighting
+681 | Wireless mics x4
+682 | Technician on-site
+683 | Nadaswaram & Thavil
+684 | Muhurtham / traditional
+685 | Nadaswaram + thavil duo
+686 | Traditional mangala isai
+687 | Half-day coverage
+688 | Reception welcome (swagatham)
+689 | Full-day temple-style
+690 | Sruti box + coordination
+691 | Guest welcome procession
+692 | Dhol & Band Baaja
+693 | Baraat / entry
+694 | 2 dhol players
+695 | Baraat procession
+696 | Dhol + 6-piece brass band
+697 | Procession + grand entry
+698 | Costumed performers
+699 | Full baaja band (10)
+700 | Dhol + trumpets + drums
+701 | LED lights & sparklers
+702 | Choreographed entry
+703 | Carnatic / Classical
+704 | Concert / background
+705 | Solo vocalist + accompaniment
+706 | Devotional & film ragas
+707 | Vocal + veena / violin
+708 | Mridangam accompaniment
+709 | Full concert ensemble
+710 | Named artist
+711 | PA & stage coordination
+712 | Custom kriti requests
+713 | Bhajan / Devotional
+714 | Pooja / satsang
+715 | Singer + harmonium + tabla
+716 | Popular devotional set
+717 | Kirtan & aarti
+718 | Handheld percussion
+719 | Full devotional troupe
+720 | Harmonium, tabla, dholak

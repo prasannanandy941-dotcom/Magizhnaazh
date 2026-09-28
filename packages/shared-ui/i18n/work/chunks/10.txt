@@ -1,0 +1,180 @@
+1621 | " yet — add what you offer below.   ⟦No preset options for " {…} " yet — add what you offer below.⟧
+1622 | Save Options   ⟦{…} Save Options⟧
+1623 | Function Halls
+1624 | Bundle your services into priced packages. Customers see these on the "Packages" tab of your listing and can book them.
+1625 | No packages yet — add your first one below.
+1626 | Group of security guards
+1627 | e.g. Bouncers (5 Guards)
+1628 | Hall name — e.g. AC Banquet Hall
+1629 | Package name — e.g. Silver Wedding Package
+1630 | Remove package
+1631 | Total amount (₹)
+1632 | Price per event / hour (₹)
+1633 | Price per event (₹)
+1634 | Total price (₹)
+1635 | Price per total event (₹)
+1636 | Price (₹)
+1637 | Sum: ₹   ⟦Sum: ₹ {…}⟧
+1638 | e.g. 35000
+1639 | e.g. 15000
+1640 | e.g. 12000
+1641 | e.g. 8000
+1642 | e.g. 20000
+1643 | Auto-added from hall type, class & features:   ⟦Auto-added from hall type, class & features: <b>₹ {…}</b> . Edit the box to override.⟧
+1644 | . Edit the box to override.   ⟦Auto-added from hall type, class & features: <b>₹ {…}</b> . Edit the box to override.⟧
+1645 | Auto-added from themes, areas, flowers & mandap:   ⟦Auto-added from themes, areas, flowers & mandap: <b>₹ {…}</b> . Edit the box to override.⟧
+1646 | Auto-added from function types, finish, hair style, draping, travel & family:   ⟦Auto-added from function types, finish, hair style, draping, travel & family: <b>₹ {…}</b> . Edit the box to override.⟧
+1647 | Auto-added from styles, coverage, crew, album & add-ons:   ⟦Auto-added from styles, coverage, crew, album & add-ons: <b>₹ {…}</b> . Edit the box to override.⟧
+1648 | Auto-added from vehicles, use, driver/fuel & decoration:   ⟦Auto-added from vehicles, use, driver/fuel & decoration: <b>₹ {…}</b> . Edit the box to override.⟧
+1649 | Auto-added from design, types, add-ons, languages & print quantity:   ⟦Auto-added from design, types, add-ons, languages & print quantity: <b>₹ {…}</b> . Edit the box to override.⟧
+1650 | Auto-added from products, materials & design:   ⟦Auto-added from products, materials & design: <b>₹ {…}</b> . Edit the box to override.⟧
+1651 | Auto-added from gift types, count, packaging & customization:   ⟦Auto-added from gift types, count, packaging & customization: <b>₹ {…}</b> . Edit the box to override.⟧
+1652 | Auto-added from lighting types, area covered, power backup & setup:   ⟦Auto-added from lighting types, area covered, power backup & setup: <b>₹ {…}</b> . Edit the box to override.⟧
+1653 | Auto-added from base event price & add-ons:   ⟦Auto-added from base event price & add-ons: <b>₹ {…}</b> . Edit the box to override.⟧
+1654 | Auto-added from acts, equipment & travel:   ⟦Auto-added from acts, equipment & travel: <b>₹ {…}</b> . Edit the box to override.⟧
+1655 | Auto-added from types & features:   ⟦Auto-added from types & features: <b>₹ {…}</b> . Edit the box to override.⟧
+1656 | Auto-added from ceremonies, priests, samagri & muhurtham:   ⟦Auto-added from ceremonies, priests, samagri & muhurtham: <b>₹ {…}</b> . Edit the box to override.⟧
+1657 | Auto-added from all items:
+1658 | (Set for   ⟦(Set for {…} guests = ₹ {…} )⟧
+1659 | guests = ₹   ⟦(Set for {…} guests = ₹ {…} )⟧
+1660 | Capacity (persons)
+1661 | Duration (hours)
+1662 | Security details & Pricing
+1663 | Type   ⟦Type <span>— select, then set price / photo</span>⟧
+1664 | Gender (select to set name, price & upload photo)
+1665 | ✕ Remove
+1666 | Name
+1667 | e.g. {0} bouncers
+1668 | e.g. 2000
+1669 | Upload Photo
+1670 | Change photo
+1671 | Number of guards
+1672 | e.g. 5
+1673 | Hours / shifts
+1674 | Add-ons — price for each (leave blank if not offered)
+1675 | Description
+1676 | What this package includes and who it's for.
+1677 | Menu Photo / Card
+1678 | Menu page
+1679 | Remove menu page
+1680 | Uploading Menu…
+1681 | Upload Menu Photo
+1682 | Menu Tier
+1683 | Food Type
+1684 | items added yet.   ⟦No {…} items added yet.⟧
+1685 | Add   ⟦<Plus /> Add {…} item⟧
+1686 | Item name — e.g. Chicken Biryani
+1687 | Item name — e.g. Jain Dal Makhani
+1688 | Item name — e.g. Paneer Butter Masala
+1689 | Cuisine
+1690 | cuisines
+1691 | Item name — e.g. Masala Dosa, Idli Sambar, Medu Vada
+1692 | Item name — e.g. Chettinad Chicken, Kozhi Varuval, Pepper Mutton
+1693 | Item name — e.g. Dal Makhani, Butter Naan, Paneer Tikka
+1694 | Item name — e.g. Pasta Alfredo, Garlic Bread, Lasagna
+1695 | Dishes & Courses
+1696 | Click Starters, Mains, or Desserts to add dishes with photos, item names, and prices.
+1697 | Starter dish — e.g. Paneer Tikka, Chicken 65, Spring Rolls
+1698 | Main dish — e.g. Butter Chicken, Paneer Butter Masala, Veg Biryani
+1699 | Dessert dish — e.g. Gulab Jamun, Rasmalai, Ice Cream
+1700 | dishes)   ⟦( {…} dishes)⟧
+1701 | Dishes included:
+1702 | e.g. 6
+1703 | added yet.   ⟦No {…} added yet.⟧
+1704 | Minimum guest count
+1705 | e.g. 100
+1706 | Live Counters
+1707 | Item name — e.g. Pani Puri, Sev Puri, Dahi Puri, Bhel Puri
+1708 | Item name — e.g. Belgian Chocolate, Vanilla, Butterscotch, Kulfi
+1709 | Live Counter Items   ⟦{…} Live Counter Items⟧
+1710 | Service Style
+1711 | Select…
+1712 | Plate Types for Buffet
+1713 | Choose the plate options provided with the buffet service, and set a price for each:
+1714 | Banana Leaf Type
+1715 | Choose the leaf option used for seated banana-leaf service, and set its price:
+1716 | Welcome Drink Options & Rates
+1717 | Add drink
+1718 | Drink name — e.g. Virgin Mojito, Badam Milk, Rose Milk, Fruit Punch
+1719 | Remove drink
+1720 | Free Tasting / Trial
+1721 | Available Items for Tasting
+1722 | Add tasting item
+1723 | Item available for tasting — e.g. Chicken Biryani, Paneer Butter Masala, Gulab Jamun
+1724 | Hall name is the package name above; seating capacity is the "Capacity (persons)" field; price is per session.
+1725 | Sessions offered (priced per session)
+1726 | Available dates for sessions
+1727 | Session   ⟦<CalendarDays /> {…} Session⟧
+1728 | added   ⟦{…} date {…} added⟧
+1729 | Add an available date
+1730 | No dates added yet for   ⟦No dates added yet for {…} . Add open dates above.⟧
+1731 | . Add open dates above.   ⟦No dates added yet for {…} . Add open dates above.⟧
+1732 | Hall Type
+1733 | Price for {0}
+1734 | Hall Class
+1735 | Accommodation rooms
+1736 | e.g. 4
+1737 | Catering price (optional)
+1738 | Replace menu
+1739 | Upload menu
+1740 | Replace image
+1741 | Upload image
+1742 | Price (optional)
+1743 | Package Tier
+1744 | Theme   ⟦Theme <span>— select, then set price / image</span>⟧
+1745 | — select, then set price / image
+1746 | Areas covered   ⟦Areas covered <span>— select, then set price / image</span>⟧
+1747 | areas
+1748 | area
+1749 | flower
+1750 | Mandap type
+1751 | e.g. Traditional wooden
+1752 | Mandap price
+1753 | Couple sofa / seating
+1754 | Lighting included
+1755 | Function type   ⟦Function type <span>— select, then set price / image</span>⟧
+1756 | Finish / Tier
+1757 | finish
+1758 | Extra family members covered
+1759 | e.g. 2
+1760 | Extra family members price
+1761 | Hair style name
+1762 | e.g. Bridal bun
+1763 | Hair style price
+1764 | Saree / dupatta draping
+1765 | Trial session included
+1766 | Style   ⟦Style <span>— select, then set price / image</span>⟧
+1767 | Size — e.g. 1080p / A4
+1768 | Quality — e.g. HD / 4K
+1769 | Days / events
+1770 | Crew (photographers / cinematographers)
+1771 | Total hours of coverage
+1772 | Deliverables
+1773 | Album type
+1774 | e.g. Leather hardcover
+1775 | Album type price
+1776 | Photo Frame
+1777 | Size — e.g. 12x18 in
+1778 | Photo frame price
+1779 | Album pages
+1780 | e.g. 30
+1781 | Album pages price
+1782 | Edited photos count
+1783 | e.g. 300
+1784 | Pre-wedding shoot
+1785 | Priced
+1786 | Per day rate (₹)
+1787 | e.g. 5000
+1788 | Per km rate (₹)
+1789 | e.g. 18
+1790 | Vehicle Type (Select cars to configure seats, price & photos)
+1791 | How many seats in   ⟦How many seats in {…}⟧
+1792 | e.g. 40
+1793 | e.g. 14
+1794 | e.g. 7
+1795 | Price for   ⟦Price for {…} (₹)⟧
+1796 | e.g. 3500
+1797 | Image of   ⟦Image of {…}⟧
+1798 | Upload {0} photo
+1799 | Use
+1800 | Baraat Options

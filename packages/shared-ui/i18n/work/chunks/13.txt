@@ -1,0 +1,180 @@
+2161 | Your photos, packages, offers and availability are deleted.
+2162 | This cannot be undone.
+2163 | If you still have upcoming bookings, complete, cancel or refund them first.
+2164 | Your password
+2165 | to confirm   ⟦Type <span>DELETE</span> to confirm⟧
+2166 | Keep my account
+2167 | Delete permanently   ⟦{…} Delete permanently⟧
+2168 | Palak Paneer
+2169 | Kadai Paneer
+2170 | Aloo Gobi
+2171 | Chana Masala
+2172 | Dal Tadka
+2173 | Dal Makhani
+2174 | Veg Biryani
+2175 | Jeera Rice
+2176 | Mixed Veg Curry
+2177 | Bhindi Fry
+2178 | Malai Kofta
+2179 | Mushroom Masala
+2180 | Veg Kurma
+2181 | Sambar
+2182 | Rasam
+2183 | Poori Masala
+2184 | Chapati
+2185 | Naan
+2186 | Chicken Biryani
+2187 | Mutton Biryani
+2188 | Butter Chicken
+2189 | Chicken Curry
+2190 | Mutton Curry
+2191 | Mutton Rogan Josh
+2192 | Fish Curry
+2193 | Fish Fry
+2194 | Prawn Masala
+2195 | Egg Curry
+2196 | Egg Biryani
+2197 | Chicken Tikka Masala
+2198 | Pepper Chicken
+2199 | Nattu Kozhi Kuzhambu
+2200 | Chicken Kurma
+2201 | Gobi Manchurian
+2202 | Veg Spring Roll
+2203 | Hara Bhara Kabab
+2204 | Baby Corn Manchurian
+2205 | Aloo Tikki
+2206 | Mushroom 65
+2207 | Onion Pakora
+2208 | Veg Seekh Kabab
+2209 | Chicken Tikka
+2210 | Chicken Lollipop
+2211 | Tandoori Chicken
+2212 | Chicken Seekh Kabab
+2213 | Fish Tikka
+2214 | Prawn Fry
+2215 | Mutton Seekh Kabab
+2216 | Chicken Wings
+2217 | Apollo Fish
+2218 | Egg 65
+2219 | Coca-Cola
+2220 | Pepsi
+2221 | Sprite
+2222 | Fanta
+2223 | Buttermilk
+2224 | Tender Coconut
+2225 | Fruit Punch
+2226 | Mango Juice
+2227 | Mineral Water
+2228 | Rasmalai
+2229 | Gajar Ka Halwa
+2230 | Ice Cream
+2231 | Jangiri
+2232 | Kaju Katli
+2233 | Payasam
+2234 | Fruit Custard
+2235 | Jalebi
+2236 | Kesari
+2237 | Virgin Mojito
+2238 | Blue Lagoon
+2239 | Pina Colada
+2240 | Mango Mastani
+2241 | Strawberry Mocktail
+2242 | Cucumber Mint Cooler
+2243 | Samosa
+2244 | Mini Idli
+2245 | Pani Puri
+2246 | Bhel Puri
+2247 | Sundal
+2248 | Bonda
+2249 | Cutlet
+2250 | Spring Roll
+2251 | Veg Sandwich
+2252 | Banana Leaf Backdrop
+2253 | Kolam / Rangoli
+2254 | Brass Lamp Setup
+2255 | Mango Leaf Toran
+2256 | Traditional Kalash Decor
+2257 | Floral Mandap
+2258 | Pillar Draping
+2259 | Crystal Chandelier
+2260 | Fabric Ceiling Drape
+2261 | Grand Entrance Arch
+2262 | Floral Backdrop
+2263 | LED Panel Backdrop
+2264 | Sofa Setup
+2265 | Walkway Decor
+2266 | Marigold Decor
+2267 | Umbrella Props
+2268 | Floral Swing (Oonjal)
+2269 | Cushion Seating
+2270 | Backdrop Frames
+2271 | Church Aisle Decor
+2272 | Floral Arch
+2273 | Pew Flowers
+2274 | White Rose Backdrop
+2275 | Theme Backdrop
+2276 | Photo Booth
+2277 | Ceiling Balloons
+2278 | Jasmine Garland
+2279 | Rose Garland
+2280 | Mango Leaf String
+2281 | Marigold String
+2282 | Orchid Garland
+2283 | Airbrush Makeup
+2284 | Traditional Bridal Look
+2285 | Engagement Look
+2286 | Muhurtham Look
+2287 | Reception Makeup
+2288 | Engagement Makeup
+2289 | Cocktail Look
+2290 | Glam Look
+2291 | Party Makeup
+2292 | Guest Makeup
+2293 | Sister-of-Bride Makeup
+2294 | Family Makeup
+2295 | Haldi Look
+2296 | Mehndi Look
+2297 | Floral Hairstyle
+2298 | Dewy Makeup
+2299 | Bridal Hairstyle
+2300 | Saree Draping
+2301 | Braid Styling
+2302 | Bun with Flowers
+2303 | Temple Jewellery Set
+2304 | Kundan Set
+2305 | Nose Ring (Nath)
+2306 | Hair Accessories
+2307 | Facial Package
+2308 | Clean-up
+2309 | Bridal Glow Package
+2310 | Candid Wedding Coverage
+2311 | Full-Day Candid
+2312 | Reception Candids
+2313 | Getting-Ready Shots
+2314 | Muhurtham Coverage
+2315 | Family Portraits
+2316 | Ritual Coverage
+2317 | Group Photos
+2318 | Outdoor Pre-Wedding
+2319 | Studio Pre-Wedding
+2320 | Themed Concept Shoot
+2321 | Outdoor Post-Wedding
+2322 | Couple Portraits
+2323 | Themed Post-Wedding
+2324 | Wedding Cinematic Film
+2325 | Teaser Film
+2326 | Full Wedding Film
+2327 | Candid Video Coverage
+2328 | Multi-Cam Coverage
+2329 | Reception Video
+2330 | Ritual Video Coverage
+2331 | Full Ceremony Video
+2332 | Aerial Drone Shots
+2333 | Venue Aerial View
+2334 | Drone Cinematic Clip
+2335 | Full Ceremony Edit
+2336 | Reception Edit
+2337 | Complete Wedding Edit
+2338 | Sedan (Airport)
+2339 | SUV (Airport)
+2340 | Tempo Traveller (Airport)

@@ -1,0 +1,180 @@
+1081 | View profile
+1082 | Select this service
+1083 | Pick the amenity options you want — tap to select, and they're added to your booking request.
+1084 | Count of gifts
+1085 | pieces   ⟦{…} pieces⟧
+1086 | Discount
+1087 | Hall
+1088 | Package
+1089 | per person
+1090 | Open {0} image {1}
+1091 | Price per guard / shift:
+1092 | Metal detectors
+1093 | CCTV
+1094 | VIP Protection
+1095 | Gate / crowd mgmt
+1096 | Security details
+1097 | Staffing
+1098 | Guards:
+1099 | Hours / shifts:
+1100 | Add-ons
+1101 | / plate
+1102 | Total: ₹   ⟦Total: ₹ {…}⟧
+1103 | Welcome Drinks
+1104 | Free tasting
+1105 | Menu details
+1106 | Dishes:   ⟦Dishes: {…} starters · {…} mains · {…} desserts⟧
+1107 | starters ·   ⟦Dishes: {…} starters · {…} mains · {…} desserts⟧
+1108 | mains ·   ⟦Dishes: {…} starters · {…} mains · {…} desserts⟧
+1109 | Minimum guests:
+1110 | Service style:   ⟦Service style: <span>{…}</span> {…} {…} {…}⟧
+1111 | Live counters:   ⟦Live counters: {…}⟧
+1112 | Menu Items & Rates
+1113 | Items (   ⟦{…} Items ( {…} )⟧
+1114 | Cuisine Items & Rates
+1115 | Dishes by Course
+1116 | Dish
+1117 | Live Counter Offerings
+1118 | Counter (   ⟦{…} Counter ( {…} )⟧
+1119 | Counter item
+1120 | Welcome Drink Offerings
+1121 | Free Tasting Items Offered
+1122 | Yes
+1123 | No   ⟦No {…} vendors are available on your event date <strong>{…}</strong> {…} .⟧
+1124 | Choose serving option
+1125 | Option
+1126 | Parking
+1127 | Power backup
+1128 | Bridal/green room
+1129 | Stage
+1130 | Valet
+1131 | Hall details
+1132 | Seating capacity:
+1133 | Accommodation rooms:
+1134 | Catering:   ⟦Catering: {…} {…}⟧
+1135 | Couple sofa
+1136 | Lighting
+1137 | Mandap
+1138 | Decoration details
+1139 | Flowers   ⟦{…} flowers {…}⟧
+1140 | Areas:   ⟦Areas: {…}⟧
+1141 | Mandap:   ⟦Mandap: <span>{…}</span> {…}⟧
+1142 | Draping
+1143 | Trial session
+1144 | Travel to venue
+1145 | Makeup details
+1146 | Hair style:   ⟦Hair style: <span>{…}</span> {…}⟧
+1147 | Extra family members covered:   ⟦Extra family members covered: <span>{…}</span> {…}⟧
+1148 | Teaser
+1149 | 4K film
+1150 | Coverage
+1151 | Media details
+1152 | Size {0}
+1153 | Quality {0}
+1154 | Days / events:   ⟦Days / events: <span>{…}</span> {…}⟧
+1155 | Hours of coverage:   ⟦Hours of coverage: <span>{…}</span> {…}⟧
+1156 | Crew:   ⟦Crew: <span>{…}</span> {…}⟧
+1157 | Album:   ⟦Album: <span>{…}</span> {…}⟧
+1158 | Photo frame:   ⟦Photo frame: <span>{…}</span> {…}⟧
+1159 | Album pages:   ⟦Album pages: <span>{…}</span> {…}⟧
+1160 | Edited photos:
+1161 | Vehicle & Trip Details
+1162 | For   ⟦For {…}⟧
+1163 | Configured Fleet
+1164 | {0} seats
+1165 | No. of vehicles:
+1166 | Seats / vehicle:
+1167 | Km / hours included:
+1168 | Baraat (   ⟦Baraat ( {…} hrs)⟧
+1169 | hrs)   ⟦Baraat ( {…} hrs)⟧
+1170 | Guests (   ⟦Guests ( {…} persons)⟧
+1171 | persons)   ⟦Guests ( {…} persons)⟧
+1172 | Driver + fuel:
+1173 | Car decoration:
+1174 | Car decoration
+1175 | Decoration style:
+1176 | Custom floral
+1177 | Ceremony details
+1178 | Priests:
+1179 | Priests
+1180 | Pooja items (samagri)
+1181 | Muhurtham consult
+1182 | Invitation call by person
+1183 | Invitation details
+1184 | Design   ⟦{…} design⟧
+1185 | Invitation Types
+1186 | Printed cards:   ⟦Printed cards: <span>{…} pcs</span>⟧
+1187 | pcs   ⟦{…} pcs⟧
+1188 | Design revisions:
+1189 | Delivery time:
+1190 | Printing details
+1191 | Products
+1192 | Type:   ⟦Type: {…}⟧
+1193 | Size:   ⟦Size: {…}⟧
+1194 | Material / Finish
+1195 | Design included:
+1196 | Design sample
+1197 | Return gift details
+1198 | Count of gifts:   ⟦Count of gifts: <span>{…} pcs</span>⟧
+1199 | Packaging:
+1200 | Minimum quantity:
+1201 | Packing time:   ⟦Packing time: <span>{…} days</span>⟧
+1202 | days   ⟦{…} days⟧
+1203 | Bulk discount:
+1204 | Customization Available
+1205 | Enter Name / Event date to print on gifts:
+1206 | e.g. Priya & Karthik - 15.11.2026
+1207 | Equipment{0}
+1208 | Travel{0}
+1209 | ({0} km)
+1210 | Act details
+1211 | Sound System
+1212 | MC / host
+1213 | Generator
+1214 | Music / DJ details
+1215 | Hours:
+1216 | Artists:
+1217 | Lights & Sounds details
+1218 | Lighting Types
+1219 | Area covered:
+1220 | Fixtures:
+1221 | Power backup:
+1222 | Setup + teardown:
+1223 | Flower details & Offerings
+1224 | Varieties / Tiers
+1225 | Custom Variety #{0}
+1226 | Flower Type:
+1227 | Items Offered
+1228 | Custom Item #{0}
+1229 | Quantity:
+1230 | Delivery timing:
+1231 | Function:
+1232 | Mehendi details
+1233 | Tiers
+1234 | Design intricacy
+1235 | Types
+1236 | Artists (guest stalls):
+1237 | Artists
+1238 | Organic henna
+1239 | Travel
+1240 | Games / scripting
+1241 | Host / Anchor details
+1242 | Events:
+1243 | Rental details
+1244 | Delivery
+1245 | Utensils Details
+1246 | Vessel types
+1247 | Guest count served:
+1248 | Cleaning included:
+1249 | Vendor Coordination
+1250 | Budget management
+1251 | Guest management
+1252 | Planning details
+1253 | Functions:
+1254 | On-ground team:
+1255 | Planning meetings:
+1256 | AV + stage + branding
+1257 | Registration Desk
+1258 | Catering coordination
+1259 | Event Details
+1260 | Event types

@@ -5,6 +5,8 @@ import { checkPassword, isPasswordStrong } from '../../../../packages/shared-uti
 import { login, register, sendOtp, verifyOtp, forgotPassword, resetPassword, googleLogin } from '../api';
 import { GoogleSignInButton } from './GoogleSignInButton';
 import { FloralGoldBackground } from './FloralGoldBackground';
+import { LanguageButton, LanguageModal } from '../../../../packages/shared-ui/i18n/react';
+import { hasChosenLanguage } from '../../../../packages/shared-ui/i18n/runtime';
 
 interface AuthModalProps {
   onClose: () => void;
@@ -13,6 +15,8 @@ interface AuthModalProps {
 
 export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) => {
   const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>('signin');
+  // First time here: ask which language to use before showing the form.
+  const [askLanguage, setAskLanguage] = useState(() => !hasChosenLanguage());
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -145,6 +149,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) 
     }
   };
 
+  if (askLanguage) return <LanguageModal onDone={() => setAskLanguage(false)} onClose={onClose} />;
+
   return (
     <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 overflow-y-auto">
       {/* Same dark floral backdrop as the vendor/admin login pages, covering the
@@ -161,9 +167,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) 
               {mode === 'signin' ? 'Sign In' : mode === 'signup' ? 'Create Your Account' : 'Reset Your Password'}
             </span>
           </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:text-slate-900 flex items-center justify-center">
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            <LanguageButton />
+            <button onClick={onClose} className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:text-slate-900 flex items-center justify-center">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {mode === 'forgot' ? (

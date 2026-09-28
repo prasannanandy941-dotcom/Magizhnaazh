@@ -1,0 +1,180 @@
+1441 | Enter the name exactly as on the PAN card first.
+1442 | PAN verified.
+1443 | PAN verification failed.
+1444 | Could not start Aadhaar verification.
+1445 | Aadhaar verified via DigiLocker.
+1446 | Aadhaar verification was cancelled — consent was not given on DigiLocker.
+1447 | The DigiLocker link expired before verification completed. Please try again.
+1448 | Could not confirm Aadhaar verification. Please try again.
+1449 | Could not check Aadhaar verification status.
+1450 | Please enter your GSTIN number.
+1451 | Name as on PAN card is required.
+1452 | PAN number is required.
+1453 | Verification request submitted — our team and Cashfree SecureID will verify your details.
+1454 | Could not submit verification. Please try again.
+1455 | Could not save the offer. Please try again.
+1456 | Give the offer a title.
+1457 | Enter a discount value greater than zero.
+1458 | A percentage discount can’t exceed 100%.
+1459 | Profile changes saved.
+1460 | Could not save changes.
+1461 | Please enter your business name.
+1462 | Could not create your listing. Please try again.
+1463 | Could not reach the server. Please try again.
+1464 | person
+1465 | persons
+1466 | Items   ⟦{…} Items⟧
+1467 | Add persons
+1468 | Add items
+1469 | yet — add   ⟦No {…} yet — add {…} {…} with a rate. Customers see each one on your listing.⟧
+1470 | with a rate. Customers see each one on your listing.   ⟦No {…} yet — add {…} {…} with a rate. Customers see each one on your listing.⟧
+1471 | Person name
+1472 | Item name
+1473 | Price
+1474 | rate
+1475 | equipments
+1476 | Equipments (optional)
+1477 | Quality
+1478 | Quality (optional)
+1479 | area charge
+1480 | Extra charge for outstation / other areas
+1481 | note
+1482 | note (optional)
+1483 | Photo   ⟦Upload {…} photo⟧
+1484 | Remove Photo
+1485 | Add Photo   ⟦{…} Add Photo <input />⟧
+1486 | Remove item
+1487 | Add person
+1488 | Add item
+1489 | Profile / Document
+1490 | Photos
+1491 | View document
+1492 | Add profile / document
+1493 | Options saved — these now show on your marketplace listing.
+1494 | Could not save options.
+1495 | morning
+1496 | afternoon
+1497 | evening
+1498 | Remove image
+1499 | Replace
+1500 | Packages saved — customers see these on your listing.
+1501 | Could not save packages.
+1502 | Availability saved — customers see only your open dates.
+1503 | Could not save availability.
+1504 | Portfolio asset saved to local disk storage (/uploads)!
+1505 | Could not confirm the payment.
+1506 | Refund ₹{0} to this customer through Razorpay right now? This sends the money back automatically — it cannot be undone.
+1507 | Razorpay could not process this refund.
+1508 | Refund ₹{0} to this customer via UPI, then click OK to record it.
+1509 | Enter the UPI refund transaction/reference number:
+1510 | Could not record the refund.
+1511 | Magizhnaazh Vendor Portal
+1512 | Business Partner Workspace
+1513 | Signed in as
+1514 | Advance payment received
+1515 | paid via Razorpay — booking confirmed.   ⟦₹ {…} paid via Razorpay — booking confirmed.⟧
+1516 | Dismiss
+1517 | Loading your vendor listing...
+1518 | Can't reach the server
+1519 | We couldn't load your listing — the backend may be starting up or a service/database is down. Check that the services are running, then retry.
+1520 | Retry
+1521 | Set Up Your Business Listing
+1522 | Welcome   ⟦Welcome {…} ! Your account doesn't have a marketplace listing yet. Add a few details to create it and open your dashboard.⟧
+1523 | ! Your account doesn't have a marketplace listing yet. Add a few details to create it and open your dashboard.   ⟦Welcome {…} ! Your account doesn't have a marketplace listing yet. Add a few details to create it and open your dashboard.⟧
+1524 | Business Name
+1525 | e.g. Rohini Caterers
+1526 | Category
+1527 | City / Locality
+1528 | Short Description   ⟦Short Description <span>(optional)</span>⟧
+1529 | (optional)
+1530 | Tell customers what your business offers.
+1531 | Creating your listing…
+1532 | Create Listing & Continue
+1533 | You can edit all of this later in Business Profile.
+1534 | Total Earnings
+1535 | Where Your Earnings Came From
+1536 | No confirmed bookings yet.
+1537 | Scroll left to see previous tabs
+1538 | Bookings & Quotes
+1539 | Reviews{0}
+1540 | Offers{0}
+1541 | Local Disk Portfolio
+1542 | Business Profile
+1543 | Scroll right to see more tabs
+1544 | Confirmed Bookings
+1545 | Pending Quotes
+1546 | Partner Rating
+1547 | Reviews)   ⟦( {…} Reviews)⟧
+1548 | Booking Analytics
+1549 | Bookings by Status
+1550 | Gross Booked
+1551 | Advance In
+1552 | Total Requests
+1553 | Customer Issues (   ⟦Customer Issues ( {…} )⟧
+1554 | Messages sent from customer orders
+1555 | · Booking {0}
+1556 | Customer issue
+1557 | Close issue
+1558 | Active
+1559 | Open booking
+1560 | Client Bookings & Quote Requests ({0})
+1561 | Cancelled Bookings ({0})
+1562 | My Bookings
+1563 | Cancelled Bookings
+1564 | Loading bookings...
+1565 | No active bookings yet.
+1566 | Event:
+1567 | Package:   ⟦Package: <strong>{…}</strong> • Event date: <strong>{…}</strong> {…}⟧
+1568 | • Event date:   ⟦Package: <strong>{…}</strong> • Event date: <strong>{…}</strong> {…}⟧
+1569 | Booked on:   ⟦Booked on: {…}⟧
+1570 | Customer reference images
+1571 | Customer reference
+1572 | ✓ Paid in full
+1573 | Balance due: ₹{0}
+1574 | Customer recorded a balance payment of ₹   ⟦Customer recorded a balance payment of ₹ {…} {…} . Verify it landed, then confirm.⟧
+1575 | . Verify it landed, then confirm.   ⟦Customer recorded a balance payment of ₹ {…} {…} . Verify it landed, then confirm.⟧
+1576 | Confirm Balance Received
+1577 | Refund Advance ₹   ⟦Refund Advance ₹ {…}⟧
+1578 | Refund recorded · Ref:   ⟦Refund recorded · Ref: {…}⟧
+1579 | Quote accepted — waiting for the customer to pay the advance through Razorpay. This confirms automatically the moment they pay, no action needed from you.
+1580 | Accept Booking Quote
+1581 | Counter ₹
+1582 | Counter
+1583 | quote(s) exchanged   ⟦{…} quote(s) exchanged⟧
+1584 | Customer Reviews
+1585 | Verified feedback from customers after their booking was completed.
+1586 | No reviews yet. Once a customer's booking is marked completed, they can rate and review you — it'll appear here.
+1587 | Your reply
+1588 | Edit reply
+1589 | Write a public response to this customer…
+1590 | Saving…
+1591 | Update reply
+1592 | Post reply
+1593 | Delete reply
+1594 | + Reply to this review
+1595 | Local Storage Portfolio Upload
+1596 | Upload business images and videos directly to local disk directory   ⟦Upload business images and videos directly to local disk directory <code>/uploads/vendor- {…}</code> using <code>LocalStorageProvider</code> .⟧
+1597 | /uploads/vendor-   ⟦/uploads/vendor- {…}⟧
+1598 | using   ⟦Upload business images and videos directly to local disk directory <code>/uploads/vendor- {…}</code> using <code>LocalStorageProvider</code> .⟧
+1599 | Choose Image/Video to Upload
+1600 | Saving file to local disk...
+1601 | Video
+1602 | Portfolio {0}
+1603 | Tick what you offer. These become the filter chips customers see on your marketplace listing.
+1604 | Rate options for your amenities
+1605 | Add pricing choices under each amenity you offer — e.g. under AC room: "1 hall with 1 AC — ₹1200", "2 halls with 1 AC — ₹2400". Customers see these on your listing.
+1606 | amenity
+1607 | note e.g. per day
+1608 | Remove rate option
+1609 | Add rate option
+1610 | Available at   ⟦Available at {…} — you offer this⟧
+1611 | — you offer this   ⟦Available at {…} — you offer this⟧
+1612 | Expand each to add named items with their own rates (and a note) — e.g. under Veg, list each dish. Customers see them on your listing. Click the ✕ to remove.
+1613 | Nothing selected yet — tick options below to add them to your listing.
+1614 | Not available at   ⟦Not available at {…} yet — click to add⟧
+1615 | yet — click to add   ⟦Not available at {…} yet — click to add⟧
+1616 | Common   ⟦Common {…} options you haven't turned on. Booking these isn't possible for customers until you do.⟧
+1617 | options you haven't turned on. Booking these isn't possible for customers until you do.   ⟦Common {…} options you haven't turned on. Booking these isn't possible for customers until you do.⟧
+1618 | Every preset   ⟦Every preset {…} option is already offered.⟧
+1619 | option is already offered.   ⟦Every preset {…} option is already offered.⟧
+1620 | No preset options for "   ⟦No preset options for " {…} " yet — add what you offer below.⟧

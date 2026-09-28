@@ -1,0 +1,180 @@
+1 | Server returned error {0}: {1}. Please check if the services are running.
+2 | Unavailable
+3 | Server is starting up. Please try again in a moment.
+4 | Request failed.
+5 | Customer
+6 | Upload failed.
+7 | Accepted
+8 | now in progress
+9 | Completed
+10 | Cancelled
+11 | Refunded
+12 | 10:00 AM
+13 | Venue TBD
+14 | TO CELEBRATE THE {0}
+15 | TO CELEBRATE THIS SPECIAL OCCASION
+16 | YOU'RE CORDIALLY INVITED
+17 | Our Celebration
+18 | — our {0}
+19 | We request the pleasure of your company at {0}{1}.
+20 | {0}: your booking ({1}) was {2}.
+21 | Welcome, {0}!
+22 | Signed out.
+23 | Create an event first — the RSVP link is generated from your event.
+24 | Showing {0} vendors for {1} in {2} — {3} guests, ₹{4}L budget
+25 | All Categories
+26 | My Planned Events
+27 | Manage active plans, checklists, and vendor bookings
+28 | + Create New Event
+29 | Loading your events...
+30 | You haven't created any events yet. Click "Create New Event" to get started.
+31 | Total Target
+32 | Spent
+33 | Guests
+34 | Attendees   ⟦{…} Attendees⟧
+35 | Budget
+36 | Open Smart Budget Planner
+37 | Manage Guests (   ⟦Manage Guests ( {…} )⟧
+38 | Canva Invitation design saved successfully!
+39 | New Guest
+40 | Family
+41 | Veg
+42 | Guest "{0}" added to event roster!
+43 | Feedback submitted successfully!
+44 | Could not create the booking. Please try again.
+45 | Other
+46 | Payment received for {0} — ₹{1} confirmed.
+47 | Your booking is confirmed.
+48 | Your request was shared with the vendor.
+49 | Advance
+50 | Payment not completed for {0} — you can finish paying anytime from My Orders.
+51 | Payment failed for {0} — please try again from My Orders.
+52 | Your session expired — sign in again and we'll finish this booking for you.
+53 | Booking failed for {0} — please try again.
+54 | Event "{0}" created! Budget allocated.
+55 | checking
+56 | valid
+57 | invalid
+58 | Please enter your email first.
+59 | Verification code sent to your email.
+60 | Failed to send OTP. Please try again.
+61 | Please enter your email address first.
+62 | Google sign-in failed.
+63 | Google sign-in failed. Please try again.
+64 | Please enter the OTP verification code.
+65 | Please enter your new password.
+66 | Password reset successfully. Please sign in.
+67 | Please enter the OTP verification code sent to your email.
+68 | Something went wrong.
+69 | Unable to reach the server. Is the gateway running?
+70 | Sign In   ⟦{…} Sign In⟧
+71 | Create Your Account
+72 | Reset Your Password
+73 | Back to Sign In
+74 | Sign Up
+75 | Full Name
+76 | Felix Kumar
+77 | Email
+78 | Send OTP
+79 | Verification Code (OTP)
+80 | Enter 6-digit OTP
+81 | ✓ Code verified
+82 | ✗ Incorrect or expired code
+83 | Verification is required. Didn't see the email? Check your   ⟦Verification is required. Didn't see the email? Check your <b>Spam/Junk</b> folder.⟧
+84 | Spam/Junk
+85 | folder.   ⟦Verification is required. Didn't see the email? Check your <b>Spam/Junk</b> folder.⟧
+86 | Phone (optional)
+87 | New Password
+88 | Password
+89 | Forgot Password?
+90 | Hide password
+91 | Show password
+92 | Create Account
+93 | Reset Password
+94 | Demo login: customer@magizhnaazh.com / Passw0rd!
+95 | Vendors: register on the Vendor Portal instead.
+96 | Sun
+97 | Mon
+98 | Tue
+99 | Wed
+100 | Thu
+101 | Fri
+102 | Sat
+103 | Expired
+104 | past
+105 | BOOKED   ⟦/ ₹ {…} booked⟧
+106 | limited
+107 | Available
+108 | Few slots left
+109 | Not available
+110 | Date passed
+111 | Past date
+112 | This open date has passed
+113 | Already booked
+114 | Available — tap to book
+115 | Few sessions left — tap to book
+116 | Previous month
+117 | Jump to a month
+118 | Showing {0} ({1})
+119 | No {0} dates
+120 | {0} date{1} open
+121 | Open dates this month have passed
+122 | No open dates this month
+123 | Next month
+124 | Today
+125 | Next available:   ⟦Next available: {…} →⟧
+126 | Show all dates
+127 | Show only: {0}
+128 | This booking has no event date to add.
+129 | Booking {0}. {1}
+130 | Click to edit this text
+131 | NEW CUSTOM TEXT
+132 | Invitation canvas design saved successfully!
+133 | Exporting high-resolution invitation vector file ({0})... Download complete!
+134 | Canva-Style HTML5 Invitation Editor
+135 | Digital Invitation Designer
+136 | Customize typography, background colors, drag elements, and add dynamic RSVP QR codes.
+137 | Preview Web Link
+138 | PNG
+139 | Export PNG / PDF
+140 | Save Design
+141 | Designer Toolkit
+142 | Preset Templates
+143 | Add Elements
+144 | Add Text
+145 | Add RSVP QR
+146 | Canvas Background Color
+147 | Edit Selected Element
+148 | DELETE
+149 | Editing:   ⟦Editing: {…}⟧
+150 | (empty text)
+151 | Text Content
+152 | Font Family
+153 | Playfair Display (Serif)
+154 | Great Vibes (Script / Cursive)
+155 | Outfit (Display)
+156 | Inter (Sans)
+157 | Font Size (px)
+158 | Text Color
+159 | OK
+160 | Interactive 400 x 600 Canvas Area
+161 | Click elements on canvas to edit
+162 | RSVP QR code
+163 | Scan for RSVP
+164 | {0} gallery
+165 | Close gallery
+166 | Item   ⟦{…} — {…} item {…}⟧
+167 | outstation   ⟦+ {…} outstation⟧
+168 | Previous photo
+169 | Next photo
+170 | This vendor hasn't listed their services yet.
+171 | Browse   ⟦Browse {…} options — <span>{…} categories</span> . Tap to view photos {…}⟧
+172 | options —   ⟦Browse {…} options — <span>{…} categories</span> . Tap to view photos {…}⟧
+173 | Categories   ⟦{…} categories⟧
+174 | . Tap to view photos   ⟦Browse {…} options — <span>{…} categories</span> . Tap to view photos {…}⟧
+175 | , or select the ones you want.
+176 | View {0}
+177 | · tap to view   ⟦<ListChecks /> {…} item {…} · tap to view⟧
+178 | Remove {0}
+179 | Add {0}
+180 | Non-Veg

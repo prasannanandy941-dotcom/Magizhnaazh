@@ -1,0 +1,180 @@
+3061 | eventId and overallRating are required.
+3062 | Event feedback recorded.
+3063 | vendorId, bookingId and overallRating are required.
+3064 | Booking not found — cannot verify review.
+3065 | Could not reach booking service to verify this review.
+3066 | This booking does not belong to you and this vendor.
+3067 | Reviews can only be left after the booking is completed.
+3068 | Verified vendor review published.
+3069 | You have already reviewed this vendor for this booking.
+3070 | Review not found.
+3071 | Vendor listing not found.
+3072 | Could not reach marketplace to verify ownership.
+3073 | You can only reply to reviews on your own listing.
+3074 | Review removed.
+3075 | Feedback removed.
+3076 | subject and description are required.
+3077 | You can only report issues for your own bookings.
+3078 | Complaint submitted. Our team will review it shortly.
+3079 | Complaint not found.
+3080 | Complaint updated.
+3081 | We request the honor of your presence to celebrate the grand wedding of Felix & Priya.
+3082 | Canva invitation document saved.
+3083 | Invitation link invalid or expired.
+3084 | Invitation not found.
+3085 | Invitation canvas updated.
+3086 | name is required.
+3087 | Invitation template added.
+3088 | Invitation template removed.
+3089 | No vendor listing found for this account yet.
+3090 | Please enter a valid contact phone number.
+3091 | Existing vendor profile updated.
+3092 | Vendor profile created. It is live on the marketplace and will show a Verified badge once an admin approves it.
+3093 | date is required.
+3094 | You do not own this vendor listing.
+3095 | Vendor profile updated.
+3096 | Add the following before connecting Razorpay: {0}.
+3097 | Vendor deleted.
+3098 | Deleted all {0} vendors.
+3099 | No file uploaded.
+3100 | Portfolio asset uploaded to Local Disk Storage (/uploads).
+3101 | UPI QR code uploaded to Local Disk Storage (/uploads).
+3102 | Package image uploaded successfully.
+3103 | Image uploaded to Local Disk Storage (/uploads).
+3104 | Forbidden: internal endpoint.
+3105 | You can only submit verification for your own listing.
+3106 | This listing is already verified.
+3107 | Verification request submitted for review.
+3108 | You can only verify PAN for your own listing.
+3109 | Enter the name exactly as on the PAN card.
+3110 | You can only verify Aadhaar for your own listing.
+3111 | A valid redirectUrl is required.
+3112 | verification_id is required.
+3113 | Vendor verification status updated to {0}.
+3114 | Vendor {0}.
+3115 | Category added.
+3116 | Category removed.
+3117 | All selected locations already exist.
+3118 | {0} locations added.
+3119 | Location already exists.
+3120 | Location added.
+3121 | Location removed.
+3122 | title and imageUrl are required.
+3123 | Banner added.
+3124 | Banner removed.
+3125 | Deleted {0} demo vendors.
+3126 | Unknown service.
+3127 | Unknown service key.
+3128 | Andhra Pradesh
+3129 | Visakhapatnam
+3130 | Vijayawada
+3131 | Guntur
+3132 | Nellore
+3133 | Tirupati
+3134 | Kurnool
+3135 | Telangana
+3136 | Hyderabad
+3137 | Warangal
+3138 | Nizamabad
+3139 | Khammam
+3140 | Karimnagar
+3141 | Ramagundam
+3142 | Tamil Nadu
+3143 | Chennai
+3144 | Coimbatore
+3145 | Madurai
+3146 | Tiruchirappalli
+3147 | Salem
+3148 | Tirunelveli
+3149 | Karnataka
+3150 | Bangalore
+3151 | Mysore
+3152 | Hubli
+3153 | Mangalore
+3154 | Belgaum
+3155 | Davanagere
+3156 | Kerala
+3157 | Kochi
+3158 | Thiruvananthapuram
+3159 | Kozhikode
+3160 | Thrissur
+3161 | Kollam
+3162 | Kannur
+3163 | Maharashtra
+3164 | Mumbai
+3165 | Pune
+3166 | Nagpur
+3167 | Nashik
+3168 | Aurangabad
+3169 | Thane
+3170 | Gujarat
+3171 | Ahmedabad
+3172 | Surat
+3173 | Vadodara
+3174 | Rajkot
+3175 | Bhavnagar
+3176 | Jamnagar
+3177 | Rajasthan
+3178 | Jaipur
+3179 | Jodhpur
+3180 | Udaipur
+3181 | Kota
+3182 | Ajmer
+3183 | Bikaner
+3184 | Delhi NCR
+3185 | New Delhi
+3186 | Delhi
+3187 | Gurugram
+3188 | Noida
+3189 | Faridabad
+3190 | Ghaziabad
+3191 | Uttar Pradesh
+3192 | Lucknow
+3193 | Kanpur
+3194 | Agra
+3195 | Varanasi
+3196 | Meerut
+3197 | Allahabad
+3198 | West Bengal
+3199 | Kolkata
+3200 | Howrah
+3201 | Durgapur
+3202 | Asansol
+3203 | Siliguri
+3204 | Kharagpur
+3205 | Punjab
+3206 | Ludhiana
+3207 | Amritsar
+3208 | Jalandhar
+3209 | Patiala
+3210 | Bathinda
+3211 | Mohali
+3212 | Haryana
+3213 | Gurgaon
+3214 | Panipat
+3215 | Ambala
+3216 | Yamunanagar
+3217 | Rohtak
+3218 | Bihar
+3219 | Patna
+3220 | Gaya
+3221 | Bhagalpur
+3222 | Muzaffarpur
+3223 | Purnia
+3224 | Darbhanga
+3225 | Jharkhand
+3226 | Ranchi
+3227 | Jamshedpur
+3228 | Dhanbad
+3229 | Bokaro
+3230 | Deoghar
+3231 | Hazaribagh
+3232 | Madhya Pradesh
+3233 | Bhopal
+3234 | Indore
+3235 | Jabalpur
+3236 | Gwalior
+3237 | Ujjain
+3238 | Sagar
+3239 | Odisha
+3240 | Bhubaneswar

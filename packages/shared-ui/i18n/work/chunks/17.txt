@@ -1,0 +1,180 @@
+2881 | Whole payment credited to vendor
+2882 | Paid to vendor (manual)
+2883 | Razorpay is sending to vendor
+2884 | Transfer processing
+2885 | Payout on hold
+2886 | Transfer failed
+2887 | Pending
+2888 | {0} · transfer failed{1}
+2889 | {0} · credited to vendor's bank{1}{2}
+2890 | · UTR {0}
+2891 | {0} · on hold{1}
+2892 | until {0}
+2893 | {0} · received by vendor's Razorpay account{1}, bank credit pending
+2894 | {0} · transfer {1}
+2895 | Nothing collected from the customer yet
+2896 | Vendor is not connected to Razorpay Route — the money is in your Razorpay balance and must be paid out manually
+2897 | Paid outside Razorpay (UPI / cash) — pay the vendor manually
+2898 | Synced with Razorpay ({0} payment{1} checked).
+2899 | Could not reach Razorpay.
+2900 | Vendor Settlements
+2901 | Commission earned and vendor payouts per confirmed booking, tracked live from Razorpay — customer payment, transfer to the vendor, and bank settlement.
+2902 | Sync with Razorpay
+2903 | Last synced {0}
+2904 | Updates automatically via Razorpay webhooks
+2905 | Collected from customers
+2906 | Credited to vendors
+2907 | Razorpay sending to vendors
+2908 | Payouts pending
+2909 | In transit
+2910 | settled
+2911 | Credited
+2912 | Loading settlements...
+2913 | No settlements to show.
+2914 | Booking value
+2915 | Vendor payout
+2916 | Not fully collected
+2917 | Mark pending
+2918 | Mark settled
+2919 | Customers
+2920 | Admins
+2921 | Platform Users
+2922 | Every registered account — customers, vendors, and admins.
+2923 | Role
+2924 | Suspended
+2925 | You
+2926 | Reinstate
+2927 | Suspend
+2928 | No users yet.
+2929 | No {0}s yet.
+2930 | Reason for rejecting this verification (shown to the vendor):
+2931 | unverified
+2932 | Review verification requests, approve new listings, and suspend partners that violate platform policy.
+2933 | Verification
+2934 | Pending review
+2935 | Rejected
+2936 | Not submitted
+2937 | Legal:
+2938 | Reg#:
+2939 | GST:
+2940 | PAN:   ⟦PAN: <span>{…}</span> {…}⟧
+2941 | Aadhaar:
+2942 | FSSAI:
+2943 | Doc   ⟦<FileText /> Doc {…}⟧
+2944 | Approve   ⟦{…} Approve⟧
+2945 | Reject
+2946 | Revoke Verification
+2947 | Verify manually
+2948 | No vendors registered yet.
+2949 | translate(0 {0})
+2950 | Choose your language
+2951 | The app will appear in this language. You can change it any time from the language button.
+2952 | Continue
+2953 | Change language
+2954 | Loading…
+2955 | 400px 0px
+2956 | Load more   ⟦Load more {…}⟧
+2957 | ({0} of {1})
+2958 | Pagination
+2959 | ‹ Prev
+2960 | page
+2961 | Next ›
+2962 | Rows per page
+2963 | Switch to light theme
+2964 | Switch to dark theme
+2965 | Email is required.
+2966 | An account with this email already exists.
+2967 | Verification code sent to your email. (Please check your Inbox and Spam/Junk folder)
+2968 | Failed to deliver verification code to your email. Please try again in a moment.
+2969 | Email and OTP are required.
+2970 | Name, email, password and verification code (OTP) are required.
+2971 | Invalid or expired verification code (OTP).
+2972 | {0} account registered successfully.
+2973 | No account with this email address exists.
+2974 | This account has been suspended. Contact support.
+2975 | Email, verification code (OTP), and new password are required.
+2976 | User account not found.
+2977 | Password reset successfully. You can now sign in with your new password.
+2978 | Email and password are required.
+2979 | Invalid credentials.
+2980 | This account signs in with Google — use the "Sign in with Google" button instead.
+2981 | This account has been suspended. Contact platform support.
+2982 | Authentication successful.
+2983 | Missing Google credential.
+2984 | Could not verify Google sign-in. Please try again.
+2985 | No account found for this Google email.
+2986 | User not found.
+2987 | Type DELETE to confirm.
+2988 | Account not found.
+2989 | Admin accounts cannot be deleted here.
+2990 | Password is incorrect.
+2991 | Could not reach your business listing. Please try again.
+2992 | Could not check your bookings. Please try again.
+2993 | You have {0} upcoming booking{1}. Complete, cancel or refund {2} before deleting your account.
+2994 | Could not delete your business listing. Please try again.
+2995 | Your account has been permanently deleted.
+2996 | User {0}.
+2997 | A valid guest count is required.
+2998 | {0} has already been booked by another customer on {1}. Please choose another date.
+2999 | {0} hasn't opened up {1} for booking. Please choose one of their available dates.
+3000 | Vendor not found.
+3001 | This vendor listing does not belong to you.
+3002 | Could not verify vendor ownership.
+3003 | Booking not found.
+3004 | This booking does not belong to your vendor listing.
+3005 | This booking has already moved past the acceptance stage.
+3006 | Quote accepted — the customer can now pay the advance to confirm the booking.
+3007 | A valid amount is required.
+3008 | Counter-quote sent.
+3009 | status must be one of: {0}.
+3010 | This booking has not been confirmed yet.
+3011 | Booking status updated.
+3012 | This booking does not belong to you.
+3013 | There is no advance payment recorded for this booking.
+3014 | This booking has already been marked as refunded.
+3015 | Refund issued via Razorpay — the customer will receive it back in their original payment method.
+3016 | A UPI refund reference is required.
+3017 | Refund recorded successfully.
+3018 | spendItems must be an array.
+3019 | Spend breakdown saved.
+3020 | The balance can only be paid after the booking is confirmed.
+3021 | This booking is already paid in full.
+3022 | A valid payment amount is required.
+3023 | Amount exceeds the balance due (₹{0}).
+3024 | Balance payment recorded — awaiting vendor confirmation.
+3025 | Payment not found.
+3026 | This payment is already confirmed.
+3027 | Payment confirmed.
+3028 | The advance for this booking has already been paid.
+3029 | Payment verification failed: signature mismatch.
+3030 | Payment verified.
+3031 | Invalid webhook signature.
+3032 | You are not allowed to view this invoice.
+3033 | Admin access required.
+3034 | Razorpay is not configured on this server.
+3035 | Checked {0} payment(s) with Razorpay.
+3036 | Payout is on hold until {0} (event date + {1}-day hold). Send { "force": true } to override.
+3037 | Marked {0}.
+3038 | commissionRate must be a fraction between 0 and 1 (e.g. 0.1 for 10%).
+3039 | advanceDepositRate must be a fraction between 0 and 1 (e.g. 0.3 for 30%).
+3040 | gstRate must be a fraction between 0 and 1 (e.g. 0.18 for 18%).
+3041 | advanceDepositMinRate must be a fraction between 0 and 1.
+3042 | advanceDepositMaxRate must be a fraction between 0 and 1.
+3043 | vendorPayoutHoldDays must be a whole number of days between 0 and 365.
+3044 | theme must be 'light' or 'dark'.
+3045 | advanceDepositMinRate cannot be greater than advanceDepositMaxRate.
+3046 | Platform settings updated.
+3047 | code and discountPercent are required.
+3048 | Coupon created.
+3049 | A coupon with this code already exists.
+3050 | Coupon removed.
+3051 | Event created & budget allocated successfully.
+3052 | Event not found.
+3053 | You do not own this event.
+3054 | Smart budget allocations updated.
+3055 | Too many requests. Please slow down and try again shortly.
+3056 | Too many submissions. Please try again later.
+3057 | Gateway is running
+3058 | Guest added to event roster.
+3059 | name and eventId are required.
+3060 | RSVP response recorded.

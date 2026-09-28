@@ -1,0 +1,180 @@
+361 | Anniversary
+362 | Baby Shower
+363 | Corporate Event
+364 | Event Title
+365 | Give your event a memorable title
+366 | e.g. Felix & Priya Wedding
+367 | Select Location
+368 | Where will your event take place?
+369 | Search any city in India...
+370 | No cities found matching "   ⟦No cities found matching " {…} "⟧
+371 | Select Event Date
+372 | Choose your planned event date
+373 | Expected Guest Count
+374 | Enter the number of attendees you are expecting.
+375 | Set Total Budget
+376 | Specify your overall target budget in INR (₹)
+377 | Formatted:   ⟦Formatted: <span>₹ {…} Lakhs</span>⟧
+378 | Lakhs   ⟦₹ {…} Lakhs⟧
+379 | Smart Budget Preview
+380 | Our smart engine automatically partitioned your   ⟦Our smart engine automatically partitioned your <span>₹ {…}</span> budget:⟧
+381 | budget:   ⟦Our smart engine automatically partitioned your <span>₹ {…}</span> budget:⟧
+382 | Back
+383 | Next
+384 | Creating...
+385 | Launch Event Plan
+386 | AC room
+387 | VIP room
+388 | VIP front chairs
+389 | Garlands
+390 | Bride and groom room
+391 | Guest rooms
+392 | Dormitory hall
+393 | Separate guest washroom
+394 | Water filter
+395 | Cooking utensils
+396 | Catering included
+397 | Included
+398 | Decoration
+399 | DJ available
+400 | Transport
+401 | Available (extra cost)
+402 | Not offered
+403 | Accommodation and rooms
+404 | Bride and groom room (attached washroom)
+405 | Guest rooms (attached washroom)
+406 | Dormitory hall (shared)
+407 | VIP room / lounge
+408 | Comfort and washrooms
+409 | AC available
+410 | Fans only
+411 | VIP front chairs (premium seating)
+412 | Separate washroom for guests
+413 | Kitchen
+414 | Cooking utensils provided
+415 | Water filter / RO
+416 | Event services
+417 | Flower garlands / maalai
+418 | Catering
+419 | DJ / Music
+420 | Your selected amenities
+421 | No amenities selected yet — tap the chips above to add what you need.
+422 | Clear all
+423 | View {0} ({1} photos)
+424 | Previous
+425 | Please select a star rating before submitting.
+426 | Anonymous Guest
+427 | Could not submit feedback.
+428 | Could not submit feedback. Is the server running?
+429 | Public Feedback QR Link Generator
+430 | Event Feedback Collection
+431 | Collect anonymous ratings and comments from attendees for venue, food, and decor.
+432 | Open Guest Feedback Form
+433 | Overall Rating
+434 | Guest Responses Received   ⟦{…} Guest Responses Received⟧
+435 | Public feedback URL:   ⟦Public feedback URL: <code>https://magizhnaazh.com/feedback/wed-felix-2026</code>⟧
+436 | Guest
+437 | Event Feedback Form
+438 | Your Name (Optional)
+439 | Leave blank for anonymous
+440 | {0} star{1}
+441 | Tap a star to rate
+442 | Comments & Suggestions
+443 | What did you enjoy most about the event?
+444 | Submit Feedback   ⟦{…} Submit Feedback⟧
+445 | Thank You for Your Feedback!
+446 | Close Window
+447 | Marketplace
+448 | Magizhnaazh
+449 | India's favourite event planning destination. Venues, catering, photography, decor & more — delivered to your celebration.
+450 | PORULON TECHNOLOGIES PRIVATE LIMITED
+451 | Coimbatore, Tamil Nadu, India
+452 | Company
+453 | About Us
+454 | Careers
+455 | Blog & News
+456 | Press
+457 | Support
+458 | Help Center
+459 | Returns & Refunds
+460 | Privacy Policy
+461 | Terms of Service
+462 | Secure Checkout
+463 | Fast Delivery
+464 | Easy Payments
+465 | We accept:
+466 | UPI
+467 | Visa
+468 | Mastercard
+469 | RuPay
+470 | Net Banking
+471 | Porulon Technologies Private Limited · Magizhnaazh. All rights reserved.   ⟦© {…} Porulon Technologies Private Limited · Magizhnaazh. All rights reserved.⟧
+472 | Failed to load Google sign-in.
+473 | or
+474 | Guest Management & RSVP Tracker
+475 | Organize guest groups, food preferences, and track real-time RSVP responses.
+476 | Share Web RSVP Link
+477 | + Add Guest
+478 | Total Guests Invited
+479 | Accepted RSVPs
+480 | Pending Response
+481 | Total Confirmed Plates
+482 | Guest Roster (   ⟦Guest Roster ( {…} )⟧
+483 | Guest Name
+484 | Group
+485 | RSVP Status
+486 | Food Preference
+487 | General
+488 | Invited
+489 | Adults   ⟦{…} Adults⟧
+490 | Add New Guest to Event
+491 | e.g. Dr. R. Venkatraman
+492 | Bride Family
+493 | Groom Family
+494 | College Friends
+495 | VIP Guests
+496 | Save Guest
+497 | nearest
+498 | My Events
+499 | Smart Budget
+500 | Canva Invites
+501 | Guests & RSVP
+502 | My Orders
+503 | Customer Event Planner
+504 | Click or scroll to navigate tabs
+505 | Create Event
+506 | Wishlist
+507 | Sign Out
+508 | + Create Event
+509 | India's #1 Smart Event Marketplace Platform
+510 | Plan Your Perfect Event —   ⟦Plan Your Perfect Event — <br /> <span>Everything in One Place</span>⟧
+511 | Everything in One Place
+512 | Discover verified venues, traditional caterers, candid photographers, luxury decorators, and design Canva-like web invitations with automated smart budget calculations.
+513 | Event Type
+514 | 💒 Wedding
+515 | 🎂 Birthday Party
+516 | 💍 Engagement
+517 | ✨ Anniversary
+518 | 👶 Baby Shower
+519 | 🏢 Corporate Event
+520 | Category Type
+521 | Location   ⟦<MapPin /> Location {…}⟧
+522 | · detected
+523 | e.g. 500
+524 | Total Budget
+525 | e.g. 8
+526 | Total budget in lakhs or rupees
+527 | Search Vendors
+528 | 100% Verified Vendors
+529 | Smart Percentage Allocator
+530 | Or launch 7-step planning wizard
+531 | Please allow pop-ups to view the invoice.
+532 | <tr><td>{0}</td><td class="r">{1}</td></tr>
+533 | <p>GSTIN: {0}</p>
+534 | <div class="stamp paid">✓ PAID IN FULL</div>
+535 | Bridal Makeup
+536 | Wedding day
+537 | Classic
+538 | Foundation & base
+539 | Eye makeup + kajal
+540 | Lips & blush

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ThemeToggle } from '../../../../packages/shared-ui/theme';
+import { LanguageButton } from '../../../../packages/shared-ui/i18n/react';
 import { Sparkles, Calendar, Heart, Store, User as UserIcon, LogIn, LogOut, ChevronDown, ClipboardList, Menu, X } from 'lucide-react';
 import { User } from '../../../../packages/shared-types';
 
@@ -164,6 +165,7 @@ export const Header: React.FC<HeaderProps> = ({
             Create Event
           </button>
 
+          <LanguageButton buttonClassName="bg-[#26101c] border border-[#6b2140]/60 text-[#f5c9dc] hover:border-[#d4af37]/50" />
           <ThemeToggle app="customer" />
 
           <button

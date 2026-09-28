@@ -1,0 +1,180 @@
+721 | PA system included
+722 | Custom bhajan requests
+723 | {0} option
+724 | Choose your package
+725 | You picked the   ⟦You picked the {…} package — ₹ {…} . Mention this when you book a vendor for {…} .⟧
+726 | package — ₹   ⟦You picked the {…} package — ₹ {…} . Mention this when you book a vendor for {…} .⟧
+727 | . Mention this when you book a vendor for   ⟦You picked the {…} package — ₹ {…} . Mention this when you book a vendor for {…} .⟧
+728 | Entertainment
+729 | Confirmed
+730 | In Progress
+731 | Enquiry
+732 | Quote Requested
+733 | Quote Received
+734 | Vendor Sent a Counter
+735 | Negotiating
+736 | Awaiting Vendor Confirmation
+737 | negotiation
+738 | Sign in to see your orders
+739 | Every booking you've made and its live progress lives here once you're signed in.
+740 | Cancelled Orders
+741 | Every vendor booking you've made, with live progress once the vendor confirms it.
+742 | Cancelled and refunded bookings are kept here so you can still review what was closed.
+743 | Refresh   ⟦{…} Refresh⟧
+744 | Total orders:
+745 | Loading your orders...
+746 | No active bookings yet — head to the Marketplace to book a vendor.
+747 | No cancelled or refunded bookings yet.
+748 | For event:
+749 | · Event date:   ⟦<strong>{…}</strong> · {…} · Event date: <strong>{…}</strong> {…}⟧
+750 | Advance Paid: ₹   ⟦Advance paid: ₹ {…}⟧
+751 | Order Status
+752 | This booking was   ⟦This booking was {…} .⟧
+753 | Reason:   ⟦Reason: {…}⟧
+754 | Balance
+755 | Payment not completed — you can try again anytime.
+756 | Payment failed — please try again.
+757 | Could not load the invoice.
+758 | Paid in full
+759 | Balance due:
+760 | Pay balance   ⟦{…} Pay balance⟧
+761 | Invoice   ⟦{…} Invoice⟧
+762 | Issue sent to the vendor.
+763 | Could not send the issue.
+764 | Mail vendor
+765 | Mail   ⟦Mail {…}⟧
+766 | Your issue will appear in the vendor's dashboard for this booking.
+767 | Subject
+768 | Describe the issue...
+769 | Send to vendor
+770 | Pay the advance to confirm this booking with the vendor.
+771 | Pay Advance   ⟦{…} Pay Advance⟧
+772 | Could not cancel this booking. Please try again.
+773 | Request Refund
+774 | Cancel Booking
+775 | This will cancel the booking and mark it as a refund request — use this if the vendor isn't accepting or confirming your booking. You'll need to follow up with the vendor (or support) to get your money back via the same UPI/method you paid with.
+776 | This will cancel the booking. No payment has been made yet, so nothing needs to be refunded.
+777 | Reason (optional) — e.g. vendor not responding
+778 | Yes, cancel & request refund
+779 | Yes, cancel booking
+780 | Never mind
+781 | Your review
+782 | Shared with   ⟦Shared with {…} · {…}⟧
+783 | Please select a star rating first.
+784 | Could not submit review.
+785 | Rate & review   ⟦Rate & review {…}⟧
+786 | Share feedback about this vendor — the vendor will see it.
+787 | Submit Review   ⟦{…} Submit Review⟧
+788 | Candid
+789 | Traditional
+790 | Post-Wedding
+791 | Reception
+792 | Cinematic
+793 | Drone
+794 | Live Streaming
+795 | LED Screens
+796 | {0} portfolio
+797 | Portfolio
+798 | Explore sample shoots by style —   ⟦Explore sample shoots by style — <span>{…} albums</span> . Tap to view photos {…}⟧
+799 | albums   ⟦{…} albums⟧
+800 | Priest Only
+801 | Experienced purohit
+802 | Mantras & full procedure
+803 | You arrange samagri
+804 | Muhurtham guidance
+805 | Priest + Samagri
+806 | Purohit + all samagri
+807 | Puja items, flowers, prasadam
+808 | Kalash & setup
+809 | Step-by-step guidance
+810 | Full Purohit Package
+811 | Senior purohit + assistant
+812 | Complete samagri kit
+813 | Kalash, homam & decoration
+814 | Sankalpam in your gotra
+815 | Prasadam & coordination
+816 | Tamil (Iyer / Iyengar) · Telugu · Kannada · Hindi
+817 | Wedding (Vivaham)
+818 | Muhurtham, kanyadaanam, saptapadi & homam
+819 | Engagement (Nichayam)
+820 | Nichayathartham & ring ceremony puja
+821 | Griha Pravesh
+822 | Housewarming — kalash, Ganapathi & Vaastu puja
+823 | Naming & Cradle
+824 | Namakaranam & cradle ceremony
+825 | Seemantham (Baby Shower)
+826 | Valaikappu / godh bharai blessings
+827 | Satyanarayan & Homam
+828 | Ganapathi / Satyanarayan puja & homam
+829 | Upanayanam
+830 | Sacred-thread (poonal) ceremony & homam
+831 | {0} ceremony
+832 | Traditions:   ⟦Traditions: {…}⟧
+833 | Choose service level
+834 | Ceremonies
+835 | Ceremonies conducted —   ⟦Ceremonies conducted — <span>{…} functions</span> , each with service-level pricing.⟧
+836 | functions   ⟦{…} functions⟧
+837 | , each with service-level pricing.   ⟦Ceremonies conducted — <span>{…} functions</span> , each with service-level pricing.⟧
+838 | Digital Web Invitation
+839 | Date   ⟦{…} date {…} added⟧
+840 | Time
+841 | Venue
+842 | Respond to RSVP Now
+843 | Your RSVP response has been submitted! Thank you.
+844 | Submit Your RSVP
+845 | Your Full Name
+846 | e.g. Suresh Kumar
+847 | Attending Status
+848 | Joyfully Accept
+849 | Regretfully Decline
+850 | Adults Count
+851 | Traditional Pure Veg Feast
+852 | Non-Veg Buffet
+853 | Jain Meals
+854 | Submit RSVP Response
+855 | Loading invitation...
+856 | Invitation link invalid or expired
+857 | This RSVP link doesn't match any invitation. Double-check the link the host shared with you.
+858 | Wrapped & labelled
+859 | Bulk 50+ pieces
+860 | Assorted designs
+861 | Delivery to venue
+862 | Premium packaging
+863 | Personalised tag
+864 | Bulk 25+ pieces
+865 | Venue delivery + spares
+866 | Luxury gift box
+867 | Custom name & date
+868 | Ribbon & thank-you card
+869 | Curated selection
+870 | Doorstep + venue delivery
+871 | Traditional (Silver & Brass)
+872 | Pooja items, silver coins, kumkum boxes
+873 | Sweets & Dry Fruits
+874 | Mithai boxes & dry-fruit packs
+875 | Eco-Friendly Plants
+876 | Succulents, seed pens, jute bags
+877 | Personalized Gifts
+878 | Photo mugs, frames, keychains
+879 | Hampers & Favors
+880 | Decorated pouches & mini gift boxes
+881 | Kids Gifts
+882 | Toys, stationery & chocolates
+883 | ₹{0}–₹{1} / piece
+884 | {0} return gift
+885 | Choose by budget (per piece)
+886 | {0} — {1} (₹{2}/piece)
+887 | / piece
+888 | /piece).   ⟦Added to your booking: {…} — {…} (₹ {…} /piece).⟧
+889 | Gift Types
+890 | /pc+   ⟦₹ {…} /pc+⟧
+891 | Return gifts by type & budget —   ⟦Return gifts by type & budget — <span>{…} categories</span> , priced per piece.⟧
+892 | , priced per piece.   ⟦Return gifts by type & budget — <span>{…} categories</span> , priced per piece.⟧
+893 | /pc   ⟦from ₹ {…} /pc⟧
+894 | You're invited to {0}! RSVP here: {1}
+895 | WhatsApp
+896 | Messenger
+897 | Telegram
+898 | Invite copied — paste it into {0}.
+899 | Couldn't copy automatically — use the Copy button above, then paste into {0}.
+900 | Anyone with this link can view the invitation and RSVP — no account needed on their end.

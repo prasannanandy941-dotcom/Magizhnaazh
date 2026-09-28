@@ -1,0 +1,180 @@
+2521 | Armed Guard
+2522 | Female Guard
+2523 | Standard Bouncer
+2524 | VIP Bouncer
+2525 | Valet Service
+2526 | Parking Attendant
+2527 | Queue Management
+2528 | Barricade Setup
+2529 | Personal Escort
+2530 | Venue Cleaning
+2531 | Floor Mopping
+2532 | Restroom Cleaning
+2533 | Full Venue Cleanup
+2534 | Waste Clearing
+2535 | Garbage Removal
+2536 | Segregated Disposal
+2537 | Deep Floor Clean
+2538 | Kitchen Deep Clean
+2539 | Fogging Sanitization
+2540 | Surface Disinfection
+2541 | Banquet Chair
+2542 | Round Table
+2543 | Cocktail Table
+2544 | Chiavari Chair
+2545 | Pagoda Tent
+2546 | Canopy Tent
+2547 | German Hangar
+2548 | PA System
+2549 | Line Array
+2550 | Wireless Mic Set
+2551 | 15 KVA Generator
+2552 | 30 KVA Generator
+2553 | 62 KVA Generator
+2554 | Tower AC
+2555 | Cassette AC
+2556 | Duct Cooling
+2557 | Dinner Plate Set
+2558 | Cutlery Set
+2559 | Serving Bowls
+2560 | Large Anda (Biryani)
+2561 | Medium Anda
+2562 | Small Anda
+2563 | Serving Spoons
+2564 | Ladles
+2565 | Steel Plate
+2566 | Steel Tumbler
+2567 | Steel Dabara
+2568 | Chafing Dish
+2569 | Buffet Counter
+2570 | Soup Station
+2571 | Single Burner
+2572 | Double Burner
+2573 | High-Pressure Burner
+2574 | Water Dispenser
+2575 | Water Can Stand
+2576 | Steel Dining Set (10)
+2577 | Steel Dining Set (25)
+2578 | Full Steel Meals Set
+2579 | Brass Serving Set
+2580 | Copper Water Pots
+2581 | Traditional Brass Vessels
+2582 | End-to-End Planning
+2583 | Theme Design
+2584 | On-Site Coordinator
+2585 | Timeline Management
+2586 | Venue Scouting
+2587 | Guest Logistics
+2588 | Travel Coordination
+2589 | Budget Breakdown
+2590 | Cost Optimization
+2591 | Vendor Sourcing
+2592 | Contract Handling
+2593 | RSVP Management
+2594 | Guest Hospitality
+2595 | Stage & AV Setup
+2596 | Seating Arrangement
+2597 | Launch Stage
+2598 | Branding Setup
+2599 | Press Setup
+2600 | Indoor Activities
+2601 | Outdoor Activities
+2602 | Stage Setup
+2603 | Trophy & Certificates
+2604 | Anchor
+2605 | Projector & Screen
+2606 | Live Streaming Setup
+2607 | Corporate Lunch Setup
+2608 | Tea & Snacks Counter
+2609 | Buffet Coordination
+2610 | 1 hall with 2 ACs
+2611 | 2 halls with 1 AC
+2612 | Fully AC banquet hall
+2613 | 2 halls with fans
+2614 | Open hall with ceiling fans
+2615 | 2 VIP rooms
+2616 | VIP room with AC
+2617 | 2 VIP chairs
+2618 | 4 VIP chairs
+2619 | VIP sofa set
+2620 | Bride & groom garlands
+2621 | Premium flower garlands
+2622 | AC bridal room
+2623 | Bridal suite with makeup area
+2624 | 2 guest rooms
+2625 | AC guest room with attached washroom
+2626 | Dormitory for 20
+2627 | Dormitory for 50
+2628 | 2 washrooms
+2629 | Separate male & female washrooms
+2630 | Basic cooking vessels
+2631 | Large-scale cooking utensils
+2632 | 2 RO units
+2633 | RO drinking water for guests
+2634 | Server returned {0} {1}
+2635 | Request timed out while waiting for server to start.
+2636 | API Gateway
+2637 | Auth Service
+2638 | Event & Budget
+2639 | Booking & Pay
+2640 | Invitation
+2641 | Guest & Feedback
+2642 | System Monitor
+2643 | Users
+2644 | Locations
+2645 | Events
+2646 | Bookings   ⟦Showing {…} of {…} bookings⟧
+2647 | Feedback
+2648 | Complaints
+2649 | Invitation Templates
+2650 | Banners
+2651 | Offers & Coupons
+2652 | Settlements
+2653 | Settings
+2654 | Analytics
+2655 | admin
+2656 | Magizhnaazh Super Admin
+2657 | Governance & Microservices Portal
+2658 | Live health, response times, alerts, dependencies & auto-restart across all microservices
+2659 | No bookings in this range yet.
+2660 | Unknown
+2661 | Crunching numbers...
+2662 | Unknown Vendor
+2663 | Booking Number
+2664 | Event Date
+2665 | Agreed Price
+2666 | Status
+2667 | Created At
+2668 | Platform Analytics
+2669 | Computed live from current vendor/booking data — not a separate analytics pipeline yet (that's future work: event streaming into a warehouse).
+2670 | Export CSV
+2671 | Filters
+2672 | Event date from
+2673 | Event date to
+2674 | City
+2675 | of   ⟦Showing {…} of {…} bookings⟧
+2676 | Average Booking Value
+2677 | Verified Vendors
+2678 | Total Gross Volume
+2679 | Commission Earned
+2680 | Advance Collected
+2681 | Revenue Trend (by event month)
+2682 | Vendors by Category
+2683 | No vendor data yet.
+2684 | No booking data in this range.
+2685 | Top Vendors by Revenue
+2686 | This account does not have admin access.
+2687 | This Google account does not have admin access.
+2688 | Super Admin
+2689 | Admin Email
+2690 | Auto-fill Demo Admin
+2691 | Note: Password uses the number zero   ⟦Note: Password uses the number zero <code>0</code> ( <code>Passw0rd!</code> ).⟧
+2692 | Promotional Banners
+2693 | Homepage promotional banners shown to customers.
+2694 | Preview
+2695 | Title
+2696 | Link
+2697 | Inactive
+2698 | Diwali Mega Offer
+2699 | Image URL
+2700 | Link URL (optional)

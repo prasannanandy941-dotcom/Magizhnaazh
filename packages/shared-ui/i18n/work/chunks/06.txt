@@ -1,0 +1,180 @@
+901 | Copied
+902 | Copy
+903 | Share via
+904 | Share on {0}
+905 | Open as a guest would see it
+906 | Other services
+907 | Smart Percentage Allocator Engine
+908 | Event Budget Dashboard
+909 | Budget for order
+910 | Total Amount
+911 | Advance Paid
+912 | Tap to see spending breakdown
+913 | Actual Spent
+914 | Remaining   ⟦<span /> Remaining {…}⟧
+915 | Where Your Money Went
+916 | Loading your bookings...
+917 | No vendor orders yet — once you book a vendor (or pay an advance), it shows here.
+918 | paid   ⟦₹ {…} paid <span>/ ₹ {…} booked</span>⟧
+919 | Pending payment
+920 | Booking total
+921 | Spent (paid)
+922 | Category Budget Breakdown & Adjustment
+923 | Over Budget Warning!
+924 | Allocated
+925 | Vendors Within Your Budget
+926 | All categories · vendors starting at or below ₹{0}
+927 | Affordable vendors across all categories
+928 | · Up to ₹{0}
+929 | Showing closest options across categories
+930 | No vendors are available for this category yet.
+931 | Vendor   ⟦Showing <strong>{…}</strong> {…} vendor {…} available on <strong>{…}</strong> {…} .⟧
+932 | Vendors
+933 | Starting ₹   ⟦Starting ₹ {…}⟧
+934 | View vendor
+935 | Airport Pickup
+936 | Per pickup · meet & greet
+937 | Sedan (4)
+938 | AC sedan (Dzire/Etios)
+939 | Meet & greet at arrival
+940 | One-way drop
+941 | Flight tracking
+942 | SUV (6)
+943 | AC SUV (Innova)
+944 | Extra luggage space
+945 | Meet & greet
+946 | Water bottles
+947 | Luxury (4)
+948 | Luxury sedan (Camry/Merc)
+949 | Uniformed chauffeur
+950 | Welcome kit & water
+951 | Name placard
+952 | Railway Station Pickup
+953 | Per pickup · one way
+954 | AC sedan
+955 | Platform coordination
+956 | Luggage help
+957 | Extra luggage
+958 | Coordinator call
+959 | Tempo (12)
+960 | Group luggage
+961 | Driver + helper
+962 | Multiple families
+963 | Bride & Groom Vehicle
+964 | Decorated wedding car
+965 | Decorated Sedan
+966 | Fresh-flower decoration
+967 | Ribbons & name board
+968 | Half-day use
+969 | Luxury (Audi/BMW)
+970 | Premium luxury car
+971 | Designer floral decor
+972 | Red-carpet arrival
+973 | Full-day chauffeur
+974 | Vintage / Convertible
+975 | Classic vintage car
+976 | Full theme decoration
+977 | Chauffeur in costume
+978 | Photo-shoot friendly
+979 | Guest Vehicle
+980 | Buses & vans for guests
+981 | Tempo Traveller (12)
+982 | 12-seat AC traveller
+983 | Driver included
+984 | Day rental
+985 | Push-back seats
+986 | Mini Bus (25)
+987 | 25-seat AC mini coach
+988 | Driver + fuel
+989 | Multiple trips
+990 | Luggage carrier
+991 | Coach (45)
+992 | 45-seat AC coach
+993 | Driver + cleaner
+994 | Full-day shuttle
+995 | Mic & music system
+996 | Bus Stop Pickup
+997 | Local pickup & shuttle
+998 | Car (4)
+999 | AC car pickup
+1000 | On-call timing
+1001 | Van (10)
+1002 | Group pickup
+1003 | Multiple stops
+1004 | Repeat trips
+1005 | Venue coordination
+1006 | {0} transport
+1007 | Choose vehicle
+1008 | Fleet
+1009 | Transport options —   ⟦Transport options — <span>{…} services</span> , each with vehicle-class pricing.⟧
+1010 | Services   ⟦{…} services⟧
+1011 | , each with vehicle-class pricing.   ⟦Transport options — <span>{…} services</span> , each with vehicle-class pricing.⟧
+1012 | Vendor Comparison Matrix
+1013 | Feature
+1014 | ★ Best Match
+1015 | Starting Price
+1016 | Customer Rating
+1017 | Experience
+1018 | Years   ⟦{…} Years⟧
+1019 | Packages Offered
+1020 | Packages available   ⟦{…} Packages available⟧
+1021 | Verified Partner
+1022 | Select Vendor
+1023 | Food Services
+1024 | Hall Facilities
+1025 | Decor Services
+1026 | Beauty Services
+1027 | Shoot Services
+1028 | Vehicles & Services
+1029 | Ceremony Services
+1030 | Design Services
+1031 | Print Services
+1032 | Gifting Choices
+1033 | Performances Offered
+1034 | Sound Services
+1035 | Lighting Services
+1036 | Floral Services
+1037 | Designs & Services
+1038 | Hosting Services
+1039 | Protection & Staffing
+1040 | Housekeeping Services
+1041 | Rental Options
+1042 | Planning Service
+1043 | Corporate Solutions
+1044 | Availability
+1045 | Overview
+1046 | Please sign in first to upload reference images.
+1047 | File uploaded — it will be shared with the vendor when you book.
+1048 | Upload failed — please try again.
+1049 | No advance required
+1050 | Advance Required
+1051 | Advance required ({0}%)
+1052 | Gifts
+1053 | options
+1054 | Amenities
+1055 | Packages   ⟦{…} Packages⟧
+1056 | Halls
+1057 | gallery
+1058 | Gallery (   ⟦Gallery ( {…} )⟧
+1059 | Reviews
+1060 | Reviews (   ⟦Reviews ( {…} )⟧
+1061 | Upload   ⟦Upload {…} photo⟧
+1062 | Local Disk Upload
+1063 | Coloured dates are open for booking. Tap one to see sessions, packages and booking options.
+1064 | has no upcoming open dates right now.   ⟦{…} has no upcoming open dates right now.⟧
+1065 | View   ⟦View {…} 's details anyway⟧
+1066 | 's details anyway   ⟦View {…} 's details anyway⟧
+1067 | hasn't listed specific dates.   ⟦{…} hasn't listed specific dates.⟧
+1068 | You can request your event date when you tap Book & Pay Advance.
+1069 | Rating
+1070 | None (₹0)
+1071 | 🎉 Offers from   ⟦🎉 Offers from {…}⟧
+1072 | On orders over ₹{0}
+1073 | On any order
+1074 | · until {0}
+1075 | {0}% OFF
+1076 | ₹{0} OFF
+1077 | About   ⟦About {…}⟧
+1078 | gifts per order   ⟦🎁 {…} gifts per order⟧
+1079 | Discount:   ⟦Discount: {…}⟧
+1080 | Pick what you want — tap to select, and it's added to your booking request.

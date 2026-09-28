@@ -1,0 +1,180 @@
+181 | Starters (Veg)
+182 | Starters (Non-Veg)
+183 | Cool Drinks
+184 | Desserts   ⟦Dishes: {…} starters · {…} mains · {…} desserts⟧
+185 | Mocktails
+186 | Snacks
+187 | Vengaya Sambar & Steamed Rice
+188 | Paneer Butter Masala
+189 | Chettinad Kootu
+190 | Curd Rice
+191 | Ven Pongal
+192 | Chicken Chettinad
+193 | Hyderabadi Chicken Biryani
+194 | Mutton Kuzhambu
+195 | Meen Kuzhambu (Fish)
+196 | Paneer Tikka
+197 | Gobi 65
+198 | Onion Pakoda
+199 | Chicken 65
+200 | Fish Fingers
+201 | Prawn Thokku
+202 | Fresh Lime Soda
+203 | Rose Milk
+204 | Watermelon Cooler
+205 | Gulab Jamun
+206 | Semiya Payasam
+207 | Mysore Pak
+208 | Mango Mocktail
+209 | Madurai Jigarthanda
+210 | Falooda
+211 | Veg Cutlet
+212 | Crispy Corn
+213 | Masala Vada
+214 | Catering menu
+215 | Close menu
+216 | No items added to this card yet.
+217 | Previous category
+218 | Next category
+219 | Go to {0}
+220 | Write what you want
+221 | Tell the caterer exactly what you want
+222 | e.g. 300 guests, pure-veg only for 50 people, add Chicken Biryani & Jigarthanda, no onion/garlic for elders, serve by 8 PM…
+223 | Save request
+224 | Cancel
+225 | Your request
+226 | Edit
+227 | Menu
+228 | South Indian Traditional
+229 | Tamil / Kerala / Telugu
+230 | Economy
+231 | Banana & coconut mandap
+232 | Marigold + artificial florals
+233 | Standard stage lighting
+234 | Couple seating
+235 | Premium
+236 | Fresh jasmine & rose mandap
+237 | Themed backdrop & drapes
+238 | Brass lamps (kuthuvilakku)
+239 | Entrance kolam & arch
+240 | Uplighting
+241 | Luxury
+242 | Full fresh-flower kalyana mandapam
+243 | Temple-style carved set
+244 | Chandeliers & pin-spot lights
+245 | Poornakumbham entrance walkway
+246 | Dedicated decor team
+247 | Royal Mandap
+248 | North Indian / Rajwada
+249 | Drape canopy
+250 | Floral pillars
+251 | Stage Lighting
+252 | Fresh-flower royal mandap
+253 | Palace-style arches
+254 | Crystal chandeliers
+255 | Grand entrance gate
+256 | Guest walkway decor
+257 | Palace themed set design
+258 | Imported fresh flowers
+259 | Fibre carvings & props
+260 | Fountain & foyer decor
+261 | Ceiling drapes across hall
+262 | Live decor management
+263 | Reception Stage
+264 | Modern / Fusion
+265 | Backdrop panel + sofa
+266 | Artificial flower frame
+267 | LED spotlights
+268 | Themed floral backdrop
+269 | Designer couch & carpet
+270 | Uplighting + fairy lights
+271 | Welcome board & arch
+272 | Custom 3D themed stage
+273 | Fresh-flower wall
+274 | Moving-head & pin lighting
+275 | Entrance tunnel
+276 | Photo-booth corner
+277 | Centerpieces on guest tables
+278 | Haldi & Mehndi
+279 | Pre-Wedding Function
+280 | Marigold string backdrop
+281 | Floor cushions
+282 | Basic props
+283 | Umbrella decor
+284 | Marigold + genda phool wall
+285 | Low seating with bolsters
+286 | Hanging pots & wheels
+287 | Selfie props & signage
+288 | Full floral cabana
+289 | Swing (jhula) with flowers
+290 | Rustic themed set
+291 | Fun props & neon signs
+292 | Rangoli & pathway decor
+293 | Christian Wedding
+294 | Church / Beach
+295 | Floral arch / gazebo
+296 | Aisle chair bows
+297 | Candle Stands
+298 | White drapes
+299 | Fresh-flower arch
+300 | Aisle petals & runners
+301 | Pew / chair florals
+302 | Entrance & signage
+303 | Grand floral canopy
+304 | Full aisle installation
+305 | Hanging florals & drapes
+306 | Reception table decor
+307 | Fairy-light ambience
+308 | Garlands & Floral Strings
+309 | Flowers / Maalai
+310 | Varmala (exchange) pair
+311 | Basic marigold hall strings
+312 | Entrance door garland
+313 | Fresh flowers
+314 | Fresh jasmine + rose varmala
+315 | Stage & entrance garlands
+316 | Pillar & backdrop strings
+317 | Car garland
+318 | Designer imported-flower varmala
+319 | Full floral-string backdrop
+320 | Hanging garland ceiling
+321 | Car + entrance + pathway garlands
+322 | On-site florist team
+323 | Birthday & Baby Shower
+324 | Kids / Family
+325 | Balloon Arch
+326 | Themed backdrop cloth
+327 | Cake Table Decor
+328 | Name banner
+329 | Balloon + foil theme wall
+330 | Cake table + props
+331 | Photo corner
+332 | Custom name cutout
+333 | Full character theme set
+334 | Balloon ceiling & pillars
+335 | Dessert table styling
+336 | Entrance & welcome board
+337 | Fog / bubble entry
+338 | {0} decoration
+339 | Close
+340 | Go to photo {0}
+341 | Choose by budget
+342 | Selected   ⟦Selected {…}⟧
+343 | Added to your booking:   ⟦Added to your booking: {…} — {…} package (₹ {…} ).⟧
+344 | package (₹   ⟦Added to your booking: {…} — {…} package (₹ {…} ).⟧
+345 | Themes   ⟦{…} themes⟧
+346 | Decoration by tradition & budget —   ⟦Decoration by tradition & budget — <span>{…} themes</span> , each with Economy / Premium / Luxury options.⟧
+347 | , each with Economy / Premium / Luxury options.   ⟦Decoration by tradition & budget — <span>{…} themes</span> , each with Economy / Premium / Luxury options.⟧
+348 | from ₹   ⟦from ₹ {…}⟧
+349 | Something went wrong
+350 | This page hit an unexpected error. Your account is still signed in — reloading usually fixes it. If you were mid-payment, check My Orders before trying again; it may have already gone through.
+351 | Reload
+352 | Failed to create event.
+353 | Failed to create event. Please try again.
+354 | Event Creation Wizard — Step   ⟦Event Creation Wizard — Step {…} of 7⟧
+355 | of 7   ⟦Event Creation Wizard — Step {…} of 7⟧
+356 | Select Event Type
+357 | Choose the type of celebration you are planning
+358 | Wedding
+359 | Birthday
+360 | Engagement

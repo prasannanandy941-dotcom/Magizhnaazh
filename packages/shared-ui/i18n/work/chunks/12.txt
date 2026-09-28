@@ -1,0 +1,180 @@
+1981 | Rental details & Pricing
+1982 | Items (select to set quantity, price & upload photo)
+1983 | How many
+1984 | Size / detail
+1985 | optional
+1986 | Delivery price (₹)
+1987 | Blank if free
+1988 | Material / Tier
+1989 | Vessel Types — price for each (leave blank if not offered)
+1990 | Base Rental Price (₹)
+1991 | Guest count served
+1992 | Security deposit (₹)
+1993 | Delivery + Pickup Price (₹)
+1994 | e.g. 1000 (0 for Free)
+1995 | Cleaning Included
+1996 | {0} Package
+1997 | Base Event Price (₹)
+1998 | e.g. 100000
+1999 | No. of attendees
+2000 | No. of days
+2001 | Add-ons — set a price for each (leave blank if not offered)
+2002 | Price tiers (optional — e.g. Normal / HD / Premium)
+2003 | Serving size — e.g. For 2 Persons
+2004 | Tier name — e.g. Premium
+2005 | Remove tier
+2006 | Add tier
+2007 | Package asset
+2008 | Add hall
+2009 | Add package
+2010 | Save Halls
+2011 | Save Packages
+2012 | Sync bookings to your calendar
+2013 | Add this private link to Google Calendar (   ⟦Add this private link to Google Calendar ( <span>Other calendars → From URL</span> ), Apple Calendar, or Outlook. Every confirmed booking shows up automatically.⟧
+2014 | Other calendars → From URL
+2015 | ), Apple Calendar, or Outlook. Every confirmed booking shows up automatically.   ⟦Add this private link to Google Calendar ( <span>Other calendars → From URL</span> ), Apple Calendar, or Outlook. Every confirmed booking shows up automatically.⟧
+2016 | Copied!
+2017 | Preparing your calendar link…
+2018 | Keep this link private — anyone with it can see your booking dates.
+2019 | Availability Calendar
+2020 | Add the dates you're open to book. Customers can only request these dates. Confirmed booking dates are blocked automatically.
+2021 | Have more than one team? Set how many functions you can handle in each slot — e.g. Morning × 4 lets four customers book the same morning. A Full Day booking also uses one Morning, Afternoon and Evening spot.
+2022 | No open dates yet — add some above.
+2023 | For each open date, choose which time slots you offer. Tap a slot to include/exclude it.
+2024 | No slots selected — customers can't book this date. Pick at least one.
+2025 | How many functions can you handle in each slot?
+2026 | Fewer {0} functions
+2027 | {0} functions
+2028 | More {0} functions
+2029 | Save Availability   ⟦{…} Save Availability⟧
+2030 | Booked dates
+2031 | A customer has booked these dates — they're no longer open for others.
+2032 | Custom request
+2033 | Booked for:   ⟦Booked for: {…}⟧
+2034 | Publish an Offer
+2035 | Deals show on your listing and are auto-applied to the customer's price — the biggest applicable one wins.
+2036 | Offer Title *
+2037 | e.g. Monsoon Special
+2038 | Description (Optional)
+2039 | What's included / any conditions
+2040 | Discount Type
+2041 | Percentage off (%)
+2042 | Flat amount off (₹)
+2043 | Percent (%)
+2044 | Amount (₹)
+2045 | Min order (₹, optional)
+2046 | No minimum
+2047 | Valid Until (Optional)
+2048 | Publish Offer   ⟦{…} <Plus /> Publish Offer⟧
+2049 | Paused
+2050 | Live
+2051 | Min order ₹{0} ·
+2052 | Valid until {0}
+2053 | No expiry
+2054 | Pause
+2055 | Resume
+2056 | business
+2057 | Business Details
+2058 | Vendor Details
+2059 | Settlement Bank Account Details
+2060 | Used for automated payouts via Razorpay Route and Cashfree Easy Split.
+2061 | LEGAL BUSINESS / ENTITY NAME
+2062 | e.g. John Doe Enterprises
+2063 | BANK ACCOUNT NUMBER
+2064 | Account Number
+2065 | BANK IFSC CODE
+2066 | e.g. HDFC0001234
+2067 | NEEDS CLARIFICATION
+2068 | PENDING APPROVAL
+2069 | NOT CONNECTED
+2070 | Razorpay Route Marketplace Account
+2071 | Mandatory to accept online Razorpay payments. Customer payments are split directly to your linked account.
+2072 | Razorpay:   ⟦Razorpay: {…}⟧
+2073 | Refresh status
+2074 | Razorpay needs more information before it can approve this account.
+2075 | Razorpay has suspended this account.
+2076 | Onboarding submitted — Razorpay is reviewing your account. Check back or refresh status above.
+2077 | Complete Razorpay payment onboarding to accept online Razorpay payments.
+2078 | PAN NUMBER
+2079 | E.G. ABCDE1234F
+2080 | Name as on PAN
+2081 | E.G. JOHN DOE
+2082 | Re-sync Razorpay Route Account
+2083 | Connect Razorpay Route Account
+2084 | Save Changes   ⟦{…} Save Changes⟧
+2085 | Identity & Business KYC Verification
+2086 | Powered by   ⟦Powered by <span>Cashfree SecureID</span> . All credentials are cross-verified in real time against government and banking databases.⟧
+2087 | Cashfree SecureID
+2088 | . All credentials are cross-verified in real time against government and banking databases.   ⟦Powered by <span>Cashfree SecureID</span> . All credentials are cross-verified in real time against government and banking databases.⟧
+2089 | DO YOU HAVE A GSTIN NUMBER?
+2090 | If you have a registered GSTIN for your business, select   ⟦If you have a registered GSTIN for your business, select <strong>Yes</strong> to verify with GST portal. If not, select <strong>No</strong> to verify using your PAN Card.⟧
+2091 | to verify with GST portal. If not, select   ⟦If you have a registered GSTIN for your business, select <strong>Yes</strong> to verify with GST portal. If not, select <strong>No</strong> to verify using your PAN Card.⟧
+2092 | to verify using your PAN Card.   ⟦If you have a registered GSTIN for your business, select <strong>Yes</strong> to verify with GST portal. If not, select <strong>No</strong> to verify using your PAN Card.⟧
+2093 | Yes, I have GSTIN
+2094 | No, I don't have GSTIN
+2095 | GSTIN NUMBER
+2096 | GST Portal Validation
+2097 | E.G. 22AAAAA0000A1Z5
+2098 | Verified ✓
+2099 | Verify GSTIN
+2100 | 15-character Goods and Services Tax Identification Number. Verified in real-time with GST portal. PAN card is not required when GSTIN is provided.
+2101 | PERMANENT ACCOUNT NUMBER (PAN)
+2102 | Income Tax Department
+2103 | NAME AS ON PAN CARD
+2104 | Verify PAN
+2105 | Standard 10-character alphanumeric PAN verified in real-time with Income Tax records.
+2106 | AADHAAR NUMBER (UIDAI OKYC)
+2107 | UIDAI Paperless e-KYC
+2108 | NAME AS ON AADHAAR CARD
+2109 | Filled in automatically after DigiLocker verification
+2110 | AADHAAR NUMBER (MASKED)
+2111 | Verify via DigiLocker to fill this in
+2112 | Verify via DigiLocker
+2113 | You'll be taken to DigiLocker (the Government of India's own document locker) to log in with your Aadhaar-linked mobile number and OTP, and grant consent to share your Aadhaar. Your Aadhaar number and OTP are entered there, never on this site.
+2114 | FSSAI LICENSE NUMBER
+2115 | Mandatory for Food & Beverages
+2116 | e.g. 10012345678901 (14 digits)
+2117 | 14-digit food safety registration / license issued by FSSAI for food merchants.
+2118 | Proof Documents (registration / GST certificate / owner ID)
+2119 | Document   ⟦Document {…}⟧
+2120 | Upload document
+2121 | Your listing is Verified. Verified badge is live on your public profile.
+2122 | Verification request under review by the admin team.
+2123 | Previous request declined:   ⟦Previous request declined: {…} . Please correct and resubmit.⟧
+2124 | . Please correct and resubmit.   ⟦Previous request declined: {…} . Please correct and resubmit.⟧
+2125 | Submitting…
+2126 | Submit for verification
+2127 | Vendor Profile Settings
+2128 | Starting Price (₹)
+2129 | Advance Required (%)
+2130 | What customers pay upfront to confirm a booking with you.
+2131 | Advance Amount (₹) — optional override
+2132 | If set, customers see this fixed amount instead of the % above.
+2133 | Call / Contact Number
+2134 | Shown to customers so they can call you directly.
+2135 | Business Description
+2136 | Save Profile Changes   ⟦{…} Save Profile Changes⟧
+2137 | Your vendor account has been permanently deleted.
+2138 | This account is not registered as a vendor. Use the customer portal instead.
+2139 | New Vendor Business
+2140 | Your session expired. Please sign in with Google again.
+2141 | Vendor Portal
+2142 | Almost there — tell us about your business
+2143 | Signed in with Google. Add a few details to list on the marketplace.
+2144 | Register Business
+2145 | Your Name
+2146 | Business owner name
+2147 | e.g. The Leela Palace Grand Ballroom
+2148 | You'll set your starting price later in Business Profile.
+2149 | Customers filter vendors by city — pick where you operate.
+2150 | A short description customers will see on your listing.
+2151 | Finish Setup
+2152 | Demo login: vendor@magizhnaazh.com / Passw0rd!
+2153 | Could not delete your account. Please try again.
+2154 | Danger zone
+2155 | Permanently delete your vendor account   ⟦Permanently delete your vendor account {…} — photos, packages, availability and your login. Customers' past booking records are kept. You can sign up again later with the same email, but it will start as a brand-new acco⟧
+2156 | and the “{0}” listing
+2157 | — photos, packages, availability and your login. Customers' past booking records are kept. You can sign up again later with the same email, but it will start as a brand-new account.   ⟦Permanently delete your vendor account {…} — photos, packages, availability and your login. Customers' past booking records are kept. You can sign up again later with the same email, but it will start as a brand-new acco⟧
+2158 | Delete my account permanently
+2159 | Delete account permanently?
+2160 | Your business listing is removed from the marketplace immediately.
