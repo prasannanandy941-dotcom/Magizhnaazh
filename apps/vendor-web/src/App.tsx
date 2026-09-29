@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { ThemeToggle } from '../../../packages/shared-ui/theme';
 import { LanguageButton } from '../../../packages/shared-ui/i18n/react';
 import { HangingDiyas, isInsideMobileApp } from '../../../packages/shared-ui/HangingDiyas';
-import { DeleteAccountSection } from './components/DeleteAccountSection';
 import { lazyNamed, LazyFallback, useInfiniteList, LoadMoreSentinel } from '../../../packages/shared-ui/lazy';
 
 // Lazy: the sign-in screen's code downloads only for signed-out visitors, so a
@@ -11438,20 +11437,6 @@ export function App() {
               {savingProfile && <Loader2 className="w-4 h-4 animate-spin" />} Save Profile Changes
             </button>
           </div>
-
-          {token && (
-            <DeleteAccountSection
-              token={token}
-              businessName={myVendor?.businessName}
-              isGoogleAccount={user?.authProvider === 'google'}
-              onDeleted={() => {
-                localStorage.setItem(REVOKED_TOKEN_KEY, token);
-                notifyVendorAppSignedOut();
-                handleLogout();
-                window.alert('Your vendor account has been permanently deleted.');
-              }}
-            />
-          )}
           </div>
         )}
 
