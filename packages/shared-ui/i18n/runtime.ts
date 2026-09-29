@@ -25,10 +25,12 @@ import { DEFAULT_LANGUAGE, LANGUAGES, LangCode, isLangCode } from './languages';
 export const LANG_KEY = 'magizhnaazh_lang';
 type LanguageScope = 'customer' | 'vendor' | 'admin';
 let languageStorageKey = LANG_KEY;
+let englishOnly = false;
 
-/** Give each web app an independent saved language and storage-event channel. */
+/** Give each web app an independent saved language; keep the admin app in English. */
 export function configureLanguageScope(scope: LanguageScope): void {
   languageStorageKey = `${LANG_KEY}_${scope}`;
+  englishOnly = scope === 'admin';
 }
 
 interface Pattern { re: RegExp; tpl: string }
@@ -47,6 +49,7 @@ const cache = new Map<string, string | null>();
 // ---------------------------------------------------------------- storage
 
 export function getStoredLanguage(): LangCode | null {
+  if (englishOnly) return null;
   try {
     const q = new URLSearchParams(window.location.search).get('lang');
     if (isLangCode(q)) {
@@ -346,6 +349,7 @@ function ensureFont(code: LangCode) {
 // ---------------------------------------------------------------- public API
 
 async function applyLanguage(code: LangCode) {
+  if (englishOnly) code = DEFAULT_LANGUAGE;
   const token = ++applyToken;
   const next = code === DEFAULT_LANGUAGE ? null : await loadDict(code);
   if (token !== applyToken) return; // a newer choice superseded this one
@@ -364,6 +368,7 @@ async function applyLanguage(code: LangCode) {
 
 /** Choose a language: applies it immediately and remembers it. */
 export async function setLanguage(code: LangCode, persist = true): Promise<void> {
+  if (englishOnly) code = DEFAULT_LANGUAGE;
   if (persist) {
     try { window.localStorage.setItem(languageStorageKey, code); } catch { /* private mode */ }
     // Inside the mobile app, let the native side remember it too.
@@ -375,7 +380,7 @@ export async function setLanguage(code: LangCode, persist = true): Promise<void>
 /** Apply the saved language at startup. Await it before first render to avoid an English flash. */
 export function initLanguage(): Promise<void> {
   window.addEventListener('storage', (e) => {
-    if (e.key === languageStorageKey && isLangCode(e.newValue) && e.newValue !== current) void applyLanguage(e.newValue);
+    if (!englishOnly && e.key === languageStorageKey && isLangCode(e.newValue) && e.newValue !== current) void applyLanguage(e.newValue);
   });
   return applyLanguage(getStoredLanguage() ?? DEFAULT_LANGUAGE);
 }
