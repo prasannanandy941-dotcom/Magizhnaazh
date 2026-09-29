@@ -26,6 +26,53 @@ html[data-native-app="true"] .customer-mobile-menu-toggle {
 html[data-native-app="true"] .customer-mobile-navigation {
   display: block !important;
 }
+@media (max-width: 767px) {
+  html[data-native-app="true"] .customer-header-brand-copy {
+    display: none !important;
+  }
+  html[data-native-app="true"] .customer-header-actions {
+    gap: 0.25rem !important;
+  }
+  html[data-native-app="true"] .customer-mobile-language-button {
+    padding: 0.625rem !important;
+  }
+  html[data-native-app="true"] .customer-mobile-language-button span {
+    display: none !important;
+  }
+  html[data-native-app="true"] .customer-header-theme-toggle,
+  html[data-native-app="true"] .customer-header-wishlist,
+  html[data-native-app="true"] .customer-header-sign-in,
+  html[data-native-app="true"] .customer-mobile-menu-toggle {
+    width: 2.5rem !important;
+    height: 2.5rem !important;
+    padding: 0 !important;
+    flex: 0 0 2.5rem !important;
+  }
+  html[data-native-app="true"] .customer-header-sign-in {
+    justify-content: center !important;
+  }
+}
+@media (max-width: 360px) {
+  html[data-native-app="true"] .customer-header-row {
+    padding-left: 0.25rem !important;
+    padding-right: 0.25rem !important;
+    gap: 0.25rem !important;
+  }
+  html[data-native-app="true"] .customer-header-actions {
+    gap: 0.125rem !important;
+  }
+  html[data-native-app="true"] .customer-mobile-language-button {
+    padding: 0.5rem !important;
+  }
+  html[data-native-app="true"] .customer-header-theme-toggle,
+  html[data-native-app="true"] .customer-header-wishlist,
+  html[data-native-app="true"] .customer-header-sign-in,
+  html[data-native-app="true"] .customer-mobile-menu-toggle {
+    width: 2.25rem !important;
+    height: 2.25rem !important;
+    flex-basis: 2.25rem !important;
+  }
+}
 
 /* Keep the mobile screen fixed: no over-scroll bounce or viewport shift. */
 html, body {

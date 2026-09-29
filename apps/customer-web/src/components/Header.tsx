@@ -87,7 +87,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="sticky top-0 z-50 border-b border-[#6b2140]/50 bg-[#1a0a14]/85 backdrop-blur-xl">
-      <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 h-20 flex min-w-0 items-center justify-between gap-2">
+      <div className="customer-header-row max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 h-20 flex min-w-0 items-center justify-between gap-2">
         
         {/* Logo */}
         <div 
@@ -97,7 +97,7 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="w-10 h-10 sm:w-11 sm:h-11 shrink-0 rounded-2xl bg-gradient-to-tr from-[#b8336a] via-[#c9a648] to-[#f0c869] flex items-center justify-center shadow-lg shadow-[#d4af37]/20 group-hover:scale-105 transition-transform">
             <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-[#1a0a14]" />
           </div>
-          <div className="min-w-0">
+          <div className="customer-header-brand-copy min-w-0">
             <span className="block whitespace-nowrap font-display font-extrabold text-xl sm:text-2xl tracking-tight text-[#fdf1f5] group-hover:text-[#e8c874] transition-colors">
               Magizhnaazh
             </span>
@@ -156,7 +156,7 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Right CTA */}
-        <div className="flex shrink-0 items-center gap-1 sm:gap-3">
+        <div className="customer-header-actions flex shrink-0 items-center gap-1 sm:gap-3">
           <button
             onClick={openEventWizard}
             className="shine-sweep hidden sm:flex items-center gap-1.5 whitespace-nowrap px-3 py-2 rounded-lg bg-gradient-to-r from-[#d4af37] via-[#c9a648] to-[#e85d8a] hover:from-[#f0c869] hover:to-[#f2a6c4] text-[#1a0a14] font-bold text-xs shadow-lg shadow-[#d4af37]/25 transition-all hover:scale-105"
@@ -165,12 +165,12 @@ export const Header: React.FC<HeaderProps> = ({
             Create Event
           </button>
 
-          <LanguageButton buttonClassName="bg-[#26101c] border border-[#6b2140]/60 text-[#f5c9dc] hover:border-[#d4af37]/50" />
-          <ThemeToggle app="customer" />
+          <LanguageButton buttonClassName="customer-mobile-language-button bg-[#26101c] border border-[#6b2140]/60 text-[#f5c9dc] hover:border-[#d4af37]/50" />
+          <ThemeToggle app="customer" className="customer-header-theme-toggle" />
 
           <button
             onClick={onOpenWishlist}
-            className="relative p-2.5 rounded-xl bg-[#26101c] border border-[#6b2140]/60 text-[#cf9bb3] hover:text-[#f0c869] hover:border-[#d4af37]/50 transition-colors"
+            className="customer-header-wishlist relative p-2.5 rounded-xl bg-[#26101c] border border-[#6b2140]/60 text-[#cf9bb3] hover:text-[#f0c869] hover:border-[#d4af37]/50 transition-colors"
             title="Wishlist"
           >
             <Heart className="w-5 h-5" />
@@ -215,7 +215,7 @@ export const Header: React.FC<HeaderProps> = ({
           ) : (
             <button
               onClick={onSignIn}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#26101c] border border-[#6b2140]/60 hover:border-[#d4af37]/50 text-[#f5c9dc] font-bold text-xs transition-colors"
+              className="customer-header-sign-in flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#26101c] border border-[#6b2140]/60 hover:border-[#d4af37]/50 text-[#f5c9dc] font-bold text-xs transition-colors"
             >
               <LogIn className="w-4 h-4 shrink-0" />
               <span className="hidden sm:inline">Sign In</span>
