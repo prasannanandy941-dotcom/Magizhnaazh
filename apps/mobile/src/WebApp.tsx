@@ -1,10 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet, BackHandler, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from './theme';
-import { STATIC_I18N_SCRIPT } from './staticI18nScript';
 
 // The live customer website — loaded inside the app so the mobile experience is
 // identical to the web, with every feature, always in sync with the site.
@@ -68,17 +67,29 @@ export function WebApp({ token, user, onLoginRequired, onLogout }: {
   const ref = useRef<WebView>(null);
   const canGoBack = useRef(false);
   const langRef = useRef<string | null>(null);
-  const [savedLang, setSavedLang] = useState<string | null>(null);
   // Only the FIRST load is covered by the spinner. Toggling it on every
   // navigation/redirect made the whole screen blink while the site was working.
   const [firstLoad, setFirstLoad] = useState(true);
+
+  // Safety fallback: ensure spinner never hangs indefinitely under slow networks
+  useEffect(() => {
+    const timer = setTimeout(() => setFirstLoad(false), 3500);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     AsyncStorage.getItem(NATIVE_LANG_KEY)
       .then((code) => {
         if (code) {
           langRef.current = code;
-          setSavedLang(code);
+          // Seed the webview localStorage without mutating props or reloading
+          ref.current?.injectJavaScript(
+            `try {
+              if (!window.localStorage.getItem('magizhnaazh_lang_customer')) {
+                window.localStorage.setItem('magizhnaazh_lang_customer', ${JSON.stringify(code)});
+              }
+            } catch (e) {} true;`
+          );
         }
       })
       .catch(() => {});
@@ -88,10 +99,12 @@ export function WebApp({ token, user, onLoginRequired, onLogout }: {
   // already logged in (the site reads `accessToken` + `user` from localStorage).
   // Without a session it opens as a guest (any stale web session cleared), and
   // __MAGIZH_NATIVE_AUTH tells the site to send sign-in requests back to us.
-  const injectedBefore = `try {
+  // CRITICAL: injectedBefore must remain reference-equal across renders so
+  // Android WebView does NOT reload the page and cause an infinite buffering loop.
+  const injectedBefore = useMemo(
+    () => `try {
        window.__MAGIZH_NATIVE_AUTH = true;
        if (document.documentElement) document.documentElement.setAttribute('data-native-app', 'true');
-       ${savedLang ? `if (!window.localStorage.getItem('magizhnaazh_lang_customer')) { window.localStorage.setItem('magizhnaazh_lang_customer', ${JSON.stringify(savedLang)}); }` : ''}
        if (!window.localStorage.getItem('magizhnaazh_theme_choice_customer')) {
          window.localStorage.setItem('magizhnaazh_theme_choice_customer', 'light');
          window.localStorage.setItem('magizhnaazh_theme', 'light');
@@ -102,19 +115,19 @@ export function WebApp({ token, user, onLoginRequired, onLogout }: {
             window.localStorage.setItem('user', ${JSON.stringify(JSON.stringify(user ?? null))});`
          : `window.localStorage.removeItem('accessToken');
             window.localStorage.removeItem('user');`}
-     } catch (e) {} true;`;
+     } catch (e) {} true;`,
+    [token, user]
+  );
 
   const applyStaticI18nIfNeeded = (url?: string) => {
-    if (url && !STATIC_PAGE_RE.test(url)) return;
+    // Only apply on actual static pages (about.html, careers.html, etc.), NEVER on customer marketplace SPA
+    if (!url || !STATIC_PAGE_RE.test(url)) return;
     const code = langRef.current;
     ref.current?.injectJavaScript(
       `try {
         ${code ? `if (!window.localStorage.getItem('magizhnaazh_lang_customer')) window.localStorage.setItem('magizhnaazh_lang_customer', ${JSON.stringify(code)});` : ''}
-        if (/(about|careers|blog|press|help|returns|privacy|terms)\\.html/i.test(window.location.pathname)) {
-          ${STATIC_I18N_SCRIPT}
-          if (typeof window.__MAGIZH_APPLY_STATIC_LANG === 'function') {
-            window.__MAGIZH_APPLY_STATIC_LANG(${code ? JSON.stringify(code) : 'undefined'});
-          }
+        if (typeof window.__MAGIZH_APPLY_STATIC_LANG === 'function') {
+          window.__MAGIZH_APPLY_STATIC_LANG(${code ? JSON.stringify(code) : 'undefined'});
         }
       } catch (e) {} true;`
     );
@@ -127,7 +140,6 @@ export function WebApp({ token, user, onLoginRequired, onLogout }: {
       else if (msg?.type === 'logout') onLogout?.();
       else if (msg?.type === 'language' && typeof msg.code === 'string') {
         langRef.current = msg.code;
-        setSavedLang(msg.code);
         AsyncStorage.setItem(NATIVE_LANG_KEY, msg.code).catch(() => {});
       }
     } catch {
