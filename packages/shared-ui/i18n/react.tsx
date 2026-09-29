@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Globe, Check, X } from 'lucide-react';
 import { LANGUAGES, LangCode } from './languages';
 import { getLanguage, hasChosenLanguage, onLanguageChange, setLanguage, suggestedLanguage } from './runtime';
@@ -99,18 +100,56 @@ export const LanguageButton: React.FC<{ className?: string; buttonClassName?: st
   const lang = useLanguage();
   const [open, setOpen] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
   const current = LANGUAGES.find((l) => l.code === lang) ?? LANGUAGES[0];
 
   useEffect(() => {
     if (!open) return;
-    const close = (e: MouseEvent) => { if (!boxRef.current?.contains(e.target as Node)) setOpen(false); };
+    const close = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (!boxRef.current?.contains(target) && !menuRef.current?.contains(target)) setOpen(false);
+    };
     document.addEventListener('mousedown', close);
     return () => document.removeEventListener('mousedown', close);
   }, [open]);
 
+  useLayoutEffect(() => {
+    if (!open) {
+      setPosition(null);
+      return;
+    }
+
+    const updatePosition = () => {
+      const button = buttonRef.current?.getBoundingClientRect();
+      const menu = menuRef.current;
+      if (!button || !menu) return;
+
+      const margin = 12;
+      const gap = 8;
+      const width = Math.min(320, window.innerWidth - margin * 2);
+      const height = menu.getBoundingClientRect().height;
+      const placeAbove = dropUp || (button.bottom + height + gap > window.innerHeight && button.top >= height + gap);
+      const top = placeAbove ? button.top - height - gap : button.bottom + gap;
+      const left = Math.max(margin, Math.min(button.right - width, window.innerWidth - width - margin));
+
+      setPosition({ top, left });
+    };
+
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
+  }, [open, dropUp]);
+
   return (
     <div ref={boxRef} className={`relative inline-block ${className}`}>
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-label="Change language"
@@ -120,8 +159,16 @@ export const LanguageButton: React.FC<{ className?: string; buttonClassName?: st
         <Globe className="w-4 h-4" />
         <span translate="no">{current.nativeName}</span>
       </button>
-      {open && (
-        <div className={`absolute right-0 z-[110] w-80 max-w-[90vw] rounded-2xl bg-white border border-slate-200 shadow-2xl p-3 ${dropUp ? 'bottom-full mb-2' : 'top-full mt-2'}`}>
+      {open && createPortal(
+        <div
+          ref={menuRef}
+          className="fixed z-[110] w-80 max-w-[calc(100vw-24px)] max-h-[75vh] overflow-y-auto rounded-2xl bg-white border border-slate-200 shadow-2xl p-3"
+          style={{
+            top: position?.top ?? 0,
+            left: position?.left ?? 0,
+            visibility: position ? 'visible' : 'hidden',
+          }}
+        >
           <LanguageGrid
             compact
             selected={lang}
@@ -131,7 +178,8 @@ export const LanguageButton: React.FC<{ className?: string; buttonClassName?: st
               setOpen(false);
             }}
           />
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
