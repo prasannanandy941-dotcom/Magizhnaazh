@@ -92,10 +92,11 @@ export const LanguageGate: React.FC<{ children: React.ReactNode; onClose?: () =>
 };
 
 /** A globe button (showing the current language) that opens a small language menu. */
-export const LanguageButton: React.FC<{ className?: string; buttonClassName?: string; dropUp?: boolean }> = ({
+export const LanguageButton: React.FC<{ className?: string; buttonClassName?: string; dropUp?: boolean; hideLabelOnMobile?: boolean }> = ({
   className = '',
   buttonClassName = 'border border-slate-300 bg-white/80 text-slate-800 hover:bg-white',
   dropUp = false,
+  hideLabelOnMobile = false,
 }) => {
   const lang = useLanguage();
   const [open, setOpen] = useState(false);
@@ -154,10 +155,10 @@ export const LanguageButton: React.FC<{ className?: string; buttonClassName?: st
         onClick={() => setOpen((o) => !o)}
         aria-label="Change language"
         title="Change language"
-        className={`inline-flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-xs font-bold transition-colors ${buttonClassName}`}
+        className={`inline-flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-xl text-xs font-bold transition-colors ${buttonClassName}`}
       >
-        <Globe className="w-4 h-4" />
-        <span translate="no">{current.nativeName}</span>
+        <Globe className="w-4 h-4 shrink-0" />
+        <span translate="no" className={hideLabelOnMobile ? "hidden sm:inline" : undefined}>{current.nativeName}</span>
       </button>
       {open && createPortal(
         <div

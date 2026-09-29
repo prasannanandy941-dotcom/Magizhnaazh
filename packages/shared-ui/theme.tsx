@@ -56,7 +56,7 @@ export function ThemeToggle({ app, className = '' }: { app: ThemeApp; className?
       onClick={toggle}
       aria-label={label}
       title={label}
-      className={`w-10 h-10 shrink-0 rounded-xl border flex items-center justify-center transition-colors ${
+      className={`w-9 h-9 sm:w-10 sm:h-10 shrink-0 rounded-xl border flex items-center justify-center transition-colors ${
         theme === 'dark'
           ? 'bg-slate-900/60 border-slate-700 text-amber-300 hover:border-amber-400/60'
           : 'bg-white border-slate-300 text-indigo-600 hover:border-indigo-400'

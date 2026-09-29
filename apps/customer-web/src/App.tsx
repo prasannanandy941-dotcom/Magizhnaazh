@@ -181,6 +181,9 @@ export function App() {
   // After the marketplace is on screen, fetch the popups' and other screens'
   // code in the background so the first "View Details" / tab click is instant.
   useEffect(() => {
+    if ((window as any).__MAGIZH_NATIVE_AUTH || (window as any).ReactNativeWebView) {
+      document.documentElement.setAttribute('data-native-app', 'true');
+    }
     preloadWhenIdle([
       VendorDetailModal, AuthModal, VendorCompareModal, WishlistModal, EventWizardModal, ShareLinkModal,
       MyOrders, SmartBudgetPlanner, CanvaInvitationDesigner, GuestManagement, FeedbackModule,
