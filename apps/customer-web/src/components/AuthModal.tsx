@@ -168,7 +168,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) 
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <LanguageButton />
+            <LanguageButton buttonClassName="border border-slate-200 bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200" />
             <button onClick={onClose} className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:text-slate-900 flex items-center justify-center">
               <X className="w-4 h-4" />
             </button>

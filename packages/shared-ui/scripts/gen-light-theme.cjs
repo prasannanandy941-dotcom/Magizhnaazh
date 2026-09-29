@@ -246,6 +246,45 @@ html:not([data-theme="light"]) .auth-card .hover\\:text-slate-900:hover { color:
 html:not([data-theme="light"]) .auth-card .text-slate-600, html:not([data-theme="light"]) .auth-card .text-slate-500 { color: #b3a3c4 !important; }
 html:not([data-theme="light"]) .auth-card .placeholder\\:text-slate-500::placeholder { color: #8f7fa3 !important; }
 html:not([data-theme="light"]) .auth-card input, html:not([data-theme="light"]) .auth-card select, html:not([data-theme="light"]) .auth-card textarea { color-scheme: dark; }
+html:not([data-theme="light"]) .auth-card .language-button,
+html:not([data-theme="light"]) .auth-card .language-button.bg-white\\/80 {
+  background-color: #2c1b42 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #f6eef8 !important;
+}
+html:not([data-theme="light"]) .language-menu,
+html:not([data-theme="light"]) .language-modal {
+  background-color: #221433 !important;
+  border-color: rgba(212, 175, 55, 0.25) !important;
+  color: #f6eef8 !important;
+}
+html:not([data-theme="light"]) .language-menu .bg-white,
+html:not([data-theme="light"]) .language-modal .bg-white {
+  background-color: #2c1b42 !important;
+}
+html:not([data-theme="light"]) .language-menu .bg-amber-50,
+html:not([data-theme="light"]) .language-modal .bg-amber-50 {
+  background-color: rgba(212, 175, 55, 0.2) !important;
+}
+html:not([data-theme="light"]) .language-menu .border-slate-200,
+html:not([data-theme="light"]) .language-modal .border-slate-200 {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+html:not([data-theme="light"]) .language-menu .text-slate-900,
+html:not([data-theme="light"]) .language-modal .text-slate-900 {
+  color: #f6eef8 !important;
+}
+html:not([data-theme="light"]) .language-menu .text-slate-600,
+html:not([data-theme="light"]) .language-menu .text-slate-500,
+html:not([data-theme="light"]) .language-modal .text-slate-600,
+html:not([data-theme="light"]) .language-modal .text-slate-500 {
+  color: #b3a3c4 !important;
+}
+html:not([data-theme="light"]) .language-menu .hover\\:bg-slate-100:hover,
+html:not([data-theme="light"]) .language-modal .hover\\:bg-slate-100:hover {
+  background-color: #36234f !important;
+}
+
 /* Hanging diyas and bells (customer + vendor only; packages/shared-ui/HangingDiyas.tsx). */
 .hanging-diyas { display: none; }
 ${L} .hanging-diyas { display: block; }

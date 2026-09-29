@@ -57,7 +57,7 @@ export const LanguageModal: React.FC<{ onDone: () => void; onClose?: () => void 
 
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true">
-      <div className="w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl relative">
+      <div className="language-modal w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl relative">
         {onClose && (
           <button type="button" onClick={onClose} aria-label="Close" className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-slate-100 text-slate-500">
             <X className="w-5 h-5" />
@@ -94,7 +94,7 @@ export const LanguageGate: React.FC<{ children: React.ReactNode; onClose?: () =>
 /** A globe button (showing the current language) that opens a small language menu. */
 export const LanguageButton: React.FC<{ className?: string; buttonClassName?: string; dropUp?: boolean; hideLabelOnMobile?: boolean }> = ({
   className = '',
-  buttonClassName = 'border border-slate-300 bg-white/80 text-slate-800 hover:bg-white',
+  buttonClassName = 'border border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-slate-900',
   dropUp = false,
   hideLabelOnMobile = false,
 }) => {
@@ -155,7 +155,7 @@ export const LanguageButton: React.FC<{ className?: string; buttonClassName?: st
         onClick={() => setOpen((o) => !o)}
         aria-label="Change language"
         title="Change language"
-        className={`inline-flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-xl text-xs font-bold transition-colors ${buttonClassName}`}
+        className={`language-button inline-flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-xl text-xs font-bold transition-colors ${buttonClassName}`}
       >
         <Globe className="w-4 h-4 shrink-0" />
         <span translate="no" className={hideLabelOnMobile ? "hidden sm:inline" : undefined}>{current.nativeName}</span>
@@ -163,7 +163,7 @@ export const LanguageButton: React.FC<{ className?: string; buttonClassName?: st
       {open && createPortal(
         <div
           ref={menuRef}
-          className="fixed z-[110] w-80 max-w-[calc(100vw-24px)] max-h-[75vh] overflow-y-auto rounded-2xl bg-white border border-slate-200 shadow-2xl p-3"
+          className="language-menu fixed z-[110] w-80 max-w-[calc(100vw-24px)] max-h-[75vh] overflow-y-auto rounded-2xl bg-white border border-slate-200 shadow-2xl p-3"
           style={{
             top: position?.top ?? 0,
             left: position?.left ?? 0,
