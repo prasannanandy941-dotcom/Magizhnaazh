@@ -5,6 +5,7 @@ import { STATIC_CITY_GROUPS, checkPassword, isPasswordStrong } from '../../../..
 import { login, register, fetchMyVendor, createVendor, sendOtp, verifyOtp, forgotPassword, resetPassword, googleLogin } from '../api';
 import { FloralGoldBackground } from './FloralGoldBackground';
 import { HangingDiyas, isInsideMobileApp } from '../../../../packages/shared-ui/HangingDiyas';
+import { LanguageButton } from '../../../../packages/shared-ui/i18n/react';
 import { GoogleSignInButton } from './GoogleSignInButton';
 
 interface AuthGateProps {
@@ -230,14 +231,17 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
         {!isInsideMobileApp() && <HangingDiyas />}
       </div>
       <div className={`glass-card w-full rounded-3xl border border-slate-800 shadow-2xl overflow-hidden ${wideForm ? 'max-w-3xl' : 'max-w-md'}`}>
-        <div className="px-6 py-6 border-b border-slate-800 bg-slate-900/60 flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-600 flex items-center justify-center font-bold text-slate-950">
-            <Store className="w-6 h-6" />
+        <div className="px-6 py-6 border-b border-slate-800 bg-slate-900/60 flex items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-600 flex items-center justify-center font-bold text-slate-950 shrink-0">
+              <Store className="w-6 h-6" />
+            </div>
+            <div className="min-w-0">
+              <span className="font-display font-extrabold text-xl text-white block">Vendor Portal</span>
+              <span className="text-[10px] text-amber-400 font-bold uppercase tracking-wider">Business Partner Workspace</span>
+            </div>
           </div>
-          <div>
-            <span className="font-display font-extrabold text-xl text-white block">Vendor Portal</span>
-            <span className="text-[10px] text-amber-400 font-bold uppercase tracking-wider">Business Partner Workspace</span>
-          </div>
+          <LanguageButton buttonClassName="bg-slate-950/60 border border-amber-500/30 text-amber-100 hover:border-amber-400/60 hover:bg-amber-500/10" />
         </div>
 
         {mode === 'google-setup' ? (

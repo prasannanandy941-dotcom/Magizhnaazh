@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { ThemeToggle } from '../../../packages/shared-ui/theme';
+import { LanguageButton } from '../../../packages/shared-ui/i18n/react';
 import { HangingDiyas, isInsideMobileApp } from '../../../packages/shared-ui/HangingDiyas';
 import { DeleteAccountSection } from './components/DeleteAccountSection';
 import { lazyNamed, LazyFallback, useInfiniteList, LoadMoreSentinel } from '../../../packages/shared-ui/lazy';
@@ -4595,6 +4596,7 @@ export function App() {
             <span className="hidden sm:block text-slate-400">
               Signed in as <strong className="text-amber-300">{user.name}</strong>
             </span>
+            <LanguageButton buttonClassName="bg-slate-950/60 border border-amber-500/30 text-amber-100 hover:border-amber-400/60 hover:bg-amber-500/10" />
             <ThemeToggle app="vendor" />
             <button
               onClick={handleLogout}
