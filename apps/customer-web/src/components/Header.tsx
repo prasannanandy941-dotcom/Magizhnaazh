@@ -108,7 +108,7 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Desktop Navigation */}
-        <div className="hidden md:flex min-w-0 flex-1 flex-col bg-[#26101c]/70 rounded-2xl border border-[#6b2140]/60 overflow-hidden max-w-xl xl:max-w-2xl ml-3 mr-2">
+        <div className="customer-desktop-navigation hidden md:flex min-w-0 flex-1 flex-col bg-[#26101c]/70 rounded-2xl border border-[#6b2140]/60 overflow-hidden max-w-xl xl:max-w-2xl ml-3 mr-2">
           <nav
             ref={navRef}
             onScroll={updateScrollProgress}
@@ -225,7 +225,7 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Mobile menu toggle (shown < md, where the desktop nav is hidden) */}
           <button
             onClick={() => setShowMobileMenu((s) => !s)}
-            className="md:hidden shrink-0 p-2.5 rounded-xl bg-[#26101c] border border-[#6b2140]/60 text-[#cf9bb3] hover:text-[#f0c869] transition-colors"
+            className="customer-mobile-menu-toggle md:hidden shrink-0 p-2.5 rounded-xl bg-[#26101c] border border-[#6b2140]/60 text-[#cf9bb3] hover:text-[#f0c869] transition-colors"
             aria-label="Menu"
             aria-expanded={showMobileMenu}
             aria-controls="customer-mobile-navigation"
@@ -239,7 +239,7 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Mobile navigation menu */}
       {showMobileMenu && (
-        <nav id="customer-mobile-navigation" className="md:hidden border-t border-[#6b2140]/50 bg-[#1a0a14]/95 backdrop-blur-xl px-4 py-3 space-y-1">
+        <nav id="customer-mobile-navigation" className="customer-mobile-navigation md:hidden border-t border-[#6b2140]/50 bg-[#1a0a14]/95 backdrop-blur-xl px-4 py-3 space-y-1">
           {navItems.map((item) => (
             <button
               key={item.id}
