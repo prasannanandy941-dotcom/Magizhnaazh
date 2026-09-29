@@ -266,7 +266,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
             </button>
           </div>
         ) : (
-          <div className="flex p-1.5 mx-6 mt-6 bg-slate-900/60 rounded-2xl border border-slate-800">
+          <div className="grid grid-cols-2 gap-1.5 p-1.5 mx-6 mt-6 bg-slate-900/60 rounded-2xl border border-slate-800">
             <button
               type="button"
               onClick={() => {
@@ -275,11 +275,12 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
                 setOtpNotice('');
                 setMode('signin');
               }}
-              className={`flex-1 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 ${
+              className={`flex min-w-0 w-full flex-col items-center justify-center gap-1 rounded-xl px-2 py-2.5 text-center text-xs font-bold transition-all sm:flex-row sm:gap-1.5 ${
                 mode === 'signin' ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-slate-950 shadow-md' : 'text-slate-400'
               }`}
             >
-              <LogIn className="w-3.5 h-3.5" /> Sign In
+              <LogIn className="w-3.5 h-3.5 shrink-0" />
+              <span className="min-w-0 leading-tight">Sign In</span>
             </button>
             <button
               type="button"
@@ -289,11 +290,12 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
                 setOtpNotice('');
                 setMode('signup');
               }}
-              className={`flex-1 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 ${
+              className={`flex min-w-0 w-full flex-col items-center justify-center gap-1 rounded-xl px-2 py-2.5 text-center text-xs font-bold transition-all sm:flex-row sm:gap-1.5 ${
                 mode === 'signup' ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-slate-950 shadow-md' : 'text-slate-400'
               }`}
             >
-              <UserPlus className="w-3.5 h-3.5" /> Register Business
+              <UserPlus className="w-3.5 h-3.5 shrink-0" />
+              <span className="min-w-0 leading-tight">Register Business</span>
             </button>
           </div>
         )}
