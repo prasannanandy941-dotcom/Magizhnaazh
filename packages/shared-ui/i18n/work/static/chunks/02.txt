@@ -1,0 +1,45 @@
+46 | <span>Catering Spotlights</span> <span>6 min read</span>
+47 | Photography
+48 | Capturing Pure Emotion: Candid vs Traditional Photography
+49 | Why modern couples are pairing candid photojournalism with classic portraits, and how to brief your wedding cinematographer.
+50 | <span>Creative Tips</span> <span>4 min read</span>
+51 | RSVP & Tech
+52 | Why Digital Invitations with Real-Time RSVP Save Hours
+53 | How digital cards with QR location links and dietary tracking help you plan catering headcounts with zero wastage.
+54 | <span>Tech & Planning</span> <span>3 min read</span>
+55 | Decor
+56 | Stage Lighting & Floral Backdrops: Choosing Your Vibe
+57 | How warm amber illumination, brass lamps, and cascading jasmine elevate evening receptions into majestic celebrations.
+58 | <span>Design Trends</span> <span>5 min read</span>
+59 | Careers — Porulon Technologies · Magizhnaazh
+60 | Careers at Porulon
+61 | Build the Future of Celebration Technology
+62 | Join our team in Coimbatore, Tamil Nadu, as we empower millions of families and independent event artisans.
+63 | Why Work With Us?
+64 | At <strong>Porulon Technologies Private Limited</strong>, we believe celebrating life's greatest moments shouldn't come with friction. We are engineers, designers, and problem solvers crafting intuitive marketplace experiences for event venues, catering artists, decorators, and photographers.
+65 | Enjoy an agile, fast-moving culture where your ideas directly impact thousands of real celebrations every month.
+66 | Current Open Positions
+67 | <span class="job-title">Full Stack Engineer (React / Node / TypeScript)</span> <span class="job-badge">Full Time · Coimbatore / Hybrid</span>
+68 | Architect robust microservices, real-time booking flows, and interactive canvas tools across our customer, vendor, and administrative applications.
+69 | <span class="job-title">Product Designer (UI / UX)</span> <span class="job-badge">Full Time · Coimbatore</span>
+70 | Design elegant, user-centric mobile and web experiences that make planning events joyous, effortless, and accessible for everyone.
+71 | <span class="job-title">Vendor Partnerships Manager</span> <span class="job-badge">Full Time · Tamil Nadu</span>
+72 | Onboard and build lasting relationships with top caterers, luxury venues, decorators, and photographers across Coimbatore, Chennai, and Madurai.
+73 | <span class="job-title">Customer Experience Specialist</span> <span class="job-badge">Full Time · Coimbatore</span>
+74 | Support couples and families through their booking journey, answering queries and ensuring every event is smooth and memorable.
+75 | Don't see a role that fits?
+76 | We're always looking for passionate talent. Send us your resume, GitHub, or portfolio!
+77 | Email Your Resume to porulontechnologies@gmail.com
+78 | Help Center & FAQs — Magizhnaazh Support
+79 | Customer Support
+80 | How Can We Help You?
+81 | Quick answers to common questions about booking vendors, managing event budgets, and digital invitations.
+82 | Frequently Asked Questions
+83 | 1. How do I discover and book a vendor on Magizhnaazh?
+84 | Browse our Marketplace tab by selecting your city (e.g. Coimbatore, Chennai, Madurai) and category (Catering, Venues, Decor, Photography, etc.). Click <strong>View Details</strong> to review portfolios, pricing packages, and past ratings. Once selected, click <strong>Book Vendor</strong> to request your booking date.
+85 | 2. How do advance payments work?
+86 | When booking a vendor, you submit an advance payment claim. Magizhnaazh holds this in your booking ledger until the vendor verifies availability and confirms the booking. You can monitor the real-time status under <strong>My Orders</strong>.
+87 | 3. How does the Smart Budget Planner work?
+88 | Our Smart Budget Planner automatically divides your total target budget across essential categories (Venues, Catering, Stage Decor, Photography, Makeup, Gifts). Whenever you confirm a vendor booking, the cost is automatically deducted from your remaining allocation.
+89 | 4. Can I customize digital invitations?
+90 | Yes! Our Canva-style invitation designer allows you to customize typography, venue details, and generate a dynamic QR code that your guests can scan to submit their RSVP and food preferences online.

@@ -1,0 +1,45 @@
+91 | 5. What happens if a vendor is unavailable on my date?
+92 | If a vendor cannot fulfill your date, the request is marked cancelled and your advance payment is promptly refunded or credited back according to our transparent policy.
+93 | Need direct assistance from our team?
+94 | Our customer support team is on standby to help you with bookings, dates, and vendor inquiries.
+95 | 📞 <strong>Direct Phone / WhatsApp:</strong> <a href="tel:+918448655400" style="color:#e8c874; text-decoration:none;">+91 84486 55400</a>
+96 | ✉️ <strong>Support Email:</strong> <a href="mailto:porulontechnologies@gmail.com" style="color:#e8c874; text-decoration:none;">porulontechnologies@gmail.com</a>
+97 | 📍 <strong>Office:</strong> Porulon Technologies Private Limited, Coimbatore, Tamil Nadu
+98 | Operating Hours: Monday – Saturday, 9:00 AM to 7:00 PM IST
+99 | Press & Media — Porulon Technologies · Magizhnaazh
+100 | Press & Media Center
+101 | Official News & Announcements
+102 | Media releases, coverage, and brand assets for Magizhnaazh by Porulon Technologies Private Limited.
+103 | Recent Press Releases
+104 | September 2026
+105 | Porulon Technologies Unveils Magizhnaazh Unified Event Planning Ecosystem
+106 | A ground-breaking platform uniting verified banquet halls, traditional caterers, decor artisans, and smart RSVP designer tools under one seamless digital experience for Tamil Nadu celebrations.
+107 | August 2026
+108 | Expansion Across Tier-1 & Tier-2 Hubs in Tamil Nadu
+109 | Magizhnaazh extends direct vendor onboarding across Coimbatore, Chennai, Madurai, Salem, and Tiruchirappalli, providing localized pricing transparency and customer security guarantees.
+110 | Media Inquiries & Press Kit
+111 | Members of the press, journalists, and event industry researchers seeking interviews, executive quotes, or high-resolution brand assets can contact our communications team.
+112 | Press Office: Porulon Technologies Private Limited
+113 | 📍 Coimbatore, Tamil Nadu, India
+114 | Privacy Policy — Magizhnaazh
+115 | Privacy Policy
+116 | Magizhnaazh, operated by Porulon Technologies Private Limited · Last updated: 7 September 2026
+117 | This Privacy Policy explains how Porulon Technologies Private Limited ("we", "us") collects, uses, and protects your information when you use the Magizhnaazh event-planning marketplace ("the Service") at event.porulontech.com/customer and its related vendor and administration sites.
+118 | Information we collect
+119 | <strong>Account information</strong> — your name and email address, provided when you register or sign in (including via Google Sign-In, which shares your name, email address, and profile picture with us).
+120 | <strong>Contact details</strong> — phone number and city, when you choose to provide them.
+121 | <strong>Event and booking details</strong> — event type, date, guest count, budget, and the vendor bookings and messages you create on the Service.
+122 | <strong>Technical data</strong> — basic device and log information needed to operate and secure the Service.
+123 | How we use your information
+124 | To create and manage your account and authenticate you.
+125 | To provide the core marketplace features — creating events, discovering vendors, and making bookings.
+126 | To connect you with vendors you choose to contact or book.
+127 | To secure the Service, prevent abuse, and comply with legal obligations.
+128 | How we share information
+129 | We share your information only as needed to provide the Service — for example, sharing your booking and contact details with a vendor you book. We do <strong>not</strong> sell your personal information. We may share data with service providers who help us operate the platform (such as email delivery), and where required by law.
+130 | Google user data
+131 | When you sign in with Google, we receive your basic profile (name, email address, profile picture) solely to create and identify your account. We do not use this data for advertising and do not share it with third parties except as described above. Our use of information received from Google APIs adheres to the <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener">Google API Services User Data Policy</a>, including its Limited Use requirements.
+132 | Data retention
+133 | We retain your information for as long as your account is active or as needed to provide the Service. You may request deletion of your account and associated personal data at any time by contacting us.
+134 | Your choices
+135 | You can access or update your account details within the app, and you can request correction or deletion of your personal data by emailing us.
