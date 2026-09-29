@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator,
   RefreshControl, Modal, TextInput, ScrollView, KeyboardAvoidingView, Platform, Alert,
@@ -18,20 +18,26 @@ export default function EventsScreen() {
   const [error, setError] = useState('');
   const [showCreate, setShowCreate] = useState(false);
 
-  const load = useCallback(async () => {
-    if (!token) return;
+  const tokenRef = useRef(token);
+  tokenRef.current = token;
+
+  const load = useCallback(async (isRefresh = false) => {
+    const tok = tokenRef.current;
+    if (!tok) { setLoading(false); return; }
     setError('');
+    if (!isRefresh) setLoading(true);
     try {
-      setEvents(await api.fetchEvents(token));
+      setEvents(await api.fetchEvents(tok));
     } catch (e: any) {
       setError(e.message || 'Failed to load events.');
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [token]);
+  }, []); // stable — reads token from ref
 
-  useEffect(() => { load(); }, [load]);
+  // Only re-run when the token itself changes (login / logout).
+  useEffect(() => { load(); }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <View style={{ flex: 1, backgroundColor: 'transparent' }}>
@@ -42,7 +48,7 @@ export default function EventsScreen() {
           data={events}
           keyExtractor={(e) => e.id}
           contentContainerStyle={{ padding: space.lg, gap: space.md, flexGrow: 1 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={colors.primary} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(true); }} tintColor={colors.primary} />}
           ListEmptyComponent={<Text style={styles.empty}>{error || 'No events yet.\nTap “New Event” to plan one.'}</Text>}
           renderItem={({ item }) => {
             const pct = item.totalBudget > 0 ? Math.min(100, Math.round((item.spentBudget / item.totalBudget) * 100)) : 0;
@@ -73,7 +79,7 @@ export default function EventsScreen() {
       <CreateEventModal
         visible={showCreate}
         onClose={() => setShowCreate(false)}
-        onCreated={() => { setShowCreate(false); load(); }}
+        onCreated={() => { setShowCreate(false); load(true); }}
       />
     </View>
   );

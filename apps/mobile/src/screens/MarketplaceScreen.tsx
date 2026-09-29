@@ -25,8 +25,9 @@ export default function MarketplaceScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (isRefresh = false) => {
     setError('');
+    if (!isRefresh) setLoading(true);
     try {
       const list = await api.fetchVendors({
         search: search.trim() || undefined,
@@ -41,9 +42,9 @@ export default function MarketplaceScreen() {
     }
   }, [search, category]);
 
-  useEffect(() => { load(); }, [category]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { load(); }, [search, category]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const onRefresh = () => { setRefreshing(true); load(); };
+  const onRefresh = () => { setRefreshing(true); load(true); };
 
   return (
     <View style={styles.container}>
@@ -52,7 +53,7 @@ export default function MarketplaceScreen() {
           style={styles.search}
           value={search}
           onChangeText={setSearch}
-          onSubmitEditing={load}
+          onSubmitEditing={() => load()}
           returnKeyType="search"
           placeholder="Search vendors, venues, caterers…"
           placeholderTextColor={colors.textMuted}

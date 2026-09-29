@@ -270,6 +270,11 @@ const runtimeJs = `(function () {
       '#static-i18n-switcher { display: flex !important; align-items: center !important; gap: 6px !important; position: relative !important; flex-shrink: 0 !important; flex-wrap: nowrap !important; justify-content: flex-end !important; }' +
       '.back-btn { display: inline-flex !important; align-items: center !important; gap: 4px !important; white-space: nowrap !important; flex-shrink: 1 !important; box-sizing: border-box !important; overflow: hidden !important; text-decoration: none !important; }' +
       '.back-btn-text { overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important; }' +
+      '.card { box-sizing: border-box !important; max-width: 100% !important; overflow-wrap: break-word !important; }' +
+      '.company-details { box-sizing: border-box !important; max-width: 100% !important; overflow: hidden !important; }' +
+      '.company-name { overflow-wrap: break-word !important; word-break: break-word !important; }' +
+      '.detail-item { display: flex !important; align-items: flex-start !important; flex-wrap: wrap !important; overflow-wrap: anywhere !important; word-break: break-word !important; max-width: 100% !important; }' +
+      '.detail-item a, .contact-card a, a[href^="mailto:"], a[href^="http"], a[href^="tel:"] { overflow-wrap: anywhere !important; word-break: break-all !important; max-width: 100% !important; }' +
       '@media (max-width: 640px) {' +
       '  .header-inner { padding: 10px 12px !important; gap: 6px !important; flex-wrap: nowrap !important; }' +
       '  .logo-group { gap: 8px !important; flex-shrink: 0 !important; min-width: 0 !important; }' +
@@ -278,6 +283,11 @@ const runtimeJs = `(function () {
       '  #static-i18n-switcher { gap: 6px !important; flex-wrap: nowrap !important; }' +
       '  .back-btn { padding: 6px 10px !important; font-size: 12px !important; white-space: nowrap !important; max-width: 125px !important; line-height: 1.2 !important; border-radius: 8px !important; }' +
       '  #static-i18n-switcher > button { padding: 6px 10px !important; font-size: 12px !important; white-space: nowrap !important; border-radius: 8px !important; }' +
+      '  .wrap { padding: 24px 16px 60px !important; }' +
+      '  .card { padding: 22px 16px !important; border-radius: 16px !important; }' +
+      '  .company-details { padding: 16px 14px !important; border-radius: 14px !important; }' +
+      '  .company-name { font-size: 15px !important; }' +
+      '  .detail-item { font-size: 13px !important; gap: 6px !important; }' +
       '}' +
       '@media (max-width: 380px) {' +
       '  .header-inner { padding: 8px 8px !important; gap: 4px !important; }' +
@@ -286,6 +296,11 @@ const runtimeJs = `(function () {
       '  .logo-text { font-size: 14px !important; }' +
       '  .back-btn { max-width: 90px !important; padding: 5px 6px !important; font-size: 11px !important; }' +
       '  #static-i18n-switcher > button { padding: 5px 6px !important; font-size: 11px !important; }' +
+      '  .wrap { padding: 18px 12px 48px !important; }' +
+      '  .card { padding: 16px 12px !important; }' +
+      '  .company-details { padding: 14px 10px !important; }' +
+      '  .company-name { font-size: 14px !important; }' +
+      '  .detail-item { font-size: 12px !important; gap: 4px !important; }' +
       '}' +
       '@media (max-width: 340px) {' +
       '  .logo-text { font-size: 13px !important; }' +

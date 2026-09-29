@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
 import { useAuth } from '../auth';
 import * as api from '../api';
@@ -19,20 +19,28 @@ export default function BookingsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
 
-  const load = useCallback(async () => {
-    if (!token) return;
+  // Keep a ref so the effect below always calls the latest version without
+  // re-running on every render when load's identity changes.
+  const tokenRef = useRef(token);
+  tokenRef.current = token;
+
+  const load = useCallback(async (isRefresh = false) => {
+    const tok = tokenRef.current;
+    if (!tok) { setLoading(false); return; }
     setError('');
+    if (!isRefresh) setLoading(true);
     try {
-      setBookings(await api.fetchMyBookings(token));
+      setBookings(await api.fetchMyBookings(tok));
     } catch (e: any) {
       setError(e.message || 'Failed to load bookings.');
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [token]);
+  }, []); // stable — no deps needed because we use tokenRef
 
-  useEffect(() => { load(); }, [load]);
+  // Only re-run when the token itself changes (login / logout).
+  useEffect(() => { load(); }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading) {
     return <View style={styles.center}><ActivityIndicator color={colors.primary} size="large" /></View>;
@@ -44,7 +52,7 @@ export default function BookingsScreen() {
       data={bookings}
       keyExtractor={(b) => b.id}
       contentContainerStyle={{ padding: space.lg, gap: space.md, flexGrow: 1 }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={colors.primary} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(true); }} tintColor={colors.primary} />}
       ListEmptyComponent={
         <View style={styles.center}>
           <Text style={styles.empty}>{error || 'No bookings yet.\nBrowse the marketplace to book a vendor.'}</Text>
