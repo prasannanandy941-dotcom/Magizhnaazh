@@ -21,6 +21,42 @@ const PAGE_BG = '#f6e3de';
 const CHROME_UA =
   'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36';
 
+const NATIVE_HEADER_CSS = `
+  html[data-native-app="true"] .customer-desktop-navigation { display: none !important; }
+  html[data-native-app="true"] .customer-mobile-menu-toggle { display: inline-flex !important; }
+  html[data-native-app="true"] .customer-header-brand-copy { display: none !important; }
+  html[data-native-app="true"] .customer-header-create-event { display: none !important; }
+  @media (max-width: 767px) {
+    html[data-native-app="true"] .customer-header-row {
+      width: 100% !important;
+      box-sizing: border-box !important;
+      padding-left: 4px !important;
+      padding-right: 4px !important;
+      gap: 4px !important;
+    }
+    html[data-native-app="true"] .customer-header-actions { gap: 2px !important; }
+    html[data-native-app="true"] .customer-mobile-language-button {
+      width: 36px !important;
+      height: 40px !important;
+      padding: 0 !important;
+      flex: 0 0 36px !important;
+      justify-content: center !important;
+    }
+    html[data-native-app="true"] .customer-mobile-language-button span { display: none !important; }
+    html[data-native-app="true"] .customer-header-theme-toggle,
+    html[data-native-app="true"] .customer-header-wishlist,
+    html[data-native-app="true"] .customer-header-sign-in,
+    html[data-native-app="true"] .customer-mobile-menu-toggle,
+    html[data-native-app="true"] .customer-header-user-menu > button {
+      width: 36px !important;
+      height: 40px !important;
+      padding: 0 !important;
+      flex: 0 0 36px !important;
+      justify-content: center !important;
+    }
+  }
+`;
+
 export function WebApp({ token, user, onLoginRequired, onLogout }: {
   token?: string | null;
   user?: unknown;
@@ -191,7 +227,20 @@ export function WebApp({ token, user, onLoginRequired, onLogout }: {
         onLoadEnd={(e) => {
           setFirstLoad(false);
           ref.current?.injectJavaScript(
-            `if (document.documentElement) document.documentElement.setAttribute('data-native-app', 'true'); true;`
+            `try {
+              var root = document.documentElement;
+              if (root) {
+                root.setAttribute('data-native-app', 'true');
+                var nativeHeaderStyle = document.getElementById('magizh-native-header-layout');
+                if (!nativeHeaderStyle) {
+                  nativeHeaderStyle = document.createElement('style');
+                  nativeHeaderStyle.id = 'magizh-native-header-layout';
+                  nativeHeaderStyle.textContent = ${JSON.stringify(NATIVE_HEADER_CSS)};
+                  (document.head || root).appendChild(nativeHeaderStyle);
+                }
+              }
+            } catch (e) { console.error('Unable to apply native header layout', e); }
+            true;`
           );
           applyStaticI18nIfNeeded(e.nativeEvent.url);
         }}

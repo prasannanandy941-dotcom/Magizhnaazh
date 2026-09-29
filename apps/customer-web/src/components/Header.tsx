@@ -159,7 +159,7 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="customer-header-actions flex shrink-0 items-center gap-1 sm:gap-3">
           <button
             onClick={openEventWizard}
-            className="shine-sweep hidden sm:flex items-center gap-1.5 whitespace-nowrap px-3 py-2 rounded-lg bg-gradient-to-r from-[#d4af37] via-[#c9a648] to-[#e85d8a] hover:from-[#f0c869] hover:to-[#f2a6c4] text-[#1a0a14] font-bold text-xs shadow-lg shadow-[#d4af37]/25 transition-all hover:scale-105"
+            className="customer-header-create-event shine-sweep hidden sm:flex items-center gap-1.5 whitespace-nowrap px-3 py-2 rounded-lg bg-gradient-to-r from-[#d4af37] via-[#c9a648] to-[#e85d8a] hover:from-[#f0c869] hover:to-[#f2a6c4] text-[#1a0a14] font-bold text-xs shadow-lg shadow-[#d4af37]/25 transition-all hover:scale-105"
           >
             <Sparkles className="w-3.5 h-3.5" />
             Create Event
@@ -182,7 +182,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
 
           {user ? (
-            <div className="relative">
+            <div className="customer-header-user-menu relative">
               <button
                 onClick={() => setShowUserMenu((s) => !s)}
                 className="flex items-center gap-2 pl-2 pr-3 py-2 rounded-xl bg-[#26101c] border border-[#6b2140]/60 hover:border-[#d4af37]/40 transition-colors"
