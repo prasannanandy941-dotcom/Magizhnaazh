@@ -35,11 +35,21 @@ html[data-native-app="true"] .customer-mobile-navigation {
     gap: 0.375rem !important;
   }
   .customer-header-brand-copy {
-    display: block !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
   }
   .customer-header-brand-copy span.font-display {
-    font-size: 1.125rem !important;
+    font-size: 1.05rem !important;
     letter-spacing: -0.02em !important;
+    line-height: 1.15 !important;
+  }
+  .customer-header-brand-copy .customer-header-subtitle {
+    display: block !important;
+    font-size: 0.44rem !important;
+    letter-spacing: 0.08em !important;
+    line-height: 1 !important;
+    margin-top: 2px !important;
   }
   .customer-header-actions {
     gap: 0.35rem !important;
@@ -80,7 +90,11 @@ html[data-native-app="true"] .customer-mobile-navigation {
     gap: 0.25rem !important;
   }
   .customer-header-brand-copy span.font-display {
-    font-size: 1rem !important;
+    font-size: 0.95rem !important;
+  }
+  .customer-header-brand-copy .customer-header-subtitle {
+    font-size: 0.4rem !important;
+    letter-spacing: 0.05em !important;
   }
   .customer-header-actions {
     gap: 0.2rem !important;

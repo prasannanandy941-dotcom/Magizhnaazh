@@ -97,11 +97,11 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="w-8.5 h-8.5 sm:w-11 sm:h-11 shrink-0 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-[#b8336a] via-[#c9a648] to-[#f0c869] flex items-center justify-center shadow-lg shadow-[#d4af37]/20 group-hover:scale-105 transition-transform">
             <Sparkles className="w-4 h-4 sm:w-6 sm:h-6 text-[#1a0a14]" />
           </div>
-          <div className="customer-header-brand-copy min-w-0">
-            <span className="block whitespace-nowrap font-display font-extrabold text-base sm:text-2xl tracking-tight text-[#fdf1f5] group-hover:text-[#e8c874] transition-colors">
+          <div className="customer-header-brand-copy min-w-0 flex flex-col justify-center">
+            <span className="block whitespace-nowrap font-display font-extrabold text-base sm:text-2xl tracking-tight text-[#fdf1f5] group-hover:text-[#e8c874] transition-colors leading-tight">
               Magizhnaazh
             </span>
-            <span className="hidden sm:block whitespace-nowrap text-[8px] sm:text-[10px] uppercase font-bold tracking-[0.12em] sm:tracking-widest text-[#e8c874] font-sans">
+            <span className="customer-header-subtitle block whitespace-nowrap text-[7px] sm:text-[10px] uppercase font-bold tracking-[0.08em] sm:tracking-widest text-[#e8c874] font-sans leading-none mt-0.5">
               Customer Event Planner
             </span>
           </div>

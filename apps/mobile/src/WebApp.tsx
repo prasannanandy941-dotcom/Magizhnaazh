@@ -24,7 +24,8 @@ const CHROME_UA =
 const NATIVE_HEADER_CSS = `
   html[data-native-app="true"] .customer-desktop-navigation { display: none !important; }
   html[data-native-app="true"] .customer-mobile-menu-toggle { display: inline-flex !important; }
-  html[data-native-app="true"] .customer-header-brand-copy { display: none !important; }
+  html[data-native-app="true"] .customer-header-brand-copy { display: flex !important; flex-direction: column !important; justify-content: center !important; }
+  html[data-native-app="true"] .customer-header-brand-copy .customer-header-subtitle { display: block !important; }
   html[data-native-app="true"] .customer-header-create-event { display: none !important; }
   @media (max-width: 767px) {
     html[data-native-app="true"] .customer-header-row {
