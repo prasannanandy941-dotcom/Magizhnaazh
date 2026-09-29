@@ -10788,7 +10788,7 @@ export function App() {
 
                 <div className="grid sm:grid-cols-3 gap-3.5">
                   <div>
-                    <label className="block text-[11px] font-bold tracking-wide text-slate-300 uppercase mb-1.5 sm:min-h-[2.25rem]">
+                    <label className="block text-[11px] font-bold tracking-wide text-slate-300 uppercase mb-1.5 sm:min-h-[3.5rem]">
                       LEGAL BUSINESS / ENTITY NAME
                     </label>
                     <input
@@ -10801,7 +10801,7 @@ export function App() {
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold tracking-wide text-slate-300 uppercase mb-1.5 sm:min-h-[2.25rem]">
+                    <label className="block text-[11px] font-bold tracking-wide text-slate-300 uppercase mb-1.5 sm:min-h-[3.5rem]">
                       BANK ACCOUNT NUMBER
                     </label>
                     <input
@@ -10814,7 +10814,7 @@ export function App() {
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold tracking-wide text-slate-300 uppercase mb-1.5 sm:min-h-[2.25rem]">
+                    <label className="block text-[11px] font-bold tracking-wide text-slate-300 uppercase mb-1.5 sm:min-h-[3.5rem]">
                       BANK IFSC CODE
                     </label>
                     <input
