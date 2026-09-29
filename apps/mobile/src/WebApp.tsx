@@ -53,7 +53,7 @@ export function WebApp({ token, user, onLoginRequired, onLogout }: {
   // __MAGIZH_NATIVE_AUTH tells the site to send sign-in requests back to us.
   const injectedBefore = `try {
        window.__MAGIZH_NATIVE_AUTH = true;
-       document.documentElement.setAttribute('data-native-app', 'true');
+       if (document.documentElement) document.documentElement.setAttribute('data-native-app', 'true');
        ${savedLang ? `if (!window.localStorage.getItem('magizhnaazh_lang_customer')) { window.localStorage.setItem('magizhnaazh_lang_customer', ${JSON.stringify(savedLang)}); }` : ''}
        if (!window.localStorage.getItem('magizhnaazh_theme_choice_customer')) {
          window.localStorage.setItem('magizhnaazh_theme_choice_customer', 'light');
@@ -190,6 +190,9 @@ export function WebApp({ token, user, onLoginRequired, onLogout }: {
         }}
         onLoadEnd={(e) => {
           setFirstLoad(false);
+          ref.current?.injectJavaScript(
+            `if (document.documentElement) document.documentElement.setAttribute('data-native-app', 'true'); true;`
+          );
           applyStaticI18nIfNeeded(e.nativeEvent.url);
         }}
         onNavigationStateChange={(s) => {
