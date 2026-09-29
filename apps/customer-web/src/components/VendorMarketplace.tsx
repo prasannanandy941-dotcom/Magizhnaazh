@@ -673,7 +673,7 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
       />
 
       {selectedCompareIds.length > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-slate-900/95 border border-indigo-500/40 backdrop-blur-xl px-6 py-3.5 rounded-2xl shadow-2xl flex items-center gap-6 animate-bounce">
+        <div className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-40 bg-slate-900/95 border border-indigo-500/40 backdrop-blur-xl px-6 py-3.5 rounded-2xl shadow-2xl flex items-center gap-6 animate-bounce">
           <div className="flex items-center gap-2">
             <Layers className="w-5 h-5 text-amber-400" />
             <span className="text-sm font-bold text-white">

@@ -22,7 +22,8 @@ const CHROME_UA =
 
 const NATIVE_HEADER_CSS = `
   html[data-native-app="true"] .customer-desktop-navigation { display: none !important; }
-  html[data-native-app="true"] .customer-mobile-menu-toggle { display: inline-flex !important; }
+  html[data-native-app="true"] .customer-mobile-menu-toggle { display: none !important; }
+  html[data-native-app="true"] .customer-bottom-nav { display: block !important; }
   html[data-native-app="true"] .customer-header-brand-copy { display: flex !important; flex-direction: column !important; justify-content: center !important; }
   html[data-native-app="true"] .customer-header-brand-copy .customer-header-subtitle { display: block !important; }
   html[data-native-app="true"] .customer-header-create-event { display: none !important; }
@@ -402,7 +403,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   refreshBtn: {
-    position: 'absolute', right: 16, bottom: 28,
+    position: 'absolute', right: 16, bottom: 78,
     width: 48, height: 48, borderRadius: 24,
     backgroundColor: 'rgba(38,16,28,0.92)', borderWidth: 1, borderColor: 'rgba(212,175,55,0.5)',
     alignItems: 'center', justifyContent: 'center',

@@ -15,16 +15,50 @@ input::-ms-clear {
 :root { color-scheme: dark; }
 html[data-theme="light"] { color-scheme: light; }
 
-/* The native app uses the customer site's hamburger menu at every WebView
-   width, rather than showing a second desktop navigation bar on tablets. */
+/* The native app uses the bottom navigation bar at every WebView width. */
 html[data-native-app="true"] .customer-desktop-navigation {
   display: none !important;
 }
 html[data-native-app="true"] .customer-mobile-menu-toggle {
-  display: inline-flex !important;
+  display: none !important;
 }
 html[data-native-app="true"] .customer-mobile-navigation {
+  display: none !important;
+}
+
+/* Customer bottom navigation bar & content padding */
+.customer-bottom-nav {
+  display: none;
+}
+@media (max-width: 767px) {
+  .customer-bottom-nav {
+    display: block !important;
+  }
+  .customer-main-with-bottom-nav {
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
+html[data-native-app="true"] .customer-bottom-nav {
   display: block !important;
+}
+html[data-native-app="true"] .customer-main-with-bottom-nav {
+  padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px)) !important;
+}
+
+/* Light theme support for customer bottom navigation */
+html[data-theme="light"] .customer-bottom-nav {
+  background-color: rgba(255, 255, 255, 0.96) !important;
+  border-top-color: #e2e8f0 !important;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08) !important;
+}
+html[data-theme="light"] .customer-bottom-nav span {
+  color: #64748b;
+}
+html[data-theme="light"] .customer-bottom-nav .text-\[\#f0c869\] {
+  color: #b45309 !important;
+}
+html[data-theme="light"] .customer-bottom-nav .text-\[\#cf9bb3\] {
+  color: #64748b !important;
 }
 /* Customer header responsive layout for all mobile screens and native app */
 @media (max-width: 767px) {

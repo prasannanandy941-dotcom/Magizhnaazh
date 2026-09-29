@@ -24,6 +24,7 @@ const GuestManagement = lazyNamed(() => import('./components/GuestManagement'), 
 const MyOrders = lazyNamed(() => import('./components/MyOrders'), 'MyOrders');
 const FeedbackModule = lazyNamed(() => import('./components/FeedbackModule'), 'FeedbackModule');
 import { Footer } from './components/Footer';
+import { BottomNav } from './components/BottomNav';
 import { INVITATION_TEMPLATES } from '../../../packages/canvas-engine';
 import {
   fetchEvents,
@@ -600,7 +601,10 @@ export function App() {
         </div>
       )}
 
-      <main className="flex-1 relative z-10">
+      <main className="flex-1 relative z-10 pb-[env(safe-area-inset-bottom,0px)]">
+        {/* Extra bottom padding inside the native mobile app so content is
+            never hidden behind the fixed bottom nav bar (≈64 px tall) */}
+        <div className="customer-main-with-bottom-nav">
         <Suspense fallback={<LazyFallback />}>
         {activeTab === 'marketplace' && (
           <>
@@ -801,12 +805,25 @@ export function App() {
           />
         )}
         </Suspense>
+        </div>{/* /customer-main-with-bottom-nav */}
       </main>
 
       <Footer
         onNavigateTab={setActiveTab}
         openEventWizard={() => requireAuth(() => setShowEventWizard(true))}
         onOpenSignIn={() => setShowAuthModal(true)}
+      />
+
+      {/* Fixed bottom navigation — only visible on mobile inside the native app */}
+      <BottomNav
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        wishlistCount={wishlist.length}
+        onOpenWishlist={() => setShowWishlistModal(true)}
+        user={user}
+        onSignIn={() => setShowAuthModal(true)}
+        onLogout={handleLogout}
+        openEventWizard={() => requireAuth(() => setShowEventWizard(true))}
       />
 
       {/* Popups load their code on first open; nothing shows while it downloads. */}
