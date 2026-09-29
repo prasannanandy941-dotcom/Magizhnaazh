@@ -23,6 +23,13 @@
 import { DEFAULT_LANGUAGE, LANGUAGES, LangCode, isLangCode } from './languages';
 
 export const LANG_KEY = 'magizhnaazh_lang';
+type LanguageScope = 'customer' | 'vendor' | 'admin';
+let languageStorageKey = LANG_KEY;
+
+/** Give each web app an independent saved language and storage-event channel. */
+export function configureLanguageScope(scope: LanguageScope): void {
+  languageStorageKey = `${LANG_KEY}_${scope}`;
+}
 
 interface Pattern { re: RegExp; tpl: string }
 interface Dict { exact: Map<string, string>; lower: Map<string, string>; patterns: Pattern[] }
@@ -43,10 +50,10 @@ export function getStoredLanguage(): LangCode | null {
   try {
     const q = new URLSearchParams(window.location.search).get('lang');
     if (isLangCode(q)) {
-      window.localStorage.setItem(LANG_KEY, q);
+      window.localStorage.setItem(languageStorageKey, q);
       return q;
     }
-    const v = window.localStorage.getItem(LANG_KEY);
+    const v = window.localStorage.getItem(languageStorageKey);
     return isLangCode(v) ? v : null;
   } catch {
     return null;
@@ -358,7 +365,7 @@ async function applyLanguage(code: LangCode) {
 /** Choose a language: applies it immediately and remembers it. */
 export async function setLanguage(code: LangCode, persist = true): Promise<void> {
   if (persist) {
-    try { window.localStorage.setItem(LANG_KEY, code); } catch { /* private mode */ }
+    try { window.localStorage.setItem(languageStorageKey, code); } catch { /* private mode */ }
     // Inside the mobile app, let the native side remember it too.
     try { (window as any).ReactNativeWebView?.postMessage(JSON.stringify({ type: 'language', code })); } catch { /* not in the app */ }
   }
@@ -368,7 +375,7 @@ export async function setLanguage(code: LangCode, persist = true): Promise<void>
 /** Apply the saved language at startup. Await it before first render to avoid an English flash. */
 export function initLanguage(): Promise<void> {
   window.addEventListener('storage', (e) => {
-    if (e.key === LANG_KEY && isLangCode(e.newValue) && e.newValue !== current) void applyLanguage(e.newValue);
+    if (e.key === languageStorageKey && isLangCode(e.newValue) && e.newValue !== current) void applyLanguage(e.newValue);
   });
   return applyLanguage(getStoredLanguage() ?? DEFAULT_LANGUAGE);
 }

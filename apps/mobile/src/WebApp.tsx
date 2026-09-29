@@ -53,7 +53,7 @@ export function WebApp({ token, user, onLoginRequired, onLogout }: {
   // __MAGIZH_NATIVE_AUTH tells the site to send sign-in requests back to us.
   const injectedBefore = `try {
        window.__MAGIZH_NATIVE_AUTH = true;
-       ${savedLang ? `if (!window.localStorage.getItem('magizhnaazh_lang')) { window.localStorage.setItem('magizhnaazh_lang', ${JSON.stringify(savedLang)}); }` : ''}
+       ${savedLang ? `if (!window.localStorage.getItem('magizhnaazh_lang_customer')) { window.localStorage.setItem('magizhnaazh_lang_customer', ${JSON.stringify(savedLang)}); }` : ''}
        if (!window.localStorage.getItem('magizhnaazh_theme_choice_customer')) {
          window.localStorage.setItem('magizhnaazh_theme_choice_customer', 'light');
          window.localStorage.setItem('magizhnaazh_theme', 'light');
@@ -71,7 +71,7 @@ export function WebApp({ token, user, onLoginRequired, onLogout }: {
     const code = langRef.current;
     ref.current?.injectJavaScript(
       `try {
-        ${code ? `if (!window.localStorage.getItem('magizhnaazh_lang')) window.localStorage.setItem('magizhnaazh_lang', ${JSON.stringify(code)});` : ''}
+        ${code ? `if (!window.localStorage.getItem('magizhnaazh_lang_customer')) window.localStorage.setItem('magizhnaazh_lang_customer', ${JSON.stringify(code)});` : ''}
         if (/(about|careers|blog|press|help|returns|privacy|terms)\\.html/i.test(window.location.pathname)) {
           ${STATIC_I18N_SCRIPT}
           if (typeof window.__MAGIZH_APPLY_STATIC_LANG === 'function') {

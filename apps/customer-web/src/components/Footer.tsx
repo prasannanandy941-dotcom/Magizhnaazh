@@ -25,9 +25,6 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateTab }) => {
     return `${prefix}${page}${lang && lang !== 'en' ? `?lang=${encodeURIComponent(lang)}` : ''}`;
   };
   const handleStaticLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, page: string) => {
-    try {
-      if (lang) window.localStorage.setItem('magizhnaazh_lang', lang);
-    } catch { /* ignore */ }
     if ((window as any).__MAGIZH_NATIVE_AUTH) {
       e.preventDefault();
       window.location.href = pageUrl(page);
