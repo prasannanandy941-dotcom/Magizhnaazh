@@ -13,19 +13,15 @@ import { FloralBackground } from './src/components/FloralBackground';
 import { WebApp } from './src/WebApp';
 import { colors } from './src/theme';
 
-// Hybrid: customers browse the real website as a guest straight away. When the
-// site needs a login (booking, events, orders…) it asks the app, which shows the
-// NATIVE sign-in (email or Google — Google works natively, unlike in a WebView),
-// then reopens the site already logged in by seeding its localStorage session.
 function Gate() {
   const { user, token, loading, logout } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
   const signedIn = !!user && !!token;
 
-  // Close the sign-in screen once the login succeeds.
+  // Close the login overlay once native sign-in succeeds.
   useEffect(() => { if (signedIn) setShowLogin(false); }, [signedIn]);
 
-  // Android back button closes the sign-in screen instead of the web page.
+  // Android back button dismisses the login overlay instead of exiting.
   useEffect(() => {
     if (!showLogin) return;
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -35,33 +31,46 @@ function Gate() {
     return () => sub.remove();
   }, [showLogin]);
 
+  // Wait for the saved session to restore from storage.
   if (loading) return <Loader />;
 
-  if (signedIn) {
-    return (
+  // ─── SINGLE STABLE WEBAPP ────────────────────────────────────────────────
+  // We NEVER change the key or conditionally render two different <WebApp>
+  // instances.  Switching between key="guest" and key="signed-in" destroys and
+  // recreates the component, which resets firstLoad=true and causes the 2-3 s
+  // loading spinner to reappear on every auth-state change → the blinking loop
+  // the user sees.
+  //
+  // Instead, we always keep one <WebApp> alive and just pass the current token
+  // and user.  When those change, WebApp's injectedJavaScriptBeforeContentLoaded
+  // gets a new string value, which on Android triggers exactly ONE controlled
+  // WebView reload (correct auth state baked in) – and then stops, because
+  // after the reload the props are stable so nothing changes again.
+  //
+  // Calling logout() sets token/user to null. React bails out of subsequent
+  // logout() calls with no-op (same null value), so injectedBefore stays
+  // stable → no more reloads → no loop.
+  // ─────────────────────────────────────────────────────────────────────────
+  return (
+    <View style={{ flex: 1 }}>
       <WebApp
-        key="signed-in"
         token={token}
         user={user}
         onLogout={logout}
-        // The site fires login-required when the session expires (token rejected
-        // by the server). Show the sign-in screen but do NOT auto-logout here —
-        // calling logout() triggers a state change that remounts the WebApp,
-        // which fires login-required again → infinite reload loop.
         onLoginRequired={() => setShowLogin(true)}
       />
-    );
-  }
 
-  return (
-    <View style={{ flex: 1 }}>
-      <WebApp key="guest" onLoginRequired={() => setShowLogin(true)} />
       {showLogin && (
         <View style={StyleSheet.absoluteFill}>
           <FloralBackground />
           <LoginScreen />
           <SafeAreaView edges={['top']} style={styles.closeWrap} pointerEvents="box-none">
-            <TouchableOpacity onPress={() => setShowLogin(false)} style={styles.closeBtn} accessibilityLabel="Close sign in" activeOpacity={0.8}>
+            <TouchableOpacity
+              onPress={() => setShowLogin(false)}
+              style={styles.closeBtn}
+              accessibilityLabel="Close sign in"
+              activeOpacity={0.8}
+            >
               <Text style={styles.closeText}>✕</Text>
             </TouchableOpacity>
           </SafeAreaView>

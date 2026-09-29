@@ -112,14 +112,22 @@ export function WebApp({ token, user, onLoginRequired, onLogout }: {
   const ref = useRef<WebView>(null);
   const canGoBack = useRef(false);
   const langRef = useRef<string | null>(null);
-  // Only the FIRST load is covered by the spinner. Toggling it on every
-  // navigation/redirect made the whole screen blink while the site was working.
-  const [firstLoad, setFirstLoad] = useState(true);
+  // pageLoading tracks whether the WebView is currently loading a page.
+  // We use onLoadStart/onLoadEnd (not a one-shot mount flag) so the overlay
+  // also covers auth-triggered reloads (when injectedBefore changes), not just
+  // the very first load. This prevents the blank white flash between reloads.
+  const [pageLoading, setPageLoading] = useState(true);
+  const safetyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Safety fallback: ensure spinner never hangs indefinitely under slow networks
+  const armSafetyTimer = () => {
+    if (safetyTimer.current) clearTimeout(safetyTimer.current);
+    // 8 s max – generous for slow mobile connections, but prevents permanent spinner.
+    safetyTimer.current = setTimeout(() => setPageLoading(false), 8000);
+  };
+
   useEffect(() => {
-    const timer = setTimeout(() => setFirstLoad(false), 3500);
-    return () => clearTimeout(timer);
+    armSafetyTimer();
+    return () => { if (safetyTimer.current) clearTimeout(safetyTimer.current); };
   }, []);
 
   useEffect(() => {
@@ -289,8 +297,14 @@ export function WebApp({ token, user, onLoginRequired, onLogout }: {
           openExternally(request.url);
           return false;
         }}
+        onLoadStart={() => {
+          // Show spinner for every load (initial + auth-triggered reloads).
+          setPageLoading(true);
+          armSafetyTimer();
+        }}
         onLoadEnd={(e) => {
-          setFirstLoad(false);
+          if (safetyTimer.current) clearTimeout(safetyTimer.current);
+          setPageLoading(false);
           ref.current?.injectJavaScript(
             `try {
               var root = document.documentElement;
@@ -325,7 +339,7 @@ export function WebApp({ token, user, onLoginRequired, onLogout }: {
           </View>
         )}
       />
-      {firstLoad && (
+      {pageLoading && (
         <View style={styles.loader} pointerEvents="none">
           <ActivityIndicator color={colors.primary} size="large" />
         </View>
@@ -336,7 +350,11 @@ export function WebApp({ token, user, onLoginRequired, onLogout }: {
           it re-composite and flash on Android, so it is not rendered here. */}
 
       {/* Floating refresh — reloads the live site (e.g. after a deploy). */}
-      <TouchableOpacity style={styles.refreshBtn} onPress={() => ref.current?.reload()} activeOpacity={0.8}>
+      <TouchableOpacity
+        style={styles.refreshBtn}
+        onPress={() => { setPageLoading(true); armSafetyTimer(); ref.current?.reload(); }}
+        activeOpacity={0.8}
+      >
         <Text style={styles.refreshIcon}>⟳</Text>
       </TouchableOpacity>
     </SafeAreaView>
