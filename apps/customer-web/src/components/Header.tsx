@@ -87,7 +87,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="sticky top-0 z-50 border-b border-[#6b2140]/50 bg-[#1a0a14]/85 backdrop-blur-xl">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 md:h-20 flex flex-col md:flex-row min-w-0 items-start md:items-center justify-between">
+      <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 h-20 flex min-w-0 items-center justify-between gap-2">
         
         {/* Logo */}
         <div 
@@ -101,14 +101,14 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="block whitespace-nowrap font-display font-extrabold text-xl sm:text-2xl tracking-tight text-[#fdf1f5] group-hover:text-[#e8c874] transition-colors">
               Magizhnaazh
             </span>
-            <span className="block whitespace-nowrap text-[8px] sm:text-[10px] uppercase font-bold tracking-[0.12em] sm:tracking-widest text-[#e8c874] font-sans">
+            <span className="hidden sm:block whitespace-nowrap text-[8px] sm:text-[10px] uppercase font-bold tracking-[0.12em] sm:tracking-widest text-[#e8c874] font-sans">
               Customer Event Planner
             </span>
           </div>
         </div>
 
-        {/* Navigation (visible on all sizes; scrolls horizontally on small screens) */}
-        <div className="flex-1 flex items-center gap-1 p-1.5 overflow-x-auto no-scrollbar scroll-smooth bg-[#26101c]/70 rounded-2xl border border-[#6b2140]/60 max-w-full md:max-w-xl xl:max-w-2xl mt-3 md:mt-0">
+        {/* Desktop Navigation */}
+        <div className="hidden md:flex min-w-0 flex-1 flex-col bg-[#26101c]/70 rounded-2xl border border-[#6b2140]/60 overflow-hidden max-w-xl xl:max-w-2xl ml-3 mr-2">
           <nav
             ref={navRef}
             onScroll={updateScrollProgress}
@@ -156,7 +156,7 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Right CTA */}
-        <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
+        <div className="flex shrink-0 items-center gap-1 sm:gap-3">
           <button
             onClick={openEventWizard}
             className="shine-sweep hidden sm:flex items-center gap-1.5 whitespace-nowrap px-3 py-2 rounded-lg bg-gradient-to-r from-[#d4af37] via-[#c9a648] to-[#e85d8a] hover:from-[#f0c869] hover:to-[#f2a6c4] text-[#1a0a14] font-bold text-xs shadow-lg shadow-[#d4af37]/25 transition-all hover:scale-105"
@@ -227,6 +227,9 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={() => setShowMobileMenu((s) => !s)}
             className="md:hidden shrink-0 p-2.5 rounded-xl bg-[#26101c] border border-[#6b2140]/60 text-[#cf9bb3] hover:text-[#f0c869] transition-colors"
             aria-label="Menu"
+            aria-expanded={showMobileMenu}
+            aria-controls="customer-mobile-navigation"
+            type="button"
           >
             {showMobileMenu ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -236,7 +239,7 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Mobile navigation menu */}
       {showMobileMenu && (
-        <nav className="md:hidden border-t border-[#6b2140]/50 bg-[#1a0a14]/95 backdrop-blur-xl px-4 py-3 space-y-1">
+        <nav id="customer-mobile-navigation" className="md:hidden border-t border-[#6b2140]/50 bg-[#1a0a14]/95 backdrop-blur-xl px-4 py-3 space-y-1">
           {navItems.map((item) => (
             <button
               key={item.id}
