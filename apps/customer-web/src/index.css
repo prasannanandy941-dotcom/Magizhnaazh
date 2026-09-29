@@ -63,10 +63,10 @@ html[data-theme="light"] .customer-bottom-nav .text-\[\#cf9bb3\] {
 /* Customer header responsive layout for all mobile screens and native app */
 @media (max-width: 767px) {
   .customer-header-row {
-    padding-left: 0.5rem !important;
-    padding-right: 0.5rem !important;
-    height: 4rem !important;
-    gap: 0.375rem !important;
+    padding-left: 0.875rem !important;
+    padding-right: 0.875rem !important;
+    height: 3.875rem !important;
+    gap: 0.5rem !important;
   }
   .customer-header-brand-copy {
     display: flex !important;
@@ -74,73 +74,75 @@ html[data-theme="light"] .customer-bottom-nav .text-\[\#cf9bb3\] {
     justify-content: center !important;
   }
   .customer-header-brand-copy span.font-display {
-    font-size: 1.05rem !important;
+    font-size: 1.25rem !important;
     letter-spacing: -0.02em !important;
     line-height: 1.15 !important;
+    font-weight: 800 !important;
   }
   .customer-header-brand-copy .customer-header-subtitle {
     display: block !important;
-    font-size: 0.44rem !important;
-    letter-spacing: 0.08em !important;
+    font-size: 0.52rem !important;
+    letter-spacing: 0.1em !important;
     line-height: 1 !important;
-    margin-top: 2px !important;
+    margin-top: 3px !important;
+    font-weight: 700 !important;
   }
   .customer-header-actions {
-    gap: 0.35rem !important;
+    gap: 0.5rem !important;
+    display: flex !important;
+    align-items: center !important;
   }
   .customer-mobile-language-button {
-    width: 2.125rem !important;
-    height: 2.125rem !important;
+    width: 2.375rem !important;
+    height: 2.375rem !important;
     padding: 0 !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    flex-shrink: 0 !important;
+    flex: 0 0 2.375rem !important;
+    border-radius: 0.75rem !important;
   }
   .customer-mobile-language-button span {
     display: none !important;
   }
-  .customer-header-theme-toggle,
-  .customer-header-wishlist,
-  .customer-header-sign-in,
-  .customer-mobile-menu-toggle {
-    width: 2.125rem !important;
-    height: 2.125rem !important;
+  .customer-header-theme-toggle {
+    width: 2.375rem !important;
+    height: 2.375rem !important;
     padding: 0 !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    flex-shrink: 0 !important;
-    flex: 0 0 2.125rem !important;
+    flex: 0 0 2.375rem !important;
+    border-radius: 0.75rem !important;
   }
-  .customer-header-sign-in span {
+  .customer-header-wishlist,
+  .customer-header-sign-in,
+  .customer-header-user-menu,
+  .customer-mobile-menu-toggle {
     display: none !important;
   }
 }
 @media (max-width: 360px) {
   .customer-header-row {
-    padding-left: 0.25rem !important;
-    padding-right: 0.25rem !important;
-    gap: 0.25rem !important;
+    padding-left: 0.625rem !important;
+    padding-right: 0.625rem !important;
+    gap: 0.375rem !important;
   }
   .customer-header-brand-copy span.font-display {
-    font-size: 0.95rem !important;
+    font-size: 1.125rem !important;
   }
   .customer-header-brand-copy .customer-header-subtitle {
-    font-size: 0.4rem !important;
-    letter-spacing: 0.05em !important;
+    font-size: 0.46rem !important;
+    letter-spacing: 0.08em !important;
   }
   .customer-header-actions {
-    gap: 0.2rem !important;
+    gap: 0.375rem !important;
   }
   .customer-mobile-language-button,
-  .customer-header-theme-toggle,
-  .customer-header-wishlist,
-  .customer-header-sign-in,
-  .customer-mobile-menu-toggle {
-    width: 2rem !important;
-    height: 2rem !important;
-    flex: 0 0 2rem !important;
+  .customer-header-theme-toggle {
+    width: 2.25rem !important;
+    height: 2.25rem !important;
+    flex: 0 0 2.25rem !important;
   }
 }
 

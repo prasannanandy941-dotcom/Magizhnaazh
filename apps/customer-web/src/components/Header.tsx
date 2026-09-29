@@ -87,21 +87,21 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="sticky top-0 z-50 border-b border-[#6b2140]/50 bg-[#1a0a14]/85 backdrop-blur-xl">
-      <div className="customer-header-row max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 h-16 sm:h-20 flex min-w-0 items-center justify-between gap-1.5 sm:gap-2">
+      <div className="customer-header-row max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 sm:h-20 flex min-w-0 items-center justify-between gap-2 sm:gap-4">
         
-        {/* Logo */}
+        {/* Logo & Brand Name */}
         <div 
           onClick={() => setActiveTab('marketplace')}
-          className="flex min-w-0 shrink-0 items-center gap-1.5 sm:gap-3 cursor-pointer group"
+          className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-3 cursor-pointer group"
         >
-          <div className="w-8.5 h-8.5 sm:w-11 sm:h-11 shrink-0 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-[#b8336a] via-[#c9a648] to-[#f0c869] flex items-center justify-center shadow-lg shadow-[#d4af37]/20 group-hover:scale-105 transition-transform">
-            <Sparkles className="w-4 h-4 sm:w-6 sm:h-6 text-[#1a0a14]" />
+          <div className="w-9 h-9 sm:w-11 sm:h-11 shrink-0 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-[#b8336a] via-[#c9a648] to-[#f0c869] flex items-center justify-center shadow-md shadow-[#d4af37]/20 group-hover:scale-105 transition-transform">
+            <Sparkles className="w-4.5 h-4.5 sm:w-6 sm:h-6 text-[#1a0a14]" />
           </div>
           <div className="customer-header-brand-copy min-w-0 flex flex-col justify-center">
-            <span className="block whitespace-nowrap font-display font-extrabold text-base sm:text-2xl tracking-tight text-[#fdf1f5] group-hover:text-[#e8c874] transition-colors leading-tight">
+            <span className="block whitespace-nowrap font-display font-extrabold text-lg sm:text-2xl tracking-tight text-[#fdf1f5] group-hover:text-[#e8c874] transition-colors leading-tight">
               Magizhnaazh
             </span>
-            <span className="customer-header-subtitle block whitespace-nowrap text-[7px] sm:text-[10px] uppercase font-bold tracking-[0.08em] sm:tracking-widest text-[#e8c874] font-sans leading-none mt-0.5">
+            <span className="customer-header-subtitle block whitespace-nowrap text-[8px] sm:text-[10px] uppercase font-bold tracking-[0.1em] sm:tracking-widest text-[#e8c874] font-sans leading-none mt-0.5">
               Customer Event Planner
             </span>
           </div>
@@ -155,8 +155,8 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </div>
 
-        {/* Right CTA */}
-        <div className="customer-header-actions flex shrink-0 items-center gap-1 sm:gap-2 md:gap-3">
+        {/* Right CTA / Controls */}
+        <div className="customer-header-actions flex shrink-0 items-center gap-2 sm:gap-2.5">
           <button
             onClick={openEventWizard}
             className="customer-header-create-event shine-sweep hidden sm:flex items-center gap-1.5 whitespace-nowrap px-3 py-2 rounded-lg bg-gradient-to-r from-[#d4af37] via-[#c9a648] to-[#e85d8a] hover:from-[#f0c869] hover:to-[#f2a6c4] text-[#1a0a14] font-bold text-xs shadow-lg shadow-[#d4af37]/25 transition-all hover:scale-105"
@@ -165,34 +165,39 @@ export const Header: React.FC<HeaderProps> = ({
             Create Event
           </button>
 
+          {/* Language Button - neatly adjusted */}
           <LanguageButton
             hideLabelOnMobile={true}
             className="shrink-0"
-            buttonClassName="customer-mobile-language-button bg-[#26101c] border border-[#6b2140]/60 text-[#f5c9dc] hover:border-[#d4af37]/50 w-8.5 h-8.5 sm:w-auto p-0 sm:px-2.5 sm:py-2 flex items-center justify-center rounded-xl"
+            buttonClassName="customer-mobile-language-button bg-[#26101c] border border-[#6b2140]/60 text-[#f5c9dc] hover:border-[#d4af37]/50 w-9 h-9 sm:w-auto p-0 sm:px-2.5 sm:py-2 flex items-center justify-center rounded-xl"
           />
-          <ThemeToggle app="customer" className="customer-header-theme-toggle w-8.5 h-8.5 sm:w-10 sm:h-10" />
 
+          {/* Theme Toggle - neatly adjusted */}
+          <ThemeToggle app="customer" className="customer-header-theme-toggle w-9 h-9 sm:w-10 sm:h-10 rounded-xl" />
+
+          {/* Wishlist Button - desktop only (available in bottom nav on mobile) */}
           <button
             onClick={onOpenWishlist}
-            className="customer-header-wishlist relative w-8.5 h-8.5 sm:w-10 sm:h-10 shrink-0 flex items-center justify-center rounded-xl bg-[#26101c] border border-[#6b2140]/60 text-[#cf9bb3] hover:text-[#f0c869] hover:border-[#d4af37]/50 transition-colors"
+            className="customer-header-wishlist hidden md:flex relative w-10 h-10 shrink-0 items-center justify-center rounded-xl bg-[#26101c] border border-[#6b2140]/60 text-[#cf9bb3] hover:text-[#f0c869] hover:border-[#d4af37]/50 transition-colors"
             title="Wishlist"
           >
-            <Heart className="w-4 h-4 sm:w-5 sm:h-5" />
+            <Heart className="w-5 h-5" />
             {wishlistCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-[#b8860b] text-[#1a0a14] text-[9px] sm:text-[11px] font-bold flex items-center justify-center animate-pulse">
+              <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#b8860b] text-[#1a0a14] text-[11px] font-bold flex items-center justify-center animate-pulse">
                 {wishlistCount}
               </span>
             )}
           </button>
 
+          {/* Sign In / User Menu - desktop only (available in bottom nav on mobile) */}
           {user ? (
-            <div className="customer-header-user-menu relative shrink-0">
+            <div className="customer-header-user-menu hidden md:block relative shrink-0">
               <button
                 onClick={() => setShowUserMenu((s) => !s)}
-                className="flex items-center justify-center w-8.5 h-8.5 sm:w-auto p-0 sm:pl-2 sm:pr-3 sm:py-2 rounded-xl bg-[#26101c] border border-[#6b2140]/60 hover:border-[#d4af37]/40 transition-colors"
+                className="flex items-center justify-center sm:pl-2 sm:pr-3 sm:py-2 rounded-xl bg-[#26101c] border border-[#6b2140]/60 hover:border-[#d4af37]/40 transition-colors"
                 title={user.name}
               >
-                <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-tr from-[#b8336a] to-[#f0c869] flex items-center justify-center text-[#1a0a14] font-bold text-xs">
+                <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-[#b8336a] to-[#f0c869] flex items-center justify-center text-[#1a0a14] font-bold text-xs">
                   {user.name.charAt(0).toUpperCase()}
                 </div>
                 <span className="hidden sm:block text-xs font-bold text-[#fdf1f5] max-w-[100px] truncate ml-2">{user.name}</span>
@@ -220,12 +225,12 @@ export const Header: React.FC<HeaderProps> = ({
           ) : (
             <button
               onClick={onSignIn}
-              className="customer-header-sign-in w-8.5 h-8.5 sm:w-auto p-0 sm:px-4 sm:py-2.5 shrink-0 flex items-center justify-center sm:gap-2 rounded-xl bg-[#26101c] border border-[#6b2140]/60 hover:border-[#d4af37]/50 text-[#f5c9dc] font-bold text-xs transition-colors"
+              className="customer-header-sign-in hidden md:flex items-center justify-center gap-2 px-4 py-2.5 shrink-0 rounded-xl bg-[#26101c] border border-[#6b2140]/60 hover:border-[#d4af37]/50 text-[#f5c9dc] font-bold text-xs transition-colors"
               title="Sign In"
               aria-label="Sign In"
             >
               <LogIn className="w-4 h-4 shrink-0" />
-              <span className="hidden sm:inline">Sign In</span>
+              <span>Sign In</span>
             </button>
           )}
 
