@@ -25,6 +25,7 @@ const MyOrders = lazyNamed(() => import('./components/MyOrders'), 'MyOrders');
 const FeedbackModule = lazyNamed(() => import('./components/FeedbackModule'), 'FeedbackModule');
 import { Footer } from './components/Footer';
 import { BottomNav } from './components/BottomNav';
+import { PullToRefresh } from './components/PullToRefresh';
 import { INVITATION_TEMPLATES } from '../../../packages/canvas-engine';
 import {
   fetchEvents,
@@ -577,6 +578,9 @@ export function App() {
 
   return (
     <div className="relative min-h-screen text-[#fdf1f5] flex flex-col font-sans">
+      {/* Pull to refresh for mobile screens and mobile app */}
+      <PullToRefresh />
+
       {/* App-wide gold + olive floral backdrop, fixed behind all scrolling content */}
       <div id="app-bg" className="fixed inset-0 -z-10">
         <FloralGoldBackground />
