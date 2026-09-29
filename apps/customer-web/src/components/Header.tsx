@@ -87,7 +87,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="sticky top-0 z-50 border-b border-[#6b2140]/50 bg-[#1a0a14]/85 backdrop-blur-xl">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-20 flex min-w-0 items-center justify-between">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 md:h-20 flex flex-col md:flex-row min-w-0 items-start md:items-center justify-between">
         
         {/* Logo */}
         <div 
@@ -107,8 +107,8 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Desktop Navigation */}
-        <div className="hidden md:flex min-w-0 flex-1 flex-col bg-[#26101c]/70 rounded-2xl border border-[#6b2140]/60 overflow-hidden max-w-xl xl:max-w-2xl ml-3 mr-2">
+        {/* Navigation (visible on all sizes; scrolls horizontally on small screens) */}
+        <div className="flex-1 flex items-center gap-1 p-1.5 overflow-x-auto no-scrollbar scroll-smooth bg-[#26101c]/70 rounded-2xl border border-[#6b2140]/60 max-w-full md:max-w-xl xl:max-w-2xl mt-3 md:mt-0">
           <nav
             ref={navRef}
             onScroll={updateScrollProgress}
