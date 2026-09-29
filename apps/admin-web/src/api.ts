@@ -155,6 +155,10 @@ export function toggleVendorSuspension(token: string, vendorId: string) {
   return authedFetch(`/api/v1/vendors/${vendorId}/suspend`, token, { method: 'PUT' });
 }
 
+export function deleteVendor(token: string, vendorId: string) {
+  return authedFetch(`/api/v1/vendors/${vendorId}`, token, { method: 'DELETE' });
+}
+
 export function updateVendorDeals(token: string, vendorId: string, deals: VendorDeal[]) {
   return authedFetch(`/api/v1/vendors/${vendorId}`, token, {
     method: 'PUT',

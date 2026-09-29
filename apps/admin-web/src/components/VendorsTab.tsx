@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Loader2, FileText } from 'lucide-react';
+import { Loader2, FileText, Trash2 } from 'lucide-react';
 import { Vendor } from '../../../../packages/shared-types';
-import { fetchVendors, toggleVendorVerification, toggleVendorSuspension, decideVendorVerification, GATEWAY_URL } from '../api';
+import { fetchVendors, toggleVendorVerification, toggleVendorSuspension, decideVendorVerification, deleteVendor, GATEWAY_URL } from '../api';
 import { useCachedList } from '../useCachedList';
 import { CrudListPanel } from './CrudListPanel';
 
@@ -27,6 +27,23 @@ export const VendorsTab: React.FC<{ token: string }> = ({ token }) => {
     await decideVendorVerification(token, id, decision, reason);
     await load();
     setBusyId(null);
+  };
+
+  const handleDelete = async (v: Vendor) => {
+    const ok = window.confirm(
+      `Are you sure you want to delete vendor "${v.businessName}"?\n\nThis vendor listing will be permanently deleted from the marketplace. The vendor will still be able to log in with their email at any time.`
+    );
+    if (!ok) return;
+
+    setBusyId(v.id);
+    try {
+      await deleteVendor(token, v.id);
+      await load();
+    } catch (err: any) {
+      alert(err?.message || 'Failed to delete vendor.');
+    } finally {
+      setBusyId(null);
+    }
   };
 
   const statusOf = (v: Vendor) => v.verification?.status || (v.isVerified ? 'verified' : 'unverified');
@@ -111,6 +128,14 @@ export const VendorsTab: React.FC<{ token: string }> = ({ token }) => {
                 v.isSuspended ? 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-300' : 'bg-slate-900 border border-slate-800 text-slate-300'
               }`}>
               {v.isSuspended ? 'Reinstate' : 'Suspend'}
+            </button>
+            <button
+              onClick={() => handleDelete(v)}
+              disabled={busyId === v.id}
+              className="px-3 py-1.5 rounded-xl font-bold text-xs shadow-md disabled:opacity-60 inline-flex items-center gap-1.5 w-full justify-center bg-rose-500/15 border border-rose-500/30 text-rose-300 hover:bg-rose-500/25 transition-colors"
+            >
+              {busyId === v.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+              Delete vendor
             </button>
           </div>
         );

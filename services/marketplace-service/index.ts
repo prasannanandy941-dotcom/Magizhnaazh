@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 import express, { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import cors from 'cors';
 import multer from 'multer';
 import { connectDB } from '../../packages/shared-utils/db';
@@ -825,6 +826,29 @@ app.delete('/api/v1/vendors/:id', authMiddleware(), async (req: Request, res: Re
   if (vendor.userId !== req.user!.sub && req.user!.role !== 'admin') {
     return res.status(403).json({ success: false, message: 'You do not own this vendor listing.' });
   }
+
+  // When vendor is deleted by admin, ensure associated user account is unsuspended
+  // so the vendor can log in again with their same email at any time.
+  try {
+    const userQuery: any = {};
+    if (vendor.userId) {
+      userQuery.$or = [{ id: vendor.userId }];
+      if (vendor.contactEmail) {
+        userQuery.$or.push({ email: vendor.contactEmail.toLowerCase().trim() });
+      }
+    } else if (vendor.contactEmail) {
+      userQuery.email = vendor.contactEmail.toLowerCase().trim();
+    }
+    if (Object.keys(userQuery).length > 0) {
+      await mongoose.connection.collection('users').updateMany(
+        userQuery,
+        { $set: { isSuspended: false } }
+      );
+    }
+  } catch (err) {
+    console.warn('[marketplace-service] Could not unsuspend associated user on vendor delete:', err);
+  }
+
   await VendorModel.deleteOne({ id: req.params.id });
   res.json({ success: true, message: 'Vendor deleted.' });
 });
