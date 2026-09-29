@@ -36,19 +36,23 @@ function Gate() {
   }, [showLogin]);
 
   if (loading) return <Loader />;
+
   if (signedIn) {
-    // The site asking for a login while signed in means the session expired:
-    // drop it and show the sign-in screen again.
     return (
       <WebApp
         key="signed-in"
         token={token}
         user={user}
         onLogout={logout}
-        onLoginRequired={() => { setShowLogin(true); logout(); }}
+        // The site fires login-required when the session expires (token rejected
+        // by the server). Show the sign-in screen but do NOT auto-logout here —
+        // calling logout() triggers a state change that remounts the WebApp,
+        // which fires login-required again → infinite reload loop.
+        onLoginRequired={() => setShowLogin(true)}
       />
     );
   }
+
   return (
     <View style={{ flex: 1 }}>
       <WebApp key="guest" onLoginRequired={() => setShowLogin(true)} />
