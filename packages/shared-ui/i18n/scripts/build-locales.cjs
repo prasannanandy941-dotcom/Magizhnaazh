@@ -14,7 +14,7 @@ const ids = Object.keys(index);
 const workDir = path.join(DIR, 'work');
 const langs = process.argv.slice(2).length
   ? process.argv.slice(2)
-  : fs.readdirSync(workDir).filter((d) => fs.statSync(path.join(workDir, d)).isDirectory() && d !== 'chunks');
+  : fs.readdirSync(workDir).filter((d) => fs.statSync(path.join(workDir, d)).isDirectory() && d !== 'chunks' && d !== 'static');
 
 // Digits stay 0-9 in every language (rule 5): map any native-script digits back.
 const DIGIT_BLOCKS = [0x0966, 0x09e6, 0x0a66, 0x0ae6, 0x0b66, 0x0be6, 0x0c66, 0x0ce6, 0x0d66];

@@ -2,11 +2,15 @@ import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet, BackHandler, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from './theme';
+import { STATIC_I18N_SCRIPT } from './staticI18nScript';
 
 // The live customer website — loaded inside the app so the mobile experience is
 // identical to the web, with every feature, always in sync with the site.
 const SITE_URL = 'https://event.porulontech.com/customer/';
+const NATIVE_LANG_KEY = 'magizhnaazh_lang';
+const STATIC_PAGE_RE = /\/(about|careers|blog|press|help|returns|privacy|terms)\.html(\?|$|#)/i;
 
 // Present a normal Chrome-on-Android user agent so Google's "disallowed
 // user-agent" check doesn't block Sign in with Google inside the WebView.
@@ -26,9 +30,22 @@ export function WebApp({ token, user, onLoginRequired, onLogout }: {
 }) {
   const ref = useRef<WebView>(null);
   const canGoBack = useRef(false);
+  const langRef = useRef<string | null>(null);
+  const [savedLang, setSavedLang] = useState<string | null>(null);
   // Only the FIRST load is covered by the spinner. Toggling it on every
   // navigation/redirect made the whole screen blink while the site was working.
   const [firstLoad, setFirstLoad] = useState(true);
+
+  useEffect(() => {
+    AsyncStorage.getItem(NATIVE_LANG_KEY)
+      .then((code) => {
+        if (code) {
+          langRef.current = code;
+          setSavedLang(code);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Seed the website's own auth storage from our native session, so it opens
   // already logged in (the site reads `accessToken` + `user` from localStorage).
@@ -36,6 +53,7 @@ export function WebApp({ token, user, onLoginRequired, onLogout }: {
   // __MAGIZH_NATIVE_AUTH tells the site to send sign-in requests back to us.
   const injectedBefore = `try {
        window.__MAGIZH_NATIVE_AUTH = true;
+       ${savedLang ? `if (!window.localStorage.getItem('magizhnaazh_lang')) { window.localStorage.setItem('magizhnaazh_lang', ${JSON.stringify(savedLang)}); }` : ''}
        if (!window.localStorage.getItem('magizhnaazh_theme_choice_customer')) {
          window.localStorage.setItem('magizhnaazh_theme_choice_customer', 'light');
          window.localStorage.setItem('magizhnaazh_theme', 'light');
@@ -48,11 +66,32 @@ export function WebApp({ token, user, onLoginRequired, onLogout }: {
             window.localStorage.removeItem('user');`}
      } catch (e) {} true;`;
 
+  const applyStaticI18nIfNeeded = (url?: string) => {
+    if (url && !STATIC_PAGE_RE.test(url)) return;
+    const code = langRef.current;
+    ref.current?.injectJavaScript(
+      `try {
+        ${code ? `if (!window.localStorage.getItem('magizhnaazh_lang')) window.localStorage.setItem('magizhnaazh_lang', ${JSON.stringify(code)});` : ''}
+        if (/(about|careers|blog|press|help|returns|privacy|terms)\\.html/i.test(window.location.pathname)) {
+          ${STATIC_I18N_SCRIPT}
+          if (typeof window.__MAGIZH_APPLY_STATIC_LANG === 'function') {
+            window.__MAGIZH_APPLY_STATIC_LANG(${code ? JSON.stringify(code) : 'undefined'});
+          }
+        }
+      } catch (e) {} true;`
+    );
+  };
+
   const onMessage = (event: { nativeEvent: { data: string } }) => {
     try {
       const msg = JSON.parse(event.nativeEvent.data);
       if (msg?.type === 'login-required') onLoginRequired?.();
       else if (msg?.type === 'logout') onLogout?.();
+      else if (msg?.type === 'language' && typeof msg.code === 'string') {
+        langRef.current = msg.code;
+        setSavedLang(msg.code);
+        AsyncStorage.setItem(NATIVE_LANG_KEY, msg.code).catch(() => {});
+      }
     } catch {
       /* not one of our messages */
     }
@@ -87,6 +126,18 @@ export function WebApp({ token, user, onLoginRequired, onLogout }: {
     });
   };
 
+  const withLangParam = (targetUrl: string) => {
+    const code = langRef.current;
+    if (!code || code === 'en' || !STATIC_PAGE_RE.test(targetUrl)) return targetUrl;
+    try {
+      const u = new URL(targetUrl);
+      if (!u.searchParams.get('lang')) u.searchParams.set('lang', code);
+      return u.toString();
+    } catch {
+      return targetUrl;
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <WebView
@@ -118,12 +169,13 @@ export function WebApp({ token, user, onLoginRequired, onLogout }: {
         // an empty target and make the payment screen appear to fall back.
         setSupportMultipleWindows={false}
         onOpenWindow={(event: { nativeEvent: { targetUrl?: string } }) => {
-          const targetUrl = event.nativeEvent.targetUrl;
-          if (!targetUrl) return;
-          if (isWebLoadableUrl(targetUrl)) {
+          const rawUrl = event.nativeEvent.targetUrl;
+          if (!rawUrl) return;
+          if (isWebLoadableUrl(rawUrl)) {
+            const targetUrl = withLangParam(rawUrl);
             ref.current?.injectJavaScript(`window.location.href = ${JSON.stringify(targetUrl)}; true;`);
           } else {
-            openExternally(targetUrl);
+            openExternally(rawUrl);
           }
         }}
         // Covers the more common case for UPI intent apps (PhonePe, Google
@@ -135,8 +187,14 @@ export function WebApp({ token, user, onLoginRequired, onLogout }: {
           openExternally(request.url);
           return false;
         }}
-        onLoadEnd={() => setFirstLoad(false)}
-        onNavigationStateChange={(s) => { canGoBack.current = s.canGoBack; }}
+        onLoadEnd={(e) => {
+          setFirstLoad(false);
+          applyStaticI18nIfNeeded(e.nativeEvent.url);
+        }}
+        onNavigationStateChange={(s) => {
+          canGoBack.current = s.canGoBack;
+          applyStaticI18nIfNeeded(s.url);
+        }}
         renderError={(domain, code, desc) => (
           <View style={styles.errorContainer}>
             <Text style={styles.errorTitle}>Unable to Load Portal</Text>

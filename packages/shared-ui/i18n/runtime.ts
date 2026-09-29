@@ -41,6 +41,11 @@ const cache = new Map<string, string | null>();
 
 export function getStoredLanguage(): LangCode | null {
   try {
+    const q = new URLSearchParams(window.location.search).get('lang');
+    if (isLangCode(q)) {
+      window.localStorage.setItem(LANG_KEY, q);
+      return q;
+    }
     const v = window.localStorage.getItem(LANG_KEY);
     return isLangCode(v) ? v : null;
   } catch {

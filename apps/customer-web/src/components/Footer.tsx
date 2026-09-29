@@ -9,6 +9,7 @@ import {
   CreditCard,
   ExternalLink,
 } from 'lucide-react';
+import { useLanguage } from '../../../../packages/shared-ui/i18n/react';
 
 interface FooterProps {
   onNavigateTab: (tab: string) => void;
@@ -17,8 +18,21 @@ interface FooterProps {
 }
 
 export const Footer: React.FC<FooterProps> = ({ onNavigateTab }) => {
+  const lang = useLanguage();
   const base = import.meta.env.BASE_URL || '/customer/';
-  const pageUrl = (page: string) => `${base.endsWith('/') ? base : base + '/'}${page}`;
+  const pageUrl = (page: string) => {
+    const prefix = base.endsWith('/') ? base : base + '/';
+    return `${prefix}${page}${lang && lang !== 'en' ? `?lang=${encodeURIComponent(lang)}` : ''}`;
+  };
+  const handleStaticLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, page: string) => {
+    try {
+      if (lang) window.localStorage.setItem('magizhnaazh_lang', lang);
+    } catch { /* ignore */ }
+    if ((window as any).__MAGIZH_NATIVE_AUTH) {
+      e.preventDefault();
+      window.location.href = pageUrl(page);
+    }
+  };
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -104,6 +118,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateTab }) => {
               <li>
                 <a
                   href={pageUrl('about.html')}
+                  onClick={(e) => handleStaticLinkClick(e, 'about.html')}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 hover:text-[#f0c869] transition-colors"
@@ -115,6 +130,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateTab }) => {
               <li>
                 <a
                   href={pageUrl('careers.html')}
+                  onClick={(e) => handleStaticLinkClick(e, 'careers.html')}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 hover:text-[#f0c869] transition-colors"
@@ -126,6 +142,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateTab }) => {
               <li>
                 <a
                   href={pageUrl('blog.html')}
+                  onClick={(e) => handleStaticLinkClick(e, 'blog.html')}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 hover:text-[#f0c869] transition-colors"
@@ -137,6 +154,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateTab }) => {
               <li>
                 <a
                   href={pageUrl('press.html')}
+                  onClick={(e) => handleStaticLinkClick(e, 'press.html')}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 hover:text-[#f0c869] transition-colors"
@@ -157,6 +175,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateTab }) => {
               <li>
                 <a
                   href={pageUrl('help.html')}
+                  onClick={(e) => handleStaticLinkClick(e, 'help.html')}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 hover:text-[#f0c869] transition-colors"
@@ -168,6 +187,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateTab }) => {
               <li>
                 <a
                   href={pageUrl('returns.html')}
+                  onClick={(e) => handleStaticLinkClick(e, 'returns.html')}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 hover:text-[#f0c869] transition-colors"
@@ -179,6 +199,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateTab }) => {
               <li>
                 <a
                   href={pageUrl('privacy.html')}
+                  onClick={(e) => handleStaticLinkClick(e, 'privacy.html')}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 hover:text-[#f0c869] transition-colors"
@@ -190,6 +211,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateTab }) => {
               <li>
                 <a
                   href={pageUrl('terms.html')}
+                  onClick={(e) => handleStaticLinkClick(e, 'terms.html')}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 hover:text-[#f0c869] transition-colors"
