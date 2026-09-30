@@ -344,6 +344,31 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
     }
   }, [hasFixedAvailability, selectedEventDate, activeEventDate, selectedBookingEvent?.date]);
 
+  // Keep the vendor's availability live while the modal is open: poll every 10s,
+  // and refresh immediately (closing the pay panel) when a booking attempt finds
+  // the slot was just taken by another customer.
+  useEffect(() => {
+    const refreshVendor = () => {
+      if (document.hidden) return;
+      fetchVendorById(initialVendor.id)
+        .then((res) => { if (res.data?.vendor) setVendor(res.data.vendor); })
+        .catch(() => { /* keep the last known availability */ });
+    };
+    const onConflict = () => {
+      setAdvancePanelOpen(false);
+      refreshVendor();
+    };
+    const timer = window.setInterval(refreshVendor, 10000);
+    window.addEventListener('focus', refreshVendor);
+    window.addEventListener('magizhnaazh:vendor-refresh', onConflict);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener('focus', refreshVendor);
+      window.removeEventListener('magizhnaazh:vendor-refresh', onConflict);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialVendor.id]);
+
   // First-time customers pick their language before anything else in the booking
   // flow; after that the usual checks run (sign in → create an event if none).
   const [showLanguagePrompt, setShowLanguagePrompt] = useState(false);

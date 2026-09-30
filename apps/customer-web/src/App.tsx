@@ -290,12 +290,14 @@ export function App() {
     loadVendors();
     const refreshTimer = window.setInterval(loadVendors, 30000);
     window.addEventListener('focus', loadVendors);
+    window.addEventListener('magizhnaazh:vendor-refresh', loadVendors);
     document.addEventListener('visibilitychange', refreshWhenVisible);
 
     return () => {
       cancelled = true;
       window.clearInterval(refreshTimer);
       window.removeEventListener('focus', loadVendors);
+      window.removeEventListener('magizhnaazh:vendor-refresh', loadVendors);
       document.removeEventListener('visibilitychange', refreshWhenVisible);
     };
   }, []);
@@ -974,6 +976,11 @@ export function App() {
                   setShowAuthModal(true);
                   triggerNotification("Your session expired — sign in again and we'll finish this booking for you.");
                   return;
+                }
+                // Someone else took the slot/date first: refresh the vendor's live
+                // availability everywhere so it now shows as closed.
+                if (err instanceof ApiError && (err.code === 'SLOT_ALREADY_BOOKED' || err.code === 'DATE_NOT_AVAILABLE')) {
+                  window.dispatchEvent(new CustomEvent('magizhnaazh:vendor-refresh', { detail: { vendorId: v.id } }));
                 }
                 // Surface the server's actual reason (e.g. "vendor hasn't opened up
                 // this date") instead of a generic retry message when we have one.
