@@ -272,7 +272,9 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
   // Which price tier (if any) the customer chose within each package, keyed by
   // package id. The chosen tier's price is used for the booking.
   const [selectedTierByPkg, setSelectedTierByPkg] = useState<Record<string, { name: string; price: number }>>({});
-  const hasFixedAvailability = (vendor.availableDates?.length ?? 0) > 0;
+  // A vendor who has listed dates — even if every one of them is now booked —
+  // only takes bookings on open listed dates, so nothing is bookable once all close.
+  const hasFixedAvailability = (vendor.availableDates?.length ?? 0) > 0 || (vendor.bookedDates?.length ?? 0) > 0;
   // On phones the tab row scrolls sideways — keep the Availability tab in view
   // when the modal opens on it.
   const availabilityTabRef = useRef<HTMLButtonElement>(null);
@@ -313,6 +315,15 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
     if (!d) return;
     setSessionPopup(true);
   };
+  // If the picked date stops being open (e.g. another customer took the last slot
+  // and the vendor's date closed), drop the selection so no sessions are offered.
+  useEffect(() => {
+    if (selectedEventDate && hasFixedAvailability && !(vendor.availableDates || []).includes(selectedEventDate)) {
+      setSelectedEventDate('');
+      setSessionPopup(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vendor.availableDates, vendor.bookedDates, selectedEventDate]);
   // Whenever the date changes, reset the slot to the first one still open.
   useEffect(() => {
     if (!selectedEventDate) { setSelectedSlot(''); return; }
