@@ -491,6 +491,10 @@ const vendorSchema = new Schema<Vendor>({
   reviewCount: { type: Number, default: 0 },
   isVerified: { type: Boolean, default: false },
   isSuspended: { type: Boolean, default: false },
+  // false = draft: hidden from customers until the vendor clicks Save Changes on
+  // their Profile. No schema default on purpose — listings created before this
+  // field existed have it undefined and must stay visible.
+  isPublished: { type: Boolean },
   featured: { type: Boolean, default: false },
   galleryImages: { type: [String], default: [] },
   galleryVideos: { type: [String], default: [] },

@@ -840,6 +840,7 @@ export function App() {
           advancePercentage: typeof advancePercentage === 'number' ? advancePercentage : 0,
           advanceAmount: advanceAmount ? Number(advanceAmount) : 0,
         },
+        publish: true,
       } as any);
       if (res.data?.vendor) {
         setMyVendor(res.data.vendor);
@@ -847,7 +848,7 @@ export function App() {
         setAdvanceAmount(res.data.vendor.policies?.advanceAmount ?? 0);
         setContactPhone(res.data.vendor.contactPhone || '');
       }
-      setProfileNotice('Profile changes saved.');
+      setProfileNotice(myVendor.isPublished === false ? 'Profile saved — your listing is now live for customers!' : 'Profile changes saved.');
     } catch (err: any) {
       setProfileNotice(err.message || 'Could not save changes.');
     } finally {
@@ -11427,6 +11428,11 @@ export function App() {
               />
             </div>
 
+            {myVendor?.isPublished === false && (
+              <p className="text-xs text-amber-300 font-semibold bg-amber-500/10 border border-amber-500/30 rounded-xl p-2.5">
+                Your listing is hidden from customers. Add your services, packages, availability and offers, save each one, then click Save Changes here to publish it.
+              </p>
+            )}
             {profileNotice && <p className="text-xs text-emerald-400 font-semibold">{profileNotice}</p>}
 
             <button

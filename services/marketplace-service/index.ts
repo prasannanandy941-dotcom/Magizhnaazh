@@ -347,8 +347,12 @@ app.get('/api/v1/vendors', async (req: Request, res: Response) => {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   res.set('Pragma', 'no-cache');
   res.set('Expires', '0');
-  const { category, city, search, lat, lng, radiusKm } = req.query;
+  const { category, city, search, lat, lng, radiusKm, includeUnpublished } = req.query;
   const filter: Record<string, unknown> = {};
+
+  // Draft listings (vendor hasn't clicked Save Changes on their Profile yet) stay
+  // hidden from customers. Only the admin portal asks for them explicitly.
+  if (!includeUnpublished) filter.isPublished = { $ne: false };
 
   // A vendor's listing goes live on the marketplace the moment they submit
   // it — isVerified only gates the "Verified" badge shown on the card (see
@@ -463,13 +467,14 @@ app.post('/api/v1/vendors', authMiddleware(), requireRole('vendor', 'admin'), as
     ratingAverage: 0,
     reviewCount: 0,
     isVerified: false,
+    isPublished: false,
     galleryImages: [getDefaultImageForCategory(category || 'Venue')],
     packages: [],
     contactEmail: contactEmail || req.user!.email,
     contactPhone: contactPhone || '+91 9000000000',
   });
 
-  res.status(201).json({ success: true, message: 'Vendor profile created. It is live on the marketplace and will show a Verified badge once an admin approves it.', data: { vendor } });
+  res.status(201).json({ success: true, message: 'Vendor profile created. It stays hidden from customers until you click Save Changes on your Profile.', data: { vendor } });
 });
 
 // 5. Update own vendor profile (business info, packages, pricing).
@@ -686,6 +691,9 @@ app.put('/api/v1/vendors/:id', authMiddleware(), async (req: Request, res: Respo
   // Return Gifts vendors: how many pieces and any quantity discount.
   if (giftCount !== undefined) (vendor as any).giftCount = giftCount === '' || giftCount === null ? undefined : Number(giftCount);
   if (giftDiscount !== undefined) (vendor as any).giftDiscount = giftDiscount;
+
+  // The vendor's Profile "Save Changes" publishes the listing to customers.
+  if (req.body.publish === true) (vendor as any).isPublished = true;
 
   vendor.markModified('facilities');
   await vendor.save();

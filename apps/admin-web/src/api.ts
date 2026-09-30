@@ -135,7 +135,7 @@ export async function googleLogin(credential: string): Promise<AuthResponse> {
 // --- Dashboard ---
 
 export async function fetchVendors(): Promise<{ success: boolean; data?: { vendors: Vendor[] } }> {
-  const { json } = await fetchJson('/api/v1/vendors');
+  const { json } = await fetchJson('/api/v1/vendors?includeUnpublished=1');
   return json;
 }
 

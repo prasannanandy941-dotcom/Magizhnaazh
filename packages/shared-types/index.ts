@@ -726,6 +726,8 @@ export interface Vendor {
   reviewCount: number;
   isVerified: boolean;
   isSuspended: boolean;
+  // false = draft, hidden from customers until the vendor saves their Profile.
+  isPublished?: boolean;
   featured: boolean;
   galleryImages: string[];
   galleryVideos?: string[];
