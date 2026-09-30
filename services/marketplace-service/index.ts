@@ -341,7 +341,8 @@ async function seedCategoriesAndCities() {
 }
 
 // Listings created on/after this moment are drafts until the vendor saves their Profile.
-const PUBLISH_GATE_START = new Date('2026-09-30T06:00:00.000Z');
+// createdAt is stored as an ISO *string*, so compare against an ISO string.
+const PUBLISH_GATE_START = '2026-09-30T06:00:00.000Z';
 
 // 1. Search / discover vendors
 app.get('/api/v1/vendors', async (req: Request, res: Response) => {
