@@ -340,6 +340,9 @@ async function seedCategoriesAndCities() {
   }
 }
 
+// Listings created on/after this moment are drafts until the vendor saves their Profile.
+const PUBLISH_GATE_START = new Date('2026-09-30T06:00:00.000Z');
+
 // 1. Search / discover vendors
 app.get('/api/v1/vendors', async (req: Request, res: Response) => {
   // Vendor listings can change while a customer keeps the marketplace open.
@@ -352,7 +355,14 @@ app.get('/api/v1/vendors', async (req: Request, res: Response) => {
 
   // Draft listings (vendor hasn't clicked Save Changes on their Profile yet) stay
   // hidden from customers. Only the admin portal asks for them explicitly.
-  if (!includeUnpublished) filter.isPublished = { $ne: false };
+  // Listings created before this rule existed (createdAt < cutoff, no flag) stay
+  // visible; anything newer needs an explicit isPublished: true.
+  if (!includeUnpublished) {
+    filter.$or = [
+      { isPublished: true },
+      { isPublished: { $exists: false }, createdAt: { $lt: PUBLISH_GATE_START } },
+    ];
+  }
 
   // A vendor's listing goes live on the marketplace the moment they submit
   // it — isVerified only gates the "Verified" badge shown on the card (see
@@ -461,17 +471,17 @@ app.post('/api/v1/vendors', authMiddleware(), requireRole('vendor', 'admin'), as
     businessName: businessName || 'New Vendor Business',
     category: category || 'Venue',
     description: description || '',
-    location: { type: 'Point', coordinates: [80.27, 13.08], address: 'Main Road', city: city || 'Chennai', state: 'Tamil Nadu', pincode: '600001' },
-    startingPrice: Number(startingPrice) || 25000,
+    location: { type: 'Point', coordinates: [80.27, 13.08], address: '', city: city || 'Chennai', state: 'Tamil Nadu', pincode: '' },
+    startingPrice: Number(startingPrice) || 0,
     yearsOfExperience: 0,
     ratingAverage: 0,
     reviewCount: 0,
     isVerified: false,
     isPublished: false,
-    galleryImages: [getDefaultImageForCategory(category || 'Venue')],
+    galleryImages: [],
     packages: [],
     contactEmail: contactEmail || req.user!.email,
-    contactPhone: contactPhone || '+91 9000000000',
+    contactPhone: contactPhone || '',
   });
 
   res.status(201).json({ success: true, message: 'Vendor profile created. It stays hidden from customers until you click Save Changes on your Profile.', data: { vendor } });
