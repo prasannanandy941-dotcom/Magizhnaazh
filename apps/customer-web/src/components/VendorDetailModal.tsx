@@ -300,6 +300,17 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
   });
   // Time-of-day slot the customer picks for the chosen date (Morning/Afternoon/Evening).
   const [selectedSlot, setSelectedSlot] = useState('');
+  // After a date is tapped the session picker renders below the fold on phones —
+  // scroll it into view and flash it so customers notice they must choose a session.
+  const sessionPickerRef = useRef<HTMLDivElement>(null);
+  const [sessionHint, setSessionHint] = useState(false);
+  const pickDate = (d: string) => {
+    setSelectedEventDate(d);
+    if (!d) return;
+    setSessionHint(true);
+    window.setTimeout(() => sessionPickerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 150);
+    window.setTimeout(() => setSessionHint(false), 3500);
+  };
   // Whenever the date changes, reset the slot to the first one still open.
   useEffect(() => {
     if (!selectedEventDate) { setSelectedSlot(''); return; }
@@ -2686,17 +2697,23 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
             <span className="text-[11px] font-bold text-slate-400 uppercase flex items-center gap-1.5 mb-2">
               <CalendarIcon className="w-3.5 h-3.5 text-indigo-400" /> Pick a date to book {vendor.businessName}
             </span>
-            <AvailabilityCalendar vendor={vendor} selectedDate={selectedEventDate} onPick={setSelectedEventDate} />
+            <AvailabilityCalendar vendor={vendor} selectedDate={selectedEventDate} onPick={pickDate} />
             {vendor.availableDates.length === 0 && (vendor.bookedDates?.length ?? 0) > 0 && (
               <p className="text-[11px] text-amber-400 mt-2">All listed dates are booked by other customers — check back or contact the vendor for other dates.</p>
             )}
 
             {/* Time-slot picker for the chosen date — a booked slot leaves the rest of the day open. */}
             {selectedEventDate && (
-              <div className="mt-4">
+              <div
+                ref={sessionPickerRef}
+                className={`mt-4 rounded-2xl p-3 border transition-all duration-500 ${sessionHint ? 'border-amber-400 bg-amber-400/10 ring-4 ring-amber-400/30 animate-pulse' : 'border-transparent'}`}
+              >
                 <span className="text-[11px] font-bold text-slate-400 uppercase flex items-center gap-1.5 mb-2">
                   <Clock className="w-3.5 h-3.5 text-indigo-400" /> Pick a session for {new Date(selectedEventDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
                 </span>
+                {sessionHint && (
+                  <p className="text-xs font-bold text-amber-300 mb-2">👇 Date selected — now choose your session (Morning / Afternoon / Evening)</p>
+                )}
                 <div className="flex flex-wrap gap-2">
                   {AVAILABILITY_SLOTS.filter((s) => offeredSlotIds(vendor, selectedEventDate).includes(s.id)).map((s) => {
                     const booked = isSlotBooked(vendor, selectedEventDate, s.id);
