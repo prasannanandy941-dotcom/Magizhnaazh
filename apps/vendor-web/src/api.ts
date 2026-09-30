@@ -111,8 +111,8 @@ export function googleLogin(credential: string): Promise<GoogleAuthResponse> {
   return postJson('/api/v1/auth/google', { credential, role: 'vendor' }) as Promise<GoogleAuthResponse>;
 }
 
-export function sendOtp(email: string): Promise<any> {
-  return postJson('/api/v1/auth/send-otp', { email });
+export function sendOtp(email: string, channel: 'email' | 'whatsapp' | 'sms' = 'email', phone?: string): Promise<any> {
+  return postJson('/api/v1/auth/send-otp', { email, channel, phone });
 }
 
 // Check a typed OTP for instant signup feedback (non-consuming — register still
@@ -121,8 +121,8 @@ export function verifyOtp(email: string, otp: string): Promise<{ success: boolea
   return postJson('/api/v1/auth/verify-otp', { email, otp }) as any;
 }
 
-export function forgotPassword(email: string): Promise<any> {
-  return postJson('/api/v1/auth/forgot-password', { email });
+export function forgotPassword(email: string, channel: 'email' | 'whatsapp' | 'sms' = 'email'): Promise<any> {
+  return postJson('/api/v1/auth/forgot-password', { email, channel });
 }
 
 export function resetPassword(email: string, otp: string, newPassword: string): Promise<any> {

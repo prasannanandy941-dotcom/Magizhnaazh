@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Store, LogIn, UserPlus, Loader2, Eye, EyeOff, Check, X } from 'lucide-react';
 import { User, VENDOR_CATEGORIES, VendorCategory } from '../../../../packages/shared-types';
 import { STATIC_CITY_GROUPS, checkPassword, isPasswordStrong } from '../../../../packages/shared-utils';
+import { OtpChannelPicker, OtpChannel } from '../../../../packages/shared-ui/OtpChannelPicker';
 import { login, register, fetchMyVendor, createVendor, sendOtp, verifyOtp, forgotPassword, resetPassword, googleLogin } from '../api';
 import { FloralGoldBackground } from './FloralGoldBackground';
 import { HangingDiyas, isInsideMobileApp } from '../../../../packages/shared-ui/HangingDiyas';
@@ -38,6 +39,8 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
   const [otpNotice, setOtpNotice] = useState('');
   // Live check of the typed OTP so the vendor sees ✓/✗ before submitting.
   const [otpStatus, setOtpStatus] = useState<'idle' | 'checking' | 'valid' | 'invalid'>('idle');
+  const [otpChannel, setOtpChannel] = useState<OtpChannel>('email');
+  const [otpPhone, setOtpPhone] = useState('');
 
   const handleOtpChange = (value: string) => {
     const clean = value.replace(/\D/g, '').slice(0, 6);
@@ -57,13 +60,17 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
       setError('Please enter your email first.');
       return;
     }
+    if (otpChannel !== 'email' && !otpPhone.trim()) {
+      setError('Please enter your mobile number to receive the code.');
+      return;
+    }
     setError('');
     setOtpNotice('');
     setOtp('');
     setOtpStatus('idle');
     setOtpSending(true);
     try {
-      const res = await sendOtp(email);
+      const res = await sendOtp(email, otpChannel, otpPhone.trim());
       setOtpNotice(res.message || 'Verification code sent to your email.');
     } catch (err: any) {
       setError(err.message || 'Failed to send OTP. Please try again.');
@@ -81,7 +88,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
     setOtpNotice('');
     setOtpSending(true);
     try {
-      const res = await forgotPassword(email);
+      const res = await forgotPassword(email, otpChannel);
       setOtpNotice(res.message || 'Verification code sent to your email.');
     } catch (err: any) {
       setError(err.message || 'Failed to send OTP. Please try again.');
@@ -401,6 +408,17 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
               <p className="text-[10px] text-emerald-400 mt-1 font-semibold">{otpNotice}</p>
             )}
           </div>
+          )}
+
+          {(mode === 'signup' || mode === 'forgot') && (
+            <OtpChannelPicker
+              channel={otpChannel}
+              onChannel={setOtpChannel}
+              phone={otpPhone}
+              onPhone={setOtpPhone}
+              askPhone={mode === 'signup'}
+              tone="dark"
+            />
           )}
 
           {(mode === 'signup' || mode === 'forgot') && (

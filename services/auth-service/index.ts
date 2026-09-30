@@ -17,6 +17,7 @@ import { isPasswordStrong, firstPasswordError } from '../../packages/shared-util
 import { Role } from '../../packages/shared-types';
 import { UserModel } from './models/User';
 import { OtpModel } from './models/Otp';
+import { isOtpChannel, markPhoneSent, normalizePhone, phoneCooldownLeft, sendSmsOtp, sendWhatsAppOtp, OtpChannel } from './otpChannels';
 import { serviceUrl } from '../../packages/shared-utils/serviceUrl';
 
 const app = express();
@@ -289,6 +290,17 @@ app.post('/api/v1/auth/send-otp', async (req: Request, res: Response) => {
     if (!email) {
       return res.status(400).json({ success: false, message: 'Email is required.' });
     }
+    // Delivery channel: the code goes to email (default), WhatsApp or SMS. For the
+    // phone channels the person must supply the number to receive it on.
+    const channel: OtpChannel = isOtpChannel(req.body.channel) ? req.body.channel : 'email';
+    const phone = channel === 'email' ? null : normalizePhone(req.body.phone);
+    if (channel !== 'email' && !phone) {
+      return res.status(400).json({ success: false, message: 'Please enter a valid mobile number to receive the code.' });
+    }
+    if (phone) {
+      const wait = phoneCooldownLeft(phone);
+      if (wait > 0) return res.status(429).json({ success: false, message: `Please wait ${wait}s before requesting another code.` });
+    }
 
     const emailStr = String(email).toLowerCase().trim();
 
@@ -308,6 +320,22 @@ app.post('/api/v1/auth/send-otp', async (req: Request, res: Response) => {
     );
 
     console.log(`[OTP DEBUG] Verification code for ${emailStr}: ${code}`);
+
+    if (phone) {
+      const via = channel === 'whatsapp' ? await sendWhatsAppOtp(phone, code) : await sendSmsOtp(phone, code);
+      if (!via.sent) {
+        console.error(`[OTP] ${channel} delivery failed for ${phone}: ${via.reason}`);
+        return res.status(502).json({
+          success: false,
+          message: `Couldn't send the code on ${channel === 'whatsapp' ? 'WhatsApp' : 'SMS'}. Please check the number or use another option.`,
+        });
+      }
+      markPhoneSent(phone);
+      return res.json({
+        success: true,
+        message: `Verification code sent to +${phone} on ${channel === 'whatsapp' ? 'WhatsApp' : 'SMS'}.`,
+      });
+    }
 
     const delivery = await sendEmailWithTimeout(
       emailStr,
@@ -435,6 +463,18 @@ app.post('/api/v1/auth/forgot-password', async (req: Request, res: Response) => 
       return res.status(403).json({ success: false, message: 'This account has been suspended. Contact support.' });
     }
 
+    // WhatsApp / SMS reset codes only ever go to the number saved on the account,
+    // never to a number typed here (so nobody can redirect someone else's code).
+    const channel: OtpChannel = isOtpChannel(req.body.channel) ? req.body.channel : 'email';
+    const phone = channel === 'email' ? null : normalizePhone(user.phone);
+    if (channel !== 'email' && !phone) {
+      return res.status(400).json({ success: false, message: 'No mobile number is saved on this account. Use email instead.' });
+    }
+    if (phone) {
+      const wait = phoneCooldownLeft(phone);
+      if (wait > 0) return res.status(429).json({ success: false, message: `Please wait ${wait}s before requesting another code.` });
+    }
+
     const code = String(Math.floor(100000 + Math.random() * 900000));
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
 
@@ -445,6 +485,16 @@ app.post('/api/v1/auth/forgot-password', async (req: Request, res: Response) => 
     );
 
     console.log(`[OTP DEBUG] Forgot Password OTP for ${emailStr}: ${code}`);
+
+    if (phone) {
+      const via = channel === 'whatsapp' ? await sendWhatsAppOtp(phone, code) : await sendSmsOtp(phone, code);
+      if (!via.sent) {
+        console.error(`[OTP] Forgot-password ${channel} delivery failed for ${phone}: ${via.reason}`);
+        return res.status(502).json({ success: false, message: `Couldn't send the code on ${channel === 'whatsapp' ? 'WhatsApp' : 'SMS'}. Please try again or use email.` });
+      }
+      markPhoneSent(phone);
+      return res.json({ success: true, message: `Verification code sent to your number ending ${phone.slice(-4)} on ${channel === 'whatsapp' ? 'WhatsApp' : 'SMS'}.` });
+    }
 
     const delivery = await sendEmailWithTimeout(
       emailStr,

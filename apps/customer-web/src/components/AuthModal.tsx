@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Sparkles, LogIn, UserPlus, Loader2, Eye, EyeOff, Check } from 'lucide-react';
 import { User } from '../../../../packages/shared-types';
 import { checkPassword, isPasswordStrong } from '../../../../packages/shared-utils';
+import { OtpChannelPicker, OtpChannel } from '../../../../packages/shared-ui/OtpChannelPicker';
 import { login, register, sendOtp, verifyOtp, forgotPassword, resetPassword, googleLogin } from '../api';
 import { GoogleSignInButton } from './GoogleSignInButton';
 import { FloralGoldBackground } from './FloralGoldBackground';
@@ -29,6 +30,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) 
   const [otp, setOtp] = useState('');
   const [otpSending, setOtpSending] = useState(false);
   const [otpNotice, setOtpNotice] = useState('');
+  const [otpChannel, setOtpChannel] = useState<OtpChannel>('email');
+  const [otpPhone, setOtpPhone] = useState('');
   // Live check of the typed OTP so the user sees ✓/✗ before submitting.
   const [otpStatus, setOtpStatus] = useState<'idle' | 'checking' | 'valid' | 'invalid'>('idle');
 
@@ -59,13 +62,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) 
       setError('Please enter your email first.');
       return;
     }
+    if (otpChannel !== 'email' && !otpPhone.trim()) {
+      setError('Please enter your mobile number to receive the code.');
+      return;
+    }
     setError('');
     setOtpNotice('');
     setOtp('');
     setOtpStatus('idle');
     setOtpSending(true);
     try {
-      const res = await sendOtp(email);
+      const res = await sendOtp(email, otpChannel, otpPhone.trim());
       setOtpNotice(res.message || 'Verification code sent to your email.');
     } catch (err: any) {
       setError(err.message || 'Failed to send OTP. Please try again.');
@@ -83,7 +90,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) 
     setOtpNotice('');
     setOtpSending(true);
     try {
-      const res = await forgotPassword(email);
+      const res = await forgotPassword(email, otpChannel);
       setOtpNotice(res.message || 'Verification code sent to your email.');
     } catch (err: any) {
       setError(err.message || 'Failed to send OTP. Please try again.');
@@ -265,6 +272,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) 
               <p className="text-[10px] text-emerald-600 mt-1 font-semibold">{otpNotice}</p>
             )}
           </div>
+
+          {(mode === 'signup' || mode === 'forgot') && (
+            <OtpChannelPicker
+              channel={otpChannel}
+              onChannel={setOtpChannel}
+              phone={otpPhone}
+              onPhone={setOtpPhone}
+              askPhone={mode === 'signup'}
+              tone="light"
+            />
+          )}
 
           {(mode === 'signup' || mode === 'forgot') && (
             <div>
