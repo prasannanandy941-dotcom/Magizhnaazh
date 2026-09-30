@@ -140,8 +140,8 @@ export function AvailabilityCalendar({
             <ChevronDown className={`w-4 h-4 text-amber-400 transition-transform ${showMonthPicker ? 'rotate-180' : ''}`} />
           </button>
           <span
-            className={`inline-block mt-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-              openThisMonth > 0 ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30' : 'bg-slate-800/70 text-slate-400 border border-slate-700'
+            className={`inline-block mt-2 px-4 py-1.5 rounded-full text-sm font-extrabold text-center leading-snug shadow-sm ${
+              openThisMonth > 0 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/60' : 'bg-rose-500/15 text-rose-500 border border-rose-500/60'
             }`}
           >
             {filter && filter !== 'unavailable'
