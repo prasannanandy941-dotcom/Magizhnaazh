@@ -21,8 +21,11 @@ export const OtpChannelPicker: React.FC<{
   onSend: () => void;
   sending: boolean;
   note?: string;
+  notice?: string;
+  errorText?: string;
+  onSignIn?: () => void;
   tone?: 'light' | 'dark';
-}> = ({ channel, onChannel, onSend, sending, note, tone = 'light' }) => {
+}> = ({ channel, onChannel, onSend, sending, note, notice, errorText, onSignIn, tone = 'light' }) => {
   const dark = tone === 'dark';
   const label = dark ? 'text-slate-300' : 'text-slate-800';
   const idle = dark ? 'bg-slate-900 border-slate-700 text-slate-300' : 'bg-white border-slate-300 text-slate-700';
@@ -57,6 +60,20 @@ export const OtpChannelPicker: React.FC<{
         {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
         {sending ? 'Sending...' : `Send OTP${channel === 'whatsapp' ? ' on WhatsApp' : channel === 'sms' ? ' by SMS' : ' to Email'}`}
       </button>
+      {notice && !errorText && (
+        <p className={`mt-2 text-xs font-semibold rounded-lg px-3 py-2 border ${dark ? 'text-emerald-300 bg-emerald-500/10 border-emerald-500/30' : 'text-emerald-700 bg-emerald-50 border-emerald-200'}`}>{notice}</p>
+      )}
+      {errorText && (
+        <p className={`mt-2 text-xs font-semibold rounded-lg px-3 py-2 border ${dark ? 'text-rose-300 bg-rose-500/10 border-rose-500/30' : 'text-rose-700 bg-rose-50 border-rose-200'}`}>
+          {errorText}
+          {onSignIn && (
+            <>
+              {' '}
+              <button type="button" onClick={onSignIn} className="underline font-bold">Sign in instead</button>
+            </>
+          )}
+        </p>
+      )}
     </div>
   );
 };

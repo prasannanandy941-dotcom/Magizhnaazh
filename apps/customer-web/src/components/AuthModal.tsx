@@ -30,6 +30,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) 
   const [otp, setOtp] = useState('');
   const [otpSending, setOtpSending] = useState(false);
   const [otpNotice, setOtpNotice] = useState('');
+  const [otpError, setOtpError] = useState('');
   const [otpChannel, setOtpChannel] = useState<OtpChannel>('email');
   // Live check of the typed OTP so the user sees ✓/✗ before submitting.
   const [otpStatus, setOtpStatus] = useState<'idle' | 'checking' | 'valid' | 'invalid'>('idle');
@@ -58,14 +59,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) 
 
   const handleSendOtp = async () => {
     if (!email) {
-      setError('Please enter your email first.');
+      setOtpError('Please enter your email first.');
       return;
     }
     if (otpChannel !== 'email' && !phone.trim()) {
-      setError('Please enter your mobile number above to receive the code.');
+      setOtpError('Please enter your mobile number above to receive the code.');
       return;
     }
-    setError('');
+    setOtpError('');
     setOtpNotice('');
     setOtp('');
     setOtpStatus('idle');
@@ -74,7 +75,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) 
       const res = await sendOtp(email, otpChannel, phone.trim());
       setOtpNotice(res.message || 'Verification code sent to your email.');
     } catch (err: any) {
-      setError(err.message || 'Failed to send OTP. Please try again.');
+      setOtpError(err.message || 'Failed to send OTP. Please try again.');
     } finally {
       setOtpSending(false);
     }
@@ -82,17 +83,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) 
 
   const handleForgotSendOtp = async () => {
     if (!email) {
-      setError('Please enter your email address first.');
+      setOtpError('Please enter your email address first.');
       return;
     }
-    setError('');
+    setOtpError('');
     setOtpNotice('');
     setOtpSending(true);
     try {
       const res = await forgotPassword(email, otpChannel);
       setOtpNotice(res.message || 'Verification code sent to your email.');
     } catch (err: any) {
-      setError(err.message || 'Failed to send OTP. Please try again.');
+      setOtpError(err.message || 'Failed to send OTP. Please try again.');
     } finally {
       setOtpSending(false);
     }
@@ -257,9 +258,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) 
                 className="flex-1 p-3 rounded-xl bg-white border-2 border-slate-800 text-slate-900 placeholder:text-slate-500 text-sm focus:outline-none focus:border-indigo-500"
               />
             </div>
-            {otpNotice && (
-              <p className="text-[10px] text-emerald-600 mt-1 font-semibold">{otpNotice}</p>
-            )}
           </div>
 
           {mode === 'signup' && (
@@ -289,6 +287,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) 
                   : mode === 'signup'
                     ? 'The code will be sent to the mobile number above.'
                     : 'The code goes to the mobile number saved on your account.'
+              }
+              notice={otpNotice}
+              errorText={otpError}
+              onSignIn={
+                mode === 'signup' && /already exists/i.test(otpError)
+                  ? () => { setOtpError(''); setOtpNotice(''); setError(''); setMode('signin'); }
+                  : undefined
               }
               tone="light"
             />
