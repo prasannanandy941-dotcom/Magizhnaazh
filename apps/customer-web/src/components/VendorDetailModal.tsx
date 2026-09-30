@@ -296,7 +296,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
   // (A logged-in customer's event date is pre-picked when the vendor is open on it.)
   const [selectedEventDate, setSelectedEventDate] = useState(() => {
     const d = (activeEventDate || '').slice(0, 10);
-    return d && (initialVendor.availableDates || []).includes(d) ? d : '';
+    return d && (initialVendor.availableDates || []).includes(d) && openSlots(initialVendor, d).length > 0 ? d : '';
   });
   // Time-of-day slot the customer picks for the chosen date (Morning/Afternoon/Evening).
   const [selectedSlot, setSelectedSlot] = useState('');
@@ -2966,7 +2966,9 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                         onChange={(e) => {
                           const event = events.find((item) => item.id === e.target.value);
                           setSelectedBookingEventId(e.target.value);
-                          setSelectedEventDate(event?.date || '');
+                          const d = (event?.date || '').slice(0, 10);
+                          const ok = !hasFixedAvailability || ((vendor.availableDates || []).includes(d) && openSlots(vendor, d).length > 0);
+                          setSelectedEventDate(ok ? d : '');
                         }}
                         className="max-w-[190px] rounded-lg border border-slate-700 bg-slate-900 px-2 py-1 text-amber-300 font-semibold"
                       >

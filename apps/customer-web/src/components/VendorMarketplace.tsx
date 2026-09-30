@@ -283,7 +283,9 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
   const freeOnEventDate = (v: Vendor) =>
     !!eventDate && (v.availableDates || []).includes(eventDate) && openSlots(v, eventDate).length > 0;
   const dateMatches = eventDate ? filteredVendors.filter(freeOnEventDate) : [];
-  const narrowToDate = !!eventDate && dateMatches.length > 0 && !showAllDates;
+  // Strict: with an event date set, only vendors free on it are listed — no
+  // fallback to everyone when nobody is free (the customer can change the date).
+  const narrowToDate = !!eventDate && !showAllDates;
   const displayedVendors = narrowToDate ? dateMatches : filteredVendors;
   // Sets: each card asks "is this vendor wishlisted / in compare?" — Set.has
   // is O(1), versus scanning the id array with .includes() for every card.
@@ -546,7 +548,11 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
             <p className="text-sm text-amber-100">
               No {categoryWord}vendors are available on your event date <strong className="text-amber-300">{eventDateLabel}</strong>{eventTitle ? <> ({eventTitle})</> : null}.
             </p>
-            <p className="text-xs text-amber-200/80 mt-1">Showing all vendors instead — open a vendor to see their other available dates and pick one of those.</p>
+            <p className="text-xs text-amber-200/80 mt-1">No vendors available on this date. Try another event date, or browse everyone.</p>
+            <button type="button" onClick={() => setShowAllDates((v) => !v)}
+              className="mt-2 text-xs font-bold text-amber-300 hover:text-amber-200 underline underline-offset-2">
+              {showAllDates ? `Only vendors free on ${eventDateLabel}` : 'Show all vendors'}
+            </button>
           </div>
         )
       )}
