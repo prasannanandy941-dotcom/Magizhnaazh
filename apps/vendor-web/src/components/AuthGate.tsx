@@ -40,7 +40,6 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
   // Live check of the typed OTP so the vendor sees ✓/✗ before submitting.
   const [otpStatus, setOtpStatus] = useState<'idle' | 'checking' | 'valid' | 'invalid'>('idle');
   const [otpChannel, setOtpChannel] = useState<OtpChannel>('email');
-  const [otpPhone, setOtpPhone] = useState('');
 
   const handleOtpChange = (value: string) => {
     const clean = value.replace(/\D/g, '').slice(0, 6);
@@ -60,8 +59,8 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
       setError('Please enter your email first.');
       return;
     }
-    if (otpChannel !== 'email' && !otpPhone.trim()) {
-      setError('Please enter your mobile number to receive the code.');
+    if (otpChannel !== 'email' && !phone.trim()) {
+      setError('Please enter your mobile number above to receive the code.');
       return;
     }
     setError('');
@@ -70,7 +69,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
     setOtpStatus('idle');
     setOtpSending(true);
     try {
-      const res = await sendOtp(email, otpChannel, otpPhone.trim());
+      const res = await sendOtp(email, otpChannel, phone.trim());
       setOtpNotice(res.message || 'Verification code sent to your email.');
     } catch (err: any) {
       setError(err.message || 'Failed to send OTP. Please try again.');
@@ -393,16 +392,6 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
                 placeholder="you@business.com"
                 className="flex-1 p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm focus:outline-none focus:border-amber-500"
               />
-              {(mode === 'signup' || mode === 'forgot') && (
-                <button
-                  type="button"
-                  onClick={mode === 'forgot' ? handleForgotSendOtp : handleSendOtp}
-                  disabled={otpSending}
-                  className="px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 font-bold text-xs transition-colors shrink-0 flex items-center justify-center min-w-[90px]"
-                >
-                  {otpSending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Send OTP'}
-                </button>
-              )}
             </div>
             {otpNotice && (
               <p className="text-[10px] text-emerald-400 mt-1 font-semibold">{otpNotice}</p>
@@ -410,13 +399,36 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
           </div>
           )}
 
+          {mode === 'signup' && (
+            <div>
+              <label className="block text-xs font-bold text-slate-400 mb-1.5">Mobile number</label>
+              <input
+                type="tel"
+                inputMode="tel"
+                name="phone"
+                autoComplete="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="98765 43210"
+                className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm focus:outline-none focus:border-amber-500"
+              />
+              <p className="text-[10px] text-slate-400 mt-1">Used for WhatsApp / SMS codes and to reach you about bookings. 10-digit numbers are treated as +91.</p>
+            </div>
+          )}
+
           {(mode === 'signup' || mode === 'forgot') && (
             <OtpChannelPicker
               channel={otpChannel}
               onChannel={setOtpChannel}
-              phone={otpPhone}
-              onPhone={setOtpPhone}
-              askPhone={mode === 'signup'}
+              onSend={mode === 'forgot' ? handleForgotSendOtp : handleSendOtp}
+              sending={otpSending}
+              note={
+                otpChannel === 'email'
+                  ? undefined
+                  : mode === 'signup'
+                    ? 'The code will be sent to the mobile number above.'
+                    : 'The code goes to the mobile number saved on your account.'
+              }
               tone="dark"
             />
           )}
@@ -451,25 +463,11 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
               ) : otpStatus === 'invalid' ? (
                 <p className="text-[10px] text-rose-400 mt-1 font-semibold">✗ Incorrect or expired code</p>
               ) : (
-                <p className="text-[10px] text-slate-400 mt-1">Verification is required. Didn't see the email? Check your <b>Spam/Junk</b> folder.</p>
+                <p className="text-[10px] text-slate-400 mt-1">Verification is required. {otpChannel === 'email' ? <>Didn't see the email? Check your <b>Spam/Junk</b> folder.</> : <>Check your {otpChannel === 'whatsapp' ? 'WhatsApp' : 'SMS'} messages.</>}</p>
               )}
             </div>
           )}
 
-          {mode === 'signup' && (
-            <div>
-              <label className="block text-xs font-bold text-slate-400 mb-1.5">Phone (optional)</label>
-              <input
-                type="tel"
-                name="phone"
-                autoComplete="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+91 9840112233"
-                className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm focus:outline-none focus:border-amber-500"
-              />
-            </div>
-          )}
 
           {mode !== 'google-setup' && (
           <div className="sm:col-span-2">

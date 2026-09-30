@@ -31,7 +31,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) 
   const [otpSending, setOtpSending] = useState(false);
   const [otpNotice, setOtpNotice] = useState('');
   const [otpChannel, setOtpChannel] = useState<OtpChannel>('email');
-  const [otpPhone, setOtpPhone] = useState('');
   // Live check of the typed OTP so the user sees ✓/✗ before submitting.
   const [otpStatus, setOtpStatus] = useState<'idle' | 'checking' | 'valid' | 'invalid'>('idle');
 
@@ -62,8 +61,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) 
       setError('Please enter your email first.');
       return;
     }
-    if (otpChannel !== 'email' && !otpPhone.trim()) {
-      setError('Please enter your mobile number to receive the code.');
+    if (otpChannel !== 'email' && !phone.trim()) {
+      setError('Please enter your mobile number above to receive the code.');
       return;
     }
     setError('');
@@ -72,7 +71,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) 
     setOtpStatus('idle');
     setOtpSending(true);
     try {
-      const res = await sendOtp(email, otpChannel, otpPhone.trim());
+      const res = await sendOtp(email, otpChannel, phone.trim());
       setOtpNotice(res.message || 'Verification code sent to your email.');
     } catch (err: any) {
       setError(err.message || 'Failed to send OTP. Please try again.');
@@ -257,29 +256,40 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) 
                 placeholder="you@example.com"
                 className="flex-1 p-3 rounded-xl bg-white border-2 border-slate-800 text-slate-900 placeholder:text-slate-500 text-sm focus:outline-none focus:border-indigo-500"
               />
-              {(mode === 'signup' || mode === 'forgot') && (
-                <button
-                  type="button"
-                  onClick={mode === 'forgot' ? handleForgotSendOtp : handleSendOtp}
-                  disabled={otpSending}
-                  className="px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-amber-600 border border-slate-300 font-bold text-xs transition-colors shrink-0 flex items-center justify-center min-w-[90px]"
-                >
-                  {otpSending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Send OTP'}
-                </button>
-              )}
             </div>
             {otpNotice && (
               <p className="text-[10px] text-emerald-600 mt-1 font-semibold">{otpNotice}</p>
             )}
           </div>
 
+          {mode === 'signup' && (
+            <div>
+              <label className="block text-xs font-bold text-slate-800 mb-1.5">Mobile number</label>
+              <input
+                type="tel"
+                inputMode="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="98765 43210"
+                className="w-full p-3 rounded-xl bg-white border-2 border-slate-800 text-slate-900 placeholder:text-slate-500 text-sm focus:outline-none focus:border-indigo-500"
+              />
+              <p className="text-[10px] text-slate-500 mt-1">Used for WhatsApp / SMS codes and to reach you about bookings. 10-digit numbers are treated as +91.</p>
+            </div>
+          )}
+
           {(mode === 'signup' || mode === 'forgot') && (
             <OtpChannelPicker
               channel={otpChannel}
               onChannel={setOtpChannel}
-              phone={otpPhone}
-              onPhone={setOtpPhone}
-              askPhone={mode === 'signup'}
+              onSend={mode === 'forgot' ? handleForgotSendOtp : handleSendOtp}
+              sending={otpSending}
+              note={
+                otpChannel === 'email'
+                  ? undefined
+                  : mode === 'signup'
+                    ? 'The code will be sent to the mobile number above.'
+                    : 'The code goes to the mobile number saved on your account.'
+              }
               tone="light"
             />
           )}
@@ -313,23 +323,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) 
               ) : otpStatus === 'invalid' ? (
                 <p className="text-[10px] text-rose-600 mt-1 font-semibold">✗ Incorrect or expired code</p>
               ) : (
-                <p className="text-[10px] text-slate-500 mt-1">Verification is required. Didn't see the email? Check your <b>Spam/Junk</b> folder.</p>
+                <p className="text-[10px] text-slate-500 mt-1">Verification is required. {otpChannel === 'email' ? <>Didn't see the email? Check your <b>Spam/Junk</b> folder.</> : <>Check your {otpChannel === 'whatsapp' ? 'WhatsApp' : 'SMS'} messages.</>}</p>
               )}
             </div>
           )}
 
-          {mode === 'signup' && (
-            <div>
-              <label className="block text-xs font-bold text-slate-800 mb-1.5">Phone (optional)</label>
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+91 9840112233"
-                className="w-full p-3 rounded-xl bg-white border-2 border-slate-800 text-slate-900 placeholder:text-slate-500 text-sm focus:outline-none focus:border-indigo-500"
-              />
-            </div>
-          )}
 
           <div>
             <div className="flex items-center justify-between mb-1.5">
