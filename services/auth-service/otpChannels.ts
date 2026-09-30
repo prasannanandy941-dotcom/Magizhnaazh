@@ -9,6 +9,8 @@
 //   WHATSAPP_TEMPLATE_BUTTON  "true" (default) if it's an Authentication template
 //                             with the copy-code button, "false" for body-only
 //   WHATSAPP_API_VERSION      Graph API version, default "v21.0"
+//   INTERAKT_API_KEY          optional: send via Interakt instead of/after Meta direct
+//                             (needed when the number is managed through Interakt)
 //   MSG91_AUTH_KEY / MSG91_TEMPLATE_ID   SMS OTP via MSG91 (DLT-approved template)
 
 export type OtpChannel = 'email' | 'whatsapp' | 'sms';
@@ -37,7 +39,45 @@ async function post(url: string, init: RequestInit, timeoutMs = 10000): Promise<
   }
 }
 
+/** Interakt public API - for numbers managed through Interakt (same approved template name). */
+async function sendInteraktOtp(phone: string, code: string): Promise<DeliveryResult> {
+  const key = process.env.INTERAKT_API_KEY;
+  const template = process.env.WHATSAPP_TEMPLATE_NAME;
+  if (!key || !template) return { sent: false, reason: 'Interakt is not configured (INTERAKT_API_KEY / WHATSAPP_TEMPLATE_NAME).' };
+  // Interakt wants the country code and national number separately.
+  const countryCode = `+${phone.slice(0, phone.length - 10)}`;
+  const national = phone.slice(-10);
+  const body: any = {
+    countryCode,
+    phoneNumber: national,
+    type: 'Template',
+    template: { name: template, languageCode: process.env.WHATSAPP_TEMPLATE_LANG || 'en_US', bodyValues: [code] },
+  };
+  if (process.env.WHATSAPP_TEMPLATE_BUTTON !== 'false') body.template.buttonValues = { '0': [code] };
+  try {
+    const r = await post('https://api.interakt.ai/v1/public/message/', {
+      method: 'POST',
+      headers: { Authorization: `Basic ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const j: any = await r.json().catch(() => ({}));
+    if (r.ok && j?.result !== false) return { sent: true };
+    return { sent: false, reason: `Interakt API ${r.status}: ${j?.message || 'request failed'}` };
+  } catch (e: any) {
+    return { sent: false, reason: `Interakt request failed: ${e?.message || e}` };
+  }
+}
+
+/** WhatsApp OTP: Meta Cloud API directly; if that is refused and Interakt is configured, via Interakt. */
 export async function sendWhatsAppOtp(phone: string, code: string): Promise<DeliveryResult> {
+  const direct = await sendWhatsAppDirect(phone, code);
+  if (direct.sent || !process.env.INTERAKT_API_KEY) return direct;
+  console.warn(`[OTP] Meta direct send failed (${direct.reason}); trying Interakt`);
+  const viaInterakt = await sendInteraktOtp(phone, code);
+  return viaInterakt.sent ? viaInterakt : { sent: false, reason: `${direct.reason} | ${viaInterakt.reason}` };
+}
+
+async function sendWhatsAppDirect(phone: string, code: string): Promise<DeliveryResult> {
   const token = process.env.WHATSAPP_ACCESS_TOKEN;
   const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
   const template = process.env.WHATSAPP_TEMPLATE_NAME;
