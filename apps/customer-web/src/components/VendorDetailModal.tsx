@@ -303,13 +303,13 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
   // After a date is tapped the session picker renders below the fold on phones —
   // scroll it into view and flash it so customers notice they must choose a session.
   const sessionPickerRef = useRef<HTMLDivElement>(null);
-  const [sessionHint, setSessionHint] = useState(false);
+  const [sessionHint] = useState(false);
+  // Popup that appears right after a date tap so the session choice can't be missed.
+  const [sessionPopup, setSessionPopup] = useState(false);
   const pickDate = (d: string) => {
     setSelectedEventDate(d);
     if (!d) return;
-    setSessionHint(true);
-    window.setTimeout(() => sessionPickerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 150);
-    window.setTimeout(() => setSessionHint(false), 3500);
+    setSessionPopup(true);
   };
   // Whenever the date changes, reset the slot to the first one still open.
   useEffect(() => {
@@ -2752,6 +2752,59 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                     ⚠️ This date has already been booked by another customer. Please choose another date.
                   </p>
                 )}
+              </div>
+            )}
+
+            {sessionPopup && selectedEventDate && (
+              <div
+                className="fixed inset-0 z-[90] flex items-end sm:items-center justify-center bg-slate-950/80 backdrop-blur-sm p-3"
+                onClick={() => setSessionPopup(false)}
+              >
+                <div
+                  className="w-full max-w-sm rounded-3xl border border-amber-400/50 bg-gradient-to-b from-[#241541] to-[#140b22] p-5 shadow-2xl shadow-amber-500/20"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-start justify-between gap-3 mb-1">
+                    <h4 className="text-base font-bold text-amber-300">
+                      Choose a session · {new Date(selectedEventDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </h4>
+                    <button type="button" onClick={() => setSessionPopup(false)} className="text-slate-400 hover:text-white" aria-label="Close">
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <p className="text-xs text-slate-400 mb-4">Tap the time of day you want to book.</p>
+                  <div className="flex flex-col gap-2.5">
+                    {AVAILABILITY_SLOTS.filter((s) => offeredSlotIds(vendor, selectedEventDate).includes(s.id)).map((s) => {
+                      const booked = isSlotBooked(vendor, selectedEventDate, s.id);
+                      const active = selectedSlot === s.id;
+                      return (
+                        <button
+                          key={s.id}
+                          type="button"
+                          disabled={booked}
+                          onClick={() => { setSelectedSlot(s.id); setSessionPopup(false); }}
+                          className={`w-full px-4 py-3.5 rounded-2xl text-sm font-bold border flex items-center justify-between transition-all ${
+                            booked
+                              ? 'bg-rose-950/20 border-rose-900/40 text-rose-400/80 cursor-not-allowed line-through'
+                              : active
+                                ? 'bg-indigo-600 border-indigo-400 text-white'
+                                : 'bg-slate-900 border-slate-700 text-slate-100 hover:border-indigo-400 active:scale-[0.98]'
+                          }`}
+                        >
+                          <span>{s.label}</span>
+                          {booked ? (
+                            <span className="text-[10px] font-bold text-rose-300 no-underline">Booked</span>
+                          ) : slotCapacityFor(vendor, selectedEventDate, s.id) > 1 ? (
+                            <span className="text-[11px] font-bold text-emerald-400">{slotsLeft(vendor, selectedEventDate, s.id)} left</span>
+                          ) : active ? <Check className="w-4 h-4" /> : null}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {openSlots(vendor, selectedEventDate).length === 0 && (
+                    <p className="text-xs text-rose-400 font-semibold mt-3">⚠️ This date is fully booked. Please choose another date.</p>
+                  )}
+                </div>
               </div>
             )}
           </div>
