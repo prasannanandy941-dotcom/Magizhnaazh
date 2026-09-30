@@ -485,18 +485,32 @@ app.post('/api/v1/bookings/quote', authMiddleware(), async (req: Request, res: R
   const resolvedVendor = vendorId ? await fetchVendor(String(vendorId)) : null;
   if (resolvedVendor?.id) canonicalVendorId = resolvedVendor.id;
 
+  let ownStaleHolds: any[] = [];
+
   // Double-booking check. A slot takes as many bookings as the vendor's
   // capacity for it (1 unless they raised it for a multi-team category).
   if (canonicalVendorId && resolvedEventDate) {
     const slotName = slotLabel(resolvedSlot) || resolvedSlot || 'requested';
     const slotTakenMessage = `This date (${resolvedEventDate}) and ${slotName} session has already been booked by another customer. Please choose another date or session.`;
 
+    // The customer's OWN earlier unpaid attempt (they opened Book & Pay, then
+    // dismissed or failed payment) must not lock them out of the slot they are
+    // retrying — those holds are released and replaced by this new booking.
+    ownStaleHolds = await BookingModel.find({
+      customerId: req.user!.sub,
+      vendorId: canonicalVendorId,
+      eventDate: resolvedEventDate,
+      status: { $in: ['quote_requested', 'pending_payment'] },
+      advanceAmountPaid: { $in: [0, null] },
+    }, { id: 1, timeSlot: 1 }).lean();
+    const ownStaleIds = new Set(ownStaleHolds.map((b: any) => b.id));
+
     // 1. Count active bookings in this service's database — the source of truth.
-    const activeBookings = await BookingModel.find({
+    const activeBookings = (await BookingModel.find({
       vendorId: canonicalVendorId,
       eventDate: resolvedEventDate,
       status: { $in: ['confirmed', 'in_progress', 'pending_payment', 'quote_requested'] },
-    }, { id: 1, timeSlot: 1 }).lean();
+    }, { id: 1, timeSlot: 1 }).lean()).filter((b: any) => !ownStaleIds.has(b.id));
     const dbView = {
       category: resolvedVendor?.category,
       availableSlots: resolvedVendor?.availableSlots,
@@ -504,13 +518,26 @@ app.post('/api/v1/bookings/quote', authMiddleware(), async (req: Request, res: R
       bookedSlots: activeBookings.map((b: any) => ({ date: resolvedEventDate, slot: b.timeSlot || 'fullday', bookingId: b.id })),
     };
     if (isSlotBooked(dbView, resolvedEventDate, resolvedSlot)) {
+      // Self-heal: make sure the vendor's public calendar shows every hold this
+      // service knows about, so the next customer sees the slot closed instead
+      // of open-but-refused.
+      for (const b of activeBookings as any[]) {
+        syncSlot('book', canonicalVendorId, { date: resolvedEventDate, slot: b.timeSlot || '', bookingId: b.id }, req.headers.authorization || '');
+      }
       return res.status(409).json({ success: false, message: slotTakenMessage, code: 'SLOT_ALREADY_BOOKED' });
     }
 
     // 2. Check the vendor's own calendar in marketplace-service.
-    const vendor = resolvedVendor;
+    // Drop the customer's own stale holds from the vendor's calendar view too.
+    const vendor = resolvedVendor && ownStaleHolds.length
+      ? {
+          ...resolvedVendor,
+          bookedSlots: (resolvedVendor.bookedSlots || []).filter((b: any) => !ownStaleHolds.some((h: any) => h.id === b.bookingId)),
+        }
+      : resolvedVendor;
+    const ownHoldOnDate = ownStaleHolds.length > 0;
     if (vendor) {
-      if ((vendor.bookedDates || []).includes(resolvedEventDate)) {
+      if (!ownHoldOnDate && (vendor.bookedDates || []).includes(resolvedEventDate)) {
         return res.status(409).json({
           success: false,
           message: `${vendor.businessName} has already been booked by another customer on ${resolvedEventDate}. Please choose another date.`,
@@ -559,6 +586,12 @@ app.post('/api/v1/bookings/quote', authMiddleware(), async (req: Request, res: R
     selectedOptions: Array.isArray(selectedOptions) ? selectedOptions : [],
     referenceImages: Array.isArray(referenceImages) ? referenceImages : [],
   });
+
+  // Release this customer's superseded unpaid holds (cancelled, slot freed).
+  for (const h of ownStaleHolds) {
+    await BookingModel.updateOne({ id: h.id }, { $set: { status: 'cancelled' } });
+    syncSlot('unbook', canonicalVendorId, { date: resolvedEventDate, slot: h.timeSlot || '', bookingId: h.id }, req.headers.authorization || '');
+  }
 
   // Block the slot in marketplace-service immediately so other customers viewing
   // this vendor instantly see that this session/date is booked.
