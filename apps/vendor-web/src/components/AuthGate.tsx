@@ -439,7 +439,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
           )}
 
           {(mode === 'signup' || mode === 'forgot') && (
-            <div>
+            <div className="sm:col-span-2">
               <label className="block text-xs font-bold text-slate-400 mb-1.5">Verification Code (OTP)</label>
               <div className="relative">
                 <input
