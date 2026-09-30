@@ -97,6 +97,41 @@ function syncSlot(
   });
 }
 
+// Push this service's active bookings for one vendor to the marketplace so the
+// vendor's public calendar matches the booking database exactly (adds missing holds,
+// drops stale ones). Awaited on conflicts so the customer's refresh sees the truth.
+const CALENDAR_STATUSES = ['confirmed', 'in_progress', 'pending_payment', 'quote_requested', 'completed'];
+async function reconcileVendorCalendar(vendor: { id: string; userId?: string }, authorization = ''): Promise<void> {
+  const keys = [vendor.id, vendor.userId].filter((k): k is string => !!k);
+  const active = await BookingModel.find(
+    { vendorId: { $in: keys }, status: { $in: CALENDAR_STATUSES } },
+    { id: 1, eventDate: 1, timeSlot: 1 },
+  ).lean();
+  const bookings = (active as any[])
+    .filter((b) => b.eventDate)
+    .map((b) => ({ date: b.eventDate, slot: b.timeSlot || 'fullday', bookingId: b.id }));
+  await fetch(`${MARKETPLACE_SERVICE_URL}/api/v1/vendors/${vendor.id}/sync-slots`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(authorization ? { Authorization: authorization } : {}),
+      'x-internal-secret': process.env.INTERNAL_API_SECRET || '',
+    },
+    body: JSON.stringify({ bookings }),
+  });
+}
+
+// Background safety net: every 2 minutes, re-align every vendor's calendar with the
+// booking database (fixes any missed/failed slot sync in either direction).
+async function reconcileAllCalendars() {
+  const r = await fetch(`${MARKETPLACE_SERVICE_URL}/api/v1/vendors?includeUnpublished=1`);
+  if (!r.ok) return;
+  const vendors: any[] = (await r.json()).data?.vendors || [];
+  for (const v of vendors) {
+    try { await reconcileVendorCalendar(v); } catch { /* try again next round */ }
+  }
+}
+
 // Fetch the marketplace vendor record referenced by a booking (or null).
 async function fetchVendor(vendorId: string): Promise<any | null> {
   try {
@@ -521,8 +556,8 @@ app.post('/api/v1/bookings/quote', authMiddleware(), async (req: Request, res: R
       // Self-heal: make sure the vendor's public calendar shows every hold this
       // service knows about, so the next customer sees the slot closed instead
       // of open-but-refused.
-      for (const b of activeBookings as any[]) {
-        syncSlot('book', canonicalVendorId, { date: resolvedEventDate, slot: b.timeSlot || '', bookingId: b.id }, req.headers.authorization || '');
+      if (resolvedVendor?.id) {
+        await reconcileVendorCalendar(resolvedVendor, req.headers.authorization || '').catch(() => {});
       }
       return res.status(409).json({ success: false, message: slotTakenMessage, code: 'SLOT_ALREADY_BOOKED' });
     }
@@ -554,6 +589,7 @@ app.post('/api/v1/bookings/quote', authMiddleware(), async (req: Request, res: R
       }
 
       if (isSlotBooked(vendor, resolvedEventDate, resolvedSlot)) {
+        if (resolvedVendor?.id) await reconcileVendorCalendar(resolvedVendor, req.headers.authorization || '').catch(() => {});
         return res.status(409).json({ success: false, message: slotTakenMessage, code: 'SLOT_ALREADY_BOOKED' });
       }
     }
@@ -1634,6 +1670,9 @@ async function start() {
   setInterval(() => {
     syncRazorpaySettlements().catch((err: any) => console.warn('[Razorpay sync] failed:', err?.message || err));
   }, 10 * 60 * 1000);
+  setInterval(() => {
+    reconcileAllCalendars().catch((err: any) => console.warn('[calendar-sync] failed:', err?.message || err));
+  }, 2 * 60 * 1000);
   app.listen(PORT, () => {
     console.log(`[Booking & Payment Microservice] Running on http://localhost:${PORT}`);
   });

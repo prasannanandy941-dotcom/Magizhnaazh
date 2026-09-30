@@ -576,6 +576,42 @@ app.post('/api/v1/vendors/:id/unbook-slot', allowInternalOrAuth, async (req: Req
   res.json({ success: true, data: { availableDates: vendor.availableDates, bookedDates: vendor.bookedDates, bookedSlots: vendor.bookedSlots } });
 });
 
+// Reconcile a vendor's calendar with the booking service's records (the source of
+// truth). `bookings` is the full list of active bookings for this vendor: entries
+// tagged with a bookingId that are missing here are added, and tagged entries with
+// no matching active booking are dropped. Untagged (legacy/manual) entries are kept.
+// Then every affected date is re-opened or closed to match.
+app.post('/api/v1/vendors/:id/sync-slots', allowInternalOrAuth, async (req: Request, res: Response) => {
+  const vendor = await VendorModel.findOne({ id: req.params.id });
+  if (!vendor) return res.status(404).json({ success: false, message: 'Vendor not found.' });
+  const incoming = (Array.isArray(req.body.bookings) ? req.body.bookings : [])
+    .filter((b: any) => b && b.date && b.bookingId)
+    .map((b: any) => ({ date: String(b.date), slot: b.slot || 'fullday', bookingId: String(b.bookingId) }));
+
+  const current = Array.isArray(vendor.bookedSlots) ? vendor.bookedSlots : [];
+  const untagged = current.filter((b: any) => !b.bookingId);
+  const oldTagged = current.filter((b: any) => b.bookingId);
+  const sameSet =
+    oldTagged.length === incoming.length &&
+    oldTagged.every((o: any) => incoming.some((n: any) => n.bookingId === o.bookingId && n.date === o.date && n.slot === (o.slot || 'fullday')));
+  if (sameSet) return res.json({ success: true, changed: false });
+
+  const affected = new Set<string>([...oldTagged.map((b: any) => b.date), ...incoming.map((b: any) => b.date)]);
+  vendor.bookedSlots = [...untagged, ...incoming] as any;
+  vendor.markModified('bookedSlots');
+  for (const d of affected) {
+    if (isDateFullyBooked(vendor as any, d)) {
+      vendor.availableDates = (vendor.availableDates || []).filter((x) => x !== d);
+      if (!(vendor.bookedDates || []).includes(d)) vendor.bookedDates = [...(vendor.bookedDates || []), d];
+    } else if ((vendor.bookedDates || []).includes(d)) {
+      vendor.bookedDates = (vendor.bookedDates || []).filter((x) => x !== d);
+      if (!(vendor.availableDates || []).includes(d)) vendor.availableDates = [...(vendor.availableDates || []), d];
+    }
+  }
+  await vendor.save();
+  res.json({ success: true, changed: true });
+});
+
 // Free a previously-blocked date (e.g. a booking was cancelled) — moves it back
 // out of bookedDates. Does not re-add to availableDates (the vendor re-opens it).
 app.post('/api/v1/vendors/:id/free-date', allowInternalOrAuth, async (req: Request, res: Response) => {
