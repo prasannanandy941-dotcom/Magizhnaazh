@@ -410,7 +410,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
                 placeholder="98765 43210"
                 className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm focus:outline-none focus:border-amber-500"
               />
-              <p className="text-[10px] text-slate-400 mt-1">Used for WhatsApp / SMS codes and to reach you about bookings. 10-digit numbers are treated as +91.</p>
+              <p className="text-[10px] text-slate-400 mt-1">Used for WhatsApp codes and to reach you about bookings. 10-digit numbers are treated as +91.</p>
             </div>
           )}
 
@@ -468,7 +468,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ onAuthSuccess }) => {
               ) : otpStatus === 'invalid' ? (
                 <p className="text-[10px] text-rose-400 mt-1 font-semibold">✗ Incorrect or expired code</p>
               ) : (
-                <p className="text-[10px] text-slate-400 mt-1">Verification is required. {otpChannel === 'email' ? <>Didn't see the email? Check your <b>Spam/Junk</b> folder.</> : <>Check your {otpChannel === 'whatsapp' ? 'WhatsApp' : 'SMS'} messages.</>}</p>
+                <p className="text-[10px] text-slate-400 mt-1">Verification is required. {otpChannel === 'email' ? <>Didn't see the email? Check your <b>Spam/Junk</b> folder.</> : <>Check your WhatsApp messages.</>}</p>
               )}
             </div>
           )}

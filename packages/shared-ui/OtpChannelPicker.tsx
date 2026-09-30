@@ -6,7 +6,6 @@ export type OtpChannel = 'email' | 'whatsapp' | 'sms';
 const OPTIONS: { id: OtpChannel; label: string }[] = [
   { id: 'email', label: 'Email' },
   { id: 'whatsapp', label: 'WhatsApp' },
-  { id: 'sms', label: 'SMS' },
 ];
 
 /**

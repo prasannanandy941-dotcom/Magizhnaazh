@@ -271,7 +271,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) 
                 placeholder="98765 43210"
                 className="w-full p-3 rounded-xl bg-white border-2 border-slate-800 text-slate-900 placeholder:text-slate-500 text-sm focus:outline-none focus:border-indigo-500"
               />
-              <p className="text-[10px] text-slate-500 mt-1">Used for WhatsApp / SMS codes and to reach you about bookings. 10-digit numbers are treated as +91.</p>
+              <p className="text-[10px] text-slate-500 mt-1">Used for WhatsApp codes and to reach you about bookings. 10-digit numbers are treated as +91.</p>
             </div>
           )}
 
@@ -328,7 +328,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) 
               ) : otpStatus === 'invalid' ? (
                 <p className="text-[10px] text-rose-600 mt-1 font-semibold">✗ Incorrect or expired code</p>
               ) : (
-                <p className="text-[10px] text-slate-500 mt-1">Verification is required. {otpChannel === 'email' ? <>Didn't see the email? Check your <b>Spam/Junk</b> folder.</> : <>Check your {otpChannel === 'whatsapp' ? 'WhatsApp' : 'SMS'} messages.</>}</p>
+                <p className="text-[10px] text-slate-500 mt-1">Verification is required. {otpChannel === 'email' ? <>Didn't see the email? Check your <b>Spam/Junk</b> folder.</> : <>Check your WhatsApp messages.</>}</p>
               )}
             </div>
           )}
