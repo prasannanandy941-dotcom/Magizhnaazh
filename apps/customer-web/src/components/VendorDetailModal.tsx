@@ -2855,7 +2855,8 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
             <button
               onClick={handleBookAndPayClick}
               disabled={(hasFixedAvailability && !selectedEventDate) || referencePrice === 0 || (selectedEventDate && selectedSlot ? isSlotBooked(vendor, selectedEventDate, selectedSlot) : false)}
-              className="shine-sweep w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold text-xs shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ backgroundImage: 'linear-gradient(90deg,#10b981,#059669)', color: '#ffffff', boxShadow: '0 8px 20px -6px rgba(5,150,105,0.75)' }}
+              className="shine-sweep w-full sm:w-auto px-7 py-3.5 rounded-xl hover:brightness-110 active:scale-[0.98] font-extrabold text-sm border border-emerald-300/40 transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:saturate-50 disabled:cursor-not-allowed"
             >
               <CreditCard className="w-4 h-4" /> Book & Pay Advance
             </button>

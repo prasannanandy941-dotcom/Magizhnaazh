@@ -478,8 +478,11 @@ const styles = StyleSheet.create({
   footerLabel: { fontSize: 11, color: colors.textMuted, fontWeight: '600', textTransform: 'uppercase' },
   footerAdvance: { fontSize: 16, fontWeight: '800', color: colors.gold },
   footerTotal: { fontSize: 16, fontWeight: '800', color: colors.text },
-  bookBtn: { backgroundColor: colors.primary, paddingHorizontal: 18, paddingVertical: 14, borderRadius: radius.md },
-  bookBtnText: { color: colors.onPrimary, fontWeight: '800', fontSize: 14 },
+  bookBtn: {
+    backgroundColor: '#059669', paddingHorizontal: 20, paddingVertical: 15, borderRadius: radius.md,
+    shadowColor: '#059669', shadowOpacity: 0.5, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 6,
+  },
+  bookBtnText: { color: '#ffffff', fontWeight: '800', fontSize: 15 },
   // booking modal
   modalWrap: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(42,10,28,0.4)' },
   modalCard: { backgroundColor: colors.bg, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, maxHeight: '92%' },
