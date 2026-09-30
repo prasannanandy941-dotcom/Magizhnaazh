@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { LanguageModal } from '../../../../packages/shared-ui/i18n/react';
+import { hasChosenLanguage } from '../../../../packages/shared-ui/i18n/runtime';
 import { X, Star, MapPin, Check, ShieldCheck, Upload, Calendar as CalendarIcon, MessageSquare, Send, CreditCard, Sparkles, Camera, Bus, Gift, ListChecks, Phone, Clock, Plus, Maximize2, Car, Mail, Printer, FileText } from 'lucide-react';
 import { Vendor, Review, Event, getVendorTrustBadges, getLiveDeals, bestDealForAmount, AVAILABILITY_SLOTS, isSlotBooked, openSlots, offeredSlotIds, slotLabel, slotsLeft, slotCapacityFor } from '../../../../packages/shared-types';
 import { fetchVendorById, uploadReferenceImage, fetchVendorReviews, fetchVendorRecommendations } from '../api';
@@ -342,7 +344,14 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
     }
   }, [hasFixedAvailability, selectedEventDate, activeEventDate, selectedBookingEvent?.date]);
 
+  // First-time customers pick their language before anything else in the booking
+  // flow; after that the usual checks run (sign in → create an event if none).
+  const [showLanguagePrompt, setShowLanguagePrompt] = useState(false);
   const handleBookAndPayClick = () => {
+    if (!hasChosenLanguage()) {
+      setShowLanguagePrompt(true);
+      return;
+    }
     if (!isAuthenticated) {
       onRequireAuth?.();
       return;
@@ -2933,6 +2942,17 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
           </div>
         </div>
       </div>
+
+      {showLanguagePrompt && (
+        <LanguageModal
+          onDone={() => {
+            setShowLanguagePrompt(false);
+            // Language is saved now, so this continues to the sign-in / event checks.
+            window.setTimeout(handleBookAndPayClick, 0);
+          }}
+          onClose={() => setShowLanguagePrompt(false)}
+        />
+      )}
 
       {advancePanelOpen && (
         <div
