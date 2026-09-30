@@ -384,6 +384,11 @@ export function createEvent(input: {
   });
 }
 
+// Permanently delete one of the customer's events.
+export function deleteEvent(eventId: string): Promise<{ success: boolean; message?: string }> {
+  return authedFetch<{ success: boolean; message?: string }>(`/api/v1/events/${eventId}`, { method: 'DELETE' });
+}
+
 // Update the budget allocation breakdown for an existing event.
 export function updateEventBudget(
   eventId: string,

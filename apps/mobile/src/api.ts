@@ -151,6 +151,10 @@ export async function createEvent(token: string, input: {
   return res.data.event;
 }
 
+export async function deleteEvent(token: string, eventId: string): Promise<void> {
+  await request(`/api/v1/events/${encodeURIComponent(eventId)}`, { method: 'DELETE', token });
+}
+
 // Create a booking for a vendor against an event. `advancePaymentClaimed` marks
 // that the customer says they've paid the advance — the vendor still verifies
 // and confirms it on their side (booking lands as pending).

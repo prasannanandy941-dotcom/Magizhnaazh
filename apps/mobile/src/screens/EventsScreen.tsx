@@ -39,6 +39,28 @@ export default function EventsScreen() {
   // Only re-run when the token itself changes (login / logout).
   useEffect(() => { load(); }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const confirmDelete = (item: EventItem) => {
+    Alert.alert(
+      'Delete event?',
+      `"${item.title}" and its budget plan will be permanently removed. This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await api.deleteEvent(tokenRef.current || '', item.id);
+              setEvents((prev) => prev.filter((e) => e.id !== item.id));
+            } catch (e: any) {
+              Alert.alert('Error', e.message || 'Could not delete the event.');
+            }
+          },
+        },
+      ],
+    );
+  };
+
   return (
     <View style={{ flex: 1, backgroundColor: 'transparent' }}>
       {loading ? (
@@ -66,6 +88,9 @@ export default function EventsScreen() {
                   <Text style={styles.pct}>{pct}%</Text>
                 </View>
                 <View style={styles.barTrack}><View style={[styles.barFill, { width: `${pct}%` }]} /></View>
+                <TouchableOpacity style={styles.deleteBtn} onPress={() => confirmDelete(item)}>
+                  <Text style={styles.deleteText}>🗑  Delete event</Text>
+                </TouchableOpacity>
               </View>
             );
           }}
@@ -183,6 +208,11 @@ const styles = StyleSheet.create({
   pct: { fontSize: 12, color: colors.primary, fontWeight: '800' },
   barTrack: { height: 8, borderRadius: 4, backgroundColor: colors.surfaceAlt, marginTop: 6, overflow: 'hidden' },
   barFill: { height: 8, backgroundColor: colors.gold, borderRadius: 4 },
+  deleteBtn: {
+    marginTop: space.md, alignSelf: 'flex-start', paddingHorizontal: 14, paddingVertical: 8,
+    borderRadius: radius.md, borderWidth: 1, borderColor: colors.danger,
+  },
+  deleteText: { color: colors.danger, fontWeight: '800', fontSize: 12 },
   fab: {
     position: 'absolute', right: space.lg, bottom: space.lg,
     backgroundColor: colors.primary, paddingHorizontal: 20, paddingVertical: 14, borderRadius: 999,

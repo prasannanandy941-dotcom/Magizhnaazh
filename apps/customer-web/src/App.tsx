@@ -40,6 +40,7 @@ import {
   fetchMyBookings,
   fetchLocations,
   fetchPublicSettings,
+  deleteEvent,
   ApiError,
   GATEWAY_URL,
 } from './api';
@@ -199,6 +200,21 @@ export function App() {
   const [events, setEvents] = useState<Event[]>([]);
   const [eventsLoading, setEventsLoading] = useState(false);
   const [activeEvent, setActiveEvent] = useState<Event>(EMPTY_EVENT);
+
+  // Delete an event (completed or not) after the customer confirms.
+  const handleDeleteEvent = async (evt: Event) => {
+    if (!window.confirm(`Delete "${evt.title}"? This permanently removes the event and its budget plan. This cannot be undone.`)) return;
+    try {
+      await deleteEvent(evt.id);
+      setEvents((prev) => {
+        const next = prev.filter((e) => e.id !== evt.id);
+        if (activeEvent.id === evt.id) setActiveEvent(next[0] || EMPTY_EVENT);
+        return next;
+      });
+    } catch (err: any) {
+      window.alert(err?.message || 'Could not delete the event. Please try again.');
+    }
+  };
   const [invitation, setInvitation] = useState<Invitation>(EMPTY_INVITATION);
   const [guests, setGuests] = useState<Guest[]>([]);
   const [feedbackList, setFeedbackList] = useState<EventFeedback[]>([]);
@@ -720,6 +736,13 @@ export function App() {
                       className="py-2.5 px-4 rounded-xl bg-[#26101c] border border-[#6b2140]/60 hover:border-[#d4af37]/50 text-[#f5c9dc] font-bold text-xs"
                     >
                       Manage Guests ({guests.length})
+                    </button>
+
+                    <button
+                      onClick={() => handleDeleteEvent(evt)}
+                      className="py-2.5 px-4 rounded-xl bg-rose-600/10 border border-rose-500/60 hover:bg-rose-600 hover:text-white text-rose-500 font-bold text-xs transition-colors"
+                    >
+                      🗑 Delete
                     </button>
                   </div>
                 </div>

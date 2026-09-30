@@ -92,6 +92,17 @@ app.put('/api/v1/events/:id/budget', authMiddleware(), async (req: Request, res:
   res.json({ success: true, message: 'Smart budget allocations updated.', data: { event } });
 });
 
+// 4. Delete an event (owner or admin) — allowed whether it is completed or not.
+app.delete('/api/v1/events/:id', authMiddleware(), async (req: Request, res: Response) => {
+  const event = await EventModel.findOne({ id: req.params.id });
+  if (!event) return res.status(404).json({ success: false, message: 'Event not found.' });
+  if (event.userId !== req.user!.sub && req.user!.role !== 'admin') {
+    return res.status(403).json({ success: false, message: 'You do not own this event.' });
+  }
+  await EventModel.deleteOne({ id: req.params.id });
+  res.json({ success: true, message: 'Event deleted.' });
+});
+
 async function start() {
   await connectDB(process.env.MONGODB_URI, 'event-budget-service');
   await seedIfEmpty();
