@@ -12,6 +12,7 @@ import { User, Vendor, Booking, Review, VendorFacilities, VendorPackage, VendorD
 import type { Complaint } from '../../../packages/shared-types';
 import { STATIC_CITY_GROUPS } from '../../../packages/shared-utils';
 import { FloralGoldBackground } from './components/FloralGoldBackground';
+import { MultiDatePicker } from './components/MultiDatePicker';
 import { fetchMyVendor, createVendor, updateVendor, fetchVendorBookings, fetchVendorBookingsSilent, confirmBooking, sendCounterQuote, updateBookingStatus, updateSpendBreakdown, refundBooking, fetchVendorReviews, replyToReview, submitVerification, confirmBookingPayment, fetchBookingInvoice, fetchCalendarToken, onboardRazorpayRoute, refreshRazorpayStatus, verifyPanKyc, startAadhaarKyc, getAadhaarKycStatus, fetchVendorComplaints, GATEWAY_URL, REVOKED_TOKEN_KEY, notifyVendorAppSignedOut } from './api';
 import { playNotificationSound } from './notificationSound';
 import { getItemSuggestions, getAmenitySuggestions, suggestionListId } from './itemSuggestions';
@@ -4300,6 +4301,17 @@ export function App() {
     }
     setNewDate('');
   };
+  // Open several dates at once (from the multi-date picker). New dates offer all slots.
+  const addDates = (dates: string[]) => {
+    const fresh = dates.filter((d) => d && !availableDates.includes(d));
+    if (fresh.length === 0) return;
+    setAvailableDates((prev) => Array.from(new Set([...prev, ...fresh])).sort());
+    setAvailableSlots((prev) => {
+      const next = { ...prev };
+      for (const d of fresh) next[d] = AVAILABILITY_SLOTS.map((s) => s.id);
+      return next;
+    });
+  };
   const removeDate = (d: string) => {
     setAvailableDates((prev) => prev.filter((x) => x !== d));
     setAvailableSlots((prev) => { const next = { ...prev }; delete next[d]; return next; });
@@ -6913,35 +6925,12 @@ export function App() {
                                         </span>
                                       </div>
 
-                                      {/* Image 1: Add an available date */}
-                                      <div className="flex items-end gap-2">
-                                        <div className="flex-1">
-                                          <label className="block text-xs text-slate-400 mb-1">Add an available date</label>
-                                          <div className="relative">
-                                            <input
-                                              type="date"
-                                              value={venueDateInputs[inputKey] || ''}
-                                              onChange={(e) => setVenueDateInputs((prev) => ({ ...prev, [inputKey]: e.target.value }))}
-                                              onClick={(e) => { try { (e.currentTarget as any).showPicker?.(); } catch { /* not supported */ } }}
-                                              className="date-input-amber w-full p-2.5 pr-10 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs focus:outline-none focus:border-amber-500"
-                                            />
-                                            <CalendarDays className="w-4 h-4 text-amber-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                                          </div>
-                                        </div>
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            const d = venueDateInputs[inputKey];
-                                            if (d) {
-                                              addVenueSessionDate(p.id, session, d);
-                                              setVenueDateInputs((prev) => ({ ...prev, [inputKey]: '' }));
-                                            }
-                                          }}
-                                          className="px-3 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white font-bold text-xs flex items-center gap-1.5 hover:bg-slate-700 transition-colors"
-                                        >
-                                          <Plus className="w-3.5 h-3.5" /> Add
-                                        </button>
-                                      </div>
+                                      {/* Add one or many dates for this session */}
+                                      <MultiDatePicker
+                                        compact
+                                        existing={dates}
+                                        onAdd={(ds) => ds.forEach((d) => addVenueSessionDate(p.id, session, d))}
+                                      />
 
                                       {/* List of dates added for this session */}
                                       {dates.length > 0 ? (
@@ -10497,27 +10486,9 @@ export function App() {
               )}
             </div>
 
-            <div className="flex items-end gap-2">
-              <div className="flex-1">
-                <label className="block text-xs text-slate-400 mb-1">Add an available date</label>
-                <div className="relative">
-                  <input
-                    type="date"
-                    value={newDate}
-                    onChange={(e) => setNewDate(e.target.value)}
-                    onClick={(e) => { try { (e.currentTarget as any).showPicker?.(); } catch { /* not supported */ } }}
-                    className="date-input-amber w-full p-3 pr-12 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm"
-                  />
-                  <CalendarDays className="w-5 h-5 text-amber-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={addDate}
-                className="px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 text-white font-bold text-xs flex items-center gap-1.5 hover:bg-slate-700"
-              >
-                <Plus className="w-4 h-4" /> Add
-              </button>
+            <div>
+              <label className="block text-xs text-slate-400 mb-1.5">Add available dates — pick one or many at once</label>
+              <MultiDatePicker existing={availableDates} onAdd={addDates} />
             </div>
 
             {availableDates.length === 0 ? (
