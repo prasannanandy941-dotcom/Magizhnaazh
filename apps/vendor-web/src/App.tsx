@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, Suspense } from 'react';
-import { ThemeToggle } from '../../../packages/shared-ui/theme';
+import { ThemeToggle, applyTheme, currentTheme } from '../../../packages/shared-ui/theme';
 import { LanguageButton } from '../../../packages/shared-ui/i18n/react';
 import { HangingDiyas, isInsideMobileApp } from '../../../packages/shared-ui/HangingDiyas';
 import { lazyNamed, LazyFallback, useInfiniteList, LoadMoreSentinel } from '../../../packages/shared-ui/lazy';
@@ -166,6 +166,45 @@ const ITEM_NAME_EXAMPLE: Record<string, string> = {
 };
 
 const inr = (n: number) => `₹${(n ?? 0).toLocaleString('en-IN')}`;
+
+// Theme switch for the phone bottom bar: same behaviour as the header's ThemeToggle,
+// drawn as an icon with a label like the other bar items.
+function BarThemeButton() {
+  const [theme, setTheme] = useState<'light' | 'dark'>(currentTheme);
+  useEffect(() => {
+    const obs = new MutationObserver(() => setTheme(currentTheme()));
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    return () => obs.disconnect();
+  }, []);
+  const toggle = () => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    applyTheme(next);
+    try { localStorage.setItem('magizhnaazh_theme_choice_vendor', next); } catch { /* private mode */ }
+    setTheme(next);
+  };
+  return (
+    <button
+      type="button"
+      onClick={toggle}
+      aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+      className="flex-1 min-w-0 flex flex-col items-center gap-0.5 pt-2 pb-1.5 px-0.5 text-slate-400"
+    >
+      <span className="w-8 h-8 rounded-xl flex items-center justify-center">
+        {theme === 'dark' ? (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="4" />
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+          </svg>
+        ) : (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+          </svg>
+        )}
+      </span>
+      <span className="text-[10px] leading-[1.15] font-semibold text-center w-full">Theme</span>
+    </button>
+  );
+}
 
 export function App() {
   // A token the server already rejected (or a deleted account's) is ignored
@@ -4589,11 +4628,8 @@ export function App() {
   // sheet with everything else, so labels stay readable and nothing is hidden
   // off-screen. (Few tabs? They all fit and there is no More button.)
   const [moreTabsOpen, setMoreTabsOpen] = useState(false);
-  const PRIMARY_ORDER = ['dashboard', 'packages', 'availability', 'facilities', 'offers', 'reviews', 'portfolio', 'profile'];
-  const barTabs = vendorTabs.length <= 5
-    ? vendorTabs
-    : PRIMARY_ORDER.map((k) => vendorTabs.find((t) => t.key === k)).filter((t): t is (typeof vendorTabs)[number] => !!t).slice(0, 4);
-  const moreTabs = vendorTabs.filter((t) => !barTabs.includes(t));
+  const barTabs = vendorTabs.filter((t) => t.key === 'dashboard');
+  const moreTabs = vendorTabs.filter((t) => t.key !== 'dashboard');
   const moreActive = moreTabs.some((t) => t.key === activeTab);
 
   if (!user) {
@@ -4634,7 +4670,7 @@ export function App() {
             </div>
           </div>
 
-          <div className={`flex items-center shrink-0 text-xs font-semibold ${isInsideMobileApp() ? 'gap-1.5' : 'gap-3 sm:gap-4'}`}>
+          <div className="hidden md:flex items-center shrink-0 text-xs font-semibold gap-3 sm:gap-4">
             <span className="hidden sm:block text-slate-400">
               Signed in as <strong className="text-amber-300">{user.name}</strong>
             </span>
@@ -4965,6 +5001,21 @@ export function App() {
                 <span className="text-[10px] leading-[1.15] font-semibold text-center w-full">More</span>
               </button>
             )}
+            <LanguageButton
+              dropUp
+              className="!flex flex-1 min-w-0"
+              buttonClassName="!flex-col !gap-0.5 !px-0.5 !pt-2 !pb-1.5 !rounded-none !bg-transparent !border-0 w-full text-slate-400 [&_svg]:!w-[18px] [&_svg]:!h-[18px] [&_span]:!inline [&_span]:!text-[10px] [&_span]:!font-semibold [&_span]:!leading-[1.15] [&_span]:max-w-full [&_span]:truncate"
+            />
+            <BarThemeButton />
+            <button
+              type="button"
+              onClick={handleLogout}
+              aria-label="Sign Out"
+              className="flex-1 min-w-0 flex flex-col items-center gap-0.5 pt-2 pb-1.5 px-0.5 text-rose-400"
+            >
+              <span className="w-8 h-8 rounded-xl flex items-center justify-center"><LogOut className="w-[18px] h-[18px]" /></span>
+              <span className="text-[10px] leading-[1.15] font-semibold text-center w-full">Sign Out</span>
+            </button>
           </div>
         </nav>
 
