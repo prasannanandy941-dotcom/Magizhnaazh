@@ -4568,6 +4568,23 @@ export function App() {
   // Reviews, also 10 at a time.
   const reviewsPage = useInfiniteList(reviews, 10);
 
+  // The tabs this vendor sees. They depend on the category (e.g. Designs & Services
+  // for Mehendi, Performances for Entertainment), so both the top tab row (desktop)
+  // and the bottom navigation bar (phones / the vendor app) are built from this list.
+  const vendorTabs: { key: string; label: string; Icon: React.ComponentType<{ className?: string }> }[] = [
+    { key: 'dashboard', label: 'Bookings & Quotes', Icon: Receipt },
+    { key: 'reviews', label: `Reviews${reviews.length ? ` (${reviews.length})` : ''}`, Icon: Star },
+    // Venue's event-services live inside the Halls tab, so it has no
+    // separate "Hall Facilities" tab.
+    ...(myVendor?.category !== 'Venue' ? [{ key: 'facilities', label: facilitiesSectionLabel(myVendor?.category), Icon: Sparkles }] : []),
+    ...(myVendor?.category !== 'Wedding Planner' && myVendor?.category !== 'Event Host/Anchor' ? [{ key: 'packages', label: `${myVendor?.category === 'Venue' ? 'Halls' : 'Packages'}${packages.length ? ` (${packages.length})` : ''}`, Icon: myVendor?.category === 'Venue' ? Building2 : Gift }] : []),
+    ...(myVendor?.category !== 'Security' ? [{ key: 'offers', label: `Offers${deals.length ? ` (${deals.length})` : ''}`, Icon: CreditCard }] : []),
+    // Venue availability is managed directly under each hall/session
+    ...(myVendor?.category !== 'Venue' ? [{ key: 'availability', label: 'Availability', Icon: CalendarDays }] : []),
+    { key: 'portfolio', label: 'Local Disk Portfolio', Icon: Upload },
+    { key: 'profile', label: 'Business Profile', Icon: Store },
+  ];
+
   if (!user) {
     // No theme toggle on the sign-in screen — it's in the navbar once signed in.
     return (
@@ -4798,7 +4815,7 @@ export function App() {
       )}
 
       {!vendorLoading && myVendor && (
-      <main className="flex-1 max-w-7xl mx-auto px-4 py-10 w-full space-y-8">
+      <main className="flex-1 max-w-7xl mx-auto px-4 pt-10 pb-28 md:pb-10 w-full space-y-8">
 
         {/* Vendor Header Summary */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -4845,8 +4862,8 @@ export function App() {
           </div>
         )}
 
-        {/* Navigation Tabs */}
-        <div className="flex items-center gap-1 border-b border-slate-800">
+        {/* Navigation Tabs — desktop; phones use the bottom bar below */}
+        <div className="hidden md:flex items-center gap-1 border-b border-slate-800">
           <button
             type="button"
             onClick={() => scrollTabs('left')}
@@ -4866,19 +4883,7 @@ export function App() {
             onScroll={updateTabScroll}
             className="flex-1 flex items-center gap-4 overflow-x-auto no-scrollbar scroll-smooth touch-pan-x"
           >
-            {[
-              { key: 'dashboard', label: 'Bookings & Quotes' },
-              { key: 'reviews', label: `Reviews${reviews.length ? ` (${reviews.length})` : ''}` },
-              // Venue's event-services live inside the Halls tab, so it has no
-              // separate "Hall Facilities" tab.
-              ...(myVendor?.category !== 'Venue' ? [{ key: 'facilities', label: facilitiesSectionLabel(myVendor?.category) }] : []),
-              ...(myVendor?.category !== 'Wedding Planner' && myVendor?.category !== 'Event Host/Anchor' ? [{ key: 'packages', label: `${myVendor?.category === 'Venue' ? 'Halls' : 'Packages'}${packages.length ? ` (${packages.length})` : ''}` }] : []),
-              ...(myVendor?.category !== 'Security' ? [{ key: 'offers', label: `Offers${deals.length ? ` (${deals.length})` : ''}` }] : []),
-              // Venue availability is managed directly under each hall/session
-              ...(myVendor?.category !== 'Venue' ? [{ key: 'availability', label: 'Availability' }] : []),
-              { key: 'portfolio', label: 'Local Disk Portfolio' },
-              { key: 'profile', label: 'Business Profile' },
-            ].map((tab) => (
+            {vendorTabs.map((tab) => (
               <button
                 key={tab.key}
                 onClick={(e) => {
@@ -4910,6 +4915,45 @@ export function App() {
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
+
+        {/* Bottom navigation (phones & the vendor app): every tab for this vendor's category,
+            scrollable sideways when there are more than fit. */}
+        <nav
+          aria-label="Vendor navigation"
+          className="md:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-amber-500/30 bg-[#140b22]/95 backdrop-blur-xl shadow-[0_-4px_24px_rgba(0,0,0,0.35)]"
+          style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+        >
+          <div className="flex overflow-x-auto no-scrollbar touch-pan-x">
+            {vendorTabs.map(({ key, label, Icon }) => {
+              const active = activeTab === key;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={(e) => {
+                    setActiveTab(key as any);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                  }}
+                  className={`shrink-0 w-[4.75rem] flex flex-col items-center justify-start gap-0.5 pt-2 pb-1.5 px-1 relative transition-colors ${
+                    active ? 'text-amber-400' : 'text-slate-400'
+                  }`}
+                >
+                  {active && <span className="absolute top-0 w-7 h-0.5 rounded-full bg-amber-400" />}
+                  <span className={`w-8 h-8 rounded-xl flex items-center justify-center ${active ? 'bg-amber-500/15' : ''}`}>
+                    <Icon className="w-[18px] h-[18px]" />
+                  </span>
+                  <span
+                    className="text-[9px] leading-[1.1] font-semibold text-center w-full"
+                    style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+                  >
+                    {label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </nav>
 
         {/* Dashboard Tab */}
         {activeTab === 'dashboard' && (

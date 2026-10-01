@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   refreshBtn: {
-    position: 'absolute', right: 16, bottom: 28,
+    position: 'absolute', right: 16, bottom: 96,
     width: 48, height: 48, borderRadius: 24,
     backgroundColor: 'rgba(38,16,28,0.92)', borderWidth: 1, borderColor: 'rgba(212,175,55,0.5)',
     alignItems: 'center', justifyContent: 'center',
