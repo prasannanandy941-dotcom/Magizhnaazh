@@ -10449,7 +10449,7 @@ export function App() {
 
         {/* Availability Tab */}
         {activeTab === 'availability' && myVendor?.category !== 'Venue' && (
-          <div className="max-w-6xl space-y-5">
+          <div className="max-w-6xl space-y-5 min-w-0 overflow-x-hidden">
           {/* Calendar sync — subscribe bookings into Google/Apple/Outlook. */}
           <div className="glass-card p-6 rounded-3xl border border-indigo-500/30 bg-indigo-500/5 space-y-3">
             <div className="flex items-start gap-3">
@@ -10477,7 +10477,7 @@ export function App() {
             <p className="text-[10px] text-slate-500">Keep this link private — anyone with it can see your booking dates.</p>
           </div>
 
-          <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-5">
+          <div className="glass-card p-4 sm:p-8 rounded-3xl border border-slate-800 space-y-5">
             <div>
               <h3 className="font-bold text-xl text-white">Availability Calendar</h3>
               <p className="text-xs text-slate-400 mt-1">Add the dates you're open to book. Customers can only request these dates. Confirmed booking dates are blocked automatically.</p>
@@ -10509,7 +10509,7 @@ export function App() {
             ) : (
               <div className="space-y-2">
                 <p className="text-[11px] text-slate-500">For each open date, choose which time slots you offer. Tap a slot to include/exclude it.</p>
-                <div className="grid gap-3 items-start grid-cols-[repeat(auto-fill,minmax(18rem,1fr))]">
+                <div className="grid gap-3 items-start grid-cols-[repeat(auto-fill,minmax(min(18rem,100%),1fr))]">
                 {availableDates.map((d) => {
                   const offered = offeredSlotIds({ availableSlots }, d);
                   return (
@@ -10543,7 +10543,7 @@ export function App() {
                       {supportsSlotCapacity(myVendor?.category) && offered.length > 0 && (
                         <div className="mt-3 pt-3 border-t border-slate-800/80">
                           <p className="text-[11px] text-slate-400 mb-2">How many functions can you handle in each slot?</p>
-                          <div className="grid gap-2 grid-cols-[repeat(auto-fit,minmax(13rem,1fr))]">
+                          <div className="grid gap-2 grid-cols-[repeat(auto-fit,minmax(min(13rem,100%),1fr))]">
                             {AVAILABILITY_SLOTS.filter((s) => offered.includes(s.id)).map((s) => {
                               const cap = slotCapacity[d]?.[s.id] || 1;
                               const bookedCount = (myVendor?.bookedSlots || []).filter((b) => b.date === d && (b.slot || 'fullday') === s.id).length;
