@@ -218,3 +218,14 @@ input[type="month"] {
   color: #f8fafc;
   -webkit-text-fill-color: #f8fafc;
 }
+
+/* Vendor bottom navigation — light theme (the dark colours are the default). */
+html[data-theme="light"] .vendor-bottom-nav {
+  background-color: rgba(255, 255, 255, 0.96) !important;
+  border-top-color: #e2e8f0 !important;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08) !important;
+}
+html[data-theme="light"] .vendor-bottom-nav button { color: #64748b !important; }
+html[data-theme="light"] .vendor-bottom-nav button.text-amber-400 { color: #b45309 !important; }
+html[data-theme="light"] .vendor-bottom-nav button.text-amber-400 > span:first-child { background-color: #b45309 !important; }
+html[data-theme="light"] .vendor-bottom-nav button.text-amber-400 > span:nth-child(2) { background-color: rgba(180, 83, 9, 0.12) !important; }
