@@ -10451,7 +10451,7 @@ export function App() {
         {activeTab === 'availability' && myVendor?.category !== 'Venue' && (
           <div className="max-w-6xl space-y-5">
           {/* Calendar sync — subscribe bookings into Google/Apple/Outlook. */}
-          <div className="max-w-2xl glass-card p-6 rounded-3xl border border-indigo-500/30 bg-indigo-500/5 space-y-3">
+          <div className="glass-card p-6 rounded-3xl border border-indigo-500/30 bg-indigo-500/5 space-y-3">
             <div className="flex items-start gap-3">
               <ClockIcon className="w-6 h-6 text-indigo-400 shrink-0" />
               <div>
@@ -10491,6 +10491,17 @@ export function App() {
             <div className="lg:sticky lg:top-24">
               <label className="block text-xs text-slate-400 mb-1.5">Add available dates — pick one or many at once</label>
               <MultiDatePicker existing={availableDates} onAdd={addDates} />
+              <div className="mt-3 space-y-2">
+            {availabilityNotice && <p className="text-xs text-emerald-400 font-semibold">{availabilityNotice}</p>}
+
+              <button
+                onClick={handleSaveAvailability}
+                disabled={savingAvailability}
+                className="w-full justify-center px-6 py-3 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs shadow-md disabled:opacity-60 flex items-center gap-2"
+              >
+                {savingAvailability && <Loader2 className="w-4 h-4 animate-spin" />} Save Availability
+              </button>
+              </div>
             </div>
 
             {availableDates.length === 0 ? (
@@ -10532,17 +10543,17 @@ export function App() {
                       {supportsSlotCapacity(myVendor?.category) && offered.length > 0 && (
                         <div className="mt-3 pt-3 border-t border-slate-800/80">
                           <p className="text-[11px] text-slate-400 mb-2">How many functions can you handle in each slot?</p>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <div className="grid gap-2 grid-cols-[repeat(auto-fit,minmax(13rem,1fr))]">
                             {AVAILABILITY_SLOTS.filter((s) => offered.includes(s.id)).map((s) => {
                               const cap = slotCapacity[d]?.[s.id] || 1;
                               const bookedCount = (myVendor?.bookedSlots || []).filter((b) => b.date === d && (b.slot || 'fullday') === s.id).length;
                               return (
                                 <div key={s.id} className="flex items-center justify-between gap-2 rounded-xl bg-slate-950/40 border border-slate-800 px-3 py-2">
-                                  <div className="min-w-0">
-                                    <p className="text-xs font-semibold text-slate-200">{s.label}</p>
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-xs font-semibold text-slate-200 truncate">{s.label}</p>
                                     {bookedCount > 0 && <p className="text-[10px] text-slate-500">{bookedCount} booked</p>}
                                   </div>
-                                  <div className="flex items-center gap-1.5">
+                                  <div className="flex items-center gap-1.5 shrink-0">
                                     <button type="button" onClick={() => setDateSlotCapacity(d, s.id, cap - 1)} disabled={cap <= 1}
                                       aria-label={`Fewer ${s.label} functions`}
                                       className="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 text-white font-bold disabled:opacity-40">−</button>
@@ -10568,15 +10579,7 @@ export function App() {
             )}
             </div>
 
-            {availabilityNotice && <p className="text-xs text-emerald-400 font-semibold">{availabilityNotice}</p>}
 
-            <button
-              onClick={handleSaveAvailability}
-              disabled={savingAvailability}
-              className="px-6 py-3 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs shadow-md disabled:opacity-60 flex items-center gap-2"
-            >
-              {savingAvailability && <Loader2 className="w-4 h-4 animate-spin" />} Save Availability
-            </button>
 
             {/* Booked dates — dates a customer has already booked, with what
                 they booked. These are no longer open for other customers. */}
