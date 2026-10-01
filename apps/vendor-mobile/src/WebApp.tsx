@@ -102,6 +102,8 @@ export function WebApp({ token, user, onLogout }: { token?: string | null; user?
         thirdPartyCookiesEnabled
         sharedCookiesEnabled
         allowsBackForwardNavigationGestures
+        // Pull down to refresh (same as the customer app) instead of a floating button.
+        pullToRefreshEnabled
         // Let the in-page <input type="file"> open the gallery/camera so image
         // uploads (gallery, menu photos, QR code) work inside the app.
         allowFileAccess
@@ -146,10 +148,6 @@ export function WebApp({ token, user, onLogout }: { token?: string | null; user?
           natively animated copy layered over the WebView made the page beneath
           it re-composite and flash on Android, so it is not rendered here. */}
 
-      {/* Floating refresh — reloads the live site (e.g. after a deploy). */}
-      <TouchableOpacity style={styles.refreshBtn} onPress={() => ref.current?.reload()} activeOpacity={0.8}>
-        <Text style={styles.refreshIcon}>⟳</Text>
-      </TouchableOpacity>
     </SafeAreaView>
   );
 }
@@ -194,12 +192,4 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
-  refreshBtn: {
-    position: 'absolute', right: 16, bottom: 96,
-    width: 48, height: 48, borderRadius: 24,
-    backgroundColor: 'rgba(38,16,28,0.92)', borderWidth: 1, borderColor: 'rgba(212,175,55,0.5)',
-    alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#000', shadowOpacity: 0.35, shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 5,
-  },
-  refreshIcon: { color: '#e8c874', fontSize: 24, fontWeight: '900', marginTop: -2 },
 });
