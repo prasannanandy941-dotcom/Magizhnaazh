@@ -10498,7 +10498,7 @@ export function App() {
             ) : (
               <div className="space-y-2">
                 <p className="text-[11px] text-slate-500">For each open date, choose which time slots you offer. Tap a slot to include/exclude it.</p>
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 items-start">
+                <div className="grid gap-3 items-start grid-cols-[repeat(auto-fill,minmax(18rem,1fr))]">
                 {availableDates.map((d) => {
                   const offered = offeredSlotIds({ availableSlots }, d);
                   return (
