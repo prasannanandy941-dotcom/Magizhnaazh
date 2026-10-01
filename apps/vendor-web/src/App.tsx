@@ -4966,7 +4966,7 @@ export function App() {
         {/* Bottom navigation (phones & the vendor app): the main sections + a "More" sheet. */}
         <nav
           aria-label="Vendor navigation"
-          className="vendor-bottom-nav md:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-amber-500/30 bg-[#140b22]/95 backdrop-blur-xl shadow-[0_-4px_24px_rgba(0,0,0,0.35)]"
+          className="vendor-bottom-nav md:hidden fixed bottom-0 left-0 right-0 z-[50] border-t border-amber-500/30 bg-[#140b22]/95 backdrop-blur-xl shadow-[0_-4px_24px_rgba(0,0,0,0.35)]"
           style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
         >
           <div className="flex">
@@ -5032,7 +5032,7 @@ export function App() {
                 </button>
               </div>
               <div className="grid grid-cols-2 gap-2.5">
-                {vendorTabs.map(({ key, label, count, Icon }) => {
+                {moreTabs.map(({ key, label, count, Icon }) => {
                   const active = activeTab === key;
                   return (
                     <button
