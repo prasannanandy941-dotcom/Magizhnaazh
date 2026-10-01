@@ -83,7 +83,7 @@ export const DashboardTab: React.FC<{ token: string }> = ({ token }) => {
       </div>
 
       {/* Top stat cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
         <StatCard label="Active Events" value={eventCount === null ? null : `${eventCount} Events`} tone="text-white" />
         <StatCard label="Vendor Partners" value={vendorCount === null ? null : `${vendorCount} Vendors`} tone="text-indigo-400" labelTone="text-indigo-400" />
         <StatCard label="Total Bookings" value={metrics === null ? null : `${metrics.totalBookings} Bookings`} tone="text-emerald-400" labelTone="text-emerald-400" />
@@ -115,7 +115,7 @@ export const DashboardTab: React.FC<{ token: string }> = ({ token }) => {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 min-[420px]:grid-cols-3 gap-3">
             <MiniStat icon={<TrendingUp className="w-4 h-4 text-amber-400" />} label="Gross" value={inr(grossVolume)} />
             <MiniStat icon={<Wallet className="w-4 h-4 text-emerald-400" />} label="Advance" value={inr(advanceCollected)} />
             <MiniStat icon={<ShieldCheck className="w-4 h-4 text-rose-400" />} label="Commission" value={inr(platformCommission)} />
@@ -240,18 +240,18 @@ const StatCard: React.FC<{ label: string; value: string | null; tone: string; la
   tone,
   labelTone = 'text-slate-400',
 }) => (
-  <div className="glass-card p-5 rounded-2xl border border-slate-800">
-    <span className={`text-xs font-bold uppercase ${labelTone}`}>{label}</span>
-    <div className={`font-display font-extrabold text-2xl mt-1 ${tone}`}>
+  <div className="glass-card p-4 sm:p-5 rounded-2xl border border-slate-800 min-w-0">
+    <span className={`block text-[11px] sm:text-xs font-bold uppercase leading-snug ${labelTone}`}>{label}</span>
+    <div className={`font-display font-extrabold text-xl sm:text-2xl mt-1 leading-tight break-words ${tone}`}>
       {value === null ? <Loader2 className="w-5 h-5 animate-spin" /> : value}
     </div>
   </div>
 );
 
 const MiniStat: React.FC<{ icon: React.ReactNode; label: string; value: string }> = ({ icon, label, value }) => (
-  <div className="p-3 rounded-2xl bg-slate-900/70 border border-slate-800">
+  <div className="p-3 rounded-2xl bg-slate-900/70 border border-slate-800 min-w-0">
     <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase text-slate-400">{icon} {label}</div>
-    <div className="text-sm font-extrabold text-white mt-1">{value}</div>
+    <div className="text-sm font-extrabold text-white mt-1 break-words">{value}</div>
   </div>
 );
 

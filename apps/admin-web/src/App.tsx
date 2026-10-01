@@ -181,7 +181,7 @@ export function App() {
         </div>
       </header>
 
-      <div className="flex-1 flex">
+      <div className="flex-1 flex flex-col md:flex-row min-w-0">
         {/* Sidebar */}
         <nav className="w-56 shrink-0 border-r border-slate-800 bg-slate-950/60 py-6 px-3 hidden md:block">
           <div className="space-y-1">
