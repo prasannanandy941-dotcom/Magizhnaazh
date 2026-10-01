@@ -235,7 +235,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                 {/* Label */}
                 <span
                   style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
-                  className={`text-[9px] sm:text-[10px] tracking-tight font-semibold mt-0.5 w-full text-center break-words transition-colors leading-[1.1] ${
+                  className={`text-[8px] min-[400px]:text-[9px] sm:text-[10px] tracking-tight font-semibold mt-0.5 w-full text-center [overflow-wrap:normal] [word-break:normal] transition-colors leading-[1.1] ${
                     isActive
                       ? 'text-[#f0c869] font-bold'
                       : 'text-[#cf9bb3] group-hover:text-[#fdf1f5]'
