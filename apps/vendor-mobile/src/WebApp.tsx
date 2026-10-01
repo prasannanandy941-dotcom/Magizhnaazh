@@ -38,6 +38,29 @@ export function WebApp({ token, user, onLogout }: { token?: string | null; user?
       : ''}
   } catch (e) {} true;`;
 
+  // If the session changes while the page is already open (e.g. a re-login),
+  // write it into the page's storage and reload — Android WebView doesn't re-run
+  // `injectedBefore` for an already-loaded page, so the site would otherwise keep
+  // showing the old state until the app is closed and reopened.
+  const appliedToken = useRef<string | null>(token ?? null);
+  useEffect(() => {
+    const next = token ?? null;
+    if (appliedToken.current === next) return;
+    appliedToken.current = next;
+    ref.current?.injectJavaScript(
+      `try {
+         ${next
+           ? `window.localStorage.setItem('magizhnaazh_vendor_token', ${JSON.stringify(next)});
+              window.localStorage.setItem('magizhnaazh_vendor_user', ${JSON.stringify(JSON.stringify(user ?? null))});`
+           : `window.localStorage.removeItem('magizhnaazh_vendor_token');
+              window.localStorage.removeItem('magizhnaazh_vendor_user');`}
+       } catch (e) {}
+       window.location.reload();
+       true;`
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
+
   // Android hardware back button navigates the web history instead of exiting.
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {

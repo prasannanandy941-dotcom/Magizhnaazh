@@ -197,6 +197,32 @@ export function WebApp({ token, user, onLoginRequired, onLogout }: {
     [token, user]
   );
 
+  // Signing in (or out) natively AFTER the page is already open must update the
+  // page too. Android WebView does not re-run `injectedBefore` for a page that is
+  // already loaded, so without this the site kept showing the guest view until the
+  // app was closed and reopened. Write the session into the page's own storage,
+  // then reload so it boots signed in (or signed out).
+  const appliedToken = useRef<string | null>(token ?? null);
+  useEffect(() => {
+    const next = token ?? null;
+    if (appliedToken.current === next) return;
+    appliedToken.current = next;
+    setPageLoading(true);
+    armSafetyTimer();
+    ref.current?.injectJavaScript(
+      `try {
+         ${next
+           ? `window.localStorage.setItem('accessToken', ${JSON.stringify(next)});
+              window.localStorage.setItem('user', ${JSON.stringify(JSON.stringify(user ?? null))});`
+           : `window.localStorage.removeItem('accessToken');
+              window.localStorage.removeItem('user');`}
+       } catch (e) {}
+       window.location.reload();
+       true;`
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
+
   const applyStaticI18nIfNeeded = (url?: string) => {
     // Only apply on actual static pages (about.html, careers.html, etc.), NEVER on customer marketplace SPA
     if (!url || !STATIC_PAGE_RE.test(url)) return;
