@@ -4571,14 +4571,14 @@ export function App() {
   // The tabs this vendor sees. They depend on the category (e.g. Designs & Services
   // for Mehendi, Performances for Entertainment), so both the top tab row (desktop)
   // and the bottom navigation bar (phones / the vendor app) are built from this list.
-  const vendorTabs: { key: string; label: string; short: string; Icon: React.ComponentType<{ className?: string }> }[] = [
+  const vendorTabs: { key: string; label: string; count?: number; short: string; Icon: React.ComponentType<{ className?: string }> }[] = [
     { key: 'dashboard', label: 'Bookings & Quotes', short: 'Bookings', Icon: Receipt },
-    { key: 'reviews', label: `Reviews${reviews.length ? ` (${reviews.length})` : ''}`, short: 'Reviews', Icon: Star },
+    { key: 'reviews', label: 'Reviews', count: reviews.length || undefined, short: 'Reviews', Icon: Star },
     // Venue's event-services live inside the Halls tab, so it has no
     // separate "Hall Facilities" tab.
     ...(myVendor?.category !== 'Venue' ? [{ key: 'facilities', label: facilitiesSectionLabel(myVendor?.category), short: 'Services', Icon: Sparkles }] : []),
-    ...(myVendor?.category !== 'Wedding Planner' && myVendor?.category !== 'Event Host/Anchor' ? [{ key: 'packages', label: `${myVendor?.category === 'Venue' ? 'Halls' : 'Packages'}${packages.length ? ` (${packages.length})` : ''}`, short: myVendor?.category === 'Venue' ? 'Halls' : 'Packages', Icon: myVendor?.category === 'Venue' ? Building2 : Gift }] : []),
-    ...(myVendor?.category !== 'Security' ? [{ key: 'offers', label: `Offers${deals.length ? ` (${deals.length})` : ''}`, short: 'Offers', Icon: CreditCard }] : []),
+    ...(myVendor?.category !== 'Wedding Planner' && myVendor?.category !== 'Event Host/Anchor' ? [{ key: 'packages', label: myVendor?.category === 'Venue' ? 'Halls' : 'Packages', count: packages.length || undefined, short: myVendor?.category === 'Venue' ? 'Halls' : 'Packages', Icon: myVendor?.category === 'Venue' ? Building2 : Gift }] : []),
+    ...(myVendor?.category !== 'Security' ? [{ key: 'offers', label: 'Offers', count: deals.length || undefined, short: 'Offers', Icon: CreditCard }] : []),
     // Venue availability is managed directly under each hall/session
     ...(myVendor?.category !== 'Venue' ? [{ key: 'availability', label: 'Availability', short: 'Availability', Icon: CalendarDays }] : []),
     { key: 'portfolio', label: 'Local Disk Portfolio', short: 'Portfolio', Icon: Upload },
@@ -4907,7 +4907,7 @@ export function App() {
                     : 'border-transparent text-slate-100 hover:text-white'
                 }`}
               >
-                {tab.label}
+                {tab.label}{tab.count ? ` (${tab.count})` : ''}
               </button>
             ))}
           </div>
@@ -4981,7 +4981,7 @@ export function App() {
                 </button>
               </div>
               <div className="grid grid-cols-2 gap-2.5">
-                {vendorTabs.map(({ key, label, Icon }) => {
+                {vendorTabs.map(({ key, label, count, Icon }) => {
                   const active = activeTab === key;
                   return (
                     <button
@@ -4993,7 +4993,7 @@ export function App() {
                       }`}
                     >
                       <Icon className="w-5 h-5 shrink-0" />
-                      <span className="text-xs font-semibold leading-snug">{label}</span>
+                      <span className="text-xs font-semibold leading-snug">{label}{count ? ` (${count})` : ''}</span>
                     </button>
                   );
                 })}
