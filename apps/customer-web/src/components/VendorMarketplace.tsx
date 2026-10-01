@@ -623,7 +623,7 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
 
                   <p className="text-xs text-slate-400 flex items-center gap-1 mt-1">
                     <MapPin className="w-3.5 h-3.5 text-indigo-400" />
-                    {vendor.location.address}, {vendor.location.city}
+                    {[vendor.location.address, vendor.location.city].filter(Boolean).join(', ')}
                   </p>
 
                   <p className="text-xs text-slate-300 mt-3 line-clamp-2 leading-relaxed">

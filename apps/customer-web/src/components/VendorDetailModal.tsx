@@ -803,7 +803,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                 <p className="text-slate-300 text-sm leading-relaxed">{vendor.description}</p>
                 <div className="mt-4 flex items-center gap-2 text-xs text-slate-400">
                   <MapPin className="w-4 h-4 text-indigo-400" />
-                  <span>{vendor.location.address}, {vendor.location.city}, {vendor.location.state} - {vendor.location.pincode}</span>
+                  <span>{[vendor.location.address, vendor.location.city, [vendor.location.state, vendor.location.pincode].filter(Boolean).join(' - ')].filter(Boolean).join(', ')}</span>
                 </div>
 
                 {/* Return Gifts vendors: pieces per order + any bulk discount. */}
