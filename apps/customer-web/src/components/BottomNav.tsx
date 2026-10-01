@@ -194,7 +194,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                 key={item.id}
                 type="button"
                 onClick={item.onClick}
-                className="flex flex-col items-center justify-center flex-1 h-full py-1 px-0.5 relative group transition-transform active:scale-95 select-none"
+                className="flex flex-col items-center justify-center flex-1 basis-0 min-w-0 overflow-hidden h-full py-1 px-0.5 relative group transition-transform active:scale-95 select-none"
               >
                 {/* Active Indicator Top Pill */}
                 {isActive && (
@@ -234,7 +234,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 
                 {/* Label */}
                 <span
-                  className={`text-[9px] sm:text-[10px] tracking-tight font-semibold mt-0.5 truncate max-w-full transition-colors leading-none ${
+                  style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+                  className={`text-[9px] sm:text-[10px] tracking-tight font-semibold mt-0.5 w-full text-center break-words transition-colors leading-[1.1] ${
                     isActive
                       ? 'text-[#f0c869] font-bold'
                       : 'text-[#cf9bb3] group-hover:text-[#fdf1f5]'
