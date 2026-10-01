@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import * as api from './api';
 import type { User } from './types';
 
@@ -72,6 +73,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
     setToken(null);
     await AsyncStorage.multiRemove([TOKEN_KEY, USER_KEY]);
+    // Also forget the Google account on the device, so the next Google sign-in
+    // shows the account chooser instead of silently re-using the old one.
+    try { await GoogleSignin.signOut(); } catch { /* not signed in with Google / module unavailable */ }
   }, []);
 
   return (
