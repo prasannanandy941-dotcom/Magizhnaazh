@@ -725,7 +725,7 @@ export function App() {
                         setActiveEvent(evt);
                         setActiveTab('budget');
                       }}
-                      className="flex-1 py-2.5 rounded-xl bg-[#c9a648] hover:bg-[#d4af37] text-[#1a0a14] font-bold text-xs shadow-md"
+                      className="w-full basis-full py-3 rounded-xl bg-[#c9a648] hover:bg-[#d4af37] text-[#1a0a14] font-bold text-sm shadow-md text-center"
                     >
                       Open Smart Budget Planner
                     </button>
@@ -735,14 +735,14 @@ export function App() {
                         setActiveEvent(evt);
                         setActiveTab('guests');
                       }}
-                      className="py-2.5 px-4 rounded-xl bg-[#26101c] border border-[#6b2140]/60 hover:border-[#d4af37]/50 text-[#f5c9dc] font-bold text-xs"
+                      className="flex-1 min-w-[9rem] py-2.5 px-4 rounded-xl bg-[#26101c] border border-[#6b2140]/60 hover:border-[#d4af37]/50 text-[#f5c9dc] font-bold text-xs text-center"
                     >
                       Manage Guests ({guests.length})
                     </button>
 
                     <button
                       onClick={() => handleDeleteEvent(evt)}
-                      className="py-2.5 px-4 rounded-xl bg-rose-600/10 border border-rose-500/60 hover:bg-rose-600 hover:text-white text-rose-500 font-bold text-xs transition-colors"
+                      className="flex-1 min-w-[7rem] py-2.5 px-4 rounded-xl bg-rose-600/10 border border-rose-500/60 hover:bg-rose-600 hover:text-white text-rose-500 font-bold text-xs transition-colors text-center"
                     >
                       🗑 Delete
                     </button>
