@@ -680,6 +680,21 @@ export function App() {
               </button>
             </div>
 
+            {!eventsLoading && events.length > 0 && (
+              <div className="rounded-2xl border border-[#d4af37]/30 bg-[#d4af37]/10 px-4 py-3">
+                <p className="text-sm font-bold text-[#fdf1f5]">
+                  Total events created: <span className="text-[#e8c874] text-base">{events.length}</span>
+                </p>
+                <ol className="mt-2 space-y-1 text-xs text-[#cf9bb3] list-decimal list-inside">
+                  {events.map((e) => (
+                    <li key={e.id} className="truncate">
+                      <span className="font-semibold text-[#fdf1f5]">{e.title}</span> · {e.eventType} · {e.date}
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
+
             {eventsLoading && (
               <div className="text-center py-10 text-[#cf9bb3] text-sm">Loading your events...</div>
             )}
