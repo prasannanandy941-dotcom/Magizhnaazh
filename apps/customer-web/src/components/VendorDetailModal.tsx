@@ -2973,7 +2973,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
               style={{ backgroundImage: 'linear-gradient(90deg,#10b981,#059669)', color: '#ffffff', boxShadow: '0 8px 20px -6px rgba(5,150,105,0.75)' }}
               className="shine-sweep w-full sm:w-auto px-7 py-3.5 rounded-xl hover:brightness-110 active:scale-[0.98] font-extrabold text-sm border border-emerald-300/40 transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:saturate-50 disabled:cursor-not-allowed"
             >
-              <CreditCard className="w-4 h-4" /> Book & Pay Advance
+              <CreditCard className="w-4 h-4" /> {vendor.acceptsOnlinePayments === false ? 'Book Now' : 'Book & Pay Advance'}
             </button>
           </div>
         </div>
@@ -3001,7 +3001,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
           >
             <GoldSparkles count={30} />
             <div className="relative px-6 py-4 border-b border-amber-500/20 bg-gradient-to-r from-[#241541] via-[#1a1030] to-[#241541] flex items-center justify-between">
-              <h3 className="font-display font-bold text-lg text-white">Book & Pay Advance</h3>
+              <h3 className="font-display font-bold text-lg text-white">{vendor.acceptsOnlinePayments === false ? 'Book This Vendor' : 'Book & Pay Advance'}</h3>
               <button
                 type="button"
                 onClick={() => setAdvancePanelOpen(false)}
@@ -3192,6 +3192,11 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                 </a>
               )}
 
+              {vendor.acceptsOnlinePayments === false && (
+                <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2.5 text-xs text-amber-200 leading-relaxed">
+                  <strong className="text-amber-300">Pay later:</strong> {vendor.businessName} hasn't connected their bank account yet. Your order will be booked now, and you can pay the advance from <em>My Orders</em> as soon as they connect.
+                </div>
+              )}
               <button
                 type="button"
                 disabled={Boolean(hasFixedAvailability && !selectedEventDate) || Boolean(selectedEventDate && selectedSlot && isSlotBooked(vendor, selectedEventDate, selectedSlot))}
@@ -3229,7 +3234,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                 }}
                 className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold text-sm shadow-md flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                Confirm Order
+                {vendor.acceptsOnlinePayments === false ? 'Place Booking' : 'Confirm Order'}
               </button>
             </div>
           </div>

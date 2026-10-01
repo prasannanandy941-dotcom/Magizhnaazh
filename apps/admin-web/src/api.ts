@@ -135,7 +135,9 @@ export async function googleLogin(credential: string): Promise<AuthResponse> {
 // --- Dashboard ---
 
 export async function fetchVendors(): Promise<{ success: boolean; data?: { vendors: Vendor[] } }> {
-  const { json } = await fetchJson('/api/v1/vendors?includeUnpublished=1');
+  // The admin token unlocks the full vendor records (KYC, bank status) hidden from the public.
+  const adminToken = localStorage.getItem('magizhnaazh_admin_token');
+  const { json } = await fetchJson('/api/v1/vendors?includeUnpublished=1', adminToken ? { headers: { Authorization: `Bearer ${adminToken}` } } : {});
   return json;
 }
 

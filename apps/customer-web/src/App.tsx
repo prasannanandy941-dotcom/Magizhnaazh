@@ -927,6 +927,19 @@ export function App() {
                 const booking = quote.data?.booking;
                 if (!booking) throw new Error('Could not create the booking. Please try again.');
 
+                // The vendor hasn't connected a bank account yet, so there is nothing to pay
+                // online: keep the booking saved and tell the customer to pay later.
+                if (v.acceptsOnlinePayments === false) {
+                  setSelectedVendorForModal(null);
+                  setBookingInProgress(false);
+                  window.dispatchEvent(new CustomEvent('magizhnaazh:booking-updated'));
+                  triggerNotification(
+                    `Booking placed with ${v.businessName}! They haven't connected their bank account yet, so you can pay the advance from My Orders once they do.`
+                  );
+                  setActiveTab('orders');
+                  return;
+                }
+
                 const finishBooking = (confirmedBooking: any) => {
                   const spent = confirmedBooking?.agreedPrice ?? p;
                   // Credit the spend against the matching budget line (falling back to

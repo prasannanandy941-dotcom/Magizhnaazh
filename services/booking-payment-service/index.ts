@@ -6,7 +6,7 @@ dotenv.config({ path: path.resolve(__dirname, '.env') });
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import { connectDB } from '../../packages/shared-utils/db';
-import { authMiddleware } from '../../packages/shared-utils/auth';
+import { authMiddleware, signToken } from '../../packages/shared-utils/auth';
 import { requestLogger } from '../../packages/shared-utils/logging';
 import { registerHealthRoute } from '../../packages/shared-utils/health';
 import { serviceUrl } from '../../packages/shared-utils/serviceUrl';
@@ -135,7 +135,12 @@ async function reconcileAllCalendars() {
 // Fetch the marketplace vendor record referenced by a booking (or null).
 async function fetchVendor(vendorId: string): Promise<any | null> {
   try {
-    const r = await fetch(`${MARKETPLACE_SERVICE_URL}/api/v1/vendors/${vendorId}`);
+    // The platform reads the FULL vendor record (Razorpay account, policies). The public
+    // view hides those, so authenticate as the platform with a short-lived token.
+    const platformToken = signToken({ sub: 'service-booking-payment', email: 'service@internal', role: 'admin' });
+    const r = await fetch(`${MARKETPLACE_SERVICE_URL}/api/v1/vendors/${vendorId}`, {
+      headers: { Authorization: `Bearer ${platformToken}` },
+    });
     if (!r.ok) return null;
     return (await r.json()).data?.vendor ?? null;
   } catch {
@@ -1065,6 +1070,17 @@ app.post('/api/v1/bookings/:id/payments/razorpay/order', authMiddleware(), async
 
   const type: 'advance' | 'balance' = req.body?.type === 'balance' ? 'balance' : 'advance';
   const vendor = await fetchVendor(booking.vendorId);
+
+  // Online payment only exists once the vendor has connected their bank account and
+  // Razorpay has activated it. Until then the booking stays saved (unpaid) and the
+  // customer is told to pay after the vendor connects - no payment screen / QR at all.
+  if (vendor?.razorpay?.productStatus !== 'activated') {
+    return res.status(409).json({
+      success: false,
+      code: 'VENDOR_NOT_CONNECTED',
+      message: `${vendor?.businessName || 'This vendor'} hasn't connected their bank account yet, so online payment isn't available. Your booking is saved - you can pay the ${type === 'balance' ? 'balance' : 'advance'} from My Orders once they connect.`,
+    });
+  }
 
   let amount: number;
   if (type === 'advance') {

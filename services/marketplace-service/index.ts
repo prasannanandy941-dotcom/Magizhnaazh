@@ -8,7 +8,7 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import multer from 'multer';
 import { connectDB } from '../../packages/shared-utils/db';
-import { authMiddleware, requireRole } from '../../packages/shared-utils/auth';
+import { authMiddleware, requireRole, verifyToken } from '../../packages/shared-utils/auth';
 import { requestLogger } from '../../packages/shared-utils/logging';
 import { registerHealthRoute } from '../../packages/shared-utils/health';
 import { LocalStorageProvider } from '../../packages/local-storage-provider';
@@ -344,6 +344,34 @@ async function seedCategoriesAndCities() {
 // createdAt is stored as an ISO *string*, so compare against an ISO string.
 const PUBLISH_GATE_START = '2026-09-30T06:00:00.000Z';
 
+// The public (customer-facing) view of a vendor. Bank details, Razorpay account ids and
+// KYC documents must never leave the server to ordinary visitors, so they are removed
+// here; `acceptsOnlinePayments` tells the customer app whether the vendor has finished
+// connecting their bank (Razorpay Route) and can therefore be paid online.
+const toPublicVendor = (doc: any) => {
+  const v = typeof doc?.toObject === 'function' ? doc.toObject() : { ...doc };
+  v.acceptsOnlinePayments = v.razorpay?.productStatus === 'activated';
+  delete v.bankDetails;
+  delete v.razorpay;
+  if (v.verification) {
+    v.verification = { status: v.verification.status, hasGstin: v.verification.hasGstin };
+  }
+  return v;
+};
+
+// Full data only for an admin (including the booking service acting for the platform)
+// or the vendor who owns the listing - identified by a valid bearer token.
+const viewerSeesPrivate = (req: Request, vendorUserId?: string): boolean => {
+  const header = req.headers.authorization || '';
+  if (!header.startsWith('Bearer ')) return false;
+  try {
+    const user = verifyToken(header.slice(7));
+    return user.role === 'admin' || (!!vendorUserId && user.sub === vendorUserId);
+  } catch {
+    return false;
+  }
+};
+
 // 1. Search / discover vendors
 app.get('/api/v1/vendors', async (req: Request, res: Response) => {
   // Vendor listings can change while a customer keeps the marketplace open.
@@ -393,7 +421,8 @@ app.get('/api/v1/vendors', async (req: Request, res: Response) => {
   // hid the newest vendors (a brand-new listing never appeared in search).
   // Newest first so recent signups are never the ones dropped if the cap is hit.
   const vendors = await VendorModel.find(filter).sort({ createdAt: -1 }).limit(1000);
-  res.json({ success: true, count: vendors.length, data: { vendors } });
+  const admin = viewerSeesPrivate(req);
+  res.json({ success: true, count: vendors.length, data: { vendors: admin ? vendors : vendors.map(toPublicVendor) } });
 });
 
 // 2. The logged-in vendor's own listing (must be registered before /:id).
@@ -421,6 +450,9 @@ app.get('/api/v1/vendors/:id', async (req: Request, res: Response) => {
     $or: [{ id: req.params.id }, { userId: req.params.id }],
   });
   if (!vendor) return res.status(404).json({ success: false, message: 'Vendor not found.' });
+  if (!viewerSeesPrivate(req, vendor.userId)) {
+    return res.json({ success: true, data: { vendor: toPublicVendor(vendor) } });
+  }
   res.json({ success: true, data: { vendor } });
 });
 

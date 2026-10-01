@@ -728,6 +728,8 @@ export interface Vendor {
   isSuspended: boolean;
   // false = draft, hidden from customers until the vendor saves their Profile.
   isPublished?: boolean;
+  // True once the vendor has connected their bank (Razorpay Route) - set by the server.
+  acceptsOnlinePayments?: boolean;
   featured: boolean;
   galleryImages: string[];
   galleryVideos?: string[];
