@@ -68,6 +68,7 @@ export default function LoginScreen() {
   const [otpStatus, setOtpStatus] = useState<'idle' | 'checking' | 'valid' | 'invalid'>('idle');
   const [loading, setLoading] = useState(false);
   const [otpSending, setOtpSending] = useState(false);
+  const [otpChannel, setOtpChannel] = useState<'email' | 'whatsapp'>('email');
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
 
@@ -90,7 +91,7 @@ export default function LoginScreen() {
       if (mode === 'signin') {
         await login(email.trim(), password);
       } else {
-        if (!otp) throw new Error('Enter the OTP sent to your email.');
+        if (!otp) throw new Error(otpChannel === 'whatsapp' ? 'Enter the OTP sent on WhatsApp.' : 'Enter the OTP sent to your email.');
         await register({ name: name.trim(), email: email.trim(), phone: phone.trim(), password, otp: otp.trim() });
       }
     } catch (e: any) {
@@ -102,14 +103,15 @@ export default function LoginScreen() {
 
   const requestOtp = async () => {
     if (!email.trim()) { setError('Enter your email first.'); return; }
+    if (otpChannel === 'whatsapp' && !phone.trim()) { setError('Enter your mobile number above to receive the code on WhatsApp.'); return; }
     setError('');
     setNotice('');
     setOtp('');
     setOtpStatus('idle');
     setOtpSending(true);
     try {
-      const res = await api.sendOtp(email.trim());
-      setNotice(res._devOtp ? `Use this code: ${res._devOtp}` : (res.message || 'OTP sent to your email.'));
+      const res = await api.sendOtp(email.trim(), otpChannel, phone.trim());
+      setNotice(res._devOtp ? `Use this code: ${res._devOtp}` : (res.message || (otpChannel === 'whatsapp' ? 'OTP sent on WhatsApp.' : 'OTP sent to your email.')));
     } catch (e: any) {
       setError(e.message || 'Failed to send OTP.');
     } finally {
@@ -158,39 +160,50 @@ export default function LoginScreen() {
               autoCapitalize="none"
               keyboardType="email-address"
             />
-            {mode === 'signup' && (
-              <TouchableOpacity style={styles.otpBtn} onPress={requestOtp} disabled={otpSending}>
-                {otpSending ? <ActivityIndicator color={colors.primary} /> : <Text style={styles.otpBtnText}>Send OTP</Text>}
-              </TouchableOpacity>
-            )}
           </View>
-          {!!notice && <Text style={styles.notice}>{notice}</Text>}
-
           {mode === 'signup' && (
-            <View style={styles.otpRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.label}>Verification Code (OTP)</Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    otpStatus === 'valid' && { borderColor: '#0f9d58' },
-                    otpStatus === 'invalid' && { borderColor: '#c0392b' },
-                  ]}
-                  value={otp}
-                  onChangeText={handleOtpChange}
-                  placeholder="6-digit code"
-                  placeholderTextColor="#94a3b8"
-                  keyboardType="number-pad"
-                  maxLength={6}
-                />
-                {otpStatus === 'checking' && <Text style={styles.otpChecking}>Checking…</Text>}
-                {otpStatus === 'valid' && <Text style={styles.otpValid}>✓ Verified</Text>}
-                {otpStatus === 'invalid' && <Text style={styles.otpInvalid}>✗ Incorrect</Text>}
+            <>
+              <Field label="Mobile number" value={phone} onChangeText={setPhone} placeholder="98765 43210" keyboardType="phone-pad" />
+              <Text style={styles.hint}>Used for WhatsApp codes and to reach you about bookings. 10-digit numbers are treated as +91.</Text>
+
+              <Text style={styles.label}>Send OTP via</Text>
+              <View style={styles.chanRow}>
+                {(['email', 'whatsapp'] as const).map((c) => (
+                  <TouchableOpacity
+                    key={c}
+                    style={[styles.chan, otpChannel === c && styles.chanActive]}
+                    onPress={() => setOtpChannel(c)}
+                  >
+                    <Text style={[styles.chanText, otpChannel === c && styles.chanTextActive]}>{c === 'email' ? 'Email' : 'WhatsApp'}</Text>
+                  </TouchableOpacity>
+                ))}
               </View>
-              <View style={{ flex: 1 }}>
-                <Field label="Phone (optional)" value={phone} onChangeText={setPhone} placeholder="+91 98400 11223" keyboardType="phone-pad" />
-              </View>
-            </View>
+              {otpChannel === 'whatsapp' && <Text style={styles.hint}>The code will be sent to the mobile number above.</Text>}
+              <TouchableOpacity style={styles.sendOtp} onPress={requestOtp} disabled={otpSending}>
+                {otpSending
+                  ? <ActivityIndicator color={colors.primary} />
+                  : <Text style={styles.otpBtnText}>{otpChannel === 'whatsapp' ? 'Send OTP on WhatsApp' : 'Send OTP to Email'}</Text>}
+              </TouchableOpacity>
+              {!!notice && <Text style={styles.notice}>{notice}</Text>}
+
+              <Text style={styles.label}>Verification Code (OTP)</Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  otpStatus === 'valid' && { borderColor: '#0f9d58' },
+                  otpStatus === 'invalid' && { borderColor: '#c0392b' },
+                ]}
+                value={otp}
+                onChangeText={handleOtpChange}
+                placeholder="6-digit code"
+                placeholderTextColor="#94a3b8"
+                keyboardType="number-pad"
+                maxLength={6}
+              />
+              {otpStatus === 'checking' && <Text style={styles.otpChecking}>Checking…</Text>}
+              {otpStatus === 'valid' && <Text style={styles.otpValid}>✓ Verified</Text>}
+              {otpStatus === 'invalid' && <Text style={styles.otpInvalid}>✗ Incorrect</Text>}
+            </>
           )}
 
           <Field label="Password" value={password} onChangeText={setPassword} placeholder="••••••••" secureTextEntry />
@@ -275,6 +288,19 @@ const styles = StyleSheet.create({
   },
   otpBtnText: { color: colors.primaryDark, fontWeight: '700', fontSize: 12 },
   notice: { color: '#0f9d58', fontSize: 12, marginTop: 6, fontWeight: '600' },
+  hint: { color: '#64748b', fontSize: 11, marginTop: 4 },
+  chanRow: { flexDirection: 'row', gap: space.sm },
+  chan: {
+    flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: radius.md,
+    borderWidth: 2, borderColor: '#cbd5e1', backgroundColor: '#ffffff',
+  },
+  chanActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  chanText: { fontWeight: '800', fontSize: 13, color: '#334155' },
+  chanTextActive: { color: colors.onPrimary },
+  sendOtp: {
+    marginTop: space.sm, alignItems: 'center', paddingVertical: 11, borderRadius: radius.md,
+    borderWidth: 1, borderColor: '#cbd5e1', backgroundColor: '#f1f5f9',
+  },
   otpRow: { flexDirection: 'row', gap: space.sm, alignItems: 'flex-start' },
   otpChecking: { color: '#64748b', fontSize: 11, marginTop: 4, fontWeight: '600' },
   otpValid: { color: '#0f9d58', fontSize: 11, marginTop: 4, fontWeight: '700' },

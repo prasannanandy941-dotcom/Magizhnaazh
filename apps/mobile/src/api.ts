@@ -56,8 +56,8 @@ export async function login(email: string, password: string): Promise<{ user: Us
   return res.data;
 }
 
-export function sendOtp(email: string): Promise<{ message?: string; _devOtp?: string }> {
-  return request('/api/v1/auth/send-otp', { method: 'POST', body: { email } });
+export function sendOtp(email: string, channel: 'email' | 'whatsapp' = 'email', phone?: string): Promise<{ message?: string; _devOtp?: string }> {
+  return request('/api/v1/auth/send-otp', { method: 'POST', body: { email, channel, phone } });
 }
 
 // Check a typed OTP for instant signup feedback (non-consuming — register still
