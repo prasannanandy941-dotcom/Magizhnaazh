@@ -4571,19 +4571,30 @@ export function App() {
   // The tabs this vendor sees. They depend on the category (e.g. Designs & Services
   // for Mehendi, Performances for Entertainment), so both the top tab row (desktop)
   // and the bottom navigation bar (phones / the vendor app) are built from this list.
-  const vendorTabs: { key: string; label: string; Icon: React.ComponentType<{ className?: string }> }[] = [
-    { key: 'dashboard', label: 'Bookings & Quotes', Icon: Receipt },
-    { key: 'reviews', label: `Reviews${reviews.length ? ` (${reviews.length})` : ''}`, Icon: Star },
+  const vendorTabs: { key: string; label: string; short: string; Icon: React.ComponentType<{ className?: string }> }[] = [
+    { key: 'dashboard', label: 'Bookings & Quotes', short: 'Bookings', Icon: Receipt },
+    { key: 'reviews', label: `Reviews${reviews.length ? ` (${reviews.length})` : ''}`, short: 'Reviews', Icon: Star },
     // Venue's event-services live inside the Halls tab, so it has no
     // separate "Hall Facilities" tab.
-    ...(myVendor?.category !== 'Venue' ? [{ key: 'facilities', label: facilitiesSectionLabel(myVendor?.category), Icon: Sparkles }] : []),
-    ...(myVendor?.category !== 'Wedding Planner' && myVendor?.category !== 'Event Host/Anchor' ? [{ key: 'packages', label: `${myVendor?.category === 'Venue' ? 'Halls' : 'Packages'}${packages.length ? ` (${packages.length})` : ''}`, Icon: myVendor?.category === 'Venue' ? Building2 : Gift }] : []),
-    ...(myVendor?.category !== 'Security' ? [{ key: 'offers', label: `Offers${deals.length ? ` (${deals.length})` : ''}`, Icon: CreditCard }] : []),
+    ...(myVendor?.category !== 'Venue' ? [{ key: 'facilities', label: facilitiesSectionLabel(myVendor?.category), short: 'Services', Icon: Sparkles }] : []),
+    ...(myVendor?.category !== 'Wedding Planner' && myVendor?.category !== 'Event Host/Anchor' ? [{ key: 'packages', label: `${myVendor?.category === 'Venue' ? 'Halls' : 'Packages'}${packages.length ? ` (${packages.length})` : ''}`, short: myVendor?.category === 'Venue' ? 'Halls' : 'Packages', Icon: myVendor?.category === 'Venue' ? Building2 : Gift }] : []),
+    ...(myVendor?.category !== 'Security' ? [{ key: 'offers', label: `Offers${deals.length ? ` (${deals.length})` : ''}`, short: 'Offers', Icon: CreditCard }] : []),
     // Venue availability is managed directly under each hall/session
-    ...(myVendor?.category !== 'Venue' ? [{ key: 'availability', label: 'Availability', Icon: CalendarDays }] : []),
-    { key: 'portfolio', label: 'Local Disk Portfolio', Icon: Upload },
-    { key: 'profile', label: 'Business Profile', Icon: Store },
+    ...(myVendor?.category !== 'Venue' ? [{ key: 'availability', label: 'Availability', short: 'Availability', Icon: CalendarDays }] : []),
+    { key: 'portfolio', label: 'Local Disk Portfolio', short: 'Portfolio', Icon: Upload },
+    { key: 'profile', label: 'Business Profile', short: 'Profile', Icon: Store },
   ];
+
+  // Phone bottom bar: the four most-used sections + a "More" button that opens a
+  // sheet with everything else, so labels stay readable and nothing is hidden
+  // off-screen. (Few tabs? They all fit and there is no More button.)
+  const [moreTabsOpen, setMoreTabsOpen] = useState(false);
+  const PRIMARY_ORDER = ['dashboard', 'packages', 'availability', 'facilities', 'offers', 'reviews', 'portfolio', 'profile'];
+  const barTabs = vendorTabs.length <= 5
+    ? vendorTabs
+    : PRIMARY_ORDER.map((k) => vendorTabs.find((t) => t.key === k)).filter((t): t is (typeof vendorTabs)[number] => !!t).slice(0, 4);
+  const moreTabs = vendorTabs.filter((t) => !barTabs.includes(t));
+  const moreActive = moreTabs.some((t) => t.key === activeTab);
 
   if (!user) {
     // No theme toggle on the sign-in screen — it's in the navbar once signed in.
@@ -4916,44 +4927,80 @@ export function App() {
           </button>
         </div>
 
-        {/* Bottom navigation (phones & the vendor app): every tab for this vendor's category,
-            scrollable sideways when there are more than fit. */}
+        {/* Bottom navigation (phones & the vendor app): the main sections + a "More" sheet. */}
         <nav
           aria-label="Vendor navigation"
           className="vendor-bottom-nav md:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-amber-500/30 bg-[#140b22]/95 backdrop-blur-xl shadow-[0_-4px_24px_rgba(0,0,0,0.35)]"
           style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
         >
-          <div className="flex overflow-x-auto no-scrollbar touch-pan-x">
-            {vendorTabs.map(({ key, label, Icon }) => {
+          <div className="flex">
+            {barTabs.map(({ key, short, Icon }) => {
               const active = activeTab === key;
               return (
                 <button
                   key={key}
                   type="button"
-                  onClick={(e) => {
-                    setActiveTab(key as any);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                    e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-                  }}
-                  className={`shrink-0 w-[4.75rem] flex flex-col items-center justify-start gap-0.5 pt-2 pb-1.5 px-1 relative transition-colors ${
-                    active ? 'text-amber-400' : 'text-slate-400'
-                  }`}
+                  onClick={() => { setActiveTab(key as any); setMoreTabsOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                  className={`flex-1 min-w-0 flex flex-col items-center gap-0.5 pt-2 pb-1.5 px-0.5 relative transition-colors ${active ? 'text-amber-400' : 'text-slate-400'}`}
                 >
                   {active && <span className="absolute top-0 w-7 h-0.5 rounded-full bg-amber-400" />}
                   <span className={`w-8 h-8 rounded-xl flex items-center justify-center ${active ? 'bg-amber-500/15' : ''}`}>
                     <Icon className="w-[18px] h-[18px]" />
                   </span>
-                  <span
-                    className="text-[9px] leading-[1.1] font-semibold text-center w-full"
-                    style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
-                  >
-                    {label}
-                  </span>
+                  <span className="text-[10px] leading-[1.15] font-semibold text-center w-full break-words">{short}</span>
                 </button>
               );
             })}
+            {moreTabs.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setMoreTabsOpen((v) => !v)}
+                aria-expanded={moreTabsOpen}
+                className={`flex-1 min-w-0 flex flex-col items-center gap-0.5 pt-2 pb-1.5 px-0.5 relative transition-colors ${moreActive || moreTabsOpen ? 'text-amber-400' : 'text-slate-400'}`}
+              >
+                {(moreActive || moreTabsOpen) && <span className="absolute top-0 w-7 h-0.5 rounded-full bg-amber-400" />}
+                <span className={`w-8 h-8 rounded-xl flex items-center justify-center ${moreActive || moreTabsOpen ? 'bg-amber-500/15' : ''}`}>
+                  <SlidersHorizontal className="w-[18px] h-[18px]" />
+                </span>
+                <span className="text-[10px] leading-[1.15] font-semibold text-center w-full">More</span>
+              </button>
+            )}
           </div>
         </nav>
+
+        {moreTabsOpen && (
+          <div className="md:hidden fixed inset-0 z-[45] bg-black/50" onClick={() => setMoreTabsOpen(false)}>
+            <div
+              className="vendor-more-sheet absolute left-0 right-0 bottom-0 rounded-t-3xl border-t border-amber-500/30 bg-[#140b22] p-4 pb-24 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-bold text-white">All sections</h3>
+                <button type="button" onClick={() => setMoreTabsOpen(false)} aria-label="Close" className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-white">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-2.5">
+                {vendorTabs.map(({ key, label, Icon }) => {
+                  const active = activeTab === key;
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => { setActiveTab(key as any); setMoreTabsOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                      className={`flex items-center gap-2.5 text-left rounded-2xl border px-3 py-3 transition-colors ${
+                        active ? 'border-amber-500 bg-amber-500/10 text-amber-400' : 'border-slate-800 bg-slate-900/60 text-slate-200'
+                      }`}
+                    >
+                      <Icon className="w-5 h-5 shrink-0" />
+                      <span className="text-xs font-semibold leading-snug">{label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Dashboard Tab */}
         {activeTab === 'dashboard' && (

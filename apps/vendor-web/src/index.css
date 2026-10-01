@@ -229,3 +229,8 @@ html[data-theme="light"] .vendor-bottom-nav button { color: #64748b !important; 
 html[data-theme="light"] .vendor-bottom-nav button.text-amber-400 { color: #b45309 !important; }
 html[data-theme="light"] .vendor-bottom-nav button.text-amber-400 > span:first-child { background-color: #b45309 !important; }
 html[data-theme="light"] .vendor-bottom-nav button.text-amber-400 > span:nth-child(2) { background-color: rgba(180, 83, 9, 0.12) !important; }
+
+html[data-theme="light"] .vendor-more-sheet { background-color: #ffffff !important; border-top-color: #e2e8f0 !important; }
+html[data-theme="light"] .vendor-more-sheet h3 { color: #0f172a !important; }
+html[data-theme="light"] .vendor-more-sheet button { color: #334155 !important; background-color: #f8fafc; border-color: #e2e8f0; }
+html[data-theme="light"] .vendor-more-sheet button.text-amber-400 { color: #b45309 !important; background-color: rgba(180, 83, 9, 0.08); border-color: #d97706; }
