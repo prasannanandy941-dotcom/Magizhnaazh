@@ -10449,9 +10449,9 @@ export function App() {
 
         {/* Availability Tab */}
         {activeTab === 'availability' && myVendor?.category !== 'Venue' && (
-          <div className="max-w-2xl space-y-5">
+          <div className="max-w-6xl space-y-5">
           {/* Calendar sync — subscribe bookings into Google/Apple/Outlook. */}
-          <div className="glass-card p-6 rounded-3xl border border-indigo-500/30 bg-indigo-500/5 space-y-3">
+          <div className="max-w-2xl glass-card p-6 rounded-3xl border border-indigo-500/30 bg-indigo-500/5 space-y-3">
             <div className="flex items-start gap-3">
               <ClockIcon className="w-6 h-6 text-indigo-400 shrink-0" />
               <div>
@@ -10486,16 +10486,19 @@ export function App() {
               )}
             </div>
 
-            <div>
+            {/* Wide screens: calendar on the left, the added dates beside it (two cards per row). */}
+            <div className="space-y-5 lg:space-y-0 lg:grid lg:grid-cols-[22rem_minmax(0,1fr)] lg:gap-6 lg:items-start">
+            <div className="lg:sticky lg:top-24">
               <label className="block text-xs text-slate-400 mb-1.5">Add available dates — pick one or many at once</label>
               <MultiDatePicker existing={availableDates} onAdd={addDates} />
             </div>
 
             {availableDates.length === 0 ? (
-              <p className="text-xs text-slate-500">No open dates yet — add some above.</p>
+              <p className="text-xs text-slate-500">No open dates yet — add some on the calendar.</p>
             ) : (
               <div className="space-y-2">
                 <p className="text-[11px] text-slate-500">For each open date, choose which time slots you offer. Tap a slot to include/exclude it.</p>
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 items-start">
                 {availableDates.map((d) => {
                   const offered = offeredSlotIds({ availableSlots }, d);
                   return (
@@ -10560,8 +10563,10 @@ export function App() {
                     </div>
                   );
                 })}
+                </div>
               </div>
             )}
+            </div>
 
             {availabilityNotice && <p className="text-xs text-emerald-400 font-semibold">{availabilityNotice}</p>}
 
