@@ -27,10 +27,23 @@ export default function LoginScreen() {
 
   const onGoogle = async () => {
     setGoogleBusy(true);
+    const startedAt = Date.now();
     try {
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
       const res = await GoogleSignin.signIn();
-      if (!isSuccessResponse(res)) return; // cancelled
+      if (!isSuccessResponse(res)) {
+        // A real cancel takes a few seconds (picking/backing out of the account
+        // sheet). Closing in well under a second means Google rejected the request,
+        // which on Android almost always means this build's signing fingerprint
+        // (SHA-1) isn't registered in Google Cloud - say so instead of failing silently.
+        if (Date.now() - startedAt < 1500) {
+          Alert.alert(
+            'Google sign-in could not start',
+            'Google closed the sign-in straight away. This usually means this app build is not registered with Google yet (SHA-1 fingerprint). Please use email sign-in for now and contact support.'
+          );
+        }
+        return;
+      }
       const idToken = res.data?.idToken;
       if (!idToken) throw new Error('No ID token returned from Google.');
       await loginWithGoogle(idToken);
@@ -38,7 +51,8 @@ export default function LoginScreen() {
       if (isErrorWithCode(e) && e.code === statusCodes.SIGN_IN_CANCELLED) {
         /* user cancelled — ignore */
       } else {
-        Alert.alert('Google sign-in failed', e?.message || 'Please try again.');
+        const code = isErrorWithCode(e) ? ` (${e.code})` : '';
+        Alert.alert('Google sign-in failed', `${e?.message || 'Please try again.'}${code}`);
       }
     } finally {
       setGoogleBusy(false);
