@@ -31,6 +31,14 @@ const STATUS_LABEL: Record<string, string> = {
   refunded: 'Refunded',
 };
 
+// What the customer sees. Until the vendor accepts, a fresh enquiry, a requested
+// quote and an unpaid/claimed advance are all the same thing to them - waiting
+// for the vendor - so they share one label instead of looking like different stages.
+const statusLabel = (status: string): string =>
+  status === 'enquiry' || status === 'quote_requested' || status === 'pending_payment'
+    ? 'Awaiting Vendor Confirmation'
+    : STATUS_LABEL[status] || status;
+
 // Statuses the customer can still back out of themselves — anything up to and
 // including "confirmed" but before the vendor has actually started the work.
 // This is the safety net for a vendor who never confirms a claimed advance
@@ -187,7 +195,7 @@ export const MyOrders: React.FC<{ isAuthenticated: boolean; onSignIn: () => void
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-bold text-white text-base">{b.bookingNumber}</span>
                       <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-bold text-[11px]">
-                        {STATUS_LABEL[b.status] || b.status}
+                        {statusLabel(b.status)}
                       </span>
                     </div>
                     {eventNameFor(b) && (
@@ -198,15 +206,15 @@ export const MyOrders: React.FC<{ isAuthenticated: boolean; onSignIn: () => void
                       </p>
                     )}
                     <p className="text-xs text-slate-400 mt-1">
-                      <strong className="text-slate-200">{b.vendorName}</strong> · {b.vendorCategory} · Event date: <strong className="text-amber-400">{b.eventDate}</strong>
+                      <strong className="text-slate-200">{b.vendorName}</strong> · {b.vendorCategory} · Event date: <strong className="text-amber-400 whitespace-nowrap">{b.eventDate}</strong>
                       {b.timeSlot && <> · <span className="text-indigo-300">{slotLabelWithTime(b.timeSlot)}</span></>}
                     </p>
                   </div>
-                  <div className="text-right shrink-0">
-                    <span className="font-display font-extrabold text-lg text-emerald-400 flex items-center gap-0.5 justify-end">
+                  <div className="shrink-0 flex items-baseline justify-between gap-3 sm:block sm:text-right">
+                    <span className="font-display font-extrabold text-lg text-emerald-400 flex items-center gap-0.5 sm:justify-end">
                       <IndianRupee className="w-4 h-4" />{b.agreedPrice.toLocaleString('en-IN')}
                     </span>
-                    <span className="text-[11px] text-slate-400 block">Advance paid: ₹{b.advanceAmountPaid.toLocaleString('en-IN')}</span>
+                    <span className="text-[11px] text-slate-400 block whitespace-nowrap">Advance paid: ₹{b.advanceAmountPaid.toLocaleString('en-IN')}</span>
                   </div>
                 </div>
 
@@ -253,7 +261,7 @@ export const MyOrders: React.FC<{ isAuthenticated: boolean; onSignIn: () => void
                   </div>
                 ) : isOffPath ? (
                   <div className={`text-xs font-semibold ${b.status === 'cancelled' ? 'text-rose-400' : 'text-sky-400'}`}>
-                    <p>This booking was {(STATUS_LABEL[b.status] || b.status).toLowerCase()}.</p>
+                    <p>This booking was {statusLabel(b.status).toLowerCase()}.</p>
                     {b.cancelReason && <p className="text-[11px] font-normal text-slate-400 mt-0.5">Reason: {b.cancelReason}</p>}
                   </div>
                 ) : (
@@ -386,8 +394,8 @@ const MailVendorBlock: React.FC<{ booking: Booking }> = ({ booking }) => {
   };
 
   return (
-    <div className="pt-2 flex justify-end">
-      <button onClick={() => { setOpen(true); setNotice(''); }} className="px-3 py-1.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 hover:bg-rose-500/20 font-semibold text-[11px] flex items-center gap-1.5">
+    <div className="pt-2 flex sm:justify-end">
+      <button onClick={() => { setOpen(true); setNotice(''); }} className="w-full sm:w-auto justify-center px-4 py-2.5 sm:py-1.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 hover:bg-rose-500/20 font-semibold text-xs sm:text-[11px] flex items-center gap-1.5">
         <Send className="w-3.5 h-3.5" /> Mail vendor
       </button>
       {open && (
@@ -456,7 +464,7 @@ const AdvancePaymentBlock: React.FC<{ booking: Booking; onUpdated: (b: Booking) 
       <button
         onClick={payAdvance}
         disabled={paying}
-        className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-[11px] flex items-center gap-1.5 disabled:opacity-60"
+        className="w-full sm:w-auto justify-center px-4 py-2.5 sm:py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs sm:text-[11px] flex items-center gap-1.5 disabled:opacity-60"
       >
         {paying ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wallet className="w-3.5 h-3.5" />} Pay Advance
       </button>
@@ -496,7 +504,7 @@ const CancelBlock: React.FC<{ booking: Booking; onUpdated: (b: Booking) => void 
       {!open ? (
         <button
           onClick={() => setOpen(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/10 border border-rose-500/30 hover:bg-rose-500/20 text-rose-300 font-bold text-[11px]"
+          className="w-full sm:w-auto justify-center flex items-center gap-1.5 px-4 py-2.5 sm:py-1.5 rounded-xl bg-rose-500/10 border border-rose-500/30 hover:bg-rose-500/20 text-rose-300 font-bold text-xs sm:text-[11px]"
         >
           <XCircle className="w-3.5 h-3.5" /> {isRefund ? 'Request Refund' : 'Cancel Booking'}
         </button>
