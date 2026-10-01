@@ -68,6 +68,16 @@ export default function EventsScreen() {
       ) : (
         <FlatList
           data={events}
+          ListHeaderComponent={events.length > 0 ? (
+            <View style={styles.totalBox}>
+              <Text style={styles.totalTitle}>Total events created: <Text style={styles.totalCount}>{events.length}</Text></Text>
+              {events.map((e, i) => (
+                <Text key={e.id} style={styles.totalLine} numberOfLines={1}>
+                  {i + 1}. <Text style={styles.totalName}>{e.title}</Text> · {e.eventType} · {e.date}
+                </Text>
+              ))}
+            </View>
+          ) : null}
           keyExtractor={(e) => e.id}
           contentContainerStyle={{ padding: space.lg, gap: space.md, flexGrow: 1 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(true); }} tintColor={colors.primary} />}
@@ -208,6 +218,14 @@ const styles = StyleSheet.create({
   pct: { fontSize: 12, color: colors.primary, fontWeight: '800' },
   barTrack: { height: 8, borderRadius: 4, backgroundColor: colors.surfaceAlt, marginTop: 6, overflow: 'hidden' },
   barFill: { height: 8, backgroundColor: colors.gold, borderRadius: 4 },
+  totalBox: {
+    backgroundColor: 'rgba(212,175,55,0.12)', borderRadius: radius.lg, padding: space.md,
+    borderWidth: 1, borderColor: 'rgba(212,175,55,0.35)', marginBottom: space.md,
+  },
+  totalTitle: { fontSize: 14, fontWeight: '800', color: colors.text },
+  totalCount: { color: colors.primary, fontSize: 16 },
+  totalLine: { fontSize: 12, color: colors.textMuted, marginTop: 4 },
+  totalName: { color: colors.text, fontWeight: '700' },
   deleteBtn: {
     marginTop: space.md, alignSelf: 'flex-start', paddingHorizontal: 14, paddingVertical: 8,
     borderRadius: radius.md, borderWidth: 1, borderColor: colors.danger,
