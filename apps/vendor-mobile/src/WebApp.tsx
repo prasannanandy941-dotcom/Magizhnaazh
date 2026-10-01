@@ -20,6 +20,7 @@ const CHROME_UA =
 export function WebApp({ token, user, onLogout }: { token?: string | null; user?: unknown; onLogout?: () => void }) {
   const ref = useRef<WebView>(null);
   const canGoBack = useRef(false);
+  const blankRetries = useRef(0);
   // Only the FIRST load is covered by the spinner. Toggling it on every
   // navigation/redirect made the whole screen blink while the site was working.
   const [firstLoad, setFirstLoad] = useState(true);
@@ -84,7 +85,14 @@ export function WebApp({ token, user, onLogout }: { token?: string | null; user?
         injectedJavaScriptBeforeContentLoaded={injectedBefore}
         onMessage={(event: { nativeEvent: { data: string } }) => {
           try {
-            if (JSON.parse(event.nativeEvent.data)?.type === 'logout') onLogout?.();
+            const type = JSON.parse(event.nativeEvent.data)?.type;
+            if (type === 'logout') onLogout?.();
+            // The page finished loading but drew nothing (seen right after returning
+            // from the Google sign-in sheet): reload it, at most twice.
+            else if (type === 'blank' && blankRetries.current < 2) {
+              blankRetries.current += 1;
+              ref.current?.reload();
+            }
           } catch {
             /* not one of our messages */
           }
@@ -101,7 +109,20 @@ export function WebApp({ token, user, onLogout }: { token?: string | null; user?
         mediaPlaybackRequiresUserAction={false}
         mediaCapturePermissionGrantType="grant"
         setSupportMultipleWindows={false}
-        onLoadEnd={() => setFirstLoad(false)}
+        onLoadEnd={() => {
+          setFirstLoad(false);
+          // Blank-page watchdog: a moment after load, check the app actually rendered.
+          setTimeout(() => {
+            ref.current?.injectJavaScript(
+              `try {
+                 var r = document.getElementById('root');
+                 if (!r || r.childElementCount === 0) {
+                   window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'blank' }));
+                 }
+               } catch (e) {} true;`
+            );
+          }, 3500);
+        }}
         onNavigationStateChange={(s) => { canGoBack.current = s.canGoBack; }}
         renderError={(domain, code, desc) => (
           <View style={styles.errorContainer}>
