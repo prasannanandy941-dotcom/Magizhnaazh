@@ -4655,15 +4655,15 @@ export function App() {
         {/* soft gold glow + decorative bottom accent line */}
         <div className="pointer-events-none absolute -top-16 left-1/2 -translate-x-1/2 w-[36rem] h-32 rounded-full bg-amber-500/10 blur-3xl"></div>
         <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-400/70 to-transparent"></div>
-        <div className={`max-w-7xl mx-auto px-4 flex items-center justify-between relative ${isInsideMobileApp() ? 'min-h-[4rem] py-2 gap-2 px-3' : 'h-20'}`}>
-          <div className={`flex items-center min-w-0 ${isInsideMobileApp() ? 'gap-2' : 'gap-3'}`}>
-            <div className={`rounded-2xl bg-gradient-to-br from-[#dcc589] to-[#b6893a] flex items-center justify-center font-bold text-slate-950 shadow-sm shadow-amber-900/20 ring-1 ring-amber-300/15 shrink-0 ${isInsideMobileApp() ? 'w-9 h-9' : 'w-11 h-11'}`}>
+        <div className={`max-w-7xl mx-auto px-4 flex items-center justify-between relative min-h-[4.25rem] py-2.5 md:min-h-0 md:py-0 md:h-20 gap-2`}>
+          <div className="flex items-center min-w-0 gap-3">
+            <div className={`rounded-2xl bg-gradient-to-br from-[#dcc589] to-[#b6893a] flex items-center justify-center font-bold text-slate-950 shadow-sm shadow-amber-900/20 ring-1 ring-amber-300/15 shrink-0 w-10 h-10 md:w-11 md:h-11`}>
               <Store className="w-5 h-5" />
             </div>
             <div className="min-w-0">
-              <span className={`block font-display font-extrabold bg-gradient-to-r from-amber-100 via-white to-amber-200 bg-clip-text text-transparent ${isInsideMobileApp() ? 'text-[14px] leading-[1.35] py-0.5 break-words' : 'text-xl'}`}>Magizhnaazh Vendor Portal</span>
-              {!isInsideMobileApp() && (
-                <span className="flex items-center gap-1.5 text-[10px] text-amber-400 font-bold uppercase tracking-wider">
+              <span className={`block font-display font-extrabold bg-gradient-to-r from-amber-100 via-white to-amber-200 bg-clip-text text-transparent text-[18px] leading-[1.3] py-0.5 md:text-xl break-words`}>Magizhnaazh Vendor Portal</span>
+              {(
+                <span className="flex items-center gap-1.5 text-[9px] md:text-[10px] text-amber-400 font-bold uppercase tracking-wider">
                   <Sparkles className="w-3 h-3" /> Business Partner Workspace
                 </span>
               )}
