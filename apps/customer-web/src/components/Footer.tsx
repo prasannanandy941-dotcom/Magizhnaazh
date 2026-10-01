@@ -244,19 +244,19 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateTab }) => {
           {/* Accepted Payment Methods */}
           <div className="flex flex-wrap items-center justify-center md:justify-end gap-2">
             <span className="text-xs text-[#cf9bb3] mr-1">We accept:</span>
-            <span className="px-2.5 py-1 rounded bg-[#26101c] border border-[#6b2140]/70 text-[11px] font-semibold tracking-wide text-[#fdf1f5] shadow-sm">
+            <span className="px-2.5 py-1 rounded bg-[#26101c] border border-[#6b2140]/70 text-[11px] font-semibold tracking-wide text-[#fdf1f5] shadow-sm" translate="no">
               UPI
             </span>
-            <span className="px-2.5 py-1 rounded bg-[#26101c] border border-[#6b2140]/70 text-[11px] font-semibold tracking-wide text-[#fdf1f5] shadow-sm">
+            <span className="px-2.5 py-1 rounded bg-[#26101c] border border-[#6b2140]/70 text-[11px] font-semibold tracking-wide text-[#fdf1f5] shadow-sm" translate="no">
               Visa
             </span>
-            <span className="px-2.5 py-1 rounded bg-[#26101c] border border-[#6b2140]/70 text-[11px] font-semibold tracking-wide text-[#fdf1f5] shadow-sm">
+            <span className="px-2.5 py-1 rounded bg-[#26101c] border border-[#6b2140]/70 text-[11px] font-semibold tracking-wide text-[#fdf1f5] shadow-sm" translate="no">
               Mastercard
             </span>
-            <span className="px-2.5 py-1 rounded bg-[#26101c] border border-[#6b2140]/70 text-[11px] font-semibold tracking-wide text-[#fdf1f5] shadow-sm">
+            <span className="px-2.5 py-1 rounded bg-[#26101c] border border-[#6b2140]/70 text-[11px] font-semibold tracking-wide text-[#fdf1f5] shadow-sm" translate="no">
               RuPay
             </span>
-            <span className="px-2.5 py-1 rounded bg-[#26101c] border border-[#6b2140]/70 text-[11px] font-semibold tracking-wide text-[#fdf1f5] shadow-sm">
+            <span className="px-2.5 py-1 rounded bg-[#26101c] border border-[#6b2140]/70 text-[11px] font-semibold tracking-wide text-[#fdf1f5] shadow-sm" translate="no">
               Net Banking
             </span>
           </div>
