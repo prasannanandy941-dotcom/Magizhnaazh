@@ -6,6 +6,7 @@ import {
 import {
   GoogleSignin, isSuccessResponse, isErrorWithCode, statusCodes,
 } from '@react-native-google-signin/google-signin';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../auth';
 import * as api from '../api';
 import { colors, radius, space, fonts } from '../theme';
@@ -244,24 +245,41 @@ function Field(props: {
   secureTextEntry?: boolean;
   keyboardType?: 'default' | 'email-address' | 'number-pad' | 'phone-pad';
 }) {
+  // Password fields get an eye button to show / hide what was typed.
+  const [visible, setVisible] = useState(false);
+  const isPassword = !!props.secureTextEntry;
   return (
     <>
       <Text style={styles.label}>{props.label}</Text>
-      <TextInput
-        style={styles.input}
-        value={props.value}
-        onChangeText={props.onChangeText}
-        placeholder={props.placeholder}
-        placeholderTextColor="#94a3b8"
-        secureTextEntry={props.secureTextEntry}
-        keyboardType={props.keyboardType}
-        autoCapitalize={props.secureTextEntry || props.keyboardType === 'email-address' ? 'none' : 'sentences'}
-      />
+      <View>
+        <TextInput
+          style={[styles.input, isPassword && { paddingRight: 48 }]}
+          value={props.value}
+          onChangeText={props.onChangeText}
+          placeholder={props.placeholder}
+          placeholderTextColor="#94a3b8"
+          secureTextEntry={isPassword && !visible}
+          keyboardType={props.keyboardType}
+          autoCapitalize={isPassword || props.keyboardType === 'email-address' ? 'none' : 'sentences'}
+          autoCorrect={!isPassword}
+        />
+        {isPassword && (
+          <TouchableOpacity
+            onPress={() => setVisible((v) => !v)}
+            style={styles.eyeBtn}
+            accessibilityLabel={visible ? 'Hide password' : 'Show password'}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons name={visible ? 'eye-off-outline' : 'eye-outline'} size={22} color="#64748b" />
+          </TouchableOpacity>
+        )}
+      </View>
     </>
   );
 }
 
 const styles = StyleSheet.create({
+  eyeBtn: { position: 'absolute', right: 14, top: 0, bottom: 0, justifyContent: 'center' },
   scroll: { flexGrow: 1, justifyContent: 'center', padding: space.lg, backgroundColor: 'transparent' },
   brand: { alignItems: 'center', marginBottom: space.xl },
   brandTitle: { fontSize: 30, fontFamily: fonts.displayBlack, color: colors.primary },
