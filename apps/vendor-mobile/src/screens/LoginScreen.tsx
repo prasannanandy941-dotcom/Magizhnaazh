@@ -7,6 +7,7 @@ import {
   GoogleSignin, isSuccessResponse, isErrorWithCode, statusCodes,
 } from '@react-native-google-signin/google-signin';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../auth';
 import * as api from '../api';
 import { colors, radius, space, fonts } from '../theme';
@@ -14,6 +15,8 @@ import { GOOGLE_WEB_CLIENT_ID } from '../config';
 
 export default function LoginScreen() {
   const { login, register, loginWithGoogle } = useAuth();
+  // Keep the title and form below the phone's status bar / camera cut-out.
+  const insets = useSafeAreaInsets();
   const [googleBusy, setGoogleBusy] = useState(false);
 
   // Native Google Sign-In: `webClientId` makes Google mint an ID token whose
@@ -122,7 +125,10 @@ export default function LoginScreen() {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={[styles.scroll, { paddingTop: space.lg + insets.top, paddingBottom: space.lg + insets.bottom }]}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.brand}>
           <Text style={styles.brandTitle}>Magizhnaazh</Text>
           <Text style={styles.brandSub}>Vendor Partner Portal</Text>
