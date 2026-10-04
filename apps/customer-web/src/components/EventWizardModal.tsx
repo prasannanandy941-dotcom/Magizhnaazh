@@ -16,7 +16,8 @@ const UNIQUE_CITIES = ALL_INDIA_CITIES;
 export const EventWizardModal: React.FC<EventWizardModalProps> = ({ onClose, onEventCreated }) => {
   const [step, setStep] = useState(1);
   const [eventType, setEventType] = useState('Wedding');
-  const [title, setTitle] = useState('My Grand Celebration');
+  // No default title: the customer names the event themselves.
+  const [title, setTitle] = useState('');
   const [city, setCity] = useState('Chennai');
   const [citySearch, setCitySearch] = useState('');
   // No default date: the customer always picks it themselves.
@@ -114,6 +115,7 @@ export const EventWizardModal: React.FC<EventWizardModalProps> = ({ onClose, onE
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
+                autoFocus
                 placeholder="e.g. Felix & Priya Wedding"
                 className="w-full p-4 rounded-2xl bg-slate-900 border border-slate-800 text-white font-bold text-lg focus:outline-none focus:border-indigo-500"
               />
@@ -256,6 +258,7 @@ export const EventWizardModal: React.FC<EventWizardModalProps> = ({ onClose, onE
             <button
               onClick={() => {
                 // Going back to an earlier step clears the date, so it has to be picked again.
+                if (step - 1 < 2) setTitle('');
                 if (step - 1 < 4) setDate('');
                 // ...and going back before the guest-count step resets it to 0.
                 if (step - 1 < 5) setGuestCount(0);
@@ -273,7 +276,7 @@ export const EventWizardModal: React.FC<EventWizardModalProps> = ({ onClose, onE
           {step < 7 ? (
             <button
               onClick={() => setStep((s) => s + 1)}
-              disabled={(step === 4 && !date) || (step === 5 && guestCount < 1)}
+              disabled={(step === 2 && !title.trim()) || (step === 4 && !date) || (step === 5 && guestCount < 1)}
               className="disabled:opacity-40 disabled:cursor-not-allowed px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-xs shadow-md flex items-center gap-1"
             >
               Next <ArrowRight className="w-4 h-4" />
