@@ -10694,41 +10694,6 @@ export function App() {
 
 
 
-            {/* Booked dates — dates a customer has already booked, with what
-                they booked. These are no longer open for other customers. */}
-            {(() => {
-              const booked = bookings
-                .filter((b) => b.eventDate && ['pending_payment', 'confirmed', 'in_progress', 'completed'].includes(b.status))
-                .slice()
-                .sort((a, b) => a.eventDate.localeCompare(b.eventDate));
-              if (booked.length === 0) return null;
-              return (
-                <div className="pt-5 mt-2 border-t border-slate-800 space-y-2">
-                  <p className="text-xs font-bold text-rose-300 uppercase">Booked dates</p>
-                  <p className="text-[11px] text-slate-500">A customer has booked these dates — they're no longer open for others.</p>
-                  {booked.map((b) => (
-                    <div key={b.id} className="flex items-start justify-between gap-3 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-sm font-bold text-white">
-                            {new Date(b.eventDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                          </span>
-                          {b.timeSlot && <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-semibold">{slotLabelWithTime(b.timeSlot)}</span>}
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 font-semibold">{STATUS_LABEL[b.status] || b.status}</span>
-                        </div>
-                        <p className="text-[11px] text-slate-400 mt-1">
-                          {b.bookingNumber} · <span className="text-slate-200">{b.packageName || 'Custom request'}</span>
-                        </p>
-                        {b.selectedOptions && b.selectedOptions.length > 0 && (
-                          <p className="text-[11px] text-slate-400 mt-0.5">Booked for: {b.selectedOptions.join(', ')}</p>
-                        )}
-                      </div>
-                      <span className="text-emerald-400 font-semibold text-sm shrink-0">₹{(b.agreedPrice || 0).toLocaleString('en-IN')}</span>
-                    </div>
-                  ))}
-                </div>
-              );
-            })()}
           </div>
           </div>
         )}
