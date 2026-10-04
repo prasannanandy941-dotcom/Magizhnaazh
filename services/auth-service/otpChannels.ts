@@ -11,6 +11,12 @@
 //   WHATSAPP_API_VERSION      Graph API version, default "v21.0"
 //   INTERAKT_API_KEY          optional: send via Interakt instead of/after Meta direct
 //                             (needed when the number is managed through Interakt)
+//   MSG91_AUTH_KEY            MSG91 auth key. When set, WhatsApp OTPs go through MSG91's
+//                             WhatsApp API first (the number is connected to MSG91):
+//   MSG91_WHATSAPP_NUMBER     integrated sending number, digits with country code
+//                             (default 916385186664)
+//   MSG91_WHATSAPP_NAMESPACE  template namespace (default: Porulon's WABA namespace)
+//   WHATSAPP_TEMPLATE_NAME / WHATSAPP_TEMPLATE_LANG as above (default porulonotp / en_US)
 //   MSG91_AUTH_KEY / MSG91_TEMPLATE_ID   SMS OTP via MSG91 (DLT-approved template)
 
 export type OtpChannel = 'email' | 'whatsapp' | 'sms';
@@ -68,8 +74,55 @@ async function sendInteraktOtp(phone: string, code: string): Promise<DeliveryRes
   }
 }
 
-/** WhatsApp OTP: Meta Cloud API directly; if that is refused and Interakt is configured, via Interakt. */
+/**
+ * WhatsApp OTP through MSG91's WhatsApp API (the sending number 6385186664 is integrated
+ * with MSG91). Template body variable 1 = the code; an Authentication template's copy-code
+ * button also takes the code (button_1).
+ */
+async function sendMsg91WhatsAppOtp(phone: string, code: string): Promise<DeliveryResult> {
+  const authkey = process.env.MSG91_AUTH_KEY;
+  if (!authkey) return { sent: false, reason: 'MSG91 is not configured (MSG91_AUTH_KEY).' };
+  const components: Record<string, unknown> = { body_1: { type: 'text', value: code } };
+  if (process.env.WHATSAPP_TEMPLATE_BUTTON !== 'false') {
+    components.button_1 = { subtype: 'url', type: 'text', value: code };
+  }
+  const payload = {
+    integrated_number: process.env.MSG91_WHATSAPP_NUMBER || '916385186664',
+    content_type: 'template',
+    payload: {
+      messaging_product: 'whatsapp',
+      type: 'template',
+      template: {
+        name: process.env.WHATSAPP_TEMPLATE_NAME || 'porulonotp',
+        language: { code: process.env.WHATSAPP_TEMPLATE_LANG || 'en_US', policy: 'deterministic' },
+        namespace: process.env.MSG91_WHATSAPP_NAMESPACE || '21d1bdc0_cd3f_4375_a422_85f8fb7fd9f7',
+        to_and_components: [{ to: [phone], components }],
+      },
+    },
+  };
+  try {
+    const r = await post('https://api.msg91.com/api/v5/whatsapp/whatsapp-outbound-message/bulk/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', authkey },
+      body: JSON.stringify(payload),
+    });
+    const body: any = await r.json().catch(() => ({}));
+    const failed = !r.ok || body?.status === 'fail' || body?.status === 'error' || body?.hasError === true || !!body?.errors;
+    if (!failed) return { sent: true };
+    const why = body?.message || (typeof body?.errors === 'string' ? body.errors : JSON.stringify(body?.errors || body)).slice(0, 300);
+    return { sent: false, reason: `MSG91 WhatsApp ${r.status}: ${why}` };
+  } catch (e: any) {
+    return { sent: false, reason: `MSG91 WhatsApp request failed: ${e?.message || e}` };
+  }
+}
+
+/** WhatsApp OTP: MSG91 first (when configured); otherwise Meta Cloud API, then Interakt as a last resort. */
 export async function sendWhatsAppOtp(phone: string, code: string): Promise<DeliveryResult> {
+  if (process.env.MSG91_AUTH_KEY) {
+    const viaMsg91 = await sendMsg91WhatsAppOtp(phone, code);
+    if (viaMsg91.sent) return viaMsg91;
+    console.warn(`[OTP] MSG91 WhatsApp failed (${viaMsg91.reason}); trying Meta direct`);
+  }
   const direct = await sendWhatsAppDirect(phone, code);
   if (direct.sent || !process.env.INTERAKT_API_KEY) return direct;
   console.warn(`[OTP] Meta direct send failed (${direct.reason}); trying Interakt`);
