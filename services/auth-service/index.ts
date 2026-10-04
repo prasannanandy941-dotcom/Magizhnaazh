@@ -5,6 +5,9 @@ import dns from 'dns';
 // Reach outside services (MSG91, Meta, ...) over IPv4. Their allow-lists hold this server's
 // IPv4 address; Node would otherwise pick IPv6 when it is available and be refused.
 dns.setDefaultResultOrder('ipv4first');
+// Secrets that must survive a deploy (a deploy resets git-tracked files, including .env) live in
+// the untracked, git-ignored .env.local - loaded first, so the values here win over .env.
+dotenv.config({ path: path.resolve(__dirname, '.env.local') });
 // Loads JWT_SECRET / JWT_EXPIRES_IN (session lifetime) and MONGODB_URI.
 dotenv.config({ path: path.resolve(__dirname, '.env') });
 

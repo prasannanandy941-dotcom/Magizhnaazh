@@ -10,3 +10,7 @@ npm-debug.log*
 
 # Accidental nested clone — do not track
 /Magizhnaazh/
+
+# Server-only secrets (never commit)
+.env.local
+**/.env.local
