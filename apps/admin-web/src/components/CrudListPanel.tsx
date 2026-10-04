@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Loader2, Plus, Trash2 } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { Loader2, Plus, Search, Trash2, X } from 'lucide-react';
 import { usePagination, Pagination } from '../../../../packages/shared-ui/pagination';
 
 export interface CrudColumn<T> {
@@ -33,6 +33,10 @@ interface CrudListPanelProps<T> {
   // Optional controls (e.g. filter tabs) rendered between the header and the
   // table.
   toolbar?: React.ReactNode;
+  // Text a search matches against for each row. Defaults to every field of the row.
+  searchText?: (item: T) => string;
+  // Turn the search box off for a list where it makes no sense.
+  searchable?: boolean;
 }
 
 export function CrudListPanel<T>({
@@ -50,13 +54,27 @@ export function CrudListPanel<T>({
   emptyText = 'Nothing here yet.',
   toolbar,
   itemLabel = 'records',
+  searchText,
+  searchable = true,
 }: CrudListPanelProps<T>) {
   const [formValues, setFormValues] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   // Paging: 10 rows per page (changeable) with page numbers under the table.
   // Goes back to page 1 when the list size changes (a filter or search changed).
-  const pager = usePagination(items, 10, items.length);
+  // Search: type to narrow the list by any field (name, email, role, ...). Every word typed
+  // must appear somewhere in the row, in any order.
+  const [query, setQuery] = useState('');
+  const shown = useMemo(() => {
+    const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    if (words.length === 0) return items;
+    return items.filter((item) => {
+      let hay = '';
+      try { hay = (searchText ? searchText(item) : JSON.stringify(item)).toLowerCase(); } catch { hay = ''; }
+      return words.every((w) => hay.includes(w));
+    });
+  }, [items, query, searchText]);
+  const pager = usePagination(shown, 10, shown.length);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,6 +106,25 @@ export function CrudListPanel<T>({
       </div>
 
       {toolbar}
+
+      {searchable && (
+        <div className="relative max-w-md">
+          <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={`Search ${itemLabel} by name, email, anything…`}
+            aria-label={`Search ${itemLabel}`}
+            className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm placeholder:text-slate-500 focus:outline-none focus:border-amber-500"
+          />
+          {query && (
+            <button type="button" onClick={() => setQuery('')} aria-label="Clear search" className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white">
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      )}
 
       {addFields && onAdd && (
         <form onSubmit={handleAdd} className="glass-card p-5 rounded-2xl border border-slate-800 flex flex-wrap items-end gap-3">
@@ -148,10 +185,10 @@ export function CrudListPanel<T>({
                     {rowAction && <td className="p-4 text-center">{rowAction(item)}</td>}
                   </tr>
                 ))}
-                {items.length === 0 && (
+                {shown.length === 0 && (
                   <tr>
                     <td colSpan={columns.length + (rowAction ? 1 : 0)} className="p-8 text-center text-slate-500">
-                      {emptyText}
+                      {items.length > 0 && query.trim() ? `No ${itemLabel} match "${query.trim()}".` : emptyText}
                     </td>
                   </tr>
                 )}
