@@ -317,6 +317,8 @@ export function App() {
   const [unavailableSlots, setUnavailableSlots] = useState<Record<string, string[]>>({});
   // Which sessions the next "mark unavailable" applies to ('whole' = the entire day).
   const [closeSessions, setCloseSessions] = useState<string[]>(['whole']);
+  // One calendar, two jobs: close dates, or give open dates their own sessions & slots.
+  const [availMode, setAvailMode] = useState<'closed' | 'open'>('closed');
   // Sessions (and functions per session) to apply to the next set of "special open dates".
   const [openSessions, setOpenSessions] = useState<string[]>(AVAILABILITY_SLOTS.map((x) => x.id));
   const [openCaps, setOpenCaps] = useState<Record<string, number>>({});
@@ -10646,7 +10648,24 @@ export function App() {
             {/* Wide screens: calendar on the left, the unavailable dates beside it. */}
             <div className="space-y-5 lg:space-y-0 lg:grid lg:grid-cols-[22rem_minmax(0,1fr)] lg:gap-6 lg:items-start">
             <div className="lg:sticky lg:top-24">
-              <label className="block text-xs text-slate-400 mb-1.5">Mark the dates you are NOT available — pick one or many at once</label>
+              <div className="flex rounded-xl border border-slate-700 overflow-hidden mb-3" role="tablist" aria-label="What to set on the calendar">
+                {([['closed', 'Not available'], ['open', 'Open dates: sessions & slots']] as const).map(([key, label]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    role="tab"
+                    aria-selected={availMode === key}
+                    onClick={() => setAvailMode(key)}
+                    className={`flex-1 px-2 py-2 text-xs font-bold transition-colors ${availMode === key ? (key === 'closed' ? 'bg-rose-600 text-white' : 'bg-emerald-600 text-white') : 'bg-slate-900 text-slate-300 hover:text-white'}`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              {availMode === 'closed' ? (
+                <>
+                  <label className="block text-xs text-slate-400 mb-1.5">Mark the dates you are NOT available — pick one or many at once</label>
               <div className="mb-3">
                 <p className="text-[11px] font-bold text-slate-300 uppercase mb-1.5">What is closed on those dates?</p>
                 <div className="flex flex-wrap gap-1.5">
@@ -10667,7 +10686,48 @@ export function App() {
                 </div>
                 <p className="text-[10px] text-slate-500 mt-1">Pick only some sessions to keep the rest of the day open for customers.</p>
               </div>
-              <MultiDatePicker mode="closed" existing={unavailableDates} onAdd={addUnavailable} />
+                </>
+              ) : (
+                <div className="mb-3 space-y-2">
+                  <label className="block text-xs text-slate-400">Choose the sessions{supportsSlotCapacity(myVendor?.category) ? ' and slots' : ''}, then pick the dates they apply to</label>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase mb-1.5">Sessions offered{supportsSlotCapacity(myVendor?.category) ? ' & functions per session' : ''}</p>
+                  <div className="space-y-1.5">
+                    {AVAILABILITY_SLOTS.map((sl) => {
+                      const on = openSessions.includes(sl.id);
+                      return (
+                        <div key={sl.id} className={`flex items-center justify-between gap-2 rounded-xl border px-3 py-2 ${on ? 'border-emerald-500/50 bg-emerald-500/10' : 'border-slate-800 bg-slate-950/40'}`}>
+                          <button type="button" onClick={() => toggleOpenSession(sl.id)} aria-pressed={on} className="flex items-center gap-2 text-left min-w-0 flex-1">
+                            <span className={`w-4 h-4 rounded border flex items-center justify-center text-[10px] font-bold ${on ? 'bg-emerald-500 border-emerald-500 text-slate-950' : 'border-slate-600 text-transparent'}`}>✓</span>
+                            <span className={`text-xs font-semibold ${on ? 'text-slate-100' : 'text-slate-500'}`}>{sl.label}</span>
+                          </button>
+                          {supportsSlotCapacity(myVendor?.category) && on && (
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <button type="button" onClick={() => setOpenCaps((p) => ({ ...p, [sl.id]: Math.max(1, openCapFor(sl.id) - 1) }))} disabled={openCapFor(sl.id) <= 1}
+                                aria-label={`Fewer ${sl.label} slots`} className="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 text-white font-bold disabled:opacity-40">−</button>
+                              <input type="number" min={1} max={MAX_SLOT_CAPACITY} value={openCapFor(sl.id)}
+                                onChange={(e) => setOpenCaps((p) => ({ ...p, [sl.id]: Math.min(MAX_SLOT_CAPACITY, Math.max(1, Math.floor(Number(e.target.value)) || 1)) }))}
+                                aria-label={`${sl.label} slots`} className="w-12 p-1 rounded-lg bg-slate-900 border border-slate-700 text-center text-sm text-white font-bold" />
+                              <button type="button" onClick={() => setOpenCaps((p) => ({ ...p, [sl.id]: Math.min(MAX_SLOT_CAPACITY, openCapFor(sl.id) + 1) }))} disabled={openCapFor(sl.id) >= MAX_SLOT_CAPACITY}
+                                aria-label={`More ${sl.label} slots`} className="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 text-white font-bold disabled:opacity-40">+</button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                </div>
+              )}
+
+              <MultiDatePicker
+                mode={availMode === 'closed' ? 'closed' : 'open'}
+                existing={availMode === 'closed' ? unavailableDates : specialDates}
+                onAdd={availMode === 'closed' ? addUnavailable : applySpecialDates}
+                emptyLabel={availMode === 'closed' ? undefined : 'Select the dates these sessions apply to'}
+                actionLabel={availMode === 'closed' ? undefined : (n) => `Apply to ${n} date${n === 1 ? '' : 's'}`}
+              />
               <div className="mt-3 space-y-2">
             {availabilityNotice && <p className="text-xs text-emerald-400 font-semibold">{availabilityNotice}</p>}
 
@@ -10732,46 +10792,7 @@ export function App() {
               <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-3 space-y-3">
                 <div>
                   <p className="text-[11px] font-bold text-slate-300 uppercase">Open dates with their own sessions &amp; slots</p>
-                  <p className="text-[10px] text-slate-500 mt-0.5">Optional. Every day not marked unavailable is open with all sessions. Use this to offer only some sessions{supportsSlotCapacity(myVendor?.category) ? ' or a different number of slots' : ''} on particular dates.</p>
-                </div>
-
-                <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase mb-1.5">Sessions offered{supportsSlotCapacity(myVendor?.category) ? ' & functions per session' : ''}</p>
-                  <div className="space-y-1.5">
-                    {AVAILABILITY_SLOTS.map((sl) => {
-                      const on = openSessions.includes(sl.id);
-                      return (
-                        <div key={sl.id} className={`flex items-center justify-between gap-2 rounded-xl border px-3 py-2 ${on ? 'border-emerald-500/50 bg-emerald-500/10' : 'border-slate-800 bg-slate-950/40'}`}>
-                          <button type="button" onClick={() => toggleOpenSession(sl.id)} aria-pressed={on} className="flex items-center gap-2 text-left min-w-0 flex-1">
-                            <span className={`w-4 h-4 rounded border flex items-center justify-center text-[10px] font-bold ${on ? 'bg-emerald-500 border-emerald-500 text-slate-950' : 'border-slate-600 text-transparent'}`}>✓</span>
-                            <span className={`text-xs font-semibold ${on ? 'text-slate-100' : 'text-slate-500'}`}>{sl.label}</span>
-                          </button>
-                          {supportsSlotCapacity(myVendor?.category) && on && (
-                            <div className="flex items-center gap-1.5 shrink-0">
-                              <button type="button" onClick={() => setOpenCaps((p) => ({ ...p, [sl.id]: Math.max(1, openCapFor(sl.id) - 1) }))} disabled={openCapFor(sl.id) <= 1}
-                                aria-label={`Fewer ${sl.label} slots`} className="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 text-white font-bold disabled:opacity-40">−</button>
-                              <input type="number" min={1} max={MAX_SLOT_CAPACITY} value={openCapFor(sl.id)}
-                                onChange={(e) => setOpenCaps((p) => ({ ...p, [sl.id]: Math.min(MAX_SLOT_CAPACITY, Math.max(1, Math.floor(Number(e.target.value)) || 1)) }))}
-                                aria-label={`${sl.label} slots`} className="w-12 p-1 rounded-lg bg-slate-900 border border-slate-700 text-center text-sm text-white font-bold" />
-                              <button type="button" onClick={() => setOpenCaps((p) => ({ ...p, [sl.id]: Math.min(MAX_SLOT_CAPACITY, openCapFor(sl.id) + 1) }))} disabled={openCapFor(sl.id) >= MAX_SLOT_CAPACITY}
-                                aria-label={`More ${sl.label} slots`} className="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 text-white font-bold disabled:opacity-40">+</button>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="max-w-sm">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase mb-1.5">Then pick the dates</p>
-                  <MultiDatePicker
-                    compact
-                    existing={specialDates}
-                    onAdd={applySpecialDates}
-                    emptyLabel="Select dates to apply these sessions to"
-                    actionLabel={(n) => `Apply to ${n} date${n === 1 ? '' : 's'}`}
-                  />
+                  <p className="text-[10px] text-slate-500 mt-0.5">Optional. Every day not marked unavailable is open with all sessions. To offer only some sessions{supportsSlotCapacity(myVendor?.category) ? ' or a different number of slots' : ''} on particular dates, switch the calendar to <strong className="text-slate-300">Open dates: sessions &amp; slots</strong>.</p>
                 </div>
 
                 {specialDates.length > 0 && (
