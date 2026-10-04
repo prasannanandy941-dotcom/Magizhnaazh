@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Sparkles, Check, ArrowRight, ArrowLeft, MapPin, Search, Loader2 } from 'lucide-react';
+import { X, Sparkles, Check, ArrowRight, ArrowLeft, MapPin, Search, Loader2, CalendarDays } from 'lucide-react';
 import { Event } from '../../../../packages/shared-types';
 import { calculateBudgetBreakdown, ALL_INDIA_CITIES } from '../../../../packages/shared-utils';
 import { createEvent } from '../api';
@@ -170,13 +170,24 @@ export const EventWizardModal: React.FC<EventWizardModalProps> = ({ onClose, onE
               <h3 className="font-display font-bold text-2xl text-white">Select Event Date</h3>
               <p className="text-xs text-slate-400 mt-1 mb-6">Choose your planned event date</p>
 
-              <input
-                type="date"
-                value={date}
-                min={todayIso}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full p-4 rounded-2xl bg-slate-900 border border-slate-800 text-white font-bold text-lg focus:outline-none focus:border-indigo-500"
-              />
+              {/* The whole field opens the calendar; a gold calendar button makes that obvious. */}
+              <div className="relative">
+                <input
+                  type="date"
+                  value={date}
+                  min={todayIso}
+                  onChange={(e) => setDate(e.target.value)}
+                  onClick={(e) => { try { (e.currentTarget as any).showPicker?.(); } catch { /* not supported */ } }}
+                  aria-label="Event date"
+                  className="wizard-date-input w-full p-4 pr-20 rounded-2xl bg-slate-900 border-2 border-amber-500/70 text-white font-bold text-lg focus:outline-none focus:border-amber-400 shadow-[0_0_0_4px_rgba(245,158,11,0.12)]"
+                />
+                <span
+                  aria-hidden="true"
+                  className={`pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 text-slate-950 flex items-center justify-center shadow-lg shadow-amber-500/40 ${date ? '' : 'animate-pulse'}`}
+                >
+                  <CalendarDays className="w-6 h-6" />
+                </span>
+              </div>
             </div>
           )}
 
