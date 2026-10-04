@@ -13,13 +13,14 @@ interface HeroSectionProps {
 
 export const HeroSection: React.FC<HeroSectionProps> = ({ onSearch, openEventWizard, cityGroups }) => {
   const groups = cityGroups && cityGroups.length > 0 ? cityGroups : STATIC_CITY_GROUPS;
-  const [eventType, setEventType] = useState('Wedding');
+  // Nothing is pre-filled: the visitor chooses what they want to search for.
+  const [eventType, setEventType] = useState('');
   const [category, setCategory] = useState('All');
-  const [city, setCity] = useState('Chennai');
+  const [city, setCity] = useState('');
   const [cityAutoDetected, setCityAutoDetected] = useState(false);
-  const [guests, setGuests] = useState(500);
-  const [budget, setBudget] = useState(800000);
-  const [budgetInput, setBudgetInput] = useState('8');
+  const [guests, setGuests] = useState(0);
+  const [budget, setBudget] = useState(0);
+  const [budgetInput, setBudgetInput] = useState('');
 
   // Auto-detect the visitor's city from their browser location so vendors near
   // them surface first. Silently keeps the default if permission is denied or
@@ -40,7 +41,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onSearch, openEventWiz
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSearch({ eventType, category, city, guests, budget });
+    onSearch({ eventType, category, city: city || 'All', guests, budget });
   };
 
   return (
@@ -73,6 +74,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onSearch, openEventWiz
               onChange={(e) => setEventType(e.target.value)}
               className="w-full bg-transparent text-[#fdf1f5] font-semibold text-sm focus:outline-none cursor-pointer"
             >
+              <option value="" className="bg-[#26101c]">Select event type</option>
               <option value="Wedding" className="bg-[#26101c]">💒 Wedding</option>
               <option value="Birthday" className="bg-[#26101c]">🎂 Birthday Party</option>
               <option value="Engagement" className="bg-[#26101c]">💍 Engagement</option>
@@ -113,6 +115,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onSearch, openEventWiz
               }}
               className="w-full bg-transparent text-[#fdf1f5] font-semibold text-sm focus:outline-none cursor-pointer"
             >
+              <option value="" className="bg-[#26101c]">All locations</option>
               {groups.map(([state, cities]) => (
                 <optgroup key={state} label={state} className="bg-[#26101c]">
                   {cities.map((c) => (

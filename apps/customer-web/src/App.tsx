@@ -636,7 +636,13 @@ export function App() {
                 setMarketplaceBudget(params.budget > 0 ? params.budget : null);
                 setMarketplaceCategory(params.category);
                 triggerNotification(
-                  `Showing ${params.category === 'All' ? 'all categories' : params.category} vendors for ${params.eventType} in ${params.city} — ${params.guests} guests, ₹${(params.budget / 100000).toFixed(1)}L budget`
+                  [
+                    `Showing ${params.category === 'All' ? 'all categories' : params.category} vendors`,
+                    params.eventType ? `for ${params.eventType}` : '',
+                    params.city && params.city !== 'All' ? `in ${params.city}` : '',
+                    params.guests > 0 ? `— ${params.guests} guests` : '',
+                    params.budget > 0 ? `${params.guests > 0 ? ',' : '—'} ₹${(params.budget / 100000).toFixed(1)}L budget` : '',
+                  ].filter(Boolean).join(' ')
                 );
                 document.getElementById('vendor-marketplace-section')?.scrollIntoView({ behavior: 'smooth' });
               }}
