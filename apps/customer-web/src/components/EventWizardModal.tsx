@@ -173,7 +173,6 @@ export const EventWizardModal: React.FC<EventWizardModalProps> = ({ onClose, onE
                 onChange={(e) => setDate(e.target.value)}
                 className="w-full p-4 rounded-2xl bg-slate-900 border border-slate-800 text-white font-bold text-lg focus:outline-none focus:border-indigo-500"
               />
-              {!date && <p className="text-xs text-amber-400 mt-3 font-semibold">Pick your event date to continue.</p>}
             </div>
           )}
 
