@@ -10788,14 +10788,9 @@ export function App() {
                 )}
               </div>
 
-              {/* Open dates that need their own sessions / slots (everything else uses the defaults above). */}
-              <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-3 space-y-3">
-                <div>
-                  <p className="text-[11px] font-bold text-slate-300 uppercase">Open dates with their own sessions &amp; slots</p>
-                  <p className="text-[10px] text-slate-500 mt-0.5">Optional. Every day not marked unavailable is open with all sessions. To offer only some sessions{supportsSlotCapacity(myVendor?.category) ? ' or a different number of slots' : ''} on particular dates, switch the calendar to <strong className="text-slate-300">Open dates: sessions &amp; slots</strong>.</p>
-                </div>
-
-                {specialDates.length > 0 && (
+              {/* Dates that have their own sessions / slots (everything else uses the defaults). */}
+              {specialDates.length > 0 && (
+                <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-3 space-y-3">
                   <div className="space-y-1.5">
                     <p className="text-[10px] font-bold text-slate-400 uppercase">Dates with their own settings ({specialDates.length})</p>
                     {specialDates.map((d) => {
@@ -10817,8 +10812,8 @@ export function App() {
                       );
                     })}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
             </div>
 
