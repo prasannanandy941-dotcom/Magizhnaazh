@@ -36,6 +36,8 @@ export function AvailabilityCalendar({
     if (booked.has(key)) return 'booked';
     const open = openSlots(vendor, key).length;
     if (open === 0) return 'booked';
+    // Some sessions closed by the vendor or already booked: the day is only partly open.
+    if ((vendor.unavailableSlots?.[key] || []).length > 0) return 'limited';
     return open < offeredSlotIds(vendor, key).length ? 'limited' : 'available';
   };
 
@@ -44,7 +46,7 @@ export function AvailabilityCalendar({
   const upcomingOpen = useMemo(
     () => nextOpenDates(vendor, 400),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [vendor.unavailableDates, vendor.bookedDates, vendor.bookedSlots, vendor.slotCapacity, vendor.availableSlots, todayKey],
+    [vendor.unavailableDates, vendor.unavailableSlots, vendor.bookedDates, vendor.bookedSlots, vendor.slotCapacity, vendor.availableSlots, todayKey],
   );
 
   // Navigable range: this month through the next 2 years (or further if the

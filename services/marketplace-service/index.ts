@@ -723,6 +723,18 @@ app.put('/api/v1/vendors/:id', authMiddleware(), async (req: Request, res: Respo
     (vendor as any).unavailableDates = cleaned;
     vendor.markModified('unavailableDates');
   }
+  // Sessions closed on a date (the rest of the day stays open): { 'YYYY-MM-DD': ['morning', ...] }.
+  if (req.body.unavailableSlots !== undefined && req.body.unavailableSlots && typeof req.body.unavailableSlots === 'object') {
+    const known = new Set<string>(AVAILABILITY_SLOTS.map((sl) => sl.id));
+    const cleanedSlots: Record<string, string[]> = {};
+    for (const [date, ids] of Object.entries(req.body.unavailableSlots as Record<string, unknown>)) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !Array.isArray(ids)) continue;
+      const valid = Array.from(new Set(ids.map(String).filter((id) => known.has(id) && id !== 'fullday')));
+      if (valid.length) cleanedSlots[date] = valid;
+    }
+    (vendor as any).unavailableSlots = cleanedSlots;
+    vendor.markModified('unavailableSlots');
+  }
   if (req.body.availableSlots !== undefined && typeof req.body.availableSlots === 'object') {
     (vendor as any).availableSlots = req.body.availableSlots;
     vendor.markModified('availableSlots');

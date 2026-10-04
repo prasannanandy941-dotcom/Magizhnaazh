@@ -746,6 +746,9 @@ export interface Vendor {
   availableDates: string[];
   // Dates the vendor has marked as NOT available (holidays, other commitments, ...).
   unavailableDates?: string[];
+  // Sessions closed on a date while the rest of the day stays open (date -> slot ids), e.g.
+  // { '2026-10-16': ['morning'] }. A whole closed day goes in `unavailableDates` instead.
+  unavailableSlots?: Record<string, string[]>;
   // Which time-of-day slots the vendor offers per date (map date -> slot ids).
   // A date missing here (or empty) means all slots are offered — back-compat.
   availableSlots?: Record<string, string[]>;
@@ -990,7 +993,7 @@ export function supportsSlotCapacity(category?: string): boolean {
   return !!category && SLOT_CAPACITY_CATEGORIES.includes(category);
 }
 
-type SlotVendor = Partial<Pick<Vendor, 'category' | 'bookedDates' | 'bookedSlots' | 'availableSlots' | 'slotCapacity' | 'unavailableDates'>>;
+type SlotVendor = Partial<Pick<Vendor, 'category' | 'bookedDates' | 'bookedSlots' | 'availableSlots' | 'slotCapacity' | 'unavailableDates' | 'unavailableSlots'>>;
 
 const SESSION_SLOT_IDS = ['morning', 'afternoon', 'evening'];
 
@@ -1032,6 +1035,9 @@ export function slotsLeft(vendor: SlotVendor, date: string, slot: string): numbe
 // or the slot has no capacity left.
 export function isSlotBooked(vendor: SlotVendor, date: string, slot: string): boolean {
   if ((vendor.bookedDates || []).includes(date)) return true;
+  // A session the vendor closed on this date (or a Full Day when any session is closed).
+  const closed = vendor.unavailableSlots?.[date] || [];
+  if (closed.length > 0 && (closed.includes(slot) || (slot || 'fullday') === 'fullday')) return true;
   return slotsLeft(vendor, date, slot) <= 0;
 }
 
@@ -1064,9 +1070,14 @@ export function isDateFullyBooked(vendor: SlotVendor, date: string): boolean {
 
 // The slot ids the vendor OFFERS on a date (defaults to all slots when the
 // vendor hasn't restricted the date to specific slots).
-export function offeredSlotIds(vendor: Pick<Vendor, 'availableSlots'> | SlotVendor, date: string): string[] {
+export function offeredSlotIds(vendor: Partial<Pick<Vendor, 'availableSlots' | 'unavailableSlots'>> | SlotVendor, date: string): string[] {
   const chosen = vendor.availableSlots?.[date];
-  return chosen && chosen.length ? chosen : AVAILABILITY_SLOTS.map((s) => s.id);
+  const base = chosen && chosen.length ? chosen : AVAILABILITY_SLOTS.map((s) => s.id);
+  // Sessions the vendor closed on this date are not offered. A Full Day needs every session,
+  // so it is dropped as soon as any session is closed.
+  const closed = vendor.unavailableSlots?.[date] || [];
+  if (closed.length === 0) return base;
+  return base.filter((id) => id !== 'fullday' && !closed.includes(id));
 }
 
 // The slots still open on a date: offered by the vendor AND not already booked.

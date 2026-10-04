@@ -313,6 +313,10 @@ export function App() {
   const [availableDates, setAvailableDates] = useState<string[]>([]);
   // Dates the vendor is NOT available (they are open every other upcoming day).
   const [unavailableDates, setUnavailableDates] = useState<string[]>([]);
+  // Sessions closed on a date while the rest of that day stays open (date -> slot ids).
+  const [unavailableSlots, setUnavailableSlots] = useState<Record<string, string[]>>({});
+  // Which sessions the next "mark unavailable" applies to ('whole' = the entire day).
+  const [closeSessions, setCloseSessions] = useState<string[]>(['whole']);
   // Which time slots the vendor offers per date (date -> slot ids).
   const [availableSlots, setAvailableSlots] = useState<Record<string, string[]>>({});
   // How many bookings each slot can take per date (date -> slot id -> count).
@@ -462,6 +466,7 @@ export function App() {
         setOfferedOptionQuality(v.offeredOptionQuality || {});
         setAvailableDates(v.availableDates || []);
         setUnavailableDates(v.unavailableDates || []);
+        setUnavailableSlots((v as any).unavailableSlots || {});
         setAvailableSlots(v.availableSlots || {});
         setSlotCapacity(v.slotCapacity || {});
         setPackages(v.packages || []);
@@ -4345,11 +4350,37 @@ export function App() {
   };
   // Mark several dates as unavailable (from the multi-date picker).
   const addUnavailable = (dates: string[]) => {
-    const fresh = dates.filter((d) => d && !unavailableDates.includes(d));
-    if (fresh.length === 0) return;
-    setUnavailableDates((prev) => Array.from(new Set([...prev, ...fresh])).sort());
+    const wanted = dates.filter(Boolean);
+    if (wanted.length === 0) return;
+    const sessions = closeSessions.filter((x) => x !== 'whole');
+    if (closeSessions.includes('whole') || sessions.length === 0) {
+      // The entire day is closed.
+      setUnavailableDates((prev) => Array.from(new Set([...prev, ...wanted])).sort());
+      setUnavailableSlots((prev) => {
+        const next = { ...prev };
+        for (const d of wanted) delete next[d];
+        return next;
+      });
+    } else {
+      // Only the chosen sessions are closed; the rest of the day stays open.
+      setUnavailableSlots((prev) => {
+        const next = { ...prev };
+        for (const d of wanted) next[d] = Array.from(new Set([...(next[d] || []), ...sessions]));
+        return next;
+      });
+    }
   };
-  const removeUnavailable = (d: string) => setUnavailableDates((prev) => prev.filter((x) => x !== d));
+  const removeUnavailable = (d: string) => {
+    setUnavailableDates((prev) => prev.filter((x) => x !== d));
+    setUnavailableSlots((prev) => { const next = { ...prev }; delete next[d]; return next; });
+  };
+  const toggleCloseSession = (id: string) =>
+    setCloseSessions((prev) => {
+      if (id === 'whole') return ['whole'];
+      const without = prev.filter((x) => x !== 'whole' && x !== id);
+      const next = prev.includes(id) ? without : [...without, id];
+      return next.length ? next : ['whole'];
+    });
   // The vendor's default number of functions per slot (used on every date without its own setting).
   const defaultCapacity = (slot: string) => slotCapacity['default']?.[slot] || 1;
   const setDefaultCapacity = (slot: string, value: number) =>
@@ -4376,12 +4407,13 @@ export function App() {
     setSavingAvailability(true);
     setAvailabilityNotice('');
     try {
-      const payload: any = { unavailableDates };
+      const payload: any = { unavailableDates, unavailableSlots };
       if (supportsSlotCapacity(myVendor.category)) payload.slotCapacity = slotCapacity;
       const res = await updateVendor(token, myVendor.id, payload);
       if (res.data?.vendor) {
         setMyVendor(res.data.vendor);
         setUnavailableDates(res.data.vendor.unavailableDates || []);
+        setUnavailableSlots((res.data.vendor as any).unavailableSlots || {});
         setSlotCapacity(res.data.vendor.slotCapacity || {});
       }
       setAvailabilityNotice('Availability saved — customers can book every day except the dates you marked unavailable.');
@@ -10576,6 +10608,26 @@ export function App() {
             <div className="space-y-5 lg:space-y-0 lg:grid lg:grid-cols-[22rem_minmax(0,1fr)] lg:gap-6 lg:items-start">
             <div className="lg:sticky lg:top-24">
               <label className="block text-xs text-slate-400 mb-1.5">Mark the dates you are NOT available — pick one or many at once</label>
+              <div className="mb-3">
+                <p className="text-[11px] font-bold text-slate-300 uppercase mb-1.5">What is closed on those dates?</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {[{ id: 'whole', label: 'Whole day' }, { id: 'morning', label: 'Morning' }, { id: 'afternoon', label: 'Afternoon' }, { id: 'evening', label: 'Evening' }].map((o) => {
+                    const on = closeSessions.includes(o.id);
+                    return (
+                      <button
+                        key={o.id}
+                        type="button"
+                        onClick={() => toggleCloseSession(o.id)}
+                        aria-pressed={on}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${on ? 'bg-rose-600 border-rose-600 text-white' : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-rose-500/60'}`}
+                      >
+                        {o.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-[10px] text-slate-500 mt-1">Pick only some sessions to keep the rest of the day open for customers.</p>
+              </div>
               <MultiDatePicker mode="closed" existing={unavailableDates} onAdd={addUnavailable} />
               <div className="mt-3 space-y-2">
             {availabilityNotice && <p className="text-xs text-emerald-400 font-semibold">{availabilityNotice}</p>}
@@ -10618,16 +10670,21 @@ export function App() {
 
               <div>
                 <p className="text-[11px] font-bold text-slate-300 uppercase mb-2">Unavailable dates ({unavailableDates.filter((d) => d >= new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10)).length})</p>
-                {unavailableDates.length === 0 ? (
+                {unavailableDates.length === 0 && Object.keys(unavailableSlots).length === 0 ? (
                   <p className="text-xs text-slate-500">Nothing is blocked — customers can book you on any upcoming day.</p>
                 ) : (
                   <div className="flex flex-wrap gap-2">
-                    {unavailableDates.map((d) => (
-                      <span key={d} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-600/90 text-white text-xs font-semibold">
-                        {new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                        <button type="button" onClick={() => removeUnavailable(d)} aria-label={`Open ${d} again`} title="Open this date again" className="text-white/80 hover:text-white font-bold leading-none">×</button>
-                      </span>
-                    ))}
+                    {[...new Set([...unavailableDates, ...Object.keys(unavailableSlots)])].sort().map((d) => {
+                      const whole = unavailableDates.includes(d);
+                      const sessions = unavailableSlots[d] || [];
+                      return (
+                        <span key={d} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-white text-xs font-semibold ${whole ? 'bg-rose-600/90' : 'bg-amber-600/90'}`}>
+                          {new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          <span className="font-normal opacity-90">· {whole ? 'whole day' : sessions.map((x) => x.charAt(0).toUpperCase() + x.slice(1)).join(', ')}</span>
+                          <button type="button" onClick={() => removeUnavailable(d)} aria-label={`Open ${d} again`} title="Open this date again" className="text-white/80 hover:text-white font-bold leading-none">×</button>
+                        </span>
+                      );
+                    })}
                   </div>
                 )}
               </div>

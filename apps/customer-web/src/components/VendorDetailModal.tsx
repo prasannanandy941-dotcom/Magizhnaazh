@@ -324,7 +324,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
       setSessionPopup(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vendor.unavailableDates, vendor.bookedDates, vendor.bookedSlots, vendor.availableSlots, selectedEventDate]);
+  }, [vendor.unavailableDates, vendor.unavailableSlots, vendor.bookedDates, vendor.bookedSlots, vendor.availableSlots, selectedEventDate]);
   // Whenever the date changes, reset the slot to the first one still open.
   useEffect(() => {
     if (!selectedEventDate) { setSelectedSlot(''); return; }
