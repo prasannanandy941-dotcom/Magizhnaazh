@@ -317,6 +317,9 @@ export function App() {
   const [unavailableSlots, setUnavailableSlots] = useState<Record<string, string[]>>({});
   // Which sessions the next "mark unavailable" applies to ('whole' = the entire day).
   const [closeSessions, setCloseSessions] = useState<string[]>(['whole']);
+  // Sessions (and functions per session) to apply to the next set of "special open dates".
+  const [openSessions, setOpenSessions] = useState<string[]>(AVAILABILITY_SLOTS.map((x) => x.id));
+  const [openCaps, setOpenCaps] = useState<Record<string, number>>({});
   // Which time slots the vendor offers per date (date -> slot ids).
   const [availableSlots, setAvailableSlots] = useState<Record<string, string[]>>({});
   // How many bookings each slot can take per date (date -> slot id -> count).
@@ -4381,6 +4384,41 @@ export function App() {
       const next = prev.includes(id) ? without : [...without, id];
       return next.length ? next : ['whole'];
     });
+  // Give specific open dates their own sessions and (for multi-team vendors) functions per session.
+  const toggleOpenSession = (id: string) =>
+    setOpenSessions((prev) => {
+      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
+      return next.length ? next : prev;
+    });
+  const openCapFor = (slot: string) => openCaps[slot] || defaultCapacity(slot);
+  const applySpecialDates = (dates: string[]) => {
+    const wanted = dates.filter(Boolean);
+    if (wanted.length === 0 || openSessions.length === 0) return;
+    setAvailableSlots((prev) => {
+      const next = { ...prev };
+      for (const d of wanted) next[d] = [...openSessions];
+      return next;
+    });
+    if (supportsSlotCapacity(myVendor?.category)) {
+      setSlotCapacity((prev) => {
+        const next = { ...prev };
+        for (const d of wanted) {
+          const cap: Record<string, number> = {};
+          for (const id of openSessions) cap[id] = Math.min(MAX_SLOT_CAPACITY, Math.max(1, Math.floor(openCapFor(id)) || 1));
+          next[d] = cap;
+        }
+        return next;
+      });
+    }
+  };
+  const resetSpecialDate = (d: string) => {
+    setAvailableSlots((prev) => { const next = { ...prev }; delete next[d]; return next; });
+    setSlotCapacity((prev) => { const next = { ...prev }; delete next[d]; return next; });
+  };
+  const todayForSpecial = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  const specialDates = [...new Set([...Object.keys(availableSlots), ...Object.keys(slotCapacity).filter((k) => k !== 'default')])]
+    .filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d) && d >= todayForSpecial)
+    .sort();
   // The vendor's default number of functions per slot (used on every date without its own setting).
   const defaultCapacity = (slot: string) => slotCapacity['default']?.[slot] || 1;
   const setDefaultCapacity = (slot: string, value: number) =>
@@ -4407,13 +4445,14 @@ export function App() {
     setSavingAvailability(true);
     setAvailabilityNotice('');
     try {
-      const payload: any = { unavailableDates, unavailableSlots };
+      const payload: any = { unavailableDates, unavailableSlots, availableSlots };
       if (supportsSlotCapacity(myVendor.category)) payload.slotCapacity = slotCapacity;
       const res = await updateVendor(token, myVendor.id, payload);
       if (res.data?.vendor) {
         setMyVendor(res.data.vendor);
         setUnavailableDates(res.data.vendor.unavailableDates || []);
         setUnavailableSlots((res.data.vendor as any).unavailableSlots || {});
+        setAvailableSlots(res.data.vendor.availableSlots || {});
         setSlotCapacity(res.data.vendor.slotCapacity || {});
       }
       setAvailabilityNotice('Availability saved — customers can book every day except the dates you marked unavailable.');
@@ -10683,6 +10722,77 @@ export function App() {
                           <span className="font-normal opacity-90">· {whole ? 'whole day' : sessions.map((x) => x.charAt(0).toUpperCase() + x.slice(1)).join(', ')}</span>
                           <button type="button" onClick={() => removeUnavailable(d)} aria-label={`Open ${d} again`} title="Open this date again" className="text-white/80 hover:text-white font-bold leading-none">×</button>
                         </span>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Open dates that need their own sessions / slots (everything else uses the defaults above). */}
+              <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-3 space-y-3">
+                <div>
+                  <p className="text-[11px] font-bold text-slate-300 uppercase">Open dates with their own sessions &amp; slots</p>
+                  <p className="text-[10px] text-slate-500 mt-0.5">Optional. Every day not marked unavailable is open with all sessions. Use this to offer only some sessions{supportsSlotCapacity(myVendor?.category) ? ' or a different number of slots' : ''} on particular dates.</p>
+                </div>
+
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase mb-1.5">Sessions offered{supportsSlotCapacity(myVendor?.category) ? ' & functions per session' : ''}</p>
+                  <div className="space-y-1.5">
+                    {AVAILABILITY_SLOTS.map((sl) => {
+                      const on = openSessions.includes(sl.id);
+                      return (
+                        <div key={sl.id} className={`flex items-center justify-between gap-2 rounded-xl border px-3 py-2 ${on ? 'border-emerald-500/50 bg-emerald-500/10' : 'border-slate-800 bg-slate-950/40'}`}>
+                          <button type="button" onClick={() => toggleOpenSession(sl.id)} aria-pressed={on} className="flex items-center gap-2 text-left min-w-0 flex-1">
+                            <span className={`w-4 h-4 rounded border flex items-center justify-center text-[10px] font-bold ${on ? 'bg-emerald-500 border-emerald-500 text-slate-950' : 'border-slate-600 text-transparent'}`}>✓</span>
+                            <span className={`text-xs font-semibold ${on ? 'text-slate-100' : 'text-slate-500'}`}>{sl.label}</span>
+                          </button>
+                          {supportsSlotCapacity(myVendor?.category) && on && (
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <button type="button" onClick={() => setOpenCaps((p) => ({ ...p, [sl.id]: Math.max(1, openCapFor(sl.id) - 1) }))} disabled={openCapFor(sl.id) <= 1}
+                                aria-label={`Fewer ${sl.label} slots`} className="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 text-white font-bold disabled:opacity-40">−</button>
+                              <input type="number" min={1} max={MAX_SLOT_CAPACITY} value={openCapFor(sl.id)}
+                                onChange={(e) => setOpenCaps((p) => ({ ...p, [sl.id]: Math.min(MAX_SLOT_CAPACITY, Math.max(1, Math.floor(Number(e.target.value)) || 1)) }))}
+                                aria-label={`${sl.label} slots`} className="w-12 p-1 rounded-lg bg-slate-900 border border-slate-700 text-center text-sm text-white font-bold" />
+                              <button type="button" onClick={() => setOpenCaps((p) => ({ ...p, [sl.id]: Math.min(MAX_SLOT_CAPACITY, openCapFor(sl.id) + 1) }))} disabled={openCapFor(sl.id) >= MAX_SLOT_CAPACITY}
+                                aria-label={`More ${sl.label} slots`} className="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 text-white font-bold disabled:opacity-40">+</button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="max-w-sm">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase mb-1.5">Then pick the dates</p>
+                  <MultiDatePicker
+                    compact
+                    existing={specialDates}
+                    onAdd={applySpecialDates}
+                    emptyLabel="Select dates to apply these sessions to"
+                    actionLabel={(n) => `Apply to ${n} date${n === 1 ? '' : 's'}`}
+                  />
+                </div>
+
+                {specialDates.length > 0 && (
+                  <div className="space-y-1.5">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase">Dates with their own settings ({specialDates.length})</p>
+                    {specialDates.map((d) => {
+                      const ids = availableSlots[d] && availableSlots[d].length ? availableSlots[d] : AVAILABILITY_SLOTS.map((x) => x.id);
+                      return (
+                        <div key={d} className="flex items-center justify-between gap-2 rounded-xl bg-slate-950/50 border border-slate-800 px-3 py-2">
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold text-emerald-200">{new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                            <p className="text-[11px] text-slate-400 truncate">
+                              {ids.map((id) => {
+                                const label = AVAILABILITY_SLOTS.find((x) => x.id === id)?.label || id;
+                                const cap = slotCapacity[d]?.[id];
+                                return cap && supportsSlotCapacity(myVendor?.category) ? `${label} × ${cap}` : label;
+                              }).join(' · ')}
+                            </p>
+                          </div>
+                          <button type="button" onClick={() => resetSpecialDate(d)} aria-label={`Reset ${d} to the defaults`} title="Back to the default sessions" className="text-slate-400 hover:text-rose-400 font-bold text-sm shrink-0">×</button>
+                        </div>
                       );
                     })}
                   </div>

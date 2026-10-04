@@ -18,7 +18,10 @@ export const MultiDatePicker: React.FC<{
   compact?: boolean;
   // 'closed': the vendor is marking days they are NOT available (existing days show red).
   mode?: 'open' | 'closed';
-}> = ({ existing, onAdd, compact = false, mode = 'open' }) => {
+  // Custom button text (default: "Add N dates" / "Mark N dates unavailable").
+  actionLabel?: (count: number) => string;
+  emptyLabel?: string;
+}> = ({ existing, onAdd, compact = false, mode = 'open', actionLabel, emptyLabel }) => {
   const closed = mode === 'closed';
   const now = new Date();
   const todayIso = iso(now.getFullYear(), now.getMonth(), now.getDate());
@@ -149,7 +152,7 @@ export const MultiDatePicker: React.FC<{
       <p className="text-[10px] text-slate-500">
         Tap one date, or many. {closed
           ? <><span className="text-rose-400">Red</span> dates are already marked unavailable.</>
-          : <><span className="text-emerald-300">Green</span> dates are already added.</>}
+          : <><span className="text-emerald-300">Green</span> dates already have their own sessions &amp; slots.</>}
       </p>
 
       <button
@@ -159,8 +162,8 @@ export const MultiDatePicker: React.FC<{
         className={`w-full py-2.5 rounded-xl font-extrabold text-xs flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed ${closed ? 'bg-rose-600 hover:bg-rose-500 text-white' : 'bg-amber-500 hover:bg-amber-400 text-slate-950'}`}
       >
         <Plus className="w-4 h-4" /> {count === 0
-          ? (closed ? 'Select the dates you are not available' : 'Select dates to add')
-          : (closed ? `Mark ${count} date${count === 1 ? '' : 's'} unavailable` : `Add ${count} date${count === 1 ? '' : 's'}`)}
+          ? (emptyLabel ?? (closed ? 'Select the dates you are not available' : 'Select dates to add'))
+          : (actionLabel ? actionLabel(count) : closed ? `Mark ${count} date${count === 1 ? '' : 's'} unavailable` : `Add ${count} date${count === 1 ? '' : 's'}`)}
       </button>
     </div>
   );
