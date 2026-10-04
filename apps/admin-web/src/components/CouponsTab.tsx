@@ -29,7 +29,7 @@ interface FlattenedVendorDeal {
 }
 
 export const CouponsTab: React.FC<{ token: string }> = ({ token }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'vendor-offers' | 'platform-coupons'>('vendor-offers');
+  const [activeSubTab, setActiveSubTab] = useState<'vendor-offers' | 'platform-coupons'>('platform-coupons');
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
@@ -289,10 +289,10 @@ export const CouponsTab: React.FC<{ token: string }> = ({ token }) => {
         <div>
           <h1 className="font-display font-bold text-3xl text-white flex items-center gap-3">
             <Ticket className="w-8 h-8 text-rose-400" />
-            Offers & Coupons Management
+            Platform Discount Coupons
           </h1>
           <p className="text-slate-400 text-sm mt-1">
-            Monitor and govern promotional offers published by vendors for customers, as well as platform discount codes.
+            Create and manage platform-wide discount codes for customers.
           </p>
         </div>
 
@@ -309,35 +309,8 @@ export const CouponsTab: React.FC<{ token: string }> = ({ token }) => {
         </div>
       </div>
 
-      {/* Metric Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="glass-card p-4 rounded-2xl border border-slate-800 bg-slate-900/60">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">
-            <span>Vendor Offers</span>
-            <Tag className="w-4 h-4 text-amber-400" />
-          </div>
-          <div className="text-2xl font-display font-extrabold text-white">{totalOffersCount}</div>
-          <div className="text-[11px] text-slate-400 mt-1">Total recorded vendor deals</div>
-        </div>
-
-        <div className="glass-card p-4 rounded-2xl border border-slate-800 bg-slate-900/60">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">
-            <span>Live Offers</span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-          </div>
-          <div className="text-2xl font-display font-extrabold text-emerald-400">{liveOffersCount}</div>
-          <div className="text-[11px] text-slate-400 mt-1">Active on customer checkout</div>
-        </div>
-
-        <div className="glass-card p-4 rounded-2xl border border-slate-800 bg-slate-900/60">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">
-            <span>Participating Vendors</span>
-            <Store className="w-4 h-4 text-rose-400" />
-          </div>
-          <div className="text-2xl font-display font-extrabold text-white">{vendorsWithOffersCount}</div>
-          <div className="text-[11px] text-slate-400 mt-1">Vendors with active offers</div>
-        </div>
-
+      {/* Metric */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         <div className="glass-card p-4 rounded-2xl border border-slate-800 bg-slate-900/60">
           <div className="flex items-center justify-between text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">
             <span>Platform Coupons</span>
@@ -346,33 +319,6 @@ export const CouponsTab: React.FC<{ token: string }> = ({ token }) => {
           <div className="text-2xl font-display font-extrabold text-indigo-300">{coupons.length}</div>
           <div className="text-[11px] text-slate-400 mt-1">Global promo codes</div>
         </div>
-      </div>
-
-      {/* Sub-tab switcher */}
-      <div className="flex border-b border-slate-800 gap-6">
-        <button
-          onClick={() => setActiveSubTab('vendor-offers')}
-          className={`pb-3 font-bold text-sm transition-colors border-b-2 flex items-center gap-2 ${
-            activeSubTab === 'vendor-offers'
-              ? 'border-rose-500 text-rose-400'
-              : 'border-transparent text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <Sparkles className="w-4 h-4" />
-          Vendor Offers to Customers ({totalOffersCount})
-        </button>
-
-        <button
-          onClick={() => setActiveSubTab('platform-coupons')}
-          className={`pb-3 font-bold text-sm transition-colors border-b-2 flex items-center gap-2 ${
-            activeSubTab === 'platform-coupons'
-              ? 'border-rose-500 text-rose-400'
-              : 'border-transparent text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <Percent className="w-4 h-4" />
-          Platform Discount Coupons ({coupons.length})
-        </button>
       </div>
 
       {/* SUB-TAB 1: VENDOR OFFERS */}
