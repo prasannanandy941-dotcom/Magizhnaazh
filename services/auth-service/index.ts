@@ -1,5 +1,10 @@
 import path from 'path';
 import dotenv from 'dotenv';
+import dns from 'dns';
+
+// Reach outside services (MSG91, Meta, ...) over IPv4. Their allow-lists hold this server's
+// IPv4 address; Node would otherwise pick IPv6 when it is available and be refused.
+dns.setDefaultResultOrder('ipv4first');
 // Loads JWT_SECRET / JWT_EXPIRES_IN (session lifetime) and MONGODB_URI.
 dotenv.config({ path: path.resolve(__dirname, '.env') });
 
