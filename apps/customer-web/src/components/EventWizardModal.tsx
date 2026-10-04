@@ -25,7 +25,8 @@ export const EventWizardModal: React.FC<EventWizardModalProps> = ({ onClose, onE
   const todayIso = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
   // Starts at 0: the customer always enters the guest count themselves.
   const [guestCount, setGuestCount] = useState(0);
-  const [totalBudget, setTotalBudget] = useState(500000);
+  // Starts at 0 (the field shows an empty box with a 0 hint): the customer enters their own budget.
+  const [totalBudget, setTotalBudget] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
 
@@ -218,6 +219,7 @@ export const EventWizardModal: React.FC<EventWizardModalProps> = ({ onClose, onE
                     setTotalBudget(noLeadingZeros === '' ? 0 : Number(noLeadingZeros));
                   }}
                   placeholder="0"
+                  onFocus={(e) => e.target.select()}
                   className="w-full bg-transparent text-white font-bold text-2xl focus:outline-none"
                 />
               </div>
@@ -262,6 +264,7 @@ export const EventWizardModal: React.FC<EventWizardModalProps> = ({ onClose, onE
                 if (step - 1 < 4) setDate('');
                 // ...and going back before the guest-count step resets it to 0.
                 if (step - 1 < 5) setGuestCount(0);
+                if (step - 1 < 6) setTotalBudget(0);
                 setStep((s) => s - 1);
               }}
               disabled={submitting}
@@ -276,7 +279,7 @@ export const EventWizardModal: React.FC<EventWizardModalProps> = ({ onClose, onE
           {step < 7 ? (
             <button
               onClick={() => setStep((s) => s + 1)}
-              disabled={(step === 2 && !title.trim()) || (step === 4 && !date) || (step === 5 && guestCount < 1)}
+              disabled={(step === 2 && !title.trim()) || (step === 4 && !date) || (step === 5 && guestCount < 1) || (step === 6 && totalBudget < 1)}
               className="disabled:opacity-40 disabled:cursor-not-allowed px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-xs shadow-md flex items-center gap-1"
             >
               Next <ArrowRight className="w-4 h-4" />
