@@ -51,6 +51,9 @@ export const VendorEnquiryCard: React.FC<{
           <p className="text-xs font-medium text-emerald-800 mt-1">
             We'll get back to you as soon as we find a {category} vendor for <strong className="text-emerald-900">{eventDateLabel}</strong>.
           </p>
+          <button type="button" onClick={onShowAll} className="mt-2 text-xs font-bold text-emerald-800 underline underline-offset-2 hover:text-emerald-950">
+            {showingAll ? 'Only vendors free on this date' : 'Browse all vendors meanwhile'}
+          </button>
         </div>
       </div>
     );

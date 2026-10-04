@@ -211,6 +211,8 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
   const handleCategoryChange = (cat: string) => {
     setSelectedCategory(cat);
     onCategoryChange?.(cat);
+    // Nobody is free on the event date: tapping "All" shows every vendor instead of an empty list.
+    if (cat === 'All' && eventDate && dateMatches.length === 0) setShowAllDates(true);
     if (cat !== 'Venue') setActiveFacilities([]);
     setActiveOptions([]);
   };
