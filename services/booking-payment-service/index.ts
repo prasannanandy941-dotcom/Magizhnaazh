@@ -585,10 +585,11 @@ app.post('/api/v1/bookings/quote', authMiddleware(), async (req: Request, res: R
         });
       }
 
-      if (vendor.availableDates?.length > 0 && !vendor.availableDates.includes(resolvedEventDate)) {
+      // Vendors are open every upcoming day unless they closed it.
+      if ((vendor.unavailableDates || []).includes(resolvedEventDate)) {
         return res.status(400).json({
           success: false,
-          message: `${vendor.businessName} hasn't opened up ${resolvedEventDate} for booking. Please choose one of their available dates.`,
+          message: `${vendor.businessName} is not available on ${resolvedEventDate}. Please choose another date.`,
           code: 'DATE_NOT_AVAILABLE',
         });
       }

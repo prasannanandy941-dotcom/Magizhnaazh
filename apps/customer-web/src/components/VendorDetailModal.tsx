@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { LanguageModal } from '../../../../packages/shared-ui/i18n/react';
 import { hasChosenLanguage } from '../../../../packages/shared-ui/i18n/runtime';
 import { X, Star, MapPin, Check, ShieldCheck, Upload, Calendar as CalendarIcon, MessageSquare, Send, CreditCard, Sparkles, Camera, Bus, Gift, ListChecks, Phone, Clock, Plus, Maximize2, Car, Mail, Printer, FileText } from 'lucide-react';
-import { Vendor, Review, Event, getVendorTrustBadges, getLiveDeals, bestDealForAmount, AVAILABILITY_SLOTS, isSlotBooked, openSlots, offeredSlotIds, slotLabel, slotsLeft, slotCapacityFor } from '../../../../packages/shared-types';
+import { Vendor, Review, Event, getVendorTrustBadges, getLiveDeals, bestDealForAmount, AVAILABILITY_SLOTS, isSlotBooked, openSlots, offeredSlotIds, slotLabel, slotsLeft, slotCapacityFor, isVendorDateOpen, nextOpenDates } from '../../../../packages/shared-types';
 import { fetchVendorById, uploadReferenceImage, fetchVendorReviews, fetchVendorRecommendations } from '../api';
 import { indexBy } from '../../../../packages/shared-utils/dataStructures';
 import { AvailabilityCalendar } from './AvailabilityCalendar';
@@ -163,7 +163,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
     // A logged-out visitor opens straight on the vendor's dates when they've
     // listed any, so they see at a glance whether the vendor is free before
     // looking further. Logged-in customers get the normal Overview.
-    () => (!isAuthenticated && ((initialVendor.availableDates?.length ?? 0) > 0 || (initialVendor.bookedDates?.length ?? 0) > 0) ? 'availability' : 'overview'),
+    () => (!isAuthenticated ? 'availability' : 'overview'),
   );
   const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewsLoaded, setReviewsLoaded] = useState(false);
@@ -272,9 +272,9 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
   // Which price tier (if any) the customer chose within each package, keyed by
   // package id. The chosen tier's price is used for the booking.
   const [selectedTierByPkg, setSelectedTierByPkg] = useState<Record<string, { name: string; price: number }>>({});
-  // A vendor who has listed dates — even if every one of them is now booked —
-  // only takes bookings on open listed dates, so nothing is bookable once all close.
-  const hasFixedAvailability = (vendor.availableDates?.length ?? 0) > 0 || (vendor.bookedDates?.length ?? 0) > 0;
+  // Every vendor is booked for a specific date (open every upcoming day unless closed or full),
+  // so a date must always be chosen.
+  const hasFixedAvailability = true;
   // On phones the tab row scrolls sideways — keep the Availability tab in view
   // when the modal opens on it.
   const availabilityTabRef = useRef<HTMLButtonElement>(null);
@@ -282,11 +282,12 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
   // listed dates, the modal opens showing ONLY those dates. Tapping a date reveals the full vendor details
   // (tabs, sessions, booking) with that date already chosen.
   const [showDateGate, setShowDateGate] = useState(
-    () => !isAuthenticated && ((initialVendor.availableDates?.length ?? 0) > 0 || (initialVendor.bookedDates?.length ?? 0) > 0),
+    () => !isAuthenticated,
   );
   // Any listed date from today onwards (past dates stay visible on the calendar, faded).
   const todayIso = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
-  const hasUpcomingDates = (vendor.availableDates || []).some((d) => d >= todayIso);
+  const upcomingOpenDates = useMemo(() => nextOpenDates(vendor, 10), [vendor]);
+  const hasUpcomingDates = upcomingOpenDates.length > 0;
   const pickGateDate = (d: string) => {
     setSelectedEventDate(d);
     setActiveTab('availability');
@@ -300,7 +301,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
   // (A logged-in customer's event date is pre-picked when the vendor is open on it.)
   const [selectedEventDate, setSelectedEventDate] = useState(() => {
     const d = (activeEventDate || '').slice(0, 10);
-    return d && (initialVendor.availableDates || []).includes(d) && openSlots(initialVendor, d).length > 0 ? d : '';
+    return d && isVendorDateOpen(initialVendor, d) ? d : '';
   });
   // Time-of-day slot the customer picks for the chosen date (Morning/Afternoon/Evening).
   const [selectedSlot, setSelectedSlot] = useState('');
@@ -318,12 +319,12 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
   // If the picked date stops being open (e.g. another customer took the last slot
   // and the vendor's date closed), drop the selection so no sessions are offered.
   useEffect(() => {
-    if (selectedEventDate && hasFixedAvailability && !(vendor.availableDates || []).includes(selectedEventDate)) {
+    if (selectedEventDate && !isVendorDateOpen(vendor, selectedEventDate)) {
       setSelectedEventDate('');
       setSessionPopup(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vendor.availableDates, vendor.bookedDates, selectedEventDate]);
+  }, [vendor.unavailableDates, vendor.bookedDates, vendor.bookedSlots, vendor.availableSlots, selectedEventDate]);
   // Whenever the date changes, reset the slot to the first one still open.
   useEffect(() => {
     if (!selectedEventDate) { setSelectedSlot(''); return; }
@@ -695,8 +696,8 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
             </div>
             <p className="text-xs text-slate-400 mb-5">
               {hasUpcomingDates
-                ? <>Coloured dates are open for booking. Tap one to see sessions, packages and booking options.</>
-                : <>{vendor.businessName} has no upcoming open dates right now.</>}
+                ? <>Tap an open date to see sessions, packages and booking options. Red dates are unavailable.</>
+                : <>{vendor.businessName} has no open dates right now.</>}
             </p>
             <AvailabilityCalendar vendor={vendor} onPick={pickGateDate} />
             {!hasUpcomingDates && (
@@ -2743,9 +2744,6 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
               <CalendarIcon className="w-3.5 h-3.5 text-indigo-400" /> Pick a date to book {vendor.businessName}
             </span>
             <AvailabilityCalendar vendor={vendor} selectedDate={selectedEventDate} onPick={pickDate} />
-            {vendor.availableDates.length === 0 && (vendor.bookedDates?.length ?? 0) > 0 && (
-              <p className="text-[11px] text-amber-400 mt-2">All listed dates are booked by other customers — check back or contact the vendor for other dates.</p>
-            )}
 
             {/* Time-slot picker for the chosen date — a booked slot leaves the rest of the day open. */}
             {selectedEventDate && (
@@ -3031,7 +3029,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                           const event = events.find((item) => item.id === e.target.value);
                           setSelectedBookingEventId(e.target.value);
                           const d = (event?.date || '').slice(0, 10);
-                          const ok = !hasFixedAvailability || ((vendor.availableDates || []).includes(d) && openSlots(vendor, d).length > 0);
+                          const ok = isVendorDateOpen(vendor, d);
                           setSelectedEventDate(ok ? d : '');
                         }}
                         className="max-w-[190px] rounded-lg border border-slate-700 bg-slate-900 px-2 py-1 text-amber-300 font-semibold"
@@ -3060,11 +3058,11 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                     </span>
                   </div>
 
-                  {(hasFixedAvailability || (vendor.availableDates?.length ?? 0) > 0) && (
+                  {(hasFixedAvailability) && (
                     <div className="space-y-1.5 pt-1">
                       <span className="text-[10px] text-slate-400 uppercase font-bold block">Choose Open Date:</span>
                       <div className="flex flex-wrap gap-1.5">
-                        {vendor.availableDates.map((d) => (
+                        {upcomingOpenDates.map((d) => (
                           <button
                             key={d}
                             type="button"
@@ -3078,7 +3076,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                             {new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
                           </button>
                         ))}
-                        {(vendor.bookedDates ?? []).map((d) => (
+                        {(vendor.bookedDates ?? []).filter((d) => d >= todayIso).map((d) => (
                           <span
                             key={d}
                             className="px-2 py-1 rounded-lg text-[10px] font-semibold border border-rose-900/40 bg-rose-950/20 text-rose-400 line-through cursor-not-allowed flex items-center gap-1"

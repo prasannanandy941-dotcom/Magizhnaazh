@@ -7,7 +7,7 @@ import {
   ChevronLeft, ChevronRight, X, Search, ChevronDown, Check,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { Vendor, VendorCategory, VENDOR_CATEGORIES, getLiveDeals, openSlots } from '../../../../packages/shared-types';
+import { Vendor, VendorCategory, VENDOR_CATEGORIES, getLiveDeals, openSlots, isVendorDateOpen } from '../../../../packages/shared-types';
 import { STATIC_CITY_GROUPS } from '../../../../packages/shared-utils';
 import { FacilityChips, filterVenuesByFacilities } from './FacilitiesForm';
 import { useInfiniteList, LoadMoreSentinel } from '../../../../packages/shared-ui/lazy';
@@ -287,7 +287,7 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
   const [showAllDates, setShowAllDates] = useState(false);
   useEffect(() => { setShowAllDates(false); }, [eventDate]);
   const freeOnEventDate = (v: Vendor) =>
-    !!eventDate && (v.availableDates || []).includes(eventDate) && openSlots(v, eventDate).length > 0;
+    !!eventDate && isVendorDateOpen(v, eventDate);
   const dateMatches = eventDate ? filteredVendors.filter(freeOnEventDate) : [];
   // Strict: with an event date set, only vendors free on it are listed — no
   // fallback to everyone when nobody is free (the customer can change the date).

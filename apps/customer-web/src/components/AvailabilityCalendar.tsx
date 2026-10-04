@@ -1,10 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
-import { Vendor, openSlots, offeredSlotIds } from '../../../../packages/shared-types';
+import { Vendor, openSlots, offeredSlotIds, nextOpenDates } from '../../../../packages/shared-types';
 
-// Month-view calendar of a vendor's availability, so a customer sees at a
-// glance which days are open, nearly full, booked or not offered — instead of
-// a long list of date buttons when a vendor opens a whole month.
+// Month-view calendar of a vendor's availability. Vendors are open every upcoming day by
+// default, so the calendar highlights what is NOT available (days the vendor closed, and days
+// that are fully booked) while open days stay selectable.
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -15,7 +15,7 @@ const monthIndex = (key: string) => {
   return y * 12 + (m - 1);
 };
 
-type DayState = 'past' | 'expired' | 'available' | 'limited' | 'booked' | 'unavailable';
+type DayState = 'past' | 'available' | 'limited' | 'booked' | 'unavailable';
 
 export function AvailabilityCalendar({
   vendor,
@@ -27,30 +27,29 @@ export function AvailabilityCalendar({
   onPick: (date: string) => void;
 }) {
   const todayKey = toKey(new Date());
-  const available = useMemo(() => new Set(vendor.availableDates || []), [vendor.availableDates]);
+  const blocked = useMemo(() => new Set(vendor.unavailableDates || []), [vendor.unavailableDates]);
   const booked = useMemo(() => new Set(vendor.bookedDates || []), [vendor.bookedDates]);
 
   const stateOf = (key: string): DayState => {
-    // A date the vendor had opened (or that got booked) but which has now gone by.
-    if (key < todayKey) return available.has(key) || booked.has(key) ? 'expired' : 'past';
+    if (key < todayKey) return 'past';
+    if (blocked.has(key)) return 'unavailable';
     if (booked.has(key)) return 'booked';
-    if (!available.has(key)) return 'unavailable';
     const open = openSlots(vendor, key).length;
     if (open === 0) return 'booked';
     return open < offeredSlotIds(vendor, key).length ? 'limited' : 'available';
   };
 
-  // Upcoming open dates, sorted — used to pick the starting month and for
-  // the "next available" shortcut.
+  // Upcoming open dates, in order — used to pick the starting month and for the
+  // "next available" shortcut.
   const upcomingOpen = useMemo(
-    () => [...available].filter((d) => d >= todayKey && stateOf(d) !== 'booked').sort(),
+    () => nextOpenDates(vendor, 400),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [available, booked, todayKey, vendor.bookedSlots, vendor.slotCapacity],
+    [vendor.unavailableDates, vendor.bookedDates, vendor.bookedSlots, vendor.slotCapacity, vendor.availableSlots, todayKey],
   );
 
   // Navigable range: this month through the next 2 years (or further if the
-  // vendor has listed dates beyond that), so customers can plan any month.
-  const allKeys = [...available, ...booked].filter((d) => d >= todayKey.slice(0, 7));
+  // vendor has closed dates beyond that), so customers can plan any month.
+  const allKeys = [...blocked, ...booked].filter((d) => d >= todayKey.slice(0, 7));
   const minMonth = monthIndex(todayKey);
   const maxMonth = Math.max(minMonth + 23, ...allKeys.map(monthIndex));
   const [showMonthPicker, setShowMonthPicker] = useState(false);
@@ -67,48 +66,47 @@ export function AvailabilityCalendar({
   const monthLabel = first.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
   const openThisMonth = cells.filter((k) => k && (stateOf(k) === 'available' || stateOf(k) === 'limited')).length;
   const nextOpen = upcomingOpen.find((d) => monthIndex(d) > month);
-  const expiredThisMonth = cells.filter((k) => k && stateOf(k) === 'expired').length;
+  // Days a customer cannot book this month: closed by the vendor or fully booked.
+  const closedThisMonth = cells.filter((k) => k && (stateOf(k) === 'unavailable' || stateOf(k) === 'booked')).length;
 
   // Legend filter: tap a legend item to highlight just those days in the
   // calendar (others dim). Tap it again to clear.
-  type LegendKey = 'available' | 'limited' | 'booked' | 'unavailable' | 'expired';
+  type LegendKey = 'available' | 'limited' | 'booked' | 'unavailable';
   const [filter, setFilter] = useState<LegendKey | null>(null);
-  const listedKeys = [...new Set([...available, ...booked])].sort();
-  const datesFor = (f: LegendKey) =>
-    f === 'unavailable' ? [] : listedKeys.filter((k) => stateOf(k) === f);
-  const filteredDates = filter ? datesFor(filter) : [];
+  const listedKeys = [...new Set([...blocked, ...booked])].filter((k) => k >= todayKey).sort();
+  // Dates matching a legend item, within the month on screen.
+  const monthDatesFor = (f: LegendKey) => cells.filter((k): k is string => !!k && stateOf(k) === f);
+  const filteredDates = filter ? monthDatesFor(filter) : [];
   const toggleFilter = (f: LegendKey) => {
     const next = filter === f ? null : f;
     setFilter(next);
-    // Jump to the first matching month if this one has none of them.
-    if (next && next !== 'unavailable') {
-      const matches = datesFor(next);
+    // Jump to the first month that has a closed/booked day if this one has none.
+    if (next === 'unavailable' || next === 'booked') {
+      const matches = listedKeys.filter((k) => stateOf(k) === next);
       if (matches.length && !matches.some((k) => monthIndex(k) === month)) {
         setMonth(Math.max(minMonth, Math.min(maxMonth, monthIndex(matches[0]))));
       }
     }
   };
   const LEGEND: { key: LegendKey; label: string; swatch: string }[] = [
-    { key: 'available', label: 'Available', swatch: 'bg-gradient-to-br from-emerald-500 to-teal-600' },
+    { key: 'available', label: 'Available', swatch: 'bg-emerald-500/20 border border-emerald-500/60' },
     { key: 'limited', label: 'Few slots left', swatch: 'bg-gradient-to-br from-amber-400 to-orange-500' },
     { key: 'booked', label: 'Booked', swatch: 'bg-rose-500/20 border border-rose-500/50' },
-    { key: 'unavailable', label: 'Not available', swatch: 'border border-slate-700' },
-    { key: 'expired', label: 'Date passed', swatch: 'bg-slate-800/60 border border-dashed border-slate-600' },
+    { key: 'unavailable', label: 'Unavailable', swatch: 'bg-rose-600' },
   ];
-  const matchesFilter = (state: DayState) => !filter || state === filter || (filter === 'unavailable' && state === 'past');
+  const matchesFilter = (state: DayState) => !filter || state === filter;
 
   const cellClass: Record<DayState, string> = {
     past: 'text-slate-600 cursor-not-allowed',
-    expired: 'bg-slate-800/50 border border-dashed border-slate-600 text-slate-500 line-through cursor-not-allowed',
-    unavailable: 'text-slate-400 cursor-not-allowed',
+    // Days the vendor closed stand out strongly - they are the exception.
+    unavailable: 'bg-rose-600 text-white font-bold line-through decoration-2 cursor-not-allowed shadow-md shadow-rose-600/30',
     booked: 'bg-rose-500/15 border border-rose-500/40 text-rose-300 line-through decoration-2 cursor-not-allowed',
-    available: 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white font-bold shadow-md shadow-emerald-500/30 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-emerald-500/40 cursor-pointer',
+    available: 'bg-emerald-500/10 border border-emerald-500/40 text-emerald-300 font-semibold hover:bg-emerald-500/25 hover:-translate-y-0.5 cursor-pointer',
     limited: 'bg-gradient-to-br from-amber-400 to-orange-500 text-slate-950 font-bold shadow-md shadow-amber-500/30 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-amber-500/40 cursor-pointer',
   };
   const titleOf: Record<DayState, string> = {
     past: 'Past date',
-    expired: 'This open date has passed',
-    unavailable: 'Not available',
+    unavailable: 'Unavailable — the vendor is not taking bookings this day',
     booked: 'Already booked',
     available: 'Available — tap to book',
     limited: 'Few sessions left — tap to book',
@@ -141,18 +139,18 @@ export function AvailabilityCalendar({
           </button>
           <span
             className={`inline-block mt-2 px-4 py-1.5 rounded-full text-sm font-extrabold text-center leading-snug shadow-sm ${
-              openThisMonth > 0 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/60' : 'bg-rose-500/15 text-rose-500 border border-rose-500/60'
+              openThisMonth === 0 || closedThisMonth > 0 ? 'bg-rose-500/15 text-rose-500 border border-rose-500/60' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/60'
             }`}
           >
-            {filter && filter !== 'unavailable'
+            {filter
               ? filteredDates.length > 0
                 ? `Showing ${LEGEND.find((l) => l.key === filter)?.label.toLowerCase()} (${filteredDates.length})`
-                : `No ${LEGEND.find((l) => l.key === filter)?.label.toLowerCase()} dates`
-              : openThisMonth > 0
-                ? `${openThisMonth} date${openThisMonth === 1 ? '' : 's'} open`
-                : expiredThisMonth > 0
-                  ? 'Open dates this month have passed'
-                  : 'No open dates this month'}
+                : `No ${LEGEND.find((l) => l.key === filter)?.label.toLowerCase()} dates this month`
+              : openThisMonth === 0
+                ? 'No open dates this month'
+                : closedThisMonth > 0
+                  ? `${closedThisMonth} date${closedThisMonth === 1 ? '' : 's'} unavailable`
+                  : 'Open all month'}
           </span>
         </div>
         <button
@@ -171,7 +169,7 @@ export function AvailabilityCalendar({
         <div className="mb-4 grid grid-cols-3 sm:grid-cols-4 gap-1.5 max-h-60 overflow-y-auto rounded-2xl border border-slate-800 bg-slate-950/40 p-2">
           {Array.from({ length: maxMonth - minMonth + 1 }, (_, i) => minMonth + i).map((mi) => {
             const d = new Date(Math.floor(mi / 12), mi % 12, 1);
-            const openCount = upcomingOpen.filter((k) => monthIndex(k) === mi).length;
+            const openCount = listedKeys.filter((k) => monthIndex(k) === mi).length;
             const current = mi === month;
             return (
               <button
@@ -186,7 +184,7 @@ export function AvailabilityCalendar({
               >
                 {d.toLocaleDateString('en-IN', { month: 'short' })} {String(d.getFullYear()).slice(2)}
                 {openCount > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 min-w-4 h-4 px-1 rounded-full bg-emerald-500 text-[9px] font-bold text-white flex items-center justify-center">{openCount}</span>
+                  <span className="absolute -top-1.5 -right-1.5 min-w-4 h-4 px-1 rounded-full bg-rose-500 text-[9px] font-bold text-white flex items-center justify-center" title="Unavailable dates">{openCount}</span>
                 )}
               </button>
             );
@@ -249,7 +247,7 @@ export function AvailabilityCalendar({
 
       {/* Legend — each item is a filter button */}
       <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5 text-[11px] text-slate-400">
-        {LEGEND.filter((l) => l.key !== 'expired' || listedKeys.some((k) => stateOf(k) === 'expired')).map((l) => {
+        {LEGEND.map((l) => {
           const active = filter === l.key;
           return (
             <button

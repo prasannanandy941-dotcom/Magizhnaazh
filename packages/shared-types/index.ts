@@ -740,7 +740,12 @@ export interface Vendor {
   upiId?: string;
   qrCodeImage?: string;
   packages: VendorPackage[];
-  availableDates: string[]; // ISO date strings the vendor opened for booking
+  // Legacy list of dates the vendor opened. Vendors are now open on EVERY upcoming date by
+  // default; only `unavailableDates` (and full bookings) close a day. Kept for old data and for
+  // per-date slot settings (availableSlots / slotCapacity).
+  availableDates: string[];
+  // Dates the vendor has marked as NOT available (holidays, other commitments, ...).
+  unavailableDates?: string[];
   // Which time-of-day slots the vendor offers per date (map date -> slot ids).
   // A date missing here (or empty) means all slots are offered — back-compat.
   availableSlots?: Record<string, string[]>;
@@ -985,14 +990,15 @@ export function supportsSlotCapacity(category?: string): boolean {
   return !!category && SLOT_CAPACITY_CATEGORIES.includes(category);
 }
 
-type SlotVendor = Partial<Pick<Vendor, 'category' | 'bookedDates' | 'bookedSlots' | 'availableSlots' | 'slotCapacity'>>;
+type SlotVendor = Partial<Pick<Vendor, 'category' | 'bookedDates' | 'bookedSlots' | 'availableSlots' | 'slotCapacity' | 'unavailableDates'>>;
 
 const SESSION_SLOT_IDS = ['morning', 'afternoon', 'evening'];
 
 // How many bookings the vendor accepts in this slot on this date (min 1).
 export function slotCapacityFor(vendor: SlotVendor, date: string, slot: string): number {
   if (!supportsSlotCapacity(vendor.category)) return 1;
-  const n = Math.floor(Number(vendor.slotCapacity?.[date]?.[slot || 'fullday']));
+  // A date-specific value wins; otherwise the vendor's default ('default' key) applies.
+  const n = Math.floor(Number(vendor.slotCapacity?.[date]?.[slot || 'fullday'] ?? vendor.slotCapacity?.['default']?.[slot || 'fullday']));
   return Number.isFinite(n) && n >= 1 ? Math.min(n, MAX_SLOT_CAPACITY) : 1;
 }
 
@@ -1027,6 +1033,28 @@ export function slotsLeft(vendor: SlotVendor, date: string, slot: string): numbe
 export function isSlotBooked(vendor: SlotVendor, date: string, slot: string): boolean {
   if ((vendor.bookedDates || []).includes(date)) return true;
   return slotsLeft(vendor, date, slot) <= 0;
+}
+
+// Whether a date can be booked at all: not in the past, not marked unavailable by the vendor,
+// not fully booked. Vendors are open every upcoming day unless they close it.
+export function isVendorDateOpen(vendor: SlotVendor, date: string, today?: string): boolean {
+  const now = today ?? new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  if (!date || date < now) return false;
+  if ((vendor.unavailableDates || []).includes(date)) return false;
+  if ((vendor.bookedDates || []).includes(date)) return false;
+  return openSlots(vendor, date).length > 0;
+}
+
+// The next `limit` dates (from today) on which the vendor can be booked.
+export function nextOpenDates(vendor: SlotVendor, limit = 10, horizonDays = 400): string[] {
+  const out: string[] = [];
+  const start = new Date();
+  for (let i = 0; i < horizonDays && out.length < limit; i++) {
+    const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    if (isVendorDateOpen(vendor, key)) out.push(key);
+  }
+  return out;
 }
 
 // True when every slot the vendor offers on this date is out of capacity.

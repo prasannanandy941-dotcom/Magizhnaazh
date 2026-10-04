@@ -715,6 +715,14 @@ app.put('/api/v1/vendors/:id', authMiddleware(), async (req: Request, res: Respo
     vendor.availableDates = availableDates;
     vendor.markModified('availableDates');
   }
+  // Dates the vendor closes. Anything else upcoming stays open for booking.
+  if (Array.isArray(req.body.unavailableDates)) {
+    const cleaned = Array.from(new Set(
+      (req.body.unavailableDates as unknown[]).map((d) => String(d)).filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d)),
+    )).sort().slice(0, 1500);
+    (vendor as any).unavailableDates = cleaned;
+    vendor.markModified('unavailableDates');
+  }
   if (req.body.availableSlots !== undefined && typeof req.body.availableSlots === 'object') {
     (vendor as any).availableSlots = req.body.availableSlots;
     vendor.markModified('availableSlots');
@@ -738,8 +746,7 @@ app.put('/api/v1/vendors/:id', authMiddleware(), async (req: Request, res: Respo
   // capacity (or more slots) than its current bookings use.
   if (Array.isArray(availableDates) || req.body.slotCapacity !== undefined || req.body.availableSlots !== undefined) {
     const reopened = (vendor.bookedDates || []).filter((d) =>
-      (vendor.availableDates || []).includes(d)
-      && (vendor.bookedSlots || []).some((b) => b.date === d)
+      (vendor.bookedSlots || []).some((b) => b.date === d)
       && !isDateFullyBooked(vendor as any, d));
     if (reopened.length) vendor.bookedDates = (vendor.bookedDates || []).filter((d) => !reopened.includes(d));
   }

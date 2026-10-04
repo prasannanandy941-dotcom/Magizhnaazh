@@ -311,6 +311,8 @@ export function App() {
   const [giftCount, setGiftCount] = useState<string>('');
   const [giftDiscount, setGiftDiscount] = useState('');
   const [availableDates, setAvailableDates] = useState<string[]>([]);
+  // Dates the vendor is NOT available (they are open every other upcoming day).
+  const [unavailableDates, setUnavailableDates] = useState<string[]>([]);
   // Which time slots the vendor offers per date (date -> slot ids).
   const [availableSlots, setAvailableSlots] = useState<Record<string, string[]>>({});
   // How many bookings each slot can take per date (date -> slot id -> count).
@@ -459,6 +461,7 @@ export function App() {
         setOfferedOptionImages(v.offeredOptionImages || {});
         setOfferedOptionQuality(v.offeredOptionQuality || {});
         setAvailableDates(v.availableDates || []);
+        setUnavailableDates(v.unavailableDates || []);
         setAvailableSlots(v.availableSlots || {});
         setSlotCapacity(v.slotCapacity || {});
         setPackages(v.packages || []);
@@ -4340,22 +4343,20 @@ export function App() {
     }
     setNewDate('');
   };
-  // Open several dates at once (from the multi-date picker). New dates offer all slots.
-  const addDates = (dates: string[]) => {
-    const fresh = dates.filter((d) => d && !availableDates.includes(d));
+  // Mark several dates as unavailable (from the multi-date picker).
+  const addUnavailable = (dates: string[]) => {
+    const fresh = dates.filter((d) => d && !unavailableDates.includes(d));
     if (fresh.length === 0) return;
-    setAvailableDates((prev) => Array.from(new Set([...prev, ...fresh])).sort());
-    setAvailableSlots((prev) => {
-      const next = { ...prev };
-      for (const d of fresh) next[d] = AVAILABILITY_SLOTS.map((s) => s.id);
-      return next;
-    });
+    setUnavailableDates((prev) => Array.from(new Set([...prev, ...fresh])).sort());
   };
-  const removeDate = (d: string) => {
-    setAvailableDates((prev) => prev.filter((x) => x !== d));
-    setAvailableSlots((prev) => { const next = { ...prev }; delete next[d]; return next; });
-    setSlotCapacity((prev) => { const next = { ...prev }; delete next[d]; return next; });
-  };
+  const removeUnavailable = (d: string) => setUnavailableDates((prev) => prev.filter((x) => x !== d));
+  // The vendor's default number of functions per slot (used on every date without its own setting).
+  const defaultCapacity = (slot: string) => slotCapacity['default']?.[slot] || 1;
+  const setDefaultCapacity = (slot: string, value: number) =>
+    setSlotCapacity((prev) => ({
+      ...prev,
+      default: { ...(prev['default'] || {}), [slot]: Math.min(MAX_SLOT_CAPACITY, Math.max(1, Math.floor(value) || 1)) },
+    }));
   // Set how many functions the vendor can take in a slot on a date.
   const setDateSlotCapacity = (date: string, slot: string, value: number) =>
     setSlotCapacity((prev) => ({
@@ -4375,16 +4376,15 @@ export function App() {
     setSavingAvailability(true);
     setAvailabilityNotice('');
     try {
-      const payload: any = { availableDates, availableSlots };
+      const payload: any = { unavailableDates };
       if (supportsSlotCapacity(myVendor.category)) payload.slotCapacity = slotCapacity;
       const res = await updateVendor(token, myVendor.id, payload);
       if (res.data?.vendor) {
         setMyVendor(res.data.vendor);
-        setAvailableDates(res.data.vendor.availableDates || []);
-        setAvailableSlots(res.data.vendor.availableSlots || {});
+        setUnavailableDates(res.data.vendor.unavailableDates || []);
         setSlotCapacity(res.data.vendor.slotCapacity || {});
       }
-      setAvailabilityNotice('Availability saved — customers see only your open dates.');
+      setAvailabilityNotice('Availability saved — customers can book every day except the dates you marked unavailable.');
     } catch (err: any) {
       setAvailabilityNotice(err.message || 'Could not save availability.');
     } finally {
@@ -4618,8 +4618,7 @@ export function App() {
     ...(myVendor?.category !== 'Venue' ? [{ key: 'facilities', label: facilitiesSectionLabel(myVendor?.category), short: 'Services', Icon: Sparkles }] : []),
     ...(myVendor?.category !== 'Wedding Planner' && myVendor?.category !== 'Event Host/Anchor' ? [{ key: 'packages', label: myVendor?.category === 'Venue' ? 'Halls' : 'Packages', count: packages.length || undefined, short: myVendor?.category === 'Venue' ? 'Halls' : 'Packages', Icon: myVendor?.category === 'Venue' ? Building2 : Gift }] : []),
     ...(myVendor?.category !== 'Security' ? [{ key: 'offers', label: 'Offers', count: deals.length || undefined, short: 'Offers', Icon: CreditCard }] : []),
-    // Venue availability is managed directly under each hall/session
-    ...(myVendor?.category !== 'Venue' ? [{ key: 'availability', label: 'Availability', short: 'Availability', Icon: CalendarDays }] : []),
+    { key: 'availability', label: 'Availability', short: 'Availability', Icon: CalendarDays },
     { key: 'portfolio', label: 'Local Disk Portfolio', short: 'Portfolio', Icon: Upload },
     { key: 'profile', label: 'Business Profile', short: 'Profile', Icon: Store },
   ];
@@ -7045,64 +7044,9 @@ export function App() {
                             </div>
                           </div>
 
-                          {/* When sessions (Morning, Afternoon, Evening, Full Day) are selected, show date availability option (Image 1) */}
-                          {(p.venue?.sessions || []).length > 0 && (
-                            <div className="space-y-3 pt-2 border-t border-slate-800/80">
-                              <label className="block text-[10px] text-amber-400 uppercase font-bold">
-                                Available dates for sessions
-                              </label>
-                              <div className="space-y-3">
-                                {(p.venue?.sessions || []).map((session) => {
-                                  const dates: string[] = p.venue?.sessionDates?.[session] || [];
-                                  const inputKey = `${p.id}-${session}`;
-                                  return (
-                                    <div key={session} className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2">
-                                      <div className="flex items-center justify-between">
-                                        <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
-                                          <CalendarDays className="w-3.5 h-3.5 text-amber-400" />
-                                          {session} Session
-                                        </span>
-                                        <span className="text-[10px] text-slate-500">
-                                          {dates.length} date{dates.length === 1 ? '' : 's'} added
-                                        </span>
-                                      </div>
-
-                                      {/* Add one or many dates for this session */}
-                                      <MultiDatePicker
-                                        compact
-                                        existing={dates}
-                                        onAdd={(ds) => ds.forEach((d) => addVenueSessionDate(p.id, session, d))}
-                                      />
-
-                                      {/* List of dates added for this session */}
-                                      {dates.length > 0 ? (
-                                        <div className="flex flex-wrap gap-1.5 pt-1">
-                                          {dates.map((d) => (
-                                            <span
-                                              key={d}
-                                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-xs text-emerald-200"
-                                            >
-                                              {new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                              <button
-                                                type="button"
-                                                onClick={() => removeVenueSessionDate(p.id, session, d)}
-                                                className="text-slate-400 hover:text-rose-400 font-bold text-xs leading-none ml-0.5"
-                                                title={`Remove ${d}`}
-                                              >
-                                                ×
-                                              </button>
-                                            </span>
-                                          ))}
-                                        </div>
-                                      ) : (
-                                        <p className="text-[10px] text-slate-500">No dates added yet for {session}. Add open dates above.</p>
-                                      )}
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          )}
+                          <p className="text-[11px] text-slate-400 pt-2 border-t border-slate-800/80">
+                            📅 Your hall is open every upcoming day. Mark the dates you cannot host on the <strong className="text-slate-200">Availability</strong> tab.
+                          </p>
 
                           <div className="grid grid-cols-2 gap-3">
                             <div>
@@ -10590,7 +10534,7 @@ export function App() {
         )}
 
         {/* Availability Tab */}
-        {activeTab === 'availability' && myVendor?.category !== 'Venue' && (
+        {activeTab === 'availability' && (
           <div className="max-w-6xl space-y-5 min-w-0 overflow-x-hidden">
           {/* Calendar sync — subscribe bookings into Google/Apple/Outlook. */}
           <div className="glass-card p-6 rounded-3xl border border-indigo-500/30 bg-indigo-500/5 space-y-3">
@@ -10622,17 +10566,17 @@ export function App() {
           <div className="glass-card p-4 sm:p-8 rounded-3xl border border-slate-800 space-y-5">
             <div>
               <h3 className="font-bold text-xl text-white">Availability Calendar</h3>
-              <p className="text-xs text-slate-400 mt-1">Add the dates you're open to book. Customers can only request these dates. Confirmed booking dates are blocked automatically.</p>
+              <p className="text-xs text-slate-400 mt-1">You are open for booking <strong className="text-slate-200">every upcoming day</strong> by default. Mark only the dates you are <strong className="text-rose-400">not available</strong>. Days that get fully booked close automatically.</p>
               {supportsSlotCapacity(myVendor?.category) && (
-                <p className="text-xs text-amber-300/90 mt-1.5">Have more than one team? Set how many functions you can handle in each slot — e.g. Morning × 4 lets four customers book the same morning. A Full Day booking also uses one Morning, Afternoon and Evening spot.</p>
+                <p className="text-xs text-amber-300/90 mt-1.5">Have more than one team? Set how many functions you can handle in each slot below — e.g. Morning × 4 lets four customers book the same morning. A Full Day booking also uses one Morning, Afternoon and Evening spot.</p>
               )}
             </div>
 
-            {/* Wide screens: calendar on the left, the added dates beside it (two cards per row). */}
+            {/* Wide screens: calendar on the left, the unavailable dates beside it. */}
             <div className="space-y-5 lg:space-y-0 lg:grid lg:grid-cols-[22rem_minmax(0,1fr)] lg:gap-6 lg:items-start">
             <div className="lg:sticky lg:top-24">
-              <label className="block text-xs text-slate-400 mb-1.5">Add available dates — pick one or many at once</label>
-              <MultiDatePicker existing={availableDates} onAdd={addDates} />
+              <label className="block text-xs text-slate-400 mb-1.5">Mark the dates you are NOT available — pick one or many at once</label>
+              <MultiDatePicker mode="closed" existing={unavailableDates} onAdd={addUnavailable} />
               <div className="mt-3 space-y-2">
             {availabilityNotice && <p className="text-xs text-emerald-400 font-semibold">{availabilityNotice}</p>}
 
@@ -10646,80 +10590,50 @@ export function App() {
               </div>
             </div>
 
-            {availableDates.length === 0 ? (
-              <p className="text-xs text-slate-500">No open dates yet — add some on the calendar.</p>
-            ) : (
-              <div className="space-y-2">
-                <p className="text-[11px] text-slate-500">For each open date, choose which time slots you offer. Tap a slot to include/exclude it.</p>
-                <div className="grid gap-3 items-start grid-cols-[repeat(auto-fill,minmax(min(18rem,100%),1fr))]">
-                {availableDates.map((d) => {
-                  const offered = offeredSlotIds({ availableSlots }, d);
-                  return (
-                    <div key={d} className="rounded-2xl border border-slate-800 bg-slate-900/40 p-3">
-                      <div className="flex items-center justify-between gap-2 mb-2">
-                        <span className="text-sm font-bold text-emerald-200">
-                          {new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                        </span>
-                        <button type="button" onClick={() => removeDate(d)} aria-label={`Remove ${d}`} className="w-6 h-6 rounded-lg flex items-center justify-center text-slate-400 hover:text-rose-400 hover:bg-slate-800">×</button>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {AVAILABILITY_SLOTS.map((s) => {
-                          const on = offered.includes(s.id);
-                          return (
-                            <button
-                              key={s.id}
-                              type="button"
-                              onClick={() => toggleDateSlot(d, s.id)}
-                              className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
-                                on
-                                  ? 'bg-emerald-500 text-slate-950 border-emerald-500 font-bold'
-                                  : 'bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-600'
-                              }`}
-                            >
-                              {s.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                      {offered.length === 0 && <p className="text-[10px] text-amber-400 mt-1.5">No slots selected — customers can't book this date. Pick at least one.</p>}
-                      {supportsSlotCapacity(myVendor?.category) && offered.length > 0 && (
-                        <div className="mt-3 pt-3 border-t border-slate-800/80">
-                          <p className="text-[11px] text-slate-400 mb-2">How many functions can you handle in each slot?</p>
-                          <div className="grid gap-2 grid-cols-[repeat(auto-fit,minmax(min(13rem,100%),1fr))]">
-                            {AVAILABILITY_SLOTS.filter((s) => offered.includes(s.id)).map((s) => {
-                              const cap = slotCapacity[d]?.[s.id] || 1;
-                              const bookedCount = (myVendor?.bookedSlots || []).filter((b) => b.date === d && (b.slot || 'fullday') === s.id).length;
-                              return (
-                                <div key={s.id} className="flex items-center justify-between gap-2 rounded-xl bg-slate-950/40 border border-slate-800 px-3 py-2">
-                                  <div className="min-w-0 flex-1">
-                                    <p className="text-xs font-semibold text-slate-200 truncate">{s.label}</p>
-                                    {bookedCount > 0 && <p className="text-[10px] text-slate-500">{bookedCount} booked</p>}
-                                  </div>
-                                  <div className="flex items-center gap-1.5 shrink-0">
-                                    <button type="button" onClick={() => setDateSlotCapacity(d, s.id, cap - 1)} disabled={cap <= 1}
-                                      aria-label={`Fewer ${s.label} functions`}
-                                      className="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 text-white font-bold disabled:opacity-40">−</button>
-                                    <input type="number" min={1} max={MAX_SLOT_CAPACITY} value={cap}
-                                      onChange={(e) => setDateSlotCapacity(d, s.id, Number(e.target.value))}
-                                      aria-label={`${s.label} functions`}
-                                      className="w-12 p-1 rounded-lg bg-slate-900 border border-slate-700 text-center text-sm text-white font-bold" />
-                                    <button type="button" onClick={() => setDateSlotCapacity(d, s.id, cap + 1)} disabled={cap >= MAX_SLOT_CAPACITY}
-                                      aria-label={`More ${s.label} functions`}
-                                      className="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 text-white font-bold disabled:opacity-40">+</button>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
+            <div className="space-y-4 min-w-0">
+              {supportsSlotCapacity(myVendor?.category) && (
+                <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-3">
+                  <p className="text-[11px] font-bold text-slate-300 uppercase mb-2">Functions you can handle per slot</p>
+                  <div className="grid gap-2 grid-cols-[repeat(auto-fit,minmax(min(13rem,100%),1fr))]">
+                    {AVAILABILITY_SLOTS.map((sl) => (
+                      <div key={sl.id} className="flex items-center justify-between gap-2 rounded-xl bg-slate-950/40 border border-slate-800 px-3 py-2">
+                        <p className="text-xs font-semibold text-slate-200 min-w-0 flex-1 truncate">{sl.label}</p>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button type="button" onClick={() => setDefaultCapacity(sl.id, defaultCapacity(sl.id) - 1)} disabled={defaultCapacity(sl.id) <= 1}
+                            aria-label={`Fewer ${sl.label} functions`}
+                            className="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 text-white font-bold disabled:opacity-40">−</button>
+                          <input type="number" min={1} max={MAX_SLOT_CAPACITY} value={defaultCapacity(sl.id)}
+                            onChange={(e) => setDefaultCapacity(sl.id, Number(e.target.value))}
+                            aria-label={`${sl.label} functions`}
+                            className="w-12 p-1 rounded-lg bg-slate-900 border border-slate-700 text-center text-sm text-white font-bold" />
+                          <button type="button" onClick={() => setDefaultCapacity(sl.id, defaultCapacity(sl.id) + 1)} disabled={defaultCapacity(sl.id) >= MAX_SLOT_CAPACITY}
+                            aria-label={`More ${sl.label} functions`}
+                            className="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 text-white font-bold disabled:opacity-40">+</button>
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
+                      </div>
+                    ))}
+                  </div>
                 </div>
+              )}
+
+              <div>
+                <p className="text-[11px] font-bold text-slate-300 uppercase mb-2">Unavailable dates ({unavailableDates.filter((d) => d >= new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10)).length})</p>
+                {unavailableDates.length === 0 ? (
+                  <p className="text-xs text-slate-500">Nothing is blocked — customers can book you on any upcoming day.</p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {unavailableDates.map((d) => (
+                      <span key={d} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-600/90 text-white text-xs font-semibold">
+                        {new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        <button type="button" onClick={() => removeUnavailable(d)} aria-label={`Open ${d} again`} title="Open this date again" className="text-white/80 hover:text-white font-bold leading-none">×</button>
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
             </div>
+            </div>
+
 
 
 
