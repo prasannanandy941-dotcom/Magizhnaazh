@@ -3002,11 +3002,11 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
           onClick={() => setAdvancePanelOpen(false)}
         >
           <div
-            className="glass-card w-full max-w-sm rounded-3xl border border-amber-500/30 shadow-2xl shadow-[0_0_50px_-14px_rgba(245,158,11,0.5)] overflow-hidden relative isolate bg-gradient-to-b from-[#1b1030] via-[#140b22] to-[#0d0716]"
+            className="glass-card w-full max-w-sm max-h-[calc(100vh-2rem)] max-h-[calc(100dvh-2rem)] flex flex-col rounded-3xl border border-amber-500/30 shadow-2xl shadow-[0_0_50px_-14px_rgba(245,158,11,0.5)] overflow-hidden relative isolate bg-gradient-to-b from-[#1b1030] via-[#140b22] to-[#0d0716]"
             onClick={(e) => e.stopPropagation()}
           >
             <GoldSparkles count={30} />
-            <div className="relative px-6 py-4 border-b border-amber-500/20 bg-gradient-to-r from-[#241541] via-[#1a1030] to-[#241541] flex items-center justify-between">
+            <div className="relative shrink-0 px-6 py-4 border-b border-amber-500/20 bg-gradient-to-r from-[#241541] via-[#1a1030] to-[#241541] flex items-center justify-between">
               <h3 className="font-display font-bold text-lg text-white">{vendor.acceptsOnlinePayments === false ? 'Book This Vendor' : 'Book & Pay Advance'}</h3>
               <button
                 type="button"
@@ -3017,7 +3017,8 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
               </button>
             </div>
 
-            <div className="p-6 space-y-4">
+            {/* The body scrolls inside the panel, so the title and close button stay in view on short screens. */}
+            <div className="p-6 space-y-4 overflow-y-auto overscroll-contain min-h-0 flex-1">
               <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800">
                 {activeEventTitle && (
                   <div className="flex items-center justify-between gap-3 text-xs pb-2.5 mb-2.5 border-b border-slate-800">
