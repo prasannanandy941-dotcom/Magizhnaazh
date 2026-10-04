@@ -356,6 +356,34 @@ export function deleteBanner(token: string, id: string) {
   return authedFetch(`/api/v1/banners/${id}`, token, { method: 'DELETE' });
 }
 
+// --- Vendor enquiries (customers asking us to find a vendor) ---
+
+export interface VendorEnquiryRow {
+  id: string;
+  customerName: string;
+  email: string;
+  phone: string;
+  category: string;
+  city: string;
+  eventTitle: string;
+  eventDate: string;
+  notes: string;
+  status: 'open' | 'resolved';
+  createdAt: string;
+}
+
+export function fetchEnquiries(token: string): Promise<{ success: boolean; data?: { enquiries: VendorEnquiryRow[] } }> {
+  return authedFetch('/api/v1/enquiries', token);
+}
+
+export function toggleEnquiryResolved(token: string, id: string) {
+  return authedFetch(`/api/v1/enquiries/${id}/resolve`, token, { method: 'PUT' });
+}
+
+export function deleteEnquiry(token: string, id: string) {
+  return authedFetch(`/api/v1/enquiries/${id}`, token, { method: 'DELETE' });
+}
+
 // --- Coupons ---
 
 export function fetchCoupons(token: string): Promise<{ success: boolean; data?: { coupons: Coupon[] } }> {

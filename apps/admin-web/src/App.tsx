@@ -41,6 +41,7 @@ const FeedbackTab = lazyNamed(() => import('./components/FeedbackTab'), 'Feedbac
 const ComplaintsTab = lazyNamed(() => import('./components/ComplaintsTab'), 'ComplaintsTab');
 const InvitationTemplatesTab = lazyNamed(() => import('./components/InvitationTemplatesTab'), 'InvitationTemplatesTab');
 const BannersTab = lazyNamed(() => import('./components/BannersTab'), 'BannersTab');
+const EnquiriesTab = lazyNamed(() => import('./components/EnquiriesTab'), 'EnquiriesTab');
 const CouponsTab = lazyNamed(() => import('./components/CouponsTab'), 'CouponsTab');
 const SettingsTab = lazyNamed(() => import('./components/SettingsTab'), 'SettingsTab');
 const SettlementsTab = lazyNamed(() => import('./components/SettlementsTab'), 'SettlementsTab');
@@ -53,7 +54,7 @@ const THEME_KEY = 'magizhnaazh_theme';
 
 type TabKey =
   | 'dashboard' | 'monitor' | 'users' | 'vendors' | 'categories' | 'locations' | 'events' | 'bookings'
-  | 'reviews' | 'feedback' | 'complaints' | 'templates' | 'banners' | 'coupons' | 'settlements' | 'settings' | 'analytics';
+  | 'reviews' | 'feedback' | 'complaints' | 'templates' | 'banners' | 'enquiries' | 'coupons' | 'settlements' | 'settings' | 'analytics';
 
 const NAV: { key: TabKey; label: string; icon: React.ElementType }[] = [
   { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -69,6 +70,7 @@ const NAV: { key: TabKey; label: string; icon: React.ElementType }[] = [
   { key: 'complaints', label: 'Complaints', icon: AlertCircle },
   { key: 'templates', label: 'Invitation Templates', icon: ImageIcon },
   { key: 'banners', label: 'Banners', icon: Megaphone },
+  { key: 'enquiries', label: 'Vendor Requests', icon: MessageSquare },
   { key: 'coupons', label: 'Offers & Coupons', icon: Ticket },
   { key: 'settlements', label: 'Settlements', icon: Wallet },
   { key: 'settings', label: 'Settings', icon: SettingsIcon },
@@ -136,7 +138,7 @@ export function App() {
     if (!user || !token) return;
     preloadWhenIdle([
       DashboardTab, UsersTab, VendorsTab, CategoriesTab, LocationsTab, EventsTab, BookingsTab, ReviewsTab,
-      FeedbackTab, ComplaintsTab, InvitationTemplatesTab, BannersTab, CouponsTab, SettingsTab, SettlementsTab,
+      FeedbackTab, ComplaintsTab, InvitationTemplatesTab, BannersTab, EnquiriesTab, CouponsTab, SettingsTab, SettlementsTab,
       AnalyticsTab, EcosystemMonitor,
     ]);
   }, [user, token]);
@@ -243,6 +245,7 @@ export function App() {
           {activeTab === 'complaints' && <ComplaintsTab token={token} />}
           {activeTab === 'templates' && <InvitationTemplatesTab token={token} />}
           {activeTab === 'banners' && <BannersTab token={token} />}
+          {activeTab === 'enquiries' && <EnquiriesTab token={token} />}
           {activeTab === 'coupons' && <CouponsTab token={token} />}
           {activeTab === 'settlements' && <SettlementsTab token={token} />}
           {activeTab === 'settings' && <SettingsTab token={token} />}

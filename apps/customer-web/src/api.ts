@@ -384,6 +384,22 @@ export function createEvent(input: {
   });
 }
 
+// Ask the team to find a vendor when none is free on the event date.
+export function createVendorEnquiry(input: {
+  category: string;
+  eventDate: string;
+  eventTitle?: string;
+  city?: string;
+  phone?: string;
+  notes?: string;
+  customerName?: string;
+}): Promise<{ success: boolean; message?: string }> {
+  return authedFetch<{ success: boolean; message?: string }>('/api/v1/enquiries', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
 // Permanently delete one of the customer's events.
 export function deleteEvent(eventId: string): Promise<{ success: boolean; message?: string }> {
   return authedFetch<{ success: boolean; message?: string }>(`/api/v1/events/${eventId}`, { method: 'DELETE' });

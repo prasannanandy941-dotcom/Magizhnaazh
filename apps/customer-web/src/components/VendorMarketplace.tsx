@@ -20,6 +20,7 @@ type Suggestion =
   | { kind: 'city'; label: string };
 import { CateringMenuChips } from './CateringMenu';
 import { PortfolioChips } from './Portfolio';
+import { VendorEnquiryCard } from './VendorEnquiryCard';
 import { DecorationChips } from './DecorationThemes';
 import { MakeupChips } from './MakeupLooks';
 import { TransportChips } from './TransportOptions';
@@ -56,6 +57,8 @@ interface VendorMarketplaceProps {
   // narrows to vendors still open on that date.
   eventDate?: string;
   eventTitle?: string;
+  // Used to pre-fill the "request a vendor" form when nobody is free on the event date.
+  customerName?: string;
 }
 
 const CATEGORIES: (VendorCategory | 'All')[] = ['All', ...VENDOR_CATEGORIES];
@@ -104,6 +107,7 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
   cityGroups,
   eventDate: rawEventDate,
   eventTitle,
+  customerName,
 }) => {
   const groups = cityGroups && cityGroups.length > 0 ? cityGroups : STATIC_CITY_GROUPS;
   const [selectedCategory, setSelectedCategory] = useState<string>(selectedCategoryProp || 'All');
@@ -544,16 +548,16 @@ export const VendorMarketplace: React.FC<VendorMarketplaceProps> = ({
             </button>
           </div>
         ) : (
-          <div className="mb-6 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
-            <p className="text-sm text-amber-100">
-              No {categoryWord}vendors are available on your event date <strong className="text-amber-300">{eventDateLabel}</strong>{eventTitle ? <> ({eventTitle})</> : null}.
-            </p>
-            <p className="text-xs text-amber-200/80 mt-1">No vendors available on this date. Try another event date, or browse everyone.</p>
-            <button type="button" onClick={() => setShowAllDates((v) => !v)}
-              className="mt-2 text-xs font-bold text-amber-300 hover:text-amber-200 underline underline-offset-2">
-              {showAllDates ? `Only vendors free on ${eventDateLabel}` : 'Show all vendors'}
-            </button>
-          </div>
+          <VendorEnquiryCard
+            eventDate={eventDate}
+            eventDateLabel={eventDateLabel}
+            eventTitle={eventTitle}
+            defaultCategory={selectedCategory}
+            customerName={customerName}
+            city={selectedCity}
+            onShowAll={() => setShowAllDates((v) => !v)}
+            showingAll={showAllDates}
+          />
         )
       )}
 

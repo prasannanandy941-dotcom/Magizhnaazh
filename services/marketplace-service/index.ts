@@ -20,6 +20,7 @@ import { VendorModel } from './models/Vendor';
 import { CategoryModel } from './models/Category';
 import { CityModel } from './models/City';
 import { BannerModel } from './models/Banner';
+import { EnquiryModel } from './models/Enquiry';
 import { onboardVendor, getAccountDetails, getProductStatus } from './utils/razorpay';
 import { verifyPan, createDigilockerUrl, getDigilockerStatus, getAadhaarDocument } from './utils/cashfreeVerification';
 
@@ -1330,6 +1331,52 @@ app.delete('/api/v1/locations/:id', authMiddleware(), requireRole('admin'), asyn
 });
 
 // --- Promotional banners ---
+// ---- Vendor enquiries: a customer asks us to find a vendor when none is free on their date ----
+app.post('/api/v1/enquiries', authMiddleware(), async (req: Request, res: Response) => {
+  const clean = (v: unknown, max: number) => String(v ?? '').trim().slice(0, max);
+  const category = clean(req.body.category, 60);
+  const eventDate = clean(req.body.eventDate, 10);
+  if (!category) return res.status(400).json({ success: false, message: 'Please tell us which kind of vendor you need.' });
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(eventDate)) return res.status(400).json({ success: false, message: 'A valid event date is required.' });
+
+  // Keep this from being used to flood the admin: at most 10 requests per customer per day.
+  const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+  const recent = await EnquiryModel.countDocuments({ userId: req.user!.sub, createdAt: { $gte: since } });
+  if (recent >= 10) return res.status(429).json({ success: false, message: 'You have sent several requests today. We will get back to you soon.' });
+
+  const enquiry = await EnquiryModel.create({
+    id: `enq-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    userId: req.user!.sub,
+    customerName: clean(req.body.customerName, 120),
+    email: req.user!.email || '',
+    phone: clean(req.body.phone, 20),
+    category,
+    city: clean(req.body.city, 80),
+    eventTitle: clean(req.body.eventTitle, 200),
+    eventDate,
+    notes: clean(req.body.notes, 1000),
+  });
+  res.status(201).json({ success: true, message: 'Request received.', data: { enquiry } });
+});
+
+app.get('/api/v1/enquiries', authMiddleware(), requireRole('admin'), async (_req: Request, res: Response) => {
+  const enquiries = await EnquiryModel.find().sort({ createdAt: -1 }).limit(500);
+  res.json({ success: true, count: enquiries.length, data: { enquiries } });
+});
+
+app.put('/api/v1/enquiries/:id/resolve', authMiddleware(), requireRole('admin'), async (req: Request, res: Response) => {
+  const enquiry = await EnquiryModel.findOne({ id: req.params.id });
+  if (!enquiry) return res.status(404).json({ success: false, message: 'Request not found.' });
+  enquiry.status = enquiry.status === 'open' ? 'resolved' : 'open';
+  await enquiry.save();
+  res.json({ success: true, data: { enquiry } });
+});
+
+app.delete('/api/v1/enquiries/:id', authMiddleware(), requireRole('admin'), async (req: Request, res: Response) => {
+  await EnquiryModel.deleteOne({ id: req.params.id });
+  res.json({ success: true, message: 'Request deleted.' });
+});
+
 app.get('/api/v1/banners', async (req: Request, res: Response) => {
   const banners = await BannerModel.find().sort({ order: 1 });
   res.json({ success: true, data: { banners } });

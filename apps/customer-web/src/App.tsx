@@ -660,6 +660,7 @@ export function App() {
               cityGroups={cityGroups}
               eventDate={user && activeEvent.id ? activeEvent.date : undefined}
               eventTitle={activeEvent.title}
+              customerName={user?.name}
             />
           </>
         )}
