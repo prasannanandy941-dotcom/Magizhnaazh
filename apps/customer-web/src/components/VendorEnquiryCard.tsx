@@ -43,12 +43,13 @@ export const VendorEnquiryCard: React.FC<{
 
   if (done) {
     return (
-      <div className="mb-6 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 px-5 py-4 flex items-start gap-3">
-        <CheckCircle2 className="w-6 h-6 text-emerald-400 shrink-0 mt-0.5" />
+      // Solid light-green card with dark-green text: readable on both the light and dark themes.
+      <div className="mb-6 rounded-2xl border border-emerald-600/50 bg-emerald-50 px-5 py-4 flex items-start gap-3 shadow-sm">
+        <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0 mt-0.5" />
         <div>
-          <p className="text-sm font-bold text-emerald-100">Request received - thank you!</p>
-          <p className="text-xs text-emerald-200/90 mt-1">
-            We'll get back to you as soon as we find a {category} vendor for <strong>{eventDateLabel}</strong>.
+          <p className="text-sm font-bold text-emerald-900">Request received - thank you!</p>
+          <p className="text-xs font-medium text-emerald-800 mt-1">
+            We'll get back to you as soon as we find a {category} vendor for <strong className="text-emerald-900">{eventDateLabel}</strong>.
           </p>
         </div>
       </div>
