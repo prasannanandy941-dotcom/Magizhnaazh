@@ -109,7 +109,7 @@ async function sendMsg91WhatsAppOtp(phone: string, code: string): Promise<Delive
     const body: any = await r.json().catch(() => ({}));
     const failed = !r.ok || body?.status === 'fail' || body?.status === 'error' || body?.hasError === true || !!body?.errors;
     if (!failed) return { sent: true };
-    const why = body?.message || (typeof body?.errors === 'string' ? body.errors : JSON.stringify(body?.errors || body)).slice(0, 300);
+    const why = [body?.message || (typeof body?.errors === 'string' ? body.errors : JSON.stringify(body?.errors || body)).slice(0, 300), body?.apiError ? `apiError ${body.apiError}` : ''].filter(Boolean).join(' - ');
     return { sent: false, reason: `MSG91 WhatsApp ${r.status}: ${why}` };
   } catch (e: any) {
     return { sent: false, reason: `MSG91 WhatsApp request failed: ${e?.message || e}` };
