@@ -296,6 +296,10 @@ export function fetchAllUsers(token: string): Promise<{ success: boolean; data?:
   return authedFetch('/api/v1/auth/admin/users', token);
 }
 
+export function deleteUser(token: string, userId: string) {
+  return authedFetch(`/api/v1/auth/admin/users/${userId}`, token, { method: 'DELETE' });
+}
+
 export function toggleUserSuspension(token: string, userId: string) {
   return authedFetch(`/api/v1/auth/admin/users/${userId}/suspend`, token, { method: 'PUT' });
 }

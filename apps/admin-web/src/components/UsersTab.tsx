@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Loader2, Ban, CheckCircle2 } from 'lucide-react';
-import { AdminUser, fetchAllUsers, toggleUserSuspension } from '../api';
+import { Loader2, Ban, CheckCircle2, Trash2 } from 'lucide-react';
+import { AdminUser, fetchAllUsers, toggleUserSuspension, deleteUser } from '../api';
 import { useCachedList } from '../useCachedList';
 import { CrudListPanel } from './CrudListPanel';
 
@@ -32,6 +32,23 @@ export const UsersTab: React.FC<{ token: string; currentUserId: string }> = ({ t
     await toggleUserSuspension(token, id);
     await load();
     setBusyId(null);
+  };
+
+  // Permanently delete an account (and a vendor's listing). Asks first; the server refuses
+  // admins and accounts with upcoming bookings and says why.
+  const removeUser = async (u: AdminUser) => {
+    const extra = u.role === 'vendor' ? ' Their business listing will be deleted too.' : '';
+    if (!window.confirm(`Delete ${u.name} (${u.email}) permanently?${extra} This cannot be undone.`)) return;
+    setBusyId(u.id);
+    try {
+      const res: any = await deleteUser(token, u.id);
+      if (res?.success === false) throw new Error(res.message || 'Could not delete this user.');
+      setUsers((prev) => prev.filter((x) => x.id !== u.id));
+    } catch (err: any) {
+      window.alert(err?.message || 'Could not delete this user.');
+    } finally {
+      setBusyId(null);
+    }
   };
 
   const countFor = (key: string) => (key === 'all' ? users.length : users.filter((u) => u.role === key).length);
@@ -87,6 +104,7 @@ export const UsersTab: React.FC<{ token: string; currentUserId: string }> = ({ t
         u.id === currentUserId ? (
           <span className="text-[10px] text-slate-500">You</span>
         ) : (
+          <div className="flex items-center justify-center gap-2">
           <button
             onClick={() => toggleSuspend(u.id)}
             disabled={busyId === u.id}
@@ -103,6 +121,16 @@ export const UsersTab: React.FC<{ token: string; currentUserId: string }> = ({ t
             )}
             {u.isSuspended ? 'Reinstate' : 'Suspend'}
           </button>
+          {u.role !== 'admin' && (
+            <button
+              onClick={() => removeUser(u)}
+              disabled={busyId === u.id}
+              className="px-3 py-1.5 rounded-xl font-bold text-xs shadow-md disabled:opacity-60 inline-flex items-center gap-1.5 bg-rose-600 text-white hover:bg-rose-500"
+            >
+              <Trash2 className="w-3 h-3" /> Delete
+            </button>
+          )}
+          </div>
         )
       }
       emptyText={roleFilter === 'all' ? 'No users yet.' : `No ${roleFilter}s yet.`}

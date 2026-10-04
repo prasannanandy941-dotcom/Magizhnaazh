@@ -820,6 +820,62 @@ app.put('/api/v1/auth/admin/users/:id/suspend', authMiddleware(), requireRole('a
   }
 });
 
+// 6. Permanently delete a user account (admin). Refuses admins and the caller's own account,
+//    and refuses while the user still has upcoming active bookings (cancel / refund those first).
+//    A vendor's business listing is removed together with the account.
+app.delete('/api/v1/auth/admin/users/:id', authMiddleware(), requireRole('admin'), async (req: Request, res: Response) => {
+  try {
+    const user = await UserModel.findOne({ id: req.params.id });
+    if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
+    if (user.id === req.user!.sub) return res.status(400).json({ success: false, message: "You can't delete your own account here." });
+    if (user.role === 'admin') return res.status(403).json({ success: false, message: 'Admin accounts cannot be deleted here.' });
+
+    const authorization = req.headers.authorization || '';
+    const today = new Date().toISOString().slice(0, 10);
+    const activeUpcoming = (b: { status: string; eventDate?: string }) =>
+      ACTIVE_BOOKING_STATUSES.includes(b.status) && (b.eventDate || '') >= today;
+
+    // The vendor's listing (matched by the account id), if any.
+    let listingId: string | null = null;
+    if (user.role === 'vendor') {
+      const vRes = await fetch(`${MARKETPLACE_SERVICE_URL}/api/v1/vendors/${encodeURIComponent(user.id)}`, { headers: { Authorization: authorization } });
+      if (vRes.ok) listingId = (await vRes.json()).data?.vendor?.id || null;
+      else if (vRes.status !== 404) return res.status(502).json({ success: false, message: "Could not check this vendor's listing. Please try again." });
+    }
+
+    // Upcoming bookings block the delete (as a vendor's or as a customer's).
+    let upcoming = 0;
+    if (listingId) {
+      const bRes = await fetch(`${BOOKING_SERVICE_URL}/api/v1/bookings?vendorId=${encodeURIComponent(listingId)}`, { headers: { Authorization: authorization } });
+      if (!bRes.ok) return res.status(502).json({ success: false, message: 'Could not check bookings. Please try again.' });
+      upcoming += ((await bRes.json()).data?.bookings || []).filter(activeUpcoming).length;
+    }
+    if (user.role === 'customer') {
+      const bRes = await fetch(`${BOOKING_SERVICE_URL}/api/v1/bookings`, { headers: { Authorization: authorization } });
+      if (!bRes.ok) return res.status(502).json({ success: false, message: 'Could not check bookings. Please try again.' });
+      upcoming += ((await bRes.json()).data?.bookings || []).filter((b: any) => b.customerId === user.id && activeUpcoming(b)).length;
+    }
+    if (upcoming > 0) {
+      return res.status(409).json({
+        success: false,
+        code: 'HAS_UPCOMING_BOOKINGS',
+        message: `${user.name} has ${upcoming} upcoming active booking${upcoming === 1 ? '' : 's'}. Cancel or refund ${upcoming === 1 ? 'it' : 'them'} first, or suspend the account instead.`,
+      });
+    }
+
+    if (listingId) {
+      const dRes = await fetch(`${MARKETPLACE_SERVICE_URL}/api/v1/vendors/${encodeURIComponent(listingId)}`, { method: 'DELETE', headers: { Authorization: authorization } });
+      if (!dRes.ok && dRes.status !== 404) return res.status(502).json({ success: false, message: 'Could not delete the business listing. Please try again.' });
+    }
+    await UserModel.deleteOne({ id: user.id });
+    await OtpModel.deleteMany({ email: user.email });
+    res.json({ success: true, message: `${user.name}'s account was deleted.` });
+  } catch (err: any) {
+    console.error('Admin delete user error:', err);
+    res.status(500).json({ success: false, message: err.message || 'Internal Server Error' });
+  }
+});
+
 app.get('/api/v1/auth/email-diagnostic', async (_req: Request, res: Response) => {
   try {
     const diagnostic: any = {
