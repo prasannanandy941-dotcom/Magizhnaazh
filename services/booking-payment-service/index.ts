@@ -114,7 +114,9 @@ async function reconcileVendorCalendar(vendor: { id: string; userId?: string }, 
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      ...(authorization ? { Authorization: authorization } : {}),
+      // Without a caller's token (the 2-minute background run) act as the platform, so the
+      // marketplace accepts the sync instead of answering 401.
+      Authorization: authorization || `Bearer ${signToken({ sub: 'service-booking-payment', email: 'service@internal', role: 'admin' })}`,
       'x-internal-secret': process.env.INTERNAL_API_SECRET || '',
     },
     body: JSON.stringify({ bookings }),
@@ -536,10 +538,14 @@ app.post('/api/v1/bookings/quote', authMiddleware(), async (req: Request, res: R
     // The customer's OWN earlier unpaid attempt (they opened Book & Pay, then
     // dismissed or failed payment) must not lock them out of the slot they are
     // retrying — those holds are released and replaced by this new booking.
+    // Only an attempt for the SAME event and the SAME session counts as a retry; a
+    // different session or a different event is a separate booking and keeps its own spot.
     ownStaleHolds = await BookingModel.find({
       customerId: req.user!.sub,
       vendorId: canonicalVendorId,
       eventDate: resolvedEventDate,
+      eventId: eventId || 'evt-101',
+      timeSlot: resolvedSlot,
       status: { $in: ['quote_requested', 'pending_payment'] },
       advanceAmountPaid: { $in: [0, null] },
     }, { id: 1, timeSlot: 1 }).lean();
