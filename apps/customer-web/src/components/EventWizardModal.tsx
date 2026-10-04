@@ -19,7 +19,9 @@ export const EventWizardModal: React.FC<EventWizardModalProps> = ({ onClose, onE
   const [title, setTitle] = useState('My Grand Celebration');
   const [city, setCity] = useState('Chennai');
   const [citySearch, setCitySearch] = useState('');
-  const [date, setDate] = useState('2026-12-15');
+  // No default date: the customer always picks it themselves.
+  const [date, setDate] = useState('');
+  const todayIso = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
   const [guestCount, setGuestCount] = useState(350);
   const [totalBudget, setTotalBudget] = useState(500000);
   const [submitting, setSubmitting] = useState(false);
@@ -167,9 +169,11 @@ export const EventWizardModal: React.FC<EventWizardModalProps> = ({ onClose, onE
               <input
                 type="date"
                 value={date}
+                min={todayIso}
                 onChange={(e) => setDate(e.target.value)}
                 className="w-full p-4 rounded-2xl bg-slate-900 border border-slate-800 text-white font-bold text-lg focus:outline-none focus:border-indigo-500"
               />
+              {!date && <p className="text-xs text-amber-400 mt-3 font-semibold">Pick your event date to continue.</p>}
             </div>
           )}
 
@@ -249,7 +253,11 @@ export const EventWizardModal: React.FC<EventWizardModalProps> = ({ onClose, onE
         <div className="px-6 py-4 border-t border-slate-800 bg-slate-900/60 flex items-center justify-between">
           {step > 1 ? (
             <button
-              onClick={() => setStep((s) => s - 1)}
+              onClick={() => {
+                // Going back to an earlier step clears the date, so it has to be picked again.
+                if (step - 1 < 4) setDate('');
+                setStep((s) => s - 1);
+              }}
               disabled={submitting}
               className="px-4 py-2.5 rounded-xl border border-slate-800 text-slate-300 hover:text-white font-semibold text-xs flex items-center gap-1 disabled:opacity-50"
             >
@@ -262,7 +270,8 @@ export const EventWizardModal: React.FC<EventWizardModalProps> = ({ onClose, onE
           {step < 7 ? (
             <button
               onClick={() => setStep((s) => s + 1)}
-              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-xs shadow-md flex items-center gap-1"
+              disabled={step === 4 && !date}
+              className="disabled:opacity-40 disabled:cursor-not-allowed px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-xs shadow-md flex items-center gap-1"
             >
               Next <ArrowRight className="w-4 h-4" />
             </button>
