@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Loader2, Ban, CheckCircle2, Trash2 } from 'lucide-react';
-import { AdminUser, fetchAllUsers, toggleUserSuspension, deleteUser } from '../api';
+import { AdminUser, fetchAllUsers, toggleUserSuspension, deleteUser, fetchVendors, fetchBookings, fetchEvents } from '../api';
 import { useCachedList } from '../useCachedList';
 import { CrudListPanel } from './CrudListPanel';
 
@@ -25,6 +25,38 @@ export const UsersTab: React.FC<{ token: string; currentUserId: string }> = ({ t
   const { items: users, setItems: setUsers, loading, refreshing, reload: load } = useCachedList<AdminUser>('users', async () => (await fetchAllUsers(token)).data?.users || []);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [roleFilter, setRoleFilter] = useState('all');
+
+  // Activity per account: a customer's events / bookings / money paid, a vendor's business,
+  // verification, Razorpay link, bookings and earnings. Joined here from the other services.
+  type Activity = { events: number; bookings: number; paid: number; vendor?: any };
+  const [activity, setActivity] = useState<Record<string, Activity>>({});
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const [v, b, e] = await Promise.all([
+        fetchVendors().catch(() => null),
+        fetchBookings(token).catch(() => null),
+        fetchEvents(token).catch(() => null),
+      ]);
+      if (cancelled) return;
+      const map: Record<string, Activity> = {};
+      const get = (id: string) => (map[id] ||= { events: 0, bookings: 0, paid: 0 });
+      for (const ev of e?.data?.events || []) get(ev.userId).events++;
+      const vendorByVendorId: Record<string, any> = {};
+      for (const vd of v?.data?.vendors || []) { vendorByVendorId[vd.id] = vd; get(vd.userId).vendor = vd; }
+      for (const bk of b?.data?.bookings || []) {
+        if (bk.status === 'cancelled' || bk.status === 'refunded') continue;
+        const c = get(bk.customerId);
+        c.bookings++;
+        c.paid += bk.advanceAmountPaid || 0;
+        const owner = vendorByVendorId[bk.vendorId]?.userId;
+        if (owner) { const o = get(owner); o.bookings++; o.paid += bk.advanceAmountPaid || 0; }
+      }
+      setActivity(map);
+    })();
+    return () => { cancelled = true; };
+  }, [token, users.length]);
+  const inr = (n: number) => `₹${Math.round(n).toLocaleString('en-IN')}`;
 
 
   const toggleSuspend = async (id: string) => {
@@ -97,7 +129,35 @@ Delete anyway? This CANCELS those bookings first (customers will see them as can
       columns={[
         { label: 'Name', render: (u) => <span className="font-bold text-white">{u.name}</span> },
         { label: 'Email', render: (u) => u.email },
+        { label: 'Phone', render: (u) => u.phone || <span className="text-slate-500">—</span> },
         { label: 'Role', render: (u) => <span className={`px-2.5 py-1 rounded-full font-bold uppercase text-[10px] ${ROLE_STYLES[u.role] || ''}`}>{u.role}</span> },
+        { label: 'Sign-in', render: (u) => (u.authProvider === 'google' ? 'Google' : 'Email') },
+        { label: 'Joined', render: (u) => (u.createdAt ? new Date(u.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—') },
+        {
+          label: 'Details',
+          render: (u) => {
+            const a = activity[u.id];
+            if (u.role === 'admin') return <span className="text-slate-500">—</span>;
+            if (!a) return <span className="text-slate-500">No activity</span>;
+            if (u.role === 'vendor') {
+              const vd = a.vendor;
+              const kyc = vd?.verification?.status || (vd?.isVerified ? 'verified' : 'not submitted');
+              const rz = vd?.razorpay?.productStatus === 'activated' ? 'Razorpay connected' : 'Razorpay not connected';
+              return (
+                <div className="text-[11px] leading-snug space-y-0.5">
+                  <p className="font-bold text-white">{vd?.businessName || 'No business listing yet'}{vd?.category ? ` · ${vd.category}` : ''}</p>
+                  {vd?.location?.city && <p className="text-slate-400">{vd.location.city}</p>}
+                  <p className={kyc === 'verified' ? 'text-emerald-400' : 'text-amber-300'}>KYC: {kyc}</p>
+                  <p className={vd?.razorpay?.productStatus === 'activated' ? 'text-emerald-400' : 'text-slate-400'}>{rz}</p>
+                  <p className="text-slate-300">{a.bookings} booking{a.bookings === 1 ? '' : 's'} · {inr(a.paid)} received</p>
+                </div>
+              );
+            }
+            return (
+              <p className="text-[11px] text-slate-300">{a.events} event{a.events === 1 ? '' : 's'} · {a.bookings} booking{a.bookings === 1 ? '' : 's'} · {inr(a.paid)} paid</p>
+            );
+          },
+        },
         {
           label: 'Status',
           render: (u) =>

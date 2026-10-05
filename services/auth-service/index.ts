@@ -797,7 +797,7 @@ app.delete('/api/v1/auth/me', authMiddleware(), async (req: Request, res: Respon
 // 4. Admin-only user directory
 app.get('/api/v1/auth/admin/users', authMiddleware(), requireRole('admin'), async (req: Request, res: Response) => {
   try {
-    const users = await UserModel.find().limit(200);
+    const users = await UserModel.find().sort({ createdAt: -1 }).limit(5000);
     res.json({ success: true, data: { users, total: users.length } });
   } catch (err: any) {
     console.error('Admin users error:', err);
