@@ -131,7 +131,28 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
   // the live record so vendor-side edits (new availability dates, packages,
   // gallery, options) show up immediately instead of only after a full page
   // reload of the marketplace.
-  const [vendor, setVendor] = useState(initialVendor);
+  const [rawVendor, setVendor] = useState(initialVendor);
+  // This customer's own live bookings. A date they already hold a Full Day on is closed for them
+  // with this vendor (even if the vendor can take several functions a day for other customers).
+  const [myBookings, setMyBookings] = useState<{ date: string; slot: string }[]>([]);
+  useEffect(() => {
+    if (!isAuthenticated) { setMyBookings([]); return; }
+    let cancelled = false;
+    fetchMyBookings()
+      .then((res) => {
+        if (cancelled) return;
+        setMyBookings((res.data?.bookings || [])
+          .filter((b) => b.vendorId === rawVendor.id && b.status !== 'cancelled' && b.status !== 'refunded')
+          .map((b) => ({ date: b.eventDate, slot: b.timeSlot || 'fullday' })));
+      })
+      .catch(() => { if (!cancelled) setMyBookings([]); });
+    return () => { cancelled = true; };
+  }, [isAuthenticated, rawVendor.id, rawVendor.bookedSlots, rawVendor.bookedDates]);
+  const vendor = useMemo(() => {
+    const fullDays = myBookings.filter((b) => b.slot === 'fullday').map((b) => b.date);
+    if (fullDays.length === 0) return rawVendor;
+    return { ...rawVendor, bookedDates: [...new Set([...(rawVendor.bookedDates || []), ...fullDays])] };
+  }, [rawVendor, myBookings]);
 
   // "Often booked together" (graph neighbours from the booking service). The
   // API returns vendor ids; a HashMap of all vendors turns them into cards in O(1) each.
@@ -331,22 +352,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
   const slotInitDate = useRef('');
   // Sessions THIS customer has already booked with THIS vendor on the chosen date. A Full Day
   // covers every session, so it locks them all; a single session locks itself and Full Day.
-  const [myHeldSlots, setMyHeldSlots] = useState<string[]>([]);
-  const [myBookingsTick, setMyBookingsTick] = useState(0);
-  useEffect(() => {
-    if (!isAuthenticated || !selectedEventDate) { setMyHeldSlots([]); return; }
-    let cancelled = false;
-    fetchMyBookings()
-      .then((res) => {
-        if (cancelled) return;
-        const held = (res.data?.bookings || [])
-          .filter((b) => b.vendorId === vendor.id && b.eventDate === selectedEventDate && b.status !== 'cancelled' && b.status !== 'refunded')
-          .map((b) => b.timeSlot || 'fullday');
-        setMyHeldSlots(held);
-      })
-      .catch(() => { if (!cancelled) setMyHeldSlots([]); });
-    return () => { cancelled = true; };
-  }, [isAuthenticated, selectedEventDate, vendor.id, vendor.bookedSlots, myBookingsTick]);
+  const myHeldSlots = useMemo(() => myBookings.filter((b) => b.date === selectedEventDate).map((b) => b.slot), [myBookings, selectedEventDate]);
   const heldFullDay = myHeldSlots.includes('fullday');
   const myHeldBlocks = (id: string) => heldFullDay || myHeldSlots.includes(id) || (id === 'fullday' && myHeldSlots.length > 0);
   // Never leave a session the customer already holds selected.
