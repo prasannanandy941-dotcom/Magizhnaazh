@@ -11570,12 +11570,18 @@ export function App() {
                   <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center gap-2 text-xs text-emerald-300">
                     <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                     <span>Your listing is Verified. Verified badge is live on your public profile.</span>
+                    {kycLocked && (
+                      <button type="button" onClick={() => { setKycEditing(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="ml-auto shrink-0 px-4 py-1.5 rounded-lg bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-[11px]">Update details</button>
+                    )}
                   </div>
                 )}
                 {myVendor.verification?.status === 'pending' && (
                   <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center gap-2 text-xs text-amber-300">
                     <ClockIcon className="w-4 h-4 text-amber-400 shrink-0" />
                     <span>Verification request under review by the admin team.</span>
+                    {kycLocked && (
+                      <button type="button" onClick={() => { setKycEditing(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="ml-auto shrink-0 px-4 py-1.5 rounded-lg bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-[11px]">Update details</button>
+                    )}
                   </div>
                 )}
                 {myVendor.verification?.status === 'rejected' && myVendor.verification?.rejectionReason && (
