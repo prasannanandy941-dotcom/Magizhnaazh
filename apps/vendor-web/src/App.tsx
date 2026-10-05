@@ -10708,7 +10708,7 @@ export function App() {
               <h3 className="font-bold text-xl text-white">Availability Calendar</h3>
               <p className="text-xs text-slate-400 mt-1">You are open for booking <strong className="text-slate-200">every upcoming day</strong> by default. Mark only the dates you are <strong className="text-rose-400">not available</strong>. Days that get fully booked close automatically.</p>
               {supportsSlotCapacity(myVendor?.category) && (
-                <p className="text-xs text-amber-300/90 mt-1.5">Have more than one team? Set how many functions you can handle in each slot below — e.g. Morning × 4 lets four customers book the same morning. A Full Day booking also uses one Morning, Afternoon and Evening spot.</p>
+                <p className="text-xs text-amber-300/90 mt-1.5">Have more than one team? Set how many functions you can handle in each slot using the Open dates: sessions & slots tab — e.g. Morning × 4 lets four customers book the same morning. A Full Day booking also uses one Morning, Afternoon and Evening spot.</p>
               )}
             </div>
 
@@ -10809,30 +10809,6 @@ export function App() {
             </div>
 
             <div className="space-y-4 min-w-0">
-              {supportsSlotCapacity(myVendor?.category) && availMode === 'closed' && (
-                <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-3">
-                  <p className="text-[11px] font-bold text-slate-300 uppercase mb-2">Functions you can handle per slot</p>
-                  <div className="grid gap-2 grid-cols-[repeat(auto-fit,minmax(min(13rem,100%),1fr))]">
-                    {AVAILABILITY_SLOTS.map((sl) => (
-                      <div key={sl.id} className="flex items-center justify-between gap-2 rounded-xl bg-slate-950/40 border border-slate-800 px-3 py-2">
-                        <p className="text-xs font-semibold text-slate-200 min-w-0 flex-1 truncate">{sl.label}</p>
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <button type="button" onClick={() => setDefaultCapacity(sl.id, defaultCapacity(sl.id) - 1)} disabled={defaultCapacity(sl.id) <= 1}
-                            aria-label={`Fewer ${sl.label} functions`}
-                            className="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 text-white font-bold disabled:opacity-40">−</button>
-                          <input type="number" min={1} max={MAX_SLOT_CAPACITY} value={defaultCapacity(sl.id)}
-                            onChange={(e) => setDefaultCapacity(sl.id, Number(e.target.value))}
-                            aria-label={`${sl.label} functions`}
-                            className="w-12 p-1 rounded-lg bg-slate-900 border border-slate-700 text-center text-sm text-white font-bold" />
-                          <button type="button" onClick={() => setDefaultCapacity(sl.id, defaultCapacity(sl.id) + 1)} disabled={defaultCapacity(sl.id) >= MAX_SLOT_CAPACITY}
-                            aria-label={`More ${sl.label} functions`}
-                            className="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 text-white font-bold disabled:opacity-40">+</button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               <div>
                 <p className="text-[11px] font-bold text-slate-300 uppercase mb-2">Unavailable dates ({unavailableDates.filter((d) => d >= new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10)).length})</p>
