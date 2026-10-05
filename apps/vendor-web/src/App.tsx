@@ -762,6 +762,11 @@ export function App() {
       const redirectUrl = window.location.origin + window.location.pathname;
       const res = await startAadhaarKyc(token, myVendor.id, redirectUrl);
       if (res.data?.url) {
+        // DigiLocker sends the vendor back to the app's start page, so remember where they were
+        // (Vendor Details, with whatever they had typed) and restore it on return.
+        try {
+          sessionStorage.setItem('kycReturn', JSON.stringify({ tab: 'profile', sub: 'vendor', editing: kycEditing, form: verifyForm }));
+        } catch { /* storage unavailable - they just land on the default tab */ }
         window.location.href = res.data.url;
         return; // navigating away
       }
@@ -782,6 +787,18 @@ export function App() {
     if (!verificationId) return;
     // Clean the URL immediately so a refresh doesn't re-trigger this.
     window.history.replaceState({}, '', window.location.pathname);
+    // Put the vendor back on the Vendor Details page they left from.
+    try {
+      const saved = JSON.parse(sessionStorage.getItem('kycReturn') || 'null');
+      sessionStorage.removeItem('kycReturn');
+      setActiveTab('profile');
+      setProfileSubTab('vendor');
+      if (saved?.editing) setKycEditing(true);
+      if (saved?.form) setVerifyForm((prev) => ({ ...prev, ...saved.form }));
+    } catch {
+      setActiveTab('profile');
+      setProfileSubTab('vendor');
+    }
     setVerifyChecking('aadhaar');
     getAadhaarKycStatus(token, myVendor.id, verificationId)
       .then((res) => {
