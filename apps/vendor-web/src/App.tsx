@@ -10809,7 +10809,7 @@ export function App() {
             </div>
 
             <div className="space-y-4 min-w-0">
-              {supportsSlotCapacity(myVendor?.category) && (
+              {supportsSlotCapacity(myVendor?.category) && availMode === 'closed' && (
                 <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-3">
                   <p className="text-[11px] font-bold text-slate-300 uppercase mb-2">Functions you can handle per slot</p>
                   <div className="grid gap-2 grid-cols-[repeat(auto-fit,minmax(min(13rem,100%),1fr))]">
