@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import React, { useState } from 'react';
 import { Guest } from '../../../../packages/shared-types';
 import { Users, UserPlus, CheckCircle2, XCircle, Clock, Share2, Utensils } from 'lucide-react';
@@ -148,9 +149,9 @@ export const GuestManagement: React.FC<GuestManagementProps> = ({
         </div>
       </div>
 
-      {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-          <div className="glass-card max-w-md w-full p-6 rounded-3xl border border-slate-800 space-y-4">
+      {showAddModal && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-start sm:items-center justify-center p-4 overflow-y-auto bg-slate-950/80 backdrop-blur-md">
+          <div className="glass-card max-w-md w-full my-auto p-6 rounded-3xl border border-slate-800 space-y-4">
             <h3 className="font-bold text-lg text-white">Add New Guest to Event</h3>
 
             <form onSubmit={handleSubmit} className="space-y-3">
@@ -215,7 +216,8 @@ export const GuestManagement: React.FC<GuestManagementProps> = ({
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
