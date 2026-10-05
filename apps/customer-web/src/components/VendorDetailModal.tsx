@@ -325,13 +325,21 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vendor.unavailableDates, vendor.unavailableSlots, vendor.bookedDates, vendor.bookedSlots, vendor.availableSlots, selectedEventDate]);
-  // Whenever the date changes, reset the slot to the first one still open.
+  // When the DATE changes, start on the first session still open. When only the vendor's data
+  // refreshes (it re-checks every few seconds), keep the session the customer chose as long as it
+  // is still open - otherwise their pick jumped back to Morning on its own.
+  const slotInitDate = useRef('');
   useEffect(() => {
-    if (!selectedEventDate) { setSelectedSlot(''); return; }
+    if (!selectedEventDate) { setSelectedSlot(''); slotInitDate.current = ''; return; }
     const open = openSlots(vendor, selectedEventDate);
-    setSelectedSlot(open.length ? open[0].id : '');
+    if (slotInitDate.current !== selectedEventDate) {
+      slotInitDate.current = selectedEventDate;
+      setSelectedSlot(open.length ? open[0].id : '');
+      return;
+    }
+    setSelectedSlot((prev) => (open.some((o) => o.id === prev) ? prev : (open.length ? open[0].id : '')));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedEventDate, vendor.bookedSlots, vendor.bookedDates, vendor.slotCapacity]);
+  }, [selectedEventDate, vendor.bookedSlots, vendor.bookedDates, vendor.slotCapacity, vendor.unavailableSlots, vendor.availableSlots]);
 
   // "Book & Pay Advance" opens a small panel showing exactly what this
   // vendor's advance requirement comes to in rupees, a way to call the
@@ -359,11 +367,20 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
   // Keep the vendor's availability live while the modal is open: poll every 10s,
   // and refresh immediately (closing the pay panel) when a booking attempt finds
   // the slot was just taken by another customer.
+  const lastVendorSig = useRef('');
   useEffect(() => {
     const refreshVendor = () => {
       if (document.hidden) return;
       fetchVendorById(initialVendor.id)
-        .then((res) => { if (res.data?.vendor) setVendor(res.data.vendor); })
+        .then((res) => {
+          const fresh = res.data?.vendor;
+          if (!fresh) return;
+          // Skip identical data so the screen doesn't re-render (and reset things) for nothing.
+          const sig = JSON.stringify(fresh);
+          if (sig === lastVendorSig.current) return;
+          lastVendorSig.current = sig;
+          setVendor(fresh);
+        })
         .catch(() => { /* keep the last known availability */ });
     };
     const onConflict = () => {
