@@ -250,6 +250,8 @@ export function App() {
   const [calendarUrl, setCalendarUrl] = useState('');
   const [calendarCopied, setCalendarCopied] = useState(false);
   const [savingPackages, setSavingPackages] = useState(false);
+  // Which saved package's accordion is open on the right of the Packages tab.
+  const [openPkgId, setOpenPkgId] = useState<string | null>(null);
   const [packagesNotice, setPackagesNotice] = useState('');
   const [reviews, setReviews] = useState<Review[]>([]);
   // Which review's reply box is open, the draft text, and in-flight state.
@@ -1314,6 +1316,15 @@ export function App() {
       ...prev,
       { id: `pkg-${Date.now()}`, packageName: '', price: 0, description: '', includedServices: [] },
     ]);
+
+  // The left side of the Packages tab is always a blank "new package" form: whenever the
+  // vendor has no unsaved draft (first visit, or right after saving), start a fresh one.
+  useEffect(() => {
+    if (activeTab !== 'packages' || !myVendor) return;
+    const savedIds = new Set((myVendor.packages || []).map((x) => x.id));
+    if (!packages.some((x) => !savedIds.has(x.id))) addPackage();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, packages, myVendor]);
 
   // One-click: add three tiered packages named for this vendor's category
   // (e.g. Standard / HD / Premium 4K for Media). The vendor just fills in the
@@ -4334,10 +4345,12 @@ export function App() {
       const res = await updateVendor(token, myVendor.id, payload);
       if (res.data?.vendor) {
         setMyVendor(res.data.vendor);
-        setPackages(res.data.vendor.packages || []);
+        // Saved packages go to the list on the right; the form on the left starts empty again.
+        setPackages([...(res.data.vendor.packages || []), { id: `pkg-${Date.now()}`, packageName: '', price: 0, description: '', includedServices: [] }]);
+        setOpenPkgId(null);
         if (myVendor.category === 'Venue') setFacilities(res.data.vendor.facilities || {});
       }
-      setPackagesNotice('Packages saved — customers see these on your listing.');
+      setPackagesNotice(myVendor.category === 'Venue' ? 'Hall saved — it now shows under Your halls.' : 'Package saved — it now shows under Your packages and on your listing.');
     } catch (err: any) {
       setPackagesNotice(err.message || 'Could not save packages.');
     } finally {
@@ -4690,7 +4703,7 @@ export function App() {
     // Venue's event-services live inside the Halls tab, so it has no
     // separate "Hall Facilities" tab.
     ...(myVendor?.category !== 'Venue' ? [{ key: 'facilities', label: facilitiesSectionLabel(myVendor?.category), short: 'Services', Icon: Sparkles }] : []),
-    ...(myVendor?.category !== 'Wedding Planner' && myVendor?.category !== 'Event Host/Anchor' ? [{ key: 'packages', label: myVendor?.category === 'Venue' ? 'Halls' : 'Packages', count: packages.length || undefined, short: myVendor?.category === 'Venue' ? 'Halls' : 'Packages', Icon: myVendor?.category === 'Venue' ? Building2 : Gift }] : []),
+    ...(myVendor?.category !== 'Wedding Planner' && myVendor?.category !== 'Event Host/Anchor' ? [{ key: 'packages', label: myVendor?.category === 'Venue' ? 'Halls' : 'Packages', count: (myVendor?.packages?.length ?? 0) || undefined, short: myVendor?.category === 'Venue' ? 'Halls' : 'Packages', Icon: myVendor?.category === 'Venue' ? Building2 : Gift }] : []),
     ...(myVendor?.category !== 'Security' ? [{ key: 'offers', label: 'Offers', count: deals.length || undefined, short: 'Offers', Icon: CreditCard }] : []),
     { key: 'availability', label: 'Availability', short: 'Availability', Icon: CalendarDays },
     { key: 'portfolio', label: 'Local Disk Portfolio', short: 'Portfolio', Icon: Upload },
@@ -5905,7 +5918,7 @@ export function App() {
 
         {/* Packages Tab */}
         {activeTab === 'packages' && myVendor?.category !== 'Wedding Planner' && (
-          <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-800 max-w-3xl space-y-5">
+          <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-800 max-w-6xl space-y-5">
             <div>
               <h3 className="font-bold text-xl text-white flex items-center gap-2">
                 <Receipt className="w-5 h-5 text-amber-400" /> {myVendor?.category === 'Venue' ? 'Function Halls' : 'Packages'}
@@ -5941,12 +5954,12 @@ export function App() {
               </div>
             )}
 
-            {packages.length === 0 && (
-              <p className="text-xs text-slate-500">{myVendor?.category === 'Venue' ? 'No halls yet — add your first function hall below.' : 'No packages yet — add your first one below.'}</p>
-            )}
-
-            <div className="space-y-4">
-              {packages.map((p) => (
+            {(() => {
+              const savedIds = new Set((myVendor?.packages || []).map((x) => x.id));
+              const drafts = packages.filter((x) => !savedIds.has(x.id));
+              const saved = packages.filter((x) => savedIds.has(x.id));
+              const noun = myVendor?.category === 'Venue' ? 'hall' : 'package';
+              const renderForm = (p: VendorPackage) => (
                 <div key={p.id} className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4 space-y-3">
                   {myVendor?.category === 'Security' && (
                     <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Group of security guards</label>
@@ -10580,30 +10593,69 @@ export function App() {
                     </>
                   )}
                 </div>
-              ))}
-            </div>
+              );
+              return (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                  {/* LEFT: always a blank form for the next package */}
+                  <div className="space-y-4 min-w-0">
+                    <h4 className="text-sm font-bold text-amber-300 uppercase tracking-wide">{myVendor?.category === 'Venue' ? 'Add a new hall' : 'Create a new package'}</h4>
+                    {drafts.map((d) => renderForm(d))}
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={handleSavePackages}
+                        disabled={savingPackages}
+                        className="px-5 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs shadow-md hover:brightness-110 disabled:opacity-60 flex items-center gap-2"
+                      >
+                        {savingPackages && <Loader2 className="w-3.5 h-3.5 animate-spin" />} {myVendor?.category === 'Venue' ? 'Create hall' : 'Create package'}
+                      </button>
+                      {packagesNotice && <p className="text-xs text-emerald-400 font-semibold">{packagesNotice}</p>}
+                    </div>
+                  </div>
 
-            <div className="flex items-center gap-4 flex-wrap">
-              <button
-                type="button"
-                onClick={addPackage}
-                className="flex items-center gap-1.5 text-xs font-bold text-amber-400 hover:text-amber-300"
-              >
-                <Plus className="w-4 h-4" /> {myVendor?.category === 'Venue' ? 'Add hall' : 'Add package'}
-              </button>
-            </div>
-
-            <div className="flex items-center gap-3 pt-2">
-              <button
-                type="button"
-                onClick={handleSavePackages}
-                disabled={savingPackages}
-                className="px-5 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs shadow-md hover:brightness-110 disabled:opacity-60 flex items-center gap-2"
-              >
-                {savingPackages && <Loader2 className="w-3.5 h-3.5 animate-spin" />} {myVendor?.category === 'Venue' ? 'Save Halls' : 'Save Packages'}
-              </button>
-              {packagesNotice && <p className="text-xs text-emerald-400 font-semibold">{packagesNotice}</p>}
-            </div>
+                  {/* RIGHT: the saved ones, as accordions */}
+                  <div className="space-y-3 min-w-0">
+                    <h4 className="text-sm font-bold text-slate-200 uppercase tracking-wide">{myVendor?.category === 'Venue' ? 'Your halls' : 'Your packages'} ({saved.length})</h4>
+                    {saved.length === 0 ? (
+                      <p className="text-xs text-slate-500">No {noun}s created yet. Fill in the form and press Create — it will appear here.</p>
+                    ) : (
+                      saved.map((p) => {
+                        const open = openPkgId === p.id;
+                        return (
+                          <div key={p.id} className="rounded-2xl border border-slate-800 bg-slate-900/40 overflow-hidden">
+                            <button
+                              type="button"
+                              onClick={() => setOpenPkgId(open ? null : p.id)}
+                              aria-expanded={open}
+                              className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left hover:bg-slate-900/70 transition-colors"
+                            >
+                              <span className="min-w-0">
+                                <span className="block text-sm font-bold text-white truncate">{p.packageName || 'Untitled'}</span>
+                                <span className="block text-[11px] text-slate-400">₹{(p.price || 0).toLocaleString('en-IN')}</span>
+                              </span>
+                              <ChevronDown className={`w-4 h-4 text-amber-400 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+                            </button>
+                            {open && (
+                              <div className="px-3 pb-3 space-y-3 border-t border-slate-800">
+                                <div className="pt-3">{renderForm(p)}</div>
+                                <button
+                                  type="button"
+                                  onClick={handleSavePackages}
+                                  disabled={savingPackages}
+                                  className="px-5 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs shadow-md hover:brightness-110 disabled:opacity-60 flex items-center gap-2"
+                                >
+                                  {savingPackages && <Loader2 className="w-3.5 h-3.5 animate-spin" />} Save changes
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
 
