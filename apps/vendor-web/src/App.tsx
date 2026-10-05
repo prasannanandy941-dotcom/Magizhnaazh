@@ -254,6 +254,9 @@ export function App() {
   const [openPkgId, setOpenPkgId] = useState<string | null>(null);
   // Vendor Details (KYC): once submitted the form is read-only until the vendor taps "Update details".
   const [kycEditing, setKycEditing] = useState(false);
+  // Same idea for the bank details and the profile settings: locked once saved, "Update details" unlocks.
+  const [bankEditing, setBankEditing] = useState(false);
+  const [profileEditing, setProfileEditing] = useState(false);
   const [packagesNotice, setPackagesNotice] = useState('');
   const [reviews, setReviews] = useState<Review[]>([]);
   // Which review's reply box is open, the draft text, and in-flight state.
@@ -619,6 +622,7 @@ export function App() {
       if (res.data?.vendor) {
         setMyVendor(res.data.vendor);
       }
+      setBankEditing(false);
       setBankNotice('Bank & Cashfree details saved successfully.');
     } catch (err: any) {
       setBankNotice(err?.message || 'Could not save bank details.');
@@ -907,6 +911,7 @@ export function App() {
         setAdvanceAmount(res.data.vendor.policies?.advanceAmount ?? 0);
         setContactPhone(res.data.vendor.contactPhone || '');
       }
+      setProfileEditing(false);
       setProfileNotice(myVendor.isPublished === false ? 'Profile saved — your listing is now live for customers!' : 'Profile changes saved.');
     } catch (err: any) {
       setProfileNotice(err.message || 'Could not save changes.');
@@ -4721,6 +4726,9 @@ export function App() {
   const moreTabs = vendorTabs.filter((t) => t.key !== 'dashboard');
   const moreActive = moreTabs.some((t) => t.key === activeTab);
 
+  const bankSaved = Boolean((myVendor as any)?.bankDetails?.accountNumber && (myVendor as any)?.bankDetails?.ifscCode);
+  const bankLocked = bankSaved && !bankEditing;
+  const profileLocked = myVendor?.isPublished !== false && !!myVendor && !profileEditing;
   const kycStatus = myVendor?.verification?.status;
   const kycLocked = (kycStatus === 'pending' || kycStatus === 'verified') && !kycEditing;
 
@@ -11032,6 +11040,15 @@ export function App() {
                   </p>
                 </div>
 
+                {bankLocked && (
+                  <div className="p-4 rounded-2xl bg-teal-500/10 border border-teal-500/30 flex flex-wrap items-center justify-between gap-3">
+                    <p className="text-xs text-teal-200">Your bank details are saved. They are locked to prevent accidental changes.</p>
+                    <button type="button" onClick={() => setBankEditing(true)} className="px-5 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs shadow-md">
+                      Update details
+                    </button>
+                  </div>
+                )}
+                <fieldset disabled={bankLocked} className="border-0 p-0 m-0 min-w-0 disabled:opacity-80">
                 <div className="grid sm:grid-cols-3 gap-3.5">
                   <div>
                     <label className="block text-[11px] font-bold tracking-wide text-slate-300 uppercase mb-1.5 sm:min-h-[3.5rem]">
@@ -11072,6 +11089,7 @@ export function App() {
                     />
                   </div>
                 </div>
+                </fieldset>
 
                 <div className="p-4 sm:p-5 rounded-2xl border border-slate-800/90 bg-slate-950/50 space-y-3.5">
                   {(() => {
@@ -11190,7 +11208,8 @@ export function App() {
                   })()}
                 </div>
 
-                <div className="pt-2 flex items-center justify-between flex-wrap gap-3">
+                {!bankLocked && (
+                <div className="pt-2 flex items-center flex-wrap gap-3">
                   <button
                     type="button"
                     onClick={handleSaveBankDetails}
@@ -11200,7 +11219,11 @@ export function App() {
                     {bankSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                     Save Changes
                   </button>
+                  {bankEditing && (
+                    <button type="button" onClick={() => setBankEditing(false)} className="text-xs font-semibold text-slate-300 hover:text-white">Cancel</button>
+                  )}
                 </div>
+                )}
 
                 {bankNotice && (
                   <p className="text-xs font-semibold text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 p-2.5 rounded-xl">
@@ -11588,6 +11611,16 @@ export function App() {
           <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-4">
             <h3 className="font-bold text-xl text-white">Vendor Profile Settings</h3>
 
+            {profileLocked && (
+              <div className="p-4 rounded-2xl bg-teal-500/10 border border-teal-500/30 flex flex-wrap items-center justify-between gap-3">
+                <p className="text-xs text-teal-200">Your profile is saved. It is locked to prevent accidental changes.</p>
+                <button type="button" onClick={() => setProfileEditing(true)} className="px-5 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs shadow-md">
+                  Update details
+                </button>
+              </div>
+            )}
+            <fieldset disabled={profileLocked} className="border-0 p-0 m-0 min-w-0 space-y-4 disabled:opacity-80">
+
             <div>
               <label className="block text-xs text-slate-400 mb-1">Business Name</label>
               <input
@@ -11704,6 +11737,8 @@ export function App() {
               />
             </div>
 
+            </fieldset>
+
             {myVendor?.isPublished === false && (
               <p className="text-xs text-amber-300 font-semibold bg-amber-500/10 border border-amber-500/30 rounded-xl p-2.5">
                 Your listing is hidden from customers. Add your services, packages, availability and offers, save each one, then click Save Changes here to publish it.
@@ -11711,13 +11746,20 @@ export function App() {
             )}
             {profileNotice && <p className="text-xs text-emerald-400 font-semibold">{profileNotice}</p>}
 
-            <button
-              onClick={handleSaveProfile}
-              disabled={savingProfile}
-              className="px-6 py-3 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs shadow-md disabled:opacity-60 flex items-center gap-2"
-            >
-              {savingProfile && <Loader2 className="w-4 h-4 animate-spin" />} Save Profile Changes
-            </button>
+            {!profileLocked && (
+              <div className="flex items-center flex-wrap gap-3">
+                <button
+                  onClick={handleSaveProfile}
+                  disabled={savingProfile}
+                  className="px-6 py-3 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs shadow-md disabled:opacity-60 flex items-center gap-2"
+                >
+                  {savingProfile && <Loader2 className="w-4 h-4 animate-spin" />} Save Profile Changes
+                </button>
+                {profileEditing && (
+                  <button type="button" onClick={() => setProfileEditing(false)} className="text-xs font-semibold text-slate-300 hover:text-white">Cancel</button>
+                )}
+              </div>
+            )}
           </div>
           </div>
         )}
