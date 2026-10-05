@@ -2906,7 +2906,9 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                           ) : coveredByFullDay ? (
                             <span className="text-[10px] font-bold text-slate-400">Included in Full Day</span>
                           ) : booked ? (
-                            <span className="text-[10px] font-bold text-rose-300 no-underline">Booked</span>
+                            <span className="text-[10px] font-bold text-rose-300 no-underline">
+                              {s.id === 'fullday' && !(vendor.bookedSlots || []).some((b) => b.date === selectedEventDate && (b.slot || 'fullday') === 'fullday') ? 'Unavailable' : 'Booked'}
+                            </span>
                           ) : slotCapacityFor(vendor, selectedEventDate, s.id) > 1 ? (
                             <span className="text-[11px] font-bold text-emerald-400">{slotsLeft(vendor, selectedEventDate, s.id)} left</span>
                           ) : active ? <Check className="w-4 h-4" /> : null}

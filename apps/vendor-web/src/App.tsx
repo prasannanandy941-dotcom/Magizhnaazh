@@ -4616,8 +4616,31 @@ export function App() {
   // claim shows up (and rings the banner) without a manual reload.
   useEffect(() => {
     if (!token || !myVendor) return;
+    // Also re-read the vendor's approval / Razorpay status so an admin approval shows up here
+    // without a manual reload (only these fields are merged, never the form being edited).
+    const syncStatus = () => {
+      fetchMyVendor(token).then((res) => {
+        const fresh = res.data?.vendor as any;
+        if (!res.success || !fresh) return;
+        setMyVendor((prev) => {
+          if (!prev) return prev;
+          const p: any = prev;
+          if (p.isVerified === fresh.isVerified && p.verification?.status === fresh.verification?.status
+            && p.razorpay?.productStatus === fresh.razorpay?.productStatus && p.isPublished === fresh.isPublished) return prev;
+          return {
+            ...p,
+            isVerified: fresh.isVerified,
+            isPublished: fresh.isPublished,
+            razorpay: fresh.razorpay,
+            verification: { ...(p.verification || {}), status: fresh.verification?.status, rejectionReason: fresh.verification?.rejectionReason, reviewedAt: fresh.verification?.reviewedAt },
+          };
+        });
+      }).catch(() => {});
+    };
+    syncStatus();
     const id = setInterval(() => {
       refreshBookings(true).catch(() => {});
+      syncStatus();
     }, 15000);
     return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
