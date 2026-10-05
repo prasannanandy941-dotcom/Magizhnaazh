@@ -1085,10 +1085,8 @@ app.post('/api/v1/vendors/:id/verification', authMiddleware(), requireRole('vend
   if (vendor.userId !== req.user!.sub && req.user!.role !== 'admin') {
     return res.status(403).json({ success: false, message: 'You can only submit verification for your own listing.' });
   }
-  if (vendor.verification?.status === 'verified') {
-    return res.status(409).json({ success: false, message: 'This listing is already verified.' });
-  }
-
+  // A verified vendor may update their details; the update goes back for review, and the
+  // Verified badge is hidden until an admin approves it again.
   const { legalName, registrationNumber, gstNumber, panName, panNumber, aadhaarName, aadhaarNumber, fssaiNumber, hasGstin, gstinVerified, contactPerson, documents } = req.body;
   const prevVerification = vendor.verification;
   const cleanPan = (panNumber || '').trim().toUpperCase();
@@ -1118,6 +1116,7 @@ app.post('/api/v1/vendors/:id/verification', authMiddleware(), requireRole('vend
     reviewedAt: '',
     rejectionReason: '',
   };
+  vendor.isVerified = false;
   await vendor.save();
   res.json({ success: true, message: 'Verification request submitted for review.', data: { vendor } });
 });

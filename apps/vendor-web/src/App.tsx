@@ -252,6 +252,8 @@ export function App() {
   const [savingPackages, setSavingPackages] = useState(false);
   // Which saved package's accordion is open on the right of the Packages tab.
   const [openPkgId, setOpenPkgId] = useState<string | null>(null);
+  // Vendor Details (KYC): once submitted the form is read-only until the vendor taps "Update details".
+  const [kycEditing, setKycEditing] = useState(false);
   const [packagesNotice, setPackagesNotice] = useState('');
   const [reviews, setReviews] = useState<Review[]>([]);
   // Which review's reply box is open, the draft text, and in-flight state.
@@ -831,7 +833,8 @@ export function App() {
         documents: verifyDocs,
       });
       if (res.data?.vendor) setMyVendor(res.data.vendor);
-      setVerifyNotice('Verification request submitted — our team and Cashfree SecureID will verify your details.');
+      setKycEditing(false);
+      setVerifyNotice('Details saved and sent for verification — our team and Cashfree SecureID will review them.');
     } catch (err: any) {
       setVerifyNotice(err?.message || 'Could not submit verification. Please try again.');
     } finally {
@@ -4717,6 +4720,9 @@ export function App() {
   const barTabs = vendorTabs.filter((t) => t.key === 'dashboard');
   const moreTabs = vendorTabs.filter((t) => t.key !== 'dashboard');
   const moreActive = moreTabs.some((t) => t.key === activeTab);
+
+  const kycStatus = myVendor?.verification?.status;
+  const kycLocked = (kycStatus === 'pending' || kycStatus === 'verified') && !kycEditing;
 
   if (!user) {
     // No theme toggle on the sign-in screen — it's in the navbar once signed in.
@@ -11218,6 +11224,29 @@ export function App() {
                   </div>
                 </div>
 
+                {kycLocked && (
+                  <div className="p-4 rounded-2xl bg-teal-500/10 border border-teal-500/30 flex flex-wrap items-center justify-between gap-3">
+                    <p className="text-xs text-teal-200">
+                      {kycStatus === 'verified'
+                        ? 'Your details are saved and verified. They are locked to prevent accidental changes.'
+                        : 'Your details are saved and under review. They are locked to prevent accidental changes.'}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setKycEditing(true)}
+                      className="px-5 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs shadow-md"
+                    >
+                      Update details
+                    </button>
+                  </div>
+                )}
+                {kycEditing && kycStatus === 'verified' && (
+                  <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200">
+                    Saving changes sends your details for verification again, and the Verified badge stays hidden until the admin team approves them.
+                  </div>
+                )}
+
+                <fieldset disabled={kycLocked} className="space-y-5 min-w-0 border-0 p-0 m-0 disabled:opacity-80">
                 {/* CARD 1: DO YOU HAVE A GSTIN NUMBER? * */}
                 <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-3">
                   <div className="flex items-start gap-2.5">
@@ -11511,6 +11540,8 @@ export function App() {
                   </label>
                 </div>
 
+                </fieldset>
+
                 {/* Status alerts */}
                 {myVendor.verification?.status === 'verified' && (
                   <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center gap-2 text-xs text-emerald-300">
@@ -11533,8 +11564,9 @@ export function App() {
 
                 {verifyNotice && <p className="text-xs text-amber-400 font-semibold">{verifyNotice}</p>}
 
-                {/* Submission button */}
-                <div className="pt-2">
+                {/* Submission button (hidden while the details are locked) */}
+                {!kycLocked && (
+                <div className="pt-2 flex flex-wrap items-center gap-3">
                   <button
                     type="button"
                     onClick={handleSubmitVerification}
@@ -11542,9 +11574,13 @@ export function App() {
                     className="px-6 py-3 rounded-2xl bg-gradient-to-r from-teal-500 to-emerald-600 text-white font-bold text-xs shadow-lg disabled:opacity-50 inline-flex items-center gap-2"
                   >
                     {verifySaving && <Loader2 className="w-4 h-4 animate-spin" />}
-                    {verifySaving ? 'Submitting…' : 'Submit for verification'}
+                    {verifySaving ? 'Saving…' : kycEditing ? 'Save updated details' : 'Submit for verification'}
                   </button>
+                  {kycEditing && (
+                    <button type="button" onClick={() => setKycEditing(false)} className="text-xs font-semibold text-slate-300 hover:text-white">Cancel</button>
+                  )}
                 </div>
+                )}
               </div>
             )}
           </div>
