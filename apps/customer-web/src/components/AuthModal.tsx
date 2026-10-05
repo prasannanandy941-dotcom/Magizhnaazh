@@ -166,7 +166,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) 
       <div className="fixed inset-0 -z-10">
         <FloralGoldBackground />
       </div>
-      <div className="auth-card bg-white max-w-md w-full rounded-3xl border border-slate-200 shadow-2xl overflow-hidden my-auto">
+      <div className={`auth-card bg-white w-full rounded-3xl border border-slate-200 shadow-2xl overflow-hidden my-auto transition-[max-width] ${mode === 'signin' ? 'max-w-md' : 'max-w-md md:max-w-3xl'}`}>
         <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-amber-500" />
@@ -231,7 +231,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) 
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        {/* Sign up / reset use two columns on wide screens so the form is not a long narrow strip. */}
+        <form onSubmit={handleSubmit} className={mode === 'signin' ? 'p-6 space-y-4' : 'p-6 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 items-start'}>
           {mode === 'signup' && (
             <div>
               <label className="block text-xs font-bold text-slate-800 mb-1.5">Full Name</label>
@@ -387,13 +388,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) 
           </div>
 
           {success && (
-            <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold">
+            <div className="md:col-span-2 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold">
               {success}
             </div>
           )}
 
           {error && (
-            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
+            <div className="md:col-span-2 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
               {error}
             </div>
           )}
@@ -401,20 +402,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) 
           <button
             type="submit"
             disabled={loading || ((mode === 'signup' || mode === 'forgot') && !isPasswordStrong(password))}
-            className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-bold text-sm shadow-md hover:scale-[1.01] transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+            className="md:col-span-2 w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-bold text-sm shadow-md hover:scale-[1.01] transition-all disabled:opacity-60 flex items-center justify-center gap-2"
           >
             {loading && <Loader2 className="w-4 h-4 animate-spin" />}
             {mode === 'signin' ? 'Sign In' : mode === 'signup' ? 'Create Account' : 'Reset Password'}
           </button>
 
           {mode !== 'forgot' && (
-            <GoogleSignInButton
-              onCredential={handleGoogleCredential}
-              text={mode === 'signup' ? 'signup_with' : 'signin_with'}
-            />
+            <div className="md:col-span-2">
+              <GoogleSignInButton
+                onCredential={handleGoogleCredential}
+                text={mode === 'signup' ? 'signup_with' : 'signin_with'}
+              />
+            </div>
           )}
 
-          <p className="text-center text-[11px] text-slate-500">
+          <p className="md:col-span-2 text-center text-[11px] text-slate-500">
             {mode === 'signin' ? (
               <>Demo login: customer@magizhnaazh.com / Passw0rd!</>
             ) : mode === 'signup' ? (
