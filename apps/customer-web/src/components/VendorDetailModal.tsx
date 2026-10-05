@@ -3,7 +3,7 @@ import { LanguageModal } from '../../../../packages/shared-ui/i18n/react';
 import { hasChosenLanguage } from '../../../../packages/shared-ui/i18n/runtime';
 import { X, Star, MapPin, Check, ShieldCheck, Upload, Calendar as CalendarIcon, MessageSquare, Send, CreditCard, Sparkles, Camera, Bus, Gift, ListChecks, Phone, Clock, Plus, Maximize2, Car, Mail, Printer, FileText } from 'lucide-react';
 import { Vendor, Review, Event, getVendorTrustBadges, getLiveDeals, bestDealForAmount, AVAILABILITY_SLOTS, isSlotBooked, openSlots, offeredSlotIds, slotLabel, slotsLeft, slotCapacityFor, isVendorDateOpen, nextOpenDates } from '../../../../packages/shared-types';
-import { fetchVendorById, uploadReferenceImage, fetchVendorReviews, fetchVendorRecommendations } from '../api';
+import { fetchMyBookings, fetchVendorById, uploadReferenceImage, fetchVendorReviews, fetchVendorRecommendations } from '../api';
 import { indexBy } from '../../../../packages/shared-utils/dataStructures';
 import { AvailabilityCalendar } from './AvailabilityCalendar';
 import { PortfolioGrid } from './Portfolio';
@@ -329,6 +329,33 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
   // refreshes (it re-checks every few seconds), keep the session the customer chose as long as it
   // is still open - otherwise their pick jumped back to Morning on its own.
   const slotInitDate = useRef('');
+  // Sessions THIS customer has already booked with THIS vendor on the chosen date. A Full Day
+  // covers every session, so it locks them all; a single session locks itself and Full Day.
+  const [myHeldSlots, setMyHeldSlots] = useState<string[]>([]);
+  const [myBookingsTick, setMyBookingsTick] = useState(0);
+  useEffect(() => {
+    if (!isAuthenticated || !selectedEventDate) { setMyHeldSlots([]); return; }
+    let cancelled = false;
+    fetchMyBookings()
+      .then((res) => {
+        if (cancelled) return;
+        const held = (res.data?.bookings || [])
+          .filter((b) => b.vendorId === vendor.id && b.eventDate === selectedEventDate && b.status !== 'cancelled' && b.status !== 'refunded')
+          .map((b) => b.timeSlot || 'fullday');
+        setMyHeldSlots(held);
+      })
+      .catch(() => { if (!cancelled) setMyHeldSlots([]); });
+    return () => { cancelled = true; };
+  }, [isAuthenticated, selectedEventDate, vendor.id, vendor.bookedSlots, myBookingsTick]);
+  const heldFullDay = myHeldSlots.includes('fullday');
+  const myHeldBlocks = (id: string) => heldFullDay || myHeldSlots.includes(id) || (id === 'fullday' && myHeldSlots.length > 0);
+  // Never leave a session the customer already holds selected.
+  useEffect(() => {
+    if (!selectedSlot || !myHeldBlocks(selectedSlot)) return;
+    const next = openSlots(vendor, selectedEventDate).find((o) => !myHeldBlocks(o.id));
+    setSelectedSlot(next ? next.id : '');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [myHeldSlots, selectedSlot]);
   useEffect(() => {
     if (!selectedEventDate) { setSelectedSlot(''); slotInitDate.current = ''; return; }
     const open = openSlots(vendor, selectedEventDate);
@@ -2838,7 +2865,8 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                       const fullDayChosen = selectedSlot === 'fullday';
                       // A Full Day covers Morning, Afternoon and Evening, so those can't be booked alongside it.
                       const coveredByFullDay = fullDayChosen && s.id !== 'fullday';
-                      const booked = isSlotBooked(vendor, selectedEventDate, s.id);
+                      const mine = myHeldBlocks(s.id);
+                      const booked = mine || isSlotBooked(vendor, selectedEventDate, s.id);
                       const active = selectedSlot === s.id;
                       return (
                         <button
@@ -2855,7 +2883,9 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                             setSelectedSlot(s.id); setSessionPopup(false);
                           }}
                           className={`w-full px-4 py-3.5 rounded-2xl text-sm font-bold border flex items-center justify-between transition-all ${
-                            coveredByFullDay
+                            mine
+                              ? 'bg-emerald-950/30 border-emerald-800/50 text-emerald-200/80 cursor-not-allowed'
+                              : coveredByFullDay
                               ? 'bg-slate-900/40 border-slate-800 text-slate-500 cursor-not-allowed'
                               : booked
                               ? 'bg-rose-950/20 border-rose-900/40 text-rose-400/80 cursor-not-allowed line-through'
@@ -2865,7 +2895,9 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                           }`}
                         >
                           <span>{s.label}</span>
-                          {coveredByFullDay ? (
+                          {mine ? (
+                            <span className="text-[10px] font-bold text-emerald-300 no-underline">{myHeldSlots.includes(s.id) ? 'Booked by you' : heldFullDay ? 'Included in your Full Day' : 'You booked a session'}</span>
+                          ) : coveredByFullDay ? (
                             <span className="text-[10px] font-bold text-slate-400">Included in Full Day</span>
                           ) : booked ? (
                             <span className="text-[10px] font-bold text-rose-300 no-underline">Booked</span>
