@@ -2832,19 +2832,32 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                       <X className="w-5 h-5" />
                     </button>
                   </div>
-                  <p className="text-xs text-slate-400 mb-4">Tap the time of day you want to book.</p>
+                  <p className="text-xs text-slate-400 mb-4">{selectedSlot === 'fullday' ? 'Full Day covers Morning, Afternoon and Evening. Tap Full Day again to pick a single session instead.' : 'Tap the time of day you want to book.'}</p>
                   <div className="flex flex-col gap-2.5">
                     {AVAILABILITY_SLOTS.filter((s) => offeredSlotIds(vendor, selectedEventDate).includes(s.id)).map((s) => {
+                      const fullDayChosen = selectedSlot === 'fullday';
+                      // A Full Day covers Morning, Afternoon and Evening, so those can't be booked alongside it.
+                      const coveredByFullDay = fullDayChosen && s.id !== 'fullday';
                       const booked = isSlotBooked(vendor, selectedEventDate, s.id);
                       const active = selectedSlot === s.id;
                       return (
                         <button
                           key={s.id}
                           type="button"
-                          disabled={booked}
-                          onClick={() => { setSelectedSlot(s.id); setSessionPopup(false); }}
+                          disabled={booked || coveredByFullDay}
+                          onClick={() => {
+                            if (active && s.id === 'fullday') {
+                              // Tapping the chosen Full Day again lets the customer go back to a single session.
+                              const first = openSlots(vendor, selectedEventDate).find((x) => x.id !== 'fullday');
+                              if (first) setSelectedSlot(first.id);
+                              return;
+                            }
+                            setSelectedSlot(s.id); setSessionPopup(false);
+                          }}
                           className={`w-full px-4 py-3.5 rounded-2xl text-sm font-bold border flex items-center justify-between transition-all ${
-                            booked
+                            coveredByFullDay
+                              ? 'bg-slate-900/40 border-slate-800 text-slate-500 cursor-not-allowed'
+                              : booked
                               ? 'bg-rose-950/20 border-rose-900/40 text-rose-400/80 cursor-not-allowed line-through'
                               : active
                                 ? 'bg-indigo-600 border-indigo-400 text-white'
@@ -2852,7 +2865,9 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                           }`}
                         >
                           <span>{s.label}</span>
-                          {booked ? (
+                          {coveredByFullDay ? (
+                            <span className="text-[10px] font-bold text-slate-400">Included in Full Day</span>
+                          ) : booked ? (
                             <span className="text-[10px] font-bold text-rose-300 no-underline">Booked</span>
                           ) : slotCapacityFor(vendor, selectedEventDate, s.id) > 1 ? (
                             <span className="text-[11px] font-bold text-emerald-400">{slotsLeft(vendor, selectedEventDate, s.id)} left</span>
