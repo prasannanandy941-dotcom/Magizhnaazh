@@ -11041,9 +11041,9 @@ export function App() {
                 </div>
 
                 {bankLocked && (
-                  <div className="p-4 rounded-2xl bg-teal-500/10 border border-teal-500/30 flex flex-wrap items-center justify-between gap-3">
-                    <p className="text-xs text-teal-200">Your bank details are saved. They are locked to prevent accidental changes.</p>
-                    <button type="button" onClick={() => setBankEditing(true)} className="px-5 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs shadow-md">
+                  <div className="p-4 rounded-2xl bg-amber-50 border-2 border-amber-400 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+                    <p className="text-xs font-semibold text-amber-900">Your bank details are saved. They are locked to prevent accidental changes.</p>
+                    <button type="button" onClick={() => setBankEditing(true)} className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-md">
                       Update details
                     </button>
                   </div>
@@ -11248,8 +11248,8 @@ export function App() {
                 </div>
 
                 {kycLocked && (
-                  <div className="p-4 rounded-2xl bg-teal-500/10 border border-teal-500/30 flex flex-wrap items-center justify-between gap-3">
-                    <p className="text-xs text-teal-200">
+                  <div className="p-4 rounded-2xl bg-amber-50 border-2 border-amber-400 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+                    <p className="text-xs font-semibold text-amber-900">
                       {kycStatus === 'verified'
                         ? 'Your details are saved and verified. They are locked to prevent accidental changes.'
                         : 'Your details are saved and under review. They are locked to prevent accidental changes.'}
@@ -11257,14 +11257,14 @@ export function App() {
                     <button
                       type="button"
                       onClick={() => setKycEditing(true)}
-                      className="px-5 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs shadow-md"
+                      className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-md"
                     >
                       Update details
                     </button>
                   </div>
                 )}
                 {kycEditing && kycStatus === 'verified' && (
-                  <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200">
+                  <div className="p-3 rounded-xl bg-amber-50 border border-amber-400 text-xs font-semibold text-amber-900">
                     Saving changes sends your details for verification again, and the Verified badge stays hidden until the admin team approves them.
                   </div>
                 )}
@@ -11571,7 +11571,7 @@ export function App() {
                     <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                     <span>Your listing is Verified. Verified badge is live on your public profile.</span>
                     {kycLocked && (
-                      <button type="button" onClick={() => { setKycEditing(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="ml-auto shrink-0 px-4 py-1.5 rounded-lg bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-[11px]">Update details</button>
+                      <button type="button" onClick={() => { setKycEditing(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="ml-auto shrink-0 px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[11px]">Update details</button>
                     )}
                   </div>
                 )}
@@ -11580,7 +11580,7 @@ export function App() {
                     <ClockIcon className="w-4 h-4 text-amber-400 shrink-0" />
                     <span>Verification request under review by the admin team.</span>
                     {kycLocked && (
-                      <button type="button" onClick={() => { setKycEditing(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="ml-auto shrink-0 px-4 py-1.5 rounded-lg bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-[11px]">Update details</button>
+                      <button type="button" onClick={() => { setKycEditing(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="ml-auto shrink-0 px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[11px]">Update details</button>
                     )}
                   </div>
                 )}
@@ -11618,9 +11618,9 @@ export function App() {
             <h3 className="font-bold text-xl text-white">Vendor Profile Settings</h3>
 
             {profileLocked && (
-              <div className="p-4 rounded-2xl bg-teal-500/10 border border-teal-500/30 flex flex-wrap items-center justify-between gap-3">
-                <p className="text-xs text-teal-200">Your profile is saved. It is locked to prevent accidental changes.</p>
-                <button type="button" onClick={() => setProfileEditing(true)} className="px-5 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs shadow-md">
+              <div className="p-4 rounded-2xl bg-amber-50 border-2 border-amber-400 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+                <p className="text-xs font-semibold text-amber-900">Your profile is saved. It is locked to prevent accidental changes.</p>
+                <button type="button" onClick={() => setProfileEditing(true)} className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-md">
                   Update details
                 </button>
               </div>
