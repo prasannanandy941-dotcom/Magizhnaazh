@@ -2903,7 +2903,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                         >
                           <span>{s.label}</span>
                           {mine ? (
-                            <span className="text-[10px] font-bold text-emerald-300 no-underline">{myHeldSlots.includes(s.id) ? 'Booked by you' : heldFullDay ? 'Included in your Full Day' : 'You booked a session'}</span>
+                            <span className="text-[10px] font-bold text-emerald-300 no-underline">{myHeldSlots.includes(s.id) ? 'Booked by you' : heldFullDay ? 'Included in your Full Day' : 'Unavailable'}</span>
                           ) : coveredByFullDay ? (
                             <span className="text-[10px] font-bold text-slate-400">Included in Full Day</span>
                           ) : booked ? (
