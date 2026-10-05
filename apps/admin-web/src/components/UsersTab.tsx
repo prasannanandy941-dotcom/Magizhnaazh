@@ -41,7 +41,15 @@ export const UsersTab: React.FC<{ token: string; currentUserId: string }> = ({ t
     if (!window.confirm(`Delete ${u.name} (${u.email}) permanently?${extra} This cannot be undone.`)) return;
     setBusyId(u.id);
     try {
-      const res: any = await deleteUser(token, u.id);
+      let res: any = await deleteUser(token, u.id);
+      if (res?.success === false && res.code === 'HAS_UPCOMING_BOOKINGS') {
+        // Offer to cancel the upcoming bookings and delete anyway.
+        const n = res.upcoming || 'its';
+        if (!window.confirm(`${u.name} still has ${n} upcoming active booking${res.upcoming === 1 ? '' : 's'}.
+
+Delete anyway? This CANCELS those bookings first (customers will see them as cancelled). Any money already paid must still be refunded by hand.`)) return;
+        res = await deleteUser(token, u.id, true);
+      }
       if (res?.success === false) throw new Error(res.message || 'Could not delete this user.');
       setUsers((prev) => prev.filter((x) => x.id !== u.id));
     } catch (err: any) {

@@ -843,24 +843,41 @@ app.delete('/api/v1/auth/admin/users/:id', authMiddleware(), requireRole('admin'
       else if (vRes.status !== 404) return res.status(502).json({ success: false, message: "Could not check this vendor's listing. Please try again." });
     }
 
-    // Upcoming bookings block the delete (as a vendor's or as a customer's).
-    let upcoming = 0;
+    // Upcoming bookings block the delete (as a vendor's or as a customer's) unless the admin
+    // confirms with ?force=true, which cancels them first.
+    const force = String(req.query.force || '') === 'true';
+    const upcomingList: { id: string }[] = [];
     if (listingId) {
       const bRes = await fetch(`${BOOKING_SERVICE_URL}/api/v1/bookings?vendorId=${encodeURIComponent(listingId)}`, { headers: { Authorization: authorization } });
       if (!bRes.ok) return res.status(502).json({ success: false, message: 'Could not check bookings. Please try again.' });
-      upcoming += ((await bRes.json()).data?.bookings || []).filter(activeUpcoming).length;
+      upcomingList.push(...((await bRes.json()).data?.bookings || []).filter(activeUpcoming));
     }
     if (user.role === 'customer') {
       const bRes = await fetch(`${BOOKING_SERVICE_URL}/api/v1/bookings`, { headers: { Authorization: authorization } });
       if (!bRes.ok) return res.status(502).json({ success: false, message: 'Could not check bookings. Please try again.' });
-      upcoming += ((await bRes.json()).data?.bookings || []).filter((b: any) => b.customerId === user.id && activeUpcoming(b)).length;
+      upcomingList.push(...((await bRes.json()).data?.bookings || []).filter((b: any) => b.customerId === user.id && activeUpcoming(b)));
     }
-    if (upcoming > 0) {
+    const upcoming = upcomingList.length;
+    if (upcoming > 0 && !force) {
       return res.status(409).json({
         success: false,
         code: 'HAS_UPCOMING_BOOKINGS',
-        message: `${user.name} has ${upcoming} upcoming active booking${upcoming === 1 ? '' : 's'}. Cancel or refund ${upcoming === 1 ? 'it' : 'them'} first, or suspend the account instead.`,
+        upcoming,
+        message: `${user.name} has ${upcoming} upcoming active booking${upcoming === 1 ? '' : 's'}.`,
       });
+    }
+    if (upcoming > 0 && force) {
+      // Cancel every upcoming booking (frees the vendor's calendar and tells the customer it is cancelled).
+      for (const b of upcomingList) {
+        const cRes = await fetch(`${BOOKING_SERVICE_URL}/api/v1/bookings/${encodeURIComponent(b.id)}/cancel`, {
+          method: 'PUT',
+          headers: { Authorization: authorization, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reason: 'Account removed by admin' }),
+        });
+        if (!cRes.ok && cRes.status !== 400 && cRes.status !== 404) {
+          return res.status(502).json({ success: false, message: 'Could not cancel all of the bookings. Nothing was deleted - please try again.' });
+        }
+      }
     }
 
     if (listingId) {
