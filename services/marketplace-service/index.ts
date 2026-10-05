@@ -387,7 +387,11 @@ app.get('/api/v1/vendors', async (req: Request, res: Response) => {
   // hidden from customers. Only the admin portal asks for them explicitly.
   // Listings created before this rule existed (createdAt < cutoff, no flag) stay
   // visible; anything newer needs an explicit isPublished: true.
+  // Customers only see vendors the platform has verified AND that have finished connecting
+  // their bank through Razorpay. Everyone else stays hidden until both are done.
   if (!includeUnpublished) {
+    filter.isVerified = true;
+    filter['razorpay.productStatus'] = 'activated';
     filter.$or = [
       { isPublished: true },
       { isPublished: { $exists: false }, createdAt: { $lt: PUBLISH_GATE_START } },

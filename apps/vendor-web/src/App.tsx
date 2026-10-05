@@ -11000,6 +11000,21 @@ export function App() {
 
         {activeTab === 'profile' && (
           <div className="max-w-2xl mx-auto space-y-5">
+          {(() => {
+            const verifiedOk = !!(myVendor?.isVerified || (myVendor as any)?.verification?.status === 'verified');
+            const rzOk = (myVendor as any)?.razorpay?.productStatus === 'activated';
+            if (verifiedOk && rzOk) return null;
+            return (
+              <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 space-y-2">
+                <p className="text-sm font-bold text-amber-200">Your listing is hidden from customers</p>
+                <p className="text-xs text-slate-300">Customers can see you only after both steps are complete:</p>
+                <ul className="text-xs space-y-1">
+                  <li className={verifiedOk ? 'text-emerald-300' : 'text-slate-200'}>{verifiedOk ? '✓' : '○'} Vendor Details approved by admin</li>
+                  <li className={rzOk ? 'text-emerald-300' : 'text-slate-200'}>{rzOk ? '✓' : '○'} Razorpay connected (Business Details)</li>
+                </ul>
+              </div>
+            );
+          })()}
           {/* Verification & Business Profile: Two Tabs (Business Details & Vendor Details) */}
           <div className="space-y-4">
             {/* Top Sub-Tab Switcher */}
