@@ -320,7 +320,8 @@ export function App() {
   // One calendar, two jobs: close dates, or give open dates their own sessions & slots.
   const [availMode, setAvailMode] = useState<'closed' | 'open'>('closed');
   // Sessions (and functions per session) to apply to the next set of "special open dates".
-  const [openSessions, setOpenSessions] = useState<string[]>(AVAILABILITY_SLOTS.map((x) => x.id));
+  // Vendors set Morning / Afternoon / Evening only (no Full Day option on this page).
+  const [openSessions, setOpenSessions] = useState<string[]>(AVAILABILITY_SLOTS.filter((x) => x.id !== 'fullday').map((x) => x.id));
   const [openCaps, setOpenCaps] = useState<Record<string, number>>({});
   // Which time slots the vendor offers per date (date -> slot ids).
   const [availableSlots, setAvailableSlots] = useState<Record<string, string[]>>({});
@@ -10693,7 +10694,7 @@ export function App() {
                 <div>
                   <p className="text-[10px] font-bold text-slate-400 uppercase mb-1.5">Sessions offered{supportsSlotCapacity(myVendor?.category) ? ' & functions per session' : ''}</p>
                   <div className="space-y-1.5">
-                    {AVAILABILITY_SLOTS.map((sl) => {
+                    {AVAILABILITY_SLOTS.filter((sl) => sl.id !== 'fullday').map((sl) => {
                       const on = openSessions.includes(sl.id);
                       return (
                         <div key={sl.id} className={`flex items-center justify-between gap-2 rounded-xl border px-3 py-2 ${on ? 'border-emerald-500/50 bg-emerald-500/10' : 'border-slate-800 bg-slate-950/40'}`}>
@@ -10746,7 +10747,7 @@ export function App() {
                 <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-3">
                   <p className="text-[11px] font-bold text-slate-300 uppercase mb-2">Functions you can handle per slot</p>
                   <div className="grid gap-2 grid-cols-[repeat(auto-fit,minmax(min(13rem,100%),1fr))]">
-                    {AVAILABILITY_SLOTS.map((sl) => (
+                    {AVAILABILITY_SLOTS.filter((sl) => sl.id !== 'fullday').map((sl) => (
                       <div key={sl.id} className="flex items-center justify-between gap-2 rounded-xl bg-slate-950/40 border border-slate-800 px-3 py-2">
                         <p className="text-xs font-semibold text-slate-200 min-w-0 flex-1 truncate">{sl.label}</p>
                         <div className="flex items-center gap-1.5 shrink-0">
@@ -10794,7 +10795,7 @@ export function App() {
                   <div className="space-y-1.5">
                     <p className="text-[10px] font-bold text-slate-400 uppercase">Dates with their own settings ({specialDates.length})</p>
                     {specialDates.map((d) => {
-                      const ids = availableSlots[d] && availableSlots[d].length ? availableSlots[d] : AVAILABILITY_SLOTS.map((x) => x.id);
+                      const ids = (availableSlots[d] && availableSlots[d].length ? availableSlots[d] : AVAILABILITY_SLOTS.map((x) => x.id)).filter((id) => id !== 'fullday');
                       return (
                         <div key={d} className="flex items-center justify-between gap-2 rounded-xl bg-slate-950/50 border border-slate-800 px-3 py-2">
                           <div className="min-w-0">
