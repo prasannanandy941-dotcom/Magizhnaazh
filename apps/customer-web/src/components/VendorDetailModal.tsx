@@ -2827,14 +2827,14 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                         }`}
                       >
                         <span>{s.label}</span>
-                        {!booked && slotCapacityFor(vendor, selectedEventDate, s.id) > 1 && (
+                        {!booked && (
                           <span className={`text-[9px] font-bold ${active ? 'text-indigo-100' : 'text-emerald-400'}`}>
                             {slotsLeft(vendor, selectedEventDate, s.id)} left
                           </span>
                         )}
                         {booked && (
                           <span className="not-italic no-underline text-[9px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 font-bold border border-rose-500/30">
-                            Booked by another customer
+                            Unavailable
                           </span>
                         )}
                       </button>
@@ -2908,11 +2908,14 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                             <span className="text-[10px] font-bold text-slate-400">Included in Full Day</span>
                           ) : booked ? (
                             <span className="text-[10px] font-bold text-rose-300 no-underline">
-                              {s.id === 'fullday' && !(vendor.bookedSlots || []).some((b) => b.date === selectedEventDate && (b.slot || 'fullday') === 'fullday') ? 'Unavailable' : 'Booked'}
+                              Unavailable
                             </span>
-                          ) : slotCapacityFor(vendor, selectedEventDate, s.id) > 1 ? (
-                            <span className="text-[11px] font-bold text-emerald-400">{slotsLeft(vendor, selectedEventDate, s.id)} left</span>
-                          ) : active ? <Check className="w-4 h-4" /> : null}
+                          ) : (
+                            <span className="flex items-center gap-1.5">
+                              <span className={`text-[11px] font-bold ${active ? 'text-indigo-100' : 'text-emerald-400'}`}>{slotsLeft(vendor, selectedEventDate, s.id)} left</span>
+                              {active && <Check className="w-4 h-4" />}
+                            </span>
+                          )}
                         </button>
                       );
                     })}
@@ -3184,10 +3187,10 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                                   }`}
                                 >
                                   <span>{s.label}</span>
-                                  {!booked && slotCapacityFor(vendor, selectedEventDate, s.id) > 1 && (
+                                  {!booked && (
                                     <span className={`text-[8px] font-bold ${active ? 'text-indigo-100' : 'text-emerald-400'}`}>({slotsLeft(vendor, selectedEventDate, s.id)} left)</span>
                                   )}
-                                  {booked && <span className="not-italic no-underline text-[8px] text-rose-300 font-bold">(Booked)</span>}
+                                  {booked && <span className="not-italic no-underline text-[8px] text-rose-300 font-bold">(Unavailable)</span>}
                                 </button>
                               );
                             })}
