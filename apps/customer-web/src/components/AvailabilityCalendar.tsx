@@ -15,15 +15,18 @@ const monthIndex = (key: string) => {
   return y * 12 + (m - 1);
 };
 
-type DayState = 'past' | 'available' | 'limited' | 'booked' | 'unavailable';
+type DayState = 'past' | 'available' | 'limited' | 'booked' | 'unavailable' | 'mine';
 
 export function AvailabilityCalendar({
   vendor,
   selectedDate,
   onPick,
+  myBookedDates = [],
 }: {
   vendor: Vendor;
   selectedDate?: string;
+  // Dates this customer has already booked a Full Day on with this vendor - shown to them only.
+  myBookedDates?: string[];
   onPick: (date: string) => void;
 }) {
   const todayKey = toKey(new Date());
@@ -32,6 +35,7 @@ export function AvailabilityCalendar({
 
   const stateOf = (key: string): DayState => {
     if (key < todayKey) return 'past';
+    if (myBookedDates.includes(key)) return 'mine';
     if (blocked.has(key)) return 'unavailable';
     if (booked.has(key)) return 'booked';
     const open = openSlots(vendor, key).length;
@@ -73,7 +77,7 @@ export function AvailabilityCalendar({
 
   // Legend filter: tap a legend item to highlight just those days in the
   // calendar (others dim). Tap it again to clear.
-  type LegendKey = 'available' | 'limited' | 'booked' | 'unavailable';
+  type LegendKey = 'available' | 'limited' | 'booked' | 'unavailable' | 'mine';
   const [filter, setFilter] = useState<LegendKey | null>(null);
   const listedKeys = [...new Set([...blocked, ...booked])].filter((k) => k >= todayKey).sort();
   // Dates matching a legend item, within the month on screen.
@@ -95,6 +99,7 @@ export function AvailabilityCalendar({
     { key: 'limited', label: 'Few slots left', swatch: 'bg-gradient-to-br from-amber-400 to-orange-500' },
     { key: 'booked', label: 'Booked', swatch: 'bg-rose-500/20 border border-rose-500/50' },
     { key: 'unavailable', label: 'Unavailable', swatch: 'bg-rose-600' },
+    ...(myBookedDates.length > 0 ? [{ key: 'mine' as LegendKey, label: 'Booked by you', swatch: 'bg-emerald-600' }] : []),
   ];
   const matchesFilter = (state: DayState) => !filter || state === filter;
 
@@ -102,6 +107,7 @@ export function AvailabilityCalendar({
     past: 'text-slate-600 cursor-not-allowed',
     // Days the vendor closed stand out strongly - they are the exception.
     unavailable: 'bg-rose-600 text-white font-bold line-through decoration-2 cursor-not-allowed shadow-md shadow-rose-600/30',
+    mine: 'bg-emerald-600 text-white font-bold cursor-not-allowed shadow-md shadow-emerald-600/30',
     booked: 'bg-rose-500/15 border border-rose-500/40 text-rose-300 line-through decoration-2 cursor-not-allowed',
     available: 'bg-emerald-500/10 border border-emerald-500/40 text-emerald-300 font-semibold hover:bg-emerald-500/25 hover:-translate-y-0.5 cursor-pointer',
     limited: 'bg-gradient-to-br from-amber-400 to-orange-500 text-slate-950 font-bold shadow-md shadow-amber-500/30 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-amber-500/40 cursor-pointer',
@@ -109,6 +115,7 @@ export function AvailabilityCalendar({
   const titleOf: Record<DayState, string> = {
     past: 'Past date',
     unavailable: 'Unavailable — the vendor is not taking bookings this day',
+    mine: 'Booked by you — you already have a Full Day on this date',
     booked: 'Already booked',
     available: 'Available — tap to book',
     limited: 'Few sessions left — tap to book',

@@ -148,6 +148,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
       .catch(() => { if (!cancelled) setMyBookings([]); });
     return () => { cancelled = true; };
   }, [isAuthenticated, rawVendor.id, rawVendor.bookedSlots, rawVendor.bookedDates]);
+  const myFullDayDates = useMemo(() => myBookings.filter((b) => b.slot === 'fullday').map((b) => b.date), [myBookings]);
   const vendor = useMemo(() => {
     const fullDays = myBookings.filter((b) => b.slot === 'fullday').map((b) => b.date);
     if (fullDays.length === 0) return rawVendor;
@@ -749,7 +750,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
                 ? <>Tap an open date to see sessions, packages and booking options. Red dates are unavailable.</>
                 : <>{vendor.businessName} has no open dates right now.</>}
             </p>
-            <AvailabilityCalendar vendor={vendor} onPick={pickGateDate} />
+            <AvailabilityCalendar vendor={vendor} onPick={pickGateDate} myBookedDates={myFullDayDates} />
             {!hasUpcomingDates && (
               <button type="button" onClick={() => setShowDateGate(false)}
                 className="mt-5 text-xs font-semibold text-amber-400 hover:text-amber-300 underline underline-offset-2">
@@ -2793,7 +2794,7 @@ export const VendorDetailModal: React.FC<VendorDetailModalProps> = ({
             <span className="text-[11px] font-bold text-slate-400 uppercase flex items-center gap-1.5 mb-2">
               <CalendarIcon className="w-3.5 h-3.5 text-indigo-400" /> Pick a date to book {vendor.businessName}
             </span>
-            <AvailabilityCalendar vendor={vendor} selectedDate={selectedEventDate} onPick={pickDate} />
+            <AvailabilityCalendar vendor={vendor} selectedDate={selectedEventDate} onPick={pickDate} myBookedDates={myFullDayDates} />
 
             {/* Time-slot picker for the chosen date — a booked slot leaves the rest of the day open. */}
             {selectedEventDate && (
