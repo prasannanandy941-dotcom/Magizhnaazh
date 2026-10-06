@@ -25,11 +25,36 @@ export interface VendorOnboardingInput {
   address?: { street?: string; city?: string; state?: string; pincode?: string };
   bankAccount?: { accountNumber?: string; ifscCode?: string; entityName?: string };
   existingAccountId?: string;
+  existingStakeholderId?: string;
 }
 
 function cleanPhone(phone?: string): string {
   const raw = (phone || '').replace(/\D/g, '').slice(-10);
   return raw.length === 10 ? raw : '9876543210';
+}
+
+const STATES = ['Andaman and Nicobar Islands','Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chandigarh','Chhattisgarh','Dadra and Nagar Haveli and Daman and Diu','Delhi','Goa','Gujarat','Haryana','Himachal Pradesh','Jammu and Kashmir','Jharkhand','Karnataka','Kerala','Ladakh','Lakshadweep','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Puducherry','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal'];
+const STATE_ALIASES: Record<string, string> = {
+  tn: 'Tamil Nadu', tamilnadu: 'Tamil Nadu', ka: 'Karnataka', kl: 'Kerala', mh: 'Maharashtra', ap: 'Andhra Pradesh',
+  tg: 'Telangana', ts: 'Telangana', dl: 'Delhi', gj: 'Gujarat', rj: 'Rajasthan', wb: 'West Bengal', up: 'Uttar Pradesh',
+  mp: 'Madhya Pradesh', hr: 'Haryana', pb: 'Punjab', or: 'Odisha', orissa: 'Odisha', br: 'Bihar', as: 'Assam',
+  ga: 'Goa', jk: 'Jammu and Kashmir', 'jammu & kashmir': 'Jammu and Kashmir', uk: 'Uttarakhand', jh: 'Jharkhand',
+  ch: 'Chandigarh', py: 'Puducherry', pondicherry: 'Puducherry', cg: 'Chhattisgarh', hp: 'Himachal Pradesh',
+};
+export function resolveState(raw?: string): string {
+  const clean = (raw || '').replace(/[ \s]+/g, ' ').trim().toLowerCase();
+  if (!clean) return 'Tamil Nadu';
+  return STATES.find((n) => n.toLowerCase() === clean) || STATE_ALIASES[clean] || 'Tamil Nadu';
+}
+
+// Razorpay rejects address lines shorter than 10 chars ("Chennai", "12 Main St")
+// with a BAD_REQUEST — pad short lines so a valid vendor isn't blocked on it.
+function addrLine(value: string | undefined, city: string, fallback: string): string {
+  let line = (value || '').replace(/\s+/g, ' ').trim();
+  if (!line) line = fallback;
+  if (line.length < 10) line = `${line}, ${city}`;
+  if (line.length < 10) line = `${line} Main Road`;
+  return line.slice(0, 100);
 }
 
 export async function createLinkedAccount(input: VendorOnboardingInput): Promise<{ id: string; status: string }> {
@@ -53,10 +78,10 @@ export async function createLinkedAccount(input: VendorOnboardingInput): Promise
       subcategory: 'professional_services',
       addresses: {
         registered: {
-          street1: (address.street || 'Not provided').slice(0, 50),
-          street2: (address.city || 'Not provided').slice(0, 50),
+          street1: addrLine(address.street, address.city || 'Chennai', 'Not provided'),
+          street2: addrLine(address.city, address.city || 'Chennai', 'Main Road'),
           city: address.city || 'Chennai',
-          state: address.state || 'Tamil Nadu',
+          state: resolveState(address.state),
           postal_code: (address.pincode || '600001').replace(/\D/g, '').slice(0, 6) || '600001',
           country: 'IN',
         },
@@ -94,6 +119,14 @@ export async function createStakeholder(accountId: string, input: VendorOnboardi
 // The product's approval state lives in `activation_status`, NOT `status` —
 // the account itself only ever reports `created`/`suspended` (see
 // getAccountDetails); "activated" is a per-product state.
+export function describeRequirements(data: any): string {
+  const reqs: any[] = Array.isArray(data?.requirements) ? data.requirements : [];
+  const parts = reqs
+    .map((r) => [r.field_reference, r.reason_code].filter(Boolean).join(': '))
+    .filter(Boolean);
+  return parts.join('; ');
+}
+
 export async function requestRouteProduct(accountId: string): Promise<{ id: string; status: string }> {
   const { data } = await axios.post(
     `https://api.razorpay.com/v2/accounts/${accountId}/products`,
@@ -103,11 +136,34 @@ export async function requestRouteProduct(accountId: string): Promise<{ id: stri
   return { id: data.id, status: data.activation_status };
 }
 
+// Razorpay allows only ONE stakeholder per linked account, so a retry (or a
+// re-submit after a failed first attempt) must update the existing one instead
+// of POSTing again — that POST fails and used to wipe the stored stakeholderId.
+async function upsertStakeholder(accountId: string, input: VendorOnboardingInput, knownId?: string): Promise<{ id: string }> {
+  let id = knownId;
+  if (!id) {
+    try {
+      return await createStakeholder(accountId, input);
+    } catch (err: any) {
+      const { data } = await axios.get(`https://api.razorpay.com/v2/accounts/${accountId}/stakeholders`, { headers: authHeaders() }).catch(() => ({ data: null }));
+      id = data?.items?.[0]?.id;
+      if (!id) throw err;
+    }
+  }
+  const payload: any = {
+    name: input.panName || input.ownerName || input.businessName,
+    phone: { primary: cleanPhone(input.phone) },
+  };
+  if (input.pan) payload.kyc = { pan: input.pan.trim().toUpperCase() };
+  await axios.patch(`https://api.razorpay.com/v2/accounts/${accountId}/stakeholders/${id}`, payload, { headers: authHeaders() });
+  return { id };
+}
+
 export async function updateRouteProductConfig(
   accountId: string,
   productId: string,
   bankAccount?: { accountNumber?: string; ifscCode?: string; entityName?: string }
-): Promise<{ status: string }> {
+): Promise<{ status: string; requirements: string }> {
   // Razorpay's actual field is the flat boolean `tnc_accepted` — the nested
   // `{ tnc: { accepted: true } }` shape this used to send was rejected
   // outright ("tnc is/are not required and should not be sent"), which left
@@ -126,17 +182,17 @@ export async function updateRouteProductConfig(
     payload,
     { headers: authHeaders() }
   );
-  return { status: data.activation_status };
+  return { status: data.activation_status, requirements: describeRequirements(data) };
 }
 
 // Fetch just this one product's current activation_status — used to refresh
 // a vendor's Route eligibility without re-submitting anything.
-export async function getProductStatus(accountId: string, productId: string): Promise<{ status: string }> {
+export async function getProductStatus(accountId: string, productId: string): Promise<{ status: string; requirements: string }> {
   const { data } = await axios.get(
     `https://api.razorpay.com/v2/accounts/${accountId}/products/${productId}`,
     { headers: authHeaders() }
   );
-  return { status: data.activation_status };
+  return { status: data.activation_status, requirements: describeRequirements(data) };
 }
 
 export async function getAccountDetails(accountId: string): Promise<{ status: string }> {
@@ -160,7 +216,7 @@ export interface OnboardResult {
 // persist partial progress and let the vendor retry/refresh later.
 export async function onboardVendor(input: VendorOnboardingInput): Promise<OnboardResult> {
   let accountId = input.existingAccountId || '';
-  let stakeholderId: string | null = null;
+  let stakeholderId: string | null = input.existingStakeholderId || null;
   let routeStatus = 'created';
   let productStatus = 'requested';
   let productId = 'route';
@@ -173,7 +229,7 @@ export async function onboardVendor(input: VendorOnboardingInput): Promise<Onboa
   }
 
   try {
-    const stakeholder = await createStakeholder(accountId, input);
+    const stakeholder = await upsertStakeholder(accountId, input, input.existingStakeholderId);
     stakeholderId = stakeholder.id;
   } catch (err: any) {
     error = err?.response?.data?.error?.description || err?.message;
@@ -190,6 +246,9 @@ export async function onboardVendor(input: VendorOnboardingInput): Promise<Onboa
   try {
     const updated = await updateRouteProductConfig(accountId, productId, input.bankAccount);
     productStatus = updated.status || productStatus;
+    if (updated.status === 'needs_clarification' && updated.requirements) {
+      error = `Razorpay needs: ${updated.requirements}`;
+    }
   } catch (err: any) {
     error = err?.response?.data?.error?.description || err?.message || error;
   }
@@ -200,6 +259,11 @@ export async function onboardVendor(input: VendorOnboardingInput): Promise<Onboa
   try {
     const refreshed = await getProductStatus(accountId, productId);
     productStatus = refreshed.status || productStatus;
+    if (refreshed.status === 'needs_clarification' && refreshed.requirements) {
+      error = `Razorpay needs: ${refreshed.requirements}`;
+    } else if (refreshed.status && refreshed.status !== 'needs_clarification') {
+      error = undefined;
+    }
   } catch {
     // Best-effort — the status above from the update call still stands.
   }

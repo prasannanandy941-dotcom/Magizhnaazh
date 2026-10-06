@@ -850,6 +850,7 @@ app.post('/api/v1/vendors/:id/razorpay/onboard', authMiddleware(), async (req: R
       },
       bankAccount: { accountNumber: bank.accountNumber, ifscCode: bank.ifscCode, entityName: bank.entityName },
       existingAccountId: (vendor as any).razorpay?.accountId,
+      existingStakeholderId: (vendor as any).razorpay?.stakeholderId || undefined,
     });
 
     (vendor as any).razorpay = {
@@ -918,6 +919,8 @@ app.get('/api/v1/vendors/:id/razorpay/status', authMiddleware(), async (req: Req
         // since moved on.
         if (product.status !== 'needs_clarification' && product.status !== 'suspended') {
           (vendor as any).razorpay.lastError = '';
+        } else if (product.requirements) {
+          (vendor as any).razorpay.lastError = `Razorpay needs: ${product.requirements}`;
         }
       }
     } catch {
