@@ -988,6 +988,9 @@ export const SLOT_CAPACITY_CATEGORIES: string[] = [
 ];
 
 export const MAX_SLOT_CAPACITY = 50;
+// Bookings a session takes when the vendor hasn't set their own number, so one customer's booking
+// doesn't close the session for everyone else. A vendor with a single team lowers it themselves.
+export const DEFAULT_SLOT_CAPACITY = 5;
 
 export function supportsSlotCapacity(category?: string): boolean {
   return !!category && SLOT_CAPACITY_CATEGORIES.includes(category);
@@ -1002,7 +1005,7 @@ export function slotCapacityFor(vendor: SlotVendor, date: string, slot: string):
   if (!supportsSlotCapacity(vendor.category)) return 1;
   // A date-specific value wins; otherwise the vendor's default ('default' key) applies.
   const n = Math.floor(Number(vendor.slotCapacity?.[date]?.[slot || 'fullday'] ?? vendor.slotCapacity?.['default']?.[slot || 'fullday']));
-  return Number.isFinite(n) && n >= 1 ? Math.min(n, MAX_SLOT_CAPACITY) : 1;
+  return Number.isFinite(n) && n >= 1 ? Math.min(n, MAX_SLOT_CAPACITY) : DEFAULT_SLOT_CAPACITY;
 }
 
 // How many more bookings this (date, slot) can take. A Full Day booking also
