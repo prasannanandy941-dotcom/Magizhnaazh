@@ -941,29 +941,31 @@ app.delete('/api/v1/vendors/:id', authMiddleware(), async (req: Request, res: Re
     return res.status(403).json({ success: false, message: 'You do not own this vendor listing.' });
   }
 
-  // When vendor is deleted by admin, ensure associated user account is unsuspended
-  // so the vendor can log in again with their same email at any time.
+  await VendorModel.deleteOne({ id: req.params.id });
+
+  // Deleting a vendor listing also removes its vendor login from Admin → Users,
+  // so the two lists stay in sync. Only vendor-role accounts that own no other
+  // listing are removed — never a customer or admin account.
   try {
-    const userQuery: any = {};
-    if (vendor.userId) {
-      userQuery.$or = [{ id: vendor.userId }];
-      if (vendor.contactEmail) {
-        userQuery.$or.push({ email: vendor.contactEmail.toLowerCase().trim() });
+    const users = mongoose.connection.collection('users');
+    const emailLc = vendor.contactEmail ? vendor.contactEmail.toLowerCase().trim() : '';
+    const or: any[] = [];
+    if (vendor.userId) or.push({ id: vendor.userId });
+    if (emailLc) or.push({ email: emailLc });
+    if (or.length > 0) {
+      const owners = await users.find({ $or: or, role: 'vendor' }).toArray();
+      for (const u of owners) {
+        const remaining = await VendorModel.countDocuments({ userId: (u as any).id });
+        if (remaining === 0) {
+          await users.deleteOne({ _id: u._id });
+          await mongoose.connection.collection('otps').deleteMany({ email: (u as any).email });
+        }
       }
-    } else if (vendor.contactEmail) {
-      userQuery.email = vendor.contactEmail.toLowerCase().trim();
-    }
-    if (Object.keys(userQuery).length > 0) {
-      await mongoose.connection.collection('users').updateMany(
-        userQuery,
-        { $set: { isSuspended: false } }
-      );
     }
   } catch (err) {
-    console.warn('[marketplace-service] Could not unsuspend associated user on vendor delete:', err);
+    console.warn('[marketplace-service] Could not remove vendor user account on vendor delete:', err);
   }
 
-  await VendorModel.deleteOne({ id: req.params.id });
   res.json({ success: true, message: 'Vendor deleted.' });
 });
 
