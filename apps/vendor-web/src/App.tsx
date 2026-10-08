@@ -387,6 +387,8 @@ export function App() {
   const [businessName, setBusinessName] = useState('');
   const [category, setCategory] = useState('Venue');
   const [city, setCity] = useState('Chennai');
+  const [streetAddress, setStreetAddress] = useState('');
+  const [pincode, setPincode] = useState('');
   const [startingPrice, setStartingPrice] = useState(50000);
   const [advancePercentage, setAdvancePercentage] = useState(0);
   const [advanceAmount, setAdvanceAmount] = useState(0);
@@ -453,6 +455,8 @@ export function App() {
         setBusinessName(v.businessName);
         setCategory(v.category);
         setCity(v.location.city);
+        setStreetAddress((v.location as any).address || '');
+        setPincode((v.location as any).pincode || '');
         setStartingPrice(v.startingPrice);
         setAdvancePercentage(v.policies?.advancePercentage ?? 0);
         setAdvanceAmount(v.policies?.advanceAmount ?? 0);
@@ -913,6 +917,8 @@ export function App() {
         category,
         description,
         city,
+        street: streetAddress,
+        pincode,
         startingPrice,
         contactPhone,
         policies: {
@@ -11897,6 +11903,31 @@ export function App() {
                     </optgroup>
                   ))}
                 </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Street / door number (business address)</label>
+                <input
+                  type="text"
+                  value={streetAddress}
+                  onChange={(e) => setStreetAddress(e.target.value)}
+                  placeholder="e.g. 12, Gandhi Road, T. Nagar"
+                  className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white font-semibold text-xs"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Pincode</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={pincode}
+                  onChange={(e) => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="6 digits, e.g. 600017"
+                  className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white font-semibold text-xs"
+                />
               </div>
             </div>
 

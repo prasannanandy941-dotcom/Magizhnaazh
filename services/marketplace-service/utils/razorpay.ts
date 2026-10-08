@@ -263,7 +263,7 @@ export async function onboardVendor(input: VendorOnboardingInput): Promise<Onboa
   let error: string | undefined;
 
   const problems = validateOnboardingInput(input);
-  if (problems.length > 0) throw new Error(`Fix these details first: ${problems.join('; ')}.`);
+  if (problems.length > 0) throw new Error(`Fix these details first: ${problems.join("; ")}. (Street, pincode and city are in Business Profile; PAN and bank details are in Vendor Details.)`);
 
   if (!accountId) {
     const account = await createLinkedAccount(input);

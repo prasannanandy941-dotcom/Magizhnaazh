@@ -668,7 +668,7 @@ app.put('/api/v1/vendors/:id', authMiddleware(), async (req: Request, res: Respo
     return res.status(403).json({ success: false, message: 'You do not own this vendor listing.' });
   }
 
-  const { businessName, category, description, city, startingPrice, contactEmail, contactPhone, upiId, packages, facilities, galleryImages, availableDates, offeredOptions, offeredOptionPrices, offeredOptionItems, offeredOptionQuality, offeredOptionImages, giftCount, giftDiscount, policies, deals, bankDetails, panDetails } = req.body;
+  const { businessName, category, description, city, startingPrice, contactEmail, contactPhone, upiId, street, pincode, packages, facilities, galleryImages, availableDates, offeredOptions, offeredOptionPrices, offeredOptionItems, offeredOptionQuality, offeredOptionImages, giftCount, giftDiscount, policies, deals, bankDetails, panDetails } = req.body;
   if (contactPhone !== undefined && contactPhone !== '' && !isValidContactPhone(contactPhone)) {
     return res.status(400).json({ success: false, message: 'Please enter a valid contact phone number.' });
   }
@@ -702,6 +702,8 @@ app.put('/api/v1/vendors/:id', authMiddleware(), async (req: Request, res: Respo
   if (category !== undefined) vendor.category = category;
   if (description !== undefined) vendor.description = description;
   if (city !== undefined) vendor.location.city = city;
+  if (typeof street === 'string') vendor.location.address = street.trim();
+  if (typeof pincode === 'string') vendor.location.pincode = pincode.replace(/\D/g, '').slice(0, 6);
   if (startingPrice !== undefined) vendor.startingPrice = Number(startingPrice);
   if (contactEmail !== undefined) vendor.contactEmail = contactEmail;
   if (contactPhone !== undefined) vendor.contactPhone = contactPhone;
