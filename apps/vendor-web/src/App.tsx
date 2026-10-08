@@ -4814,8 +4814,8 @@ export function App() {
             </div>
 
             {/* Wide screens: calendar on the left, the unavailable dates beside it. */}
-            <div className={embedded ? 'space-y-5' : 'space-y-5 lg:space-y-0 lg:grid lg:grid-cols-[22rem_minmax(0,1fr)] lg:gap-6 lg:items-start'}>
-            <div className={embedded ? '' : 'lg:sticky lg:top-24'}>
+            <div className="flex flex-wrap gap-6 items-start">
+            <div className="basis-full min-w-0 md:basis-[22rem] md:max-w-[22rem] md:grow-0 shrink-0">
               <div className="flex rounded-xl border border-slate-700 overflow-hidden mb-3" role="tablist" aria-label="What to set on the calendar">
                 {([['closed', 'Not available'], ['open', 'Open dates: sessions & slots']] as const).map(([key, label]) => (
                   <button
@@ -4909,7 +4909,7 @@ export function App() {
               </div>
             </div>
 
-            <div className="space-y-4 min-w-0">
+            <div className="space-y-4 min-w-0 basis-full md:basis-[14rem] md:flex-1">
 
               <div>
                 <p className="text-[11px] font-bold text-slate-300 uppercase mb-2">Unavailable dates ({unavailableDates.filter((d) => d >= new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10)).length})</p>
