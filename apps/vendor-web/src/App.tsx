@@ -4773,6 +4773,201 @@ export function App() {
   const kycStatus = myVendor?.verification?.status;
   const kycLocked = (kycStatus === 'pending' || kycStatus === 'verified') && !kycEditing;
 
+  // The availability calendar (close dates / per-date sessions & slots). Shared by
+  // the Availability tab (non-venue vendors) and the Halls form (venues).
+  const renderAvailabilityPanel = () => (
+          <div className="max-w-6xl space-y-5 mt-6 min-w-0 overflow-x-hidden">
+          {/* Calendar sync — subscribe bookings into Google/Apple/Outlook. */}
+          <div className="glass-card p-6 rounded-3xl border border-indigo-500/30 bg-indigo-500/5 space-y-3">
+            <div className="flex items-start gap-3">
+              <ClockIcon className="w-6 h-6 text-indigo-400 shrink-0" />
+              <div>
+                <h3 className="font-bold text-white">Sync bookings to your calendar</h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Add this private link to Google Calendar (<span className="text-slate-300">Other calendars → From URL</span>), Apple Calendar, or Outlook. Every confirmed booking shows up automatically.
+                </p>
+              </div>
+            </div>
+            {calendarUrl ? (
+              <div className="flex items-center gap-2">
+                <input readOnly value={calendarUrl} onClick={(e) => (e.target as HTMLInputElement).select()}
+                  className="flex-1 min-w-0 p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-300 text-[11px] font-mono" />
+                <button
+                  onClick={() => { navigator.clipboard?.writeText(calendarUrl); setCalendarCopied(true); setTimeout(() => setCalendarCopied(false), 2000); }}
+                  className="px-3 py-2.5 rounded-lg bg-indigo-500 text-white font-bold text-[11px] shrink-0">
+                  {calendarCopied ? 'Copied!' : 'Copy'}
+                </button>
+              </div>
+            ) : (
+              <p className="text-[11px] text-slate-500">Preparing your calendar link…</p>
+            )}
+            <p className="text-[10px] text-slate-500">Keep this link private — anyone with it can see your booking dates.</p>
+          </div>
+
+          <div className="glass-card p-4 sm:p-8 rounded-3xl border border-slate-800 space-y-5">
+            <div>
+              <h3 className="font-bold text-xl text-white">Availability Calendar</h3>
+              <p className="text-xs text-slate-400 mt-1">You are open for booking <strong className="text-slate-200">every upcoming day</strong> by default. Mark only the dates you are <strong className="text-rose-400">not available</strong>. Days that get fully booked close automatically.</p>
+              {supportsSlotCapacity(myVendor?.category) && (
+                <p className="text-xs text-amber-300/90 mt-1.5">Have more than one team? Set how many functions you can handle in each slot using the Open dates: sessions & slots tab — e.g. Morning × 4 lets four customers book the same morning. A Full Day booking also uses one Morning, Afternoon and Evening spot.</p>
+              )}
+            </div>
+
+            {/* Wide screens: calendar on the left, the unavailable dates beside it. */}
+            <div className="space-y-5 lg:space-y-0 lg:grid lg:grid-cols-[22rem_minmax(0,1fr)] lg:gap-6 lg:items-start">
+            <div className="lg:sticky lg:top-24">
+              <div className="flex rounded-xl border border-slate-700 overflow-hidden mb-3" role="tablist" aria-label="What to set on the calendar">
+                {([['closed', 'Not available'], ['open', 'Open dates: sessions & slots']] as const).map(([key, label]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    role="tab"
+                    aria-selected={availMode === key}
+                    onClick={() => setAvailMode(key)}
+                    className={`flex-1 px-2 py-2 text-xs font-bold transition-colors ${availMode === key ? (key === 'closed' ? 'bg-rose-600 text-white' : 'bg-emerald-600 text-white') : 'bg-slate-900 text-slate-300 hover:text-white'}`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              {availMode === 'closed' ? (
+                <>
+                  <label className="block text-xs text-slate-400 mb-1.5">Mark the dates you are NOT available — pick one or many at once</label>
+              <div className="mb-3">
+                <p className="text-[11px] font-bold text-slate-300 uppercase mb-1.5">What is closed on those dates?</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {[{ id: 'whole', label: 'Whole day' }, { id: 'morning', label: 'Morning' }, { id: 'afternoon', label: 'Afternoon' }, { id: 'evening', label: 'Evening' }].map((o) => {
+                    const on = closeSessions.includes(o.id);
+                    return (
+                      <button
+                        key={o.id}
+                        type="button"
+                        onClick={() => toggleCloseSession(o.id)}
+                        aria-pressed={on}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${on ? 'bg-rose-600 border-rose-600 text-white' : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-rose-500/60'}`}
+                      >
+                        {o.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-[10px] text-slate-500 mt-1">Pick only some sessions to keep the rest of the day open for customers.</p>
+              </div>
+                </>
+              ) : (
+                <div className="mb-3 space-y-2">
+                  <label className="block text-xs text-slate-400">Choose the sessions{supportsSlotCapacity(myVendor?.category) ? ' and slots' : ''}, then pick the dates they apply to</label>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase mb-1.5">Sessions offered{supportsSlotCapacity(myVendor?.category) ? ' & functions per session' : ''}</p>
+                  <div className="space-y-1.5">
+                    {AVAILABILITY_SLOTS.map((sl) => {
+                      const on = openSessions.includes(sl.id);
+                      return (
+                        <div key={sl.id} className={`flex items-center justify-between gap-2 rounded-xl border px-3 py-2 ${on ? 'border-emerald-500/50 bg-emerald-500/10' : 'border-slate-800 bg-slate-950/40'}`}>
+                          <button type="button" onClick={() => toggleOpenSession(sl.id)} aria-pressed={on} className="flex items-center gap-2 text-left min-w-0 flex-1">
+                            <span className={`w-4 h-4 rounded border flex items-center justify-center text-[10px] font-bold ${on ? 'bg-emerald-500 border-emerald-500 text-slate-950' : 'border-slate-600 text-transparent'}`}>✓</span>
+                            <span className={`text-xs font-semibold ${on ? 'text-slate-100' : 'text-slate-500'}`}>{sl.label}</span>
+                          </button>
+                          {supportsSlotCapacity(myVendor?.category) && on && (
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <button type="button" onClick={() => setOpenCaps((p) => ({ ...p, [sl.id]: Math.max(1, openCapFor(sl.id) - 1) }))} disabled={openCapFor(sl.id) <= 1}
+                                aria-label={`Fewer ${sl.label} slots`} className="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 text-white font-bold disabled:opacity-40">−</button>
+                              <input type="number" min={1} max={MAX_SLOT_CAPACITY} value={openCapFor(sl.id)}
+                                onChange={(e) => setOpenCaps((p) => ({ ...p, [sl.id]: Math.min(MAX_SLOT_CAPACITY, Math.max(1, Math.floor(Number(e.target.value)) || 1)) }))}
+                                aria-label={`${sl.label} slots`} className="w-12 p-1 rounded-lg bg-slate-900 border border-slate-700 text-center text-sm text-white font-bold" />
+                              <button type="button" onClick={() => setOpenCaps((p) => ({ ...p, [sl.id]: Math.min(MAX_SLOT_CAPACITY, openCapFor(sl.id) + 1) }))} disabled={openCapFor(sl.id) >= MAX_SLOT_CAPACITY}
+                                aria-label={`More ${sl.label} slots`} className="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 text-white font-bold disabled:opacity-40">+</button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                </div>
+              )}
+
+              <MultiDatePicker
+                mode={availMode === 'closed' ? 'closed' : 'open'}
+                existing={availMode === 'closed' ? unavailableDates : specialDates}
+                onAdd={availMode === 'closed' ? addUnavailable : applySpecialDates}
+                emptyLabel={availMode === 'closed' ? undefined : 'Select the dates these sessions apply to'}
+                actionLabel={availMode === 'closed' ? undefined : (n) => `Apply to ${n} date${n === 1 ? '' : 's'}`}
+              />
+              <div className="mt-3 space-y-2">
+            {availabilityNotice && <p className="text-xs text-emerald-400 font-semibold">{availabilityNotice}</p>}
+
+              <button
+                onClick={handleSaveAvailability}
+                disabled={savingAvailability}
+                className="w-full justify-center px-6 py-3 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs shadow-md disabled:opacity-60 flex items-center gap-2"
+              >
+                {savingAvailability && <Loader2 className="w-4 h-4 animate-spin" />} Save Availability
+              </button>
+              </div>
+            </div>
+
+            <div className="space-y-4 min-w-0">
+
+              <div>
+                <p className="text-[11px] font-bold text-slate-300 uppercase mb-2">Unavailable dates ({unavailableDates.filter((d) => d >= new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10)).length})</p>
+                {unavailableDates.length === 0 && Object.keys(unavailableSlots).length === 0 ? (
+                  <p className="text-xs text-slate-500">Nothing is blocked — customers can book you on any upcoming day.</p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {[...new Set([...unavailableDates, ...Object.keys(unavailableSlots)])].sort().map((d) => {
+                      const whole = unavailableDates.includes(d);
+                      const sessions = unavailableSlots[d] || [];
+                      return (
+                        <span key={d} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-white text-xs font-semibold ${whole ? 'bg-rose-600/90' : 'bg-amber-600/90'}`}>
+                          {new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          <span className="font-normal opacity-90">· {whole ? 'whole day' : sessions.map((x) => x.charAt(0).toUpperCase() + x.slice(1)).join(', ')}</span>
+                          <button type="button" onClick={() => removeUnavailable(d)} aria-label={`Open ${d} again`} title="Open this date again" className="text-white/80 hover:text-white font-bold leading-none">×</button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Dates that have their own sessions / slots (everything else uses the defaults). */}
+              {specialDates.length > 0 && (
+                <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-3 space-y-3">
+                  <div className="space-y-1.5">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase">Dates with their own settings ({specialDates.length})</p>
+                    {specialDates.map((d) => {
+                      const ids = (availableSlots[d] && availableSlots[d].length ? availableSlots[d] : AVAILABILITY_SLOTS.map((x) => x.id));
+                      return (
+                        <div key={d} className="flex items-center justify-between gap-2 rounded-xl bg-slate-950/50 border border-slate-800 px-3 py-2">
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold text-emerald-200">{new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                            <p className="text-[11px] text-slate-400 truncate">
+                              {ids.map((id) => {
+                                const label = AVAILABILITY_SLOTS.find((x) => x.id === id)?.label || id;
+                                const cap = slotCapacity[d]?.[id];
+                                return cap && supportsSlotCapacity(myVendor?.category) ? `${label} × ${cap}` : label;
+                              }).join(' · ')}
+                            </p>
+                          </div>
+                          <button type="button" onClick={() => resetSpecialDate(d)} aria-label={`Reset ${d} to the defaults`} title="Back to the default sessions" className="text-slate-400 hover:text-rose-400 font-bold text-sm shrink-0">×</button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+            </div>
+
+
+
+
+          </div>
+          </div>
+  );
+
   if (!user) {
     // No theme toggle on the sign-in screen — it's in the navbar once signed in.
     return (
@@ -7186,6 +7381,11 @@ export function App() {
                             </div>
                           </div>
 
+                          {(p.venue?.sessions || []).length > 0 && (
+                            <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-2 sm:p-3">
+                              {renderAvailabilityPanel()}
+                            </div>
+                          )}
 
                           <div className="grid grid-cols-2 gap-3">
                             <div>
@@ -10712,7 +10912,7 @@ export function App() {
         )}
 
         {/* Availability Tab */}
-        {((activeTab === 'availability' && myVendor?.category !== 'Venue') || (activeTab === 'packages' && myVendor?.category === 'Venue')) && (
+        {activeTab === 'availability' && myVendor?.category !== 'Venue' && (
           <div className="max-w-6xl space-y-5 mt-6 min-w-0 overflow-x-hidden">
           {/* Calendar sync — subscribe bookings into Google/Apple/Outlook. */}
           <div className="glass-card p-6 rounded-3xl border border-indigo-500/30 bg-indigo-500/5 space-y-3">
