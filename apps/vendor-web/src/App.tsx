@@ -4775,10 +4775,10 @@ export function App() {
 
   // The availability calendar (close dates / per-date sessions & slots). Shared by
   // the Availability tab (non-venue vendors) and the Halls form (venues).
-  const renderAvailabilityPanel = () => (
-          <div className="max-w-6xl space-y-5 mt-6 min-w-0 overflow-x-hidden">
+  const renderAvailabilityPanel = (embedded = false) => (
+          <div className={`max-w-6xl space-y-5 min-w-0 overflow-x-hidden ${embedded ? '' : 'mt-6'}`}>
           {/* Calendar sync — subscribe bookings into Google/Apple/Outlook. */}
-          <div className="glass-card p-6 rounded-3xl border border-indigo-500/30 bg-indigo-500/5 space-y-3">
+          <div className={`glass-card p-6 rounded-3xl border border-indigo-500/30 bg-indigo-500/5 space-y-3 ${embedded ? 'hidden' : ''}`}>
             <div className="flex items-start gap-3">
               <ClockIcon className="w-6 h-6 text-indigo-400 shrink-0" />
               <div>
@@ -4804,7 +4804,7 @@ export function App() {
             <p className="text-[10px] text-slate-500">Keep this link private — anyone with it can see your booking dates.</p>
           </div>
 
-          <div className="glass-card p-4 sm:p-8 rounded-3xl border border-slate-800 space-y-5">
+          <div className={`glass-card rounded-3xl border border-slate-800 space-y-5 ${embedded ? 'p-3' : 'p-4 sm:p-8'}`}>
             <div>
               <h3 className="font-bold text-xl text-white">Availability Calendar</h3>
               <p className="text-xs text-slate-400 mt-1">You are open for booking <strong className="text-slate-200">every upcoming day</strong> by default. Mark only the dates you are <strong className="text-rose-400">not available</strong>. Days that get fully booked close automatically.</p>
@@ -4814,8 +4814,8 @@ export function App() {
             </div>
 
             {/* Wide screens: calendar on the left, the unavailable dates beside it. */}
-            <div className="space-y-5 lg:space-y-0 lg:grid lg:grid-cols-[22rem_minmax(0,1fr)] lg:gap-6 lg:items-start">
-            <div className="lg:sticky lg:top-24">
+            <div className={embedded ? 'space-y-5' : 'space-y-5 lg:space-y-0 lg:grid lg:grid-cols-[22rem_minmax(0,1fr)] lg:gap-6 lg:items-start'}>
+            <div className={embedded ? '' : 'lg:sticky lg:top-24'}>
               <div className="flex rounded-xl border border-slate-700 overflow-hidden mb-3" role="tablist" aria-label="What to set on the calendar">
                 {([['closed', 'Not available'], ['open', 'Open dates: sessions & slots']] as const).map(([key, label]) => (
                   <button
@@ -7383,7 +7383,7 @@ export function App() {
 
                           {(p.venue?.sessions || []).length > 0 && (
                             <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-2 sm:p-3">
-                              {renderAvailabilityPanel()}
+                              {renderAvailabilityPanel(true)}
                             </div>
                           )}
 
