@@ -193,7 +193,7 @@ export function App() {
     ]);
   }, []);
 
-  const [activeTab, setActiveTab] = useState<string>(() => (localStorage.getItem('user') ? 'marketplace' : 'invitations'));
+  const [activeTab, setActiveTab] = useState<string>('marketplace');
   const [marketplaceCategory, setMarketplaceCategory] = useState('All');
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [vendorsLoading, setVendorsLoading] = useState(false);
@@ -251,10 +251,6 @@ export function App() {
     return stored ? JSON.parse(stored) : null;
   });
   const [showAuthModal, setShowAuthModal] = useState(false);
-  // Signed-out visitors can only use Canva Invites (also covers logging out).
-  useEffect(() => {
-    if (!user && activeTab !== 'invitations') setActiveTab('invitations');
-  }, [user, activeTab]);
   const [bookingInProgress, setBookingInProgress] = useState(false);
 
   // Load the live vendor marketplace from the backend (vendor-service, via the gateway).

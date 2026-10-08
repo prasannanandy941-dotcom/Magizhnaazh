@@ -35,7 +35,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 }) => {
   const [showAccountSheet, setShowAccountSheet] = useState(false);
 
-  const allNavItems = [
+  const navItems = [
     {
       id: 'marketplace',
       label: 'Explore',
@@ -101,8 +101,6 @@ export const BottomNav: React.FC<BottomNavProps> = ({
       },
     },
   ];
-  // Before sign-in only Invites and Sign In are shown; the rest unlocks after login.
-  const navItems = user ? allNavItems : allNavItems.filter((i) => i.id === 'invitations' || i.id === 'account');
 
   return (
     <>

@@ -76,7 +76,7 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   // Shared nav definition, used by both the desktop bar and the mobile menu.
-  const allNavItems: { id: string; label: string; icon: React.ReactNode }[] = [
+  const navItems: { id: string; label: string; icon: React.ReactNode }[] = [
     { id: 'marketplace', label: 'Marketplace', icon: <Store className="w-4 h-4" /> },
     { id: 'events', label: 'My Events', icon: <Calendar className="w-4 h-4" /> },
     { id: 'budget', label: 'Smart Budget', icon: <span className="font-bold text-[#e8c874]">₹</span> },
@@ -84,8 +84,6 @@ export const Header: React.FC<HeaderProps> = ({
     { id: 'guests', label: 'Guests & RSVP', icon: <UserIcon className="w-4 h-4" /> },
     { id: 'orders', label: 'My Orders', icon: <ClipboardList className="w-4 h-4" /> },
   ];
-  // Before sign-in a visitor only sees Canva Invites; everything else unlocks after login.
-  const navItems = user ? allNavItems : allNavItems.filter((i) => i.id === 'invitations');
 
   return (
     <header className="sticky top-0 z-50 border-b border-[#6b2140]/50 bg-[#1a0a14]/85 backdrop-blur-xl">
@@ -93,7 +91,7 @@ export const Header: React.FC<HeaderProps> = ({
         
         {/* Logo & Brand Name */}
         <div 
-          onClick={() => setActiveTab(user ? 'marketplace' : 'invitations')}
+          onClick={() => setActiveTab('marketplace')}
           className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-3 cursor-pointer group"
         >
           <div className="w-9 h-9 sm:w-11 sm:h-11 shrink-0 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-[#b8336a] via-[#c9a648] to-[#f0c869] flex items-center justify-center shadow-md shadow-[#d4af37]/20 group-hover:scale-105 transition-transform">
