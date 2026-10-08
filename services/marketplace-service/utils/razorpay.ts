@@ -28,6 +28,16 @@ export interface VendorOnboardingInput {
   existingStakeholderId?: string;
 }
 
+// Razorpay accepts only letters and spaces in person names (contact_name and
+// the stakeholder name) — "Venue_5" or "Raj & Sons 2" is rejected outright.
+// Prefer the name on the PAN, which is also what their KYC check compares.
+export function personName(input: VendorOnboardingInput): string {
+  const pick = [input.panName, input.ownerName, input.businessName]
+    .map((n) => (n || '').replace(/[^A-Za-z\s]/g, ' ').replace(/\s+/g, ' ').trim())
+    .find((n) => n.length >= 4);
+  return pick || '';
+}
+
 function cleanPhone(phone?: string): string {
   const raw = (phone || '').replace(/\D/g, '').slice(-10);
   if (raw.length !== 10) throw new Error('A valid 10-digit mobile number is required for Razorpay.');
@@ -48,7 +58,7 @@ export function validateOnboardingInput(input: VendorOnboardingInput): string[] 
   const ifsc = (input.bankAccount?.ifscCode || '').trim().toUpperCase();
   if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc)) problems.push('IFSC must look like SBIN0001234');
   if ((input.bankAccount?.entityName || '').trim().length < 3) problems.push('account holder name (as on the bank passbook)');
-  if ((input.panName || input.ownerName || '').trim().length < 4) problems.push('name as on PAN (at least 4 letters)');
+  if (personName(input).length < 4) problems.push('name as on PAN, letters and spaces only (at least 4 letters)');
   if ((input.phone || '').replace(/\D/g, '').slice(-10).length !== 10) problems.push('10-digit mobile number');
   if (!/^\S+@\S+\.\S+$/.test(input.email || '')) problems.push('valid email');
   const a = input.address || {};
@@ -90,9 +100,9 @@ function accountProfilePayload(input: VendorOnboardingInput) {
   return {
     phone: cleanPhone(input.phone),
     type: 'route',
-    legal_business_name: input.legalBusinessName || input.businessName,
+    legal_business_name: personName(input) || input.legalBusinessName || input.businessName,
     business_type: 'individual',
-    contact_name: input.ownerName || input.businessName,
+    contact_name: personName(input),
     profile: {
       category: 'services',
       subcategory: 'professional_services',
@@ -150,7 +160,7 @@ export async function createStakeholder(accountId: string, input: VendorOnboardi
   const stakeholderEmail = `${userPart}+v${suffix}@${domainPart}`;
 
   const payload: any = {
-    name: input.panName || input.ownerName || input.businessName,
+    name: personName(input),
     email: stakeholderEmail,
     relationship: { director: false, executive: true },
     phone: { primary: cleanPhone(input.phone) },
@@ -201,7 +211,7 @@ async function upsertStakeholder(accountId: string, input: VendorOnboardingInput
     }
   }
   const payload: any = {
-    name: input.panName || input.ownerName || input.businessName,
+    name: personName(input),
     phone: { primary: cleanPhone(input.phone) },
     addresses: { residential: residentialAddress(input) },
   };
