@@ -556,8 +556,8 @@ export function App() {
   }, [user, token]);
 
   useEffect(() => {
-    if (activeTab === 'availability') {
-      setActiveTab('dashboard');
+    if (myVendor?.category === 'Venue' && activeTab === 'availability') {
+      setActiveTab('packages');
     }
   }, [myVendor?.category, activeTab]);
 
@@ -4753,6 +4753,8 @@ export function App() {
     ...(myVendor?.category !== 'Venue' ? [{ key: 'facilities', label: facilitiesSectionLabel(myVendor?.category), short: 'Services', Icon: Sparkles }] : []),
     ...(myVendor?.category !== 'Wedding Planner' && myVendor?.category !== 'Event Host/Anchor' ? [{ key: 'packages', label: myVendor?.category === 'Venue' ? 'Halls' : 'Packages', count: (myVendor?.packages?.length ?? 0) || undefined, short: myVendor?.category === 'Venue' ? 'Halls' : 'Packages', Icon: myVendor?.category === 'Venue' ? Building2 : Gift }] : []),
     ...(myVendor?.category !== 'Security' ? [{ key: 'offers', label: 'Offers', count: deals.length || undefined, short: 'Offers', Icon: CreditCard }] : []),
+    // Venues manage availability right inside the Halls tab (below the hall cards).
+    ...(myVendor?.category !== 'Venue' ? [{ key: 'availability', label: 'Availability', short: 'Availability', Icon: CalendarDays }] : []),
     { key: 'portfolio', label: 'Local Disk Portfolio', short: 'Portfolio', Icon: Upload },
     { key: 'profile', label: 'Business Profile', short: 'Profile', Icon: Store },
   ];
@@ -10710,8 +10712,8 @@ export function App() {
         )}
 
         {/* Availability Tab */}
-        {activeTab === 'availability' && (
-          <div className="max-w-6xl space-y-5 min-w-0 overflow-x-hidden">
+        {((activeTab === 'availability' && myVendor?.category !== 'Venue') || (activeTab === 'packages' && myVendor?.category === 'Venue')) && (
+          <div className="max-w-6xl space-y-5 mt-6 min-w-0 overflow-x-hidden">
           {/* Calendar sync — subscribe bookings into Google/Apple/Outlook. */}
           <div className="glass-card p-6 rounded-3xl border border-indigo-500/30 bg-indigo-500/5 space-y-3">
             <div className="flex items-start gap-3">
