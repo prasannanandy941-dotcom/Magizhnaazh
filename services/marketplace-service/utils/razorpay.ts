@@ -83,17 +83,11 @@ function addrLine(value: string | undefined, city: string, fallback: string): st
   return line.slice(0, 100);
 }
 
-export async function createLinkedAccount(input: VendorOnboardingInput): Promise<{ id: string; status: string }> {
+// Everything about a linked account that Razorpay lets us edit later (all of it
+// except business_type and email), so a retry can replace stale/placeholder data.
+function accountProfilePayload(input: VendorOnboardingInput) {
   const address = input.address || {};
-  const baseEmail = input.email || `vendor_${input.storeId}@magizhnaazh.in`;
-  const [userPart, domainPart] = baseEmail.includes('@') ? baseEmail.split('@') : [baseEmail, 'magizhnaazh.in'];
-  // Razorpay requires a unique email per linked account — suffix with the
-  // vendor id so re-onboarding attempts / shared vendor emails don't collide.
-  const suffix = String(input.storeId || Date.now()).slice(-8);
-  const accountEmail = `${userPart}+v${suffix}@${domainPart}`;
-
-  const payload = {
-    email: accountEmail,
+  return {
     phone: cleanPhone(input.phone),
     type: 'route',
     legal_business_name: input.legalBusinessName || input.businessName,
@@ -108,13 +102,30 @@ export async function createLinkedAccount(input: VendorOnboardingInput): Promise
           street2: addrLine(address.city, address.city || 'Chennai', 'Main Road'),
           city: address.city || 'Chennai',
           state: resolveState(address.state),
-          postal_code: (address.pincode || '600001').replace(/\D/g, '').slice(0, 6) || '600001',
+          postal_code: (address.pincode || '').replace(/\D/g, '').slice(0, 6),
           country: 'IN',
         },
       },
     },
     notes: { vendorId: input.storeId },
   };
+}
+
+export async function updateLinkedAccount(accountId: string, input: VendorOnboardingInput): Promise<void> {
+  const { type: _t, business_type: _b, ...editable } = accountProfilePayload(input) as any;
+  await axios.patch(`https://api.razorpay.com/v2/accounts/${accountId}`, editable, { headers: authHeaders() });
+}
+
+export async function createLinkedAccount(input: VendorOnboardingInput): Promise<{ id: string; status: string }> {
+  const address = input.address || {};
+  const baseEmail = input.email || `vendor_${input.storeId}@magizhnaazh.in`;
+  const [userPart, domainPart] = baseEmail.includes('@') ? baseEmail.split('@') : [baseEmail, 'magizhnaazh.in'];
+  // Razorpay requires a unique email per linked account — suffix with the
+  // vendor id so re-onboarding attempts / shared vendor emails don't collide.
+  const suffix = String(input.storeId || Date.now()).slice(-8);
+  const accountEmail = `${userPart}+v${suffix}@${domainPart}`;
+
+  const payload = { email: accountEmail, ...accountProfilePayload(input) };
 
   const { data } = await axios.post('https://api.razorpay.com/v2/accounts', payload, { headers: authHeaders() });
   return data;
@@ -269,6 +280,14 @@ export async function onboardVendor(input: VendorOnboardingInput): Promise<Onboa
     const account = await createLinkedAccount(input);
     accountId = account.id;
     routeStatus = account.status || 'created';
+  } else {
+    // Re-submit: replace whatever (possibly placeholder) details the account was
+    // first created with — otherwise Razorpay keeps reviewing the stale data.
+    try {
+      await updateLinkedAccount(accountId, input);
+    } catch (err: any) {
+      error = err?.response?.data?.error?.description || err?.message;
+    }
   }
 
   try {
