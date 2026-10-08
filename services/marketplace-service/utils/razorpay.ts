@@ -30,7 +30,33 @@ export interface VendorOnboardingInput {
 
 function cleanPhone(phone?: string): string {
   const raw = (phone || '').replace(/\D/g, '').slice(-10);
-  return raw.length === 10 ? raw : '9876543210';
+  if (raw.length !== 10) throw new Error('A valid 10-digit mobile number is required for Razorpay.');
+  return raw;
+}
+
+// Validate everything Razorpay's review checks BEFORE submitting. A dummy or
+// malformed value doesn't fail loudly — the account just sits in review (or
+// needs_clarification) for days — so catch it here with a message the vendor
+// can act on.
+export function validateOnboardingInput(input: VendorOnboardingInput): string[] {
+  const problems: string[] = [];
+  const pan = (input.pan || '').trim().toUpperCase();
+  if (!/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan)) problems.push('PAN must be 10 characters like ABCDE1234F');
+  else if (pan[3] !== 'P') problems.push('PAN must be a personal PAN (4th letter P) for an individual vendor');
+  const acct = (input.bankAccount?.accountNumber || '').replace(/\s/g, '');
+  if (!/^[0-9]{9,18}$/.test(acct)) problems.push('bank account number must be 9–18 digits');
+  const ifsc = (input.bankAccount?.ifscCode || '').trim().toUpperCase();
+  if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc)) problems.push('IFSC must look like SBIN0001234');
+  if ((input.bankAccount?.entityName || '').trim().length < 3) problems.push('account holder name (as on the bank passbook)');
+  if ((input.panName || input.ownerName || '').trim().length < 4) problems.push('name as on PAN (at least 4 letters)');
+  if ((input.phone || '').replace(/\D/g, '').slice(-10).length !== 10) problems.push('10-digit mobile number');
+  if (!/^\S+@\S+\.\S+$/.test(input.email || '')) problems.push('valid email');
+  const a = input.address || {};
+  if ((a.street || '').trim().length < 3) problems.push('street / door number in the business address');
+  if (!(a.city || '').trim()) problems.push('city');
+  if (!/^[0-9]{6}$/.test((a.pincode || '').trim())) problems.push('6-digit pincode');
+  if ((input.legalBusinessName || input.businessName || '').trim().length < 4) problems.push('business name (at least 4 characters)');
+  return problems;
 }
 
 const STATES = ['Andaman and Nicobar Islands','Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chandigarh','Chhattisgarh','Dadra and Nagar Haveli and Daman and Diu','Delhi','Goa','Gujarat','Haryana','Himachal Pradesh','Jammu and Kashmir','Jharkhand','Karnataka','Kerala','Ladakh','Lakshadweep','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Puducherry','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal'];
@@ -94,6 +120,18 @@ export async function createLinkedAccount(input: VendorOnboardingInput): Promise
   return data;
 }
 
+function residentialAddress(input: VendorOnboardingInput) {
+  const a = input.address || {};
+  const city = a.city || 'Chennai';
+  return {
+    street: addrLine(a.street, city, 'Main Road').slice(0, 100),
+    city,
+    state: resolveState(a.state),
+    postal_code: (a.pincode || '').replace(/\D/g, '').slice(0, 6),
+    country: 'IN',
+  };
+}
+
 export async function createStakeholder(accountId: string, input: VendorOnboardingInput): Promise<{ id: string }> {
   const baseEmail = input.email || `vendor_${input.storeId}@magizhnaazh.in`;
   const [userPart, domainPart] = baseEmail.includes('@') ? baseEmail.split('@') : [baseEmail, 'magizhnaazh.in'];
@@ -105,6 +143,7 @@ export async function createStakeholder(accountId: string, input: VendorOnboardi
     email: stakeholderEmail,
     relationship: { director: false, executive: true },
     phone: { primary: cleanPhone(input.phone) },
+    addresses: { residential: residentialAddress(input) },
   };
   if (input.pan) payload.kyc = { pan: input.pan.trim().toUpperCase() };
 
@@ -153,6 +192,7 @@ async function upsertStakeholder(accountId: string, input: VendorOnboardingInput
   const payload: any = {
     name: input.panName || input.ownerName || input.businessName,
     phone: { primary: cleanPhone(input.phone) },
+    addresses: { residential: residentialAddress(input) },
   };
   if (input.pan) payload.kyc = { pan: input.pan.trim().toUpperCase() };
   await axios.patch(`https://api.razorpay.com/v2/accounts/${accountId}/stakeholders/${id}`, payload, { headers: authHeaders() });
@@ -172,7 +212,7 @@ export async function updateRouteProductConfig(
   const payload: any = { tnc_accepted: true };
   if (bankAccount && bankAccount.accountNumber) {
     payload.settlements = {
-      account_number: String(bankAccount.accountNumber).trim(),
+      account_number: String(bankAccount.accountNumber).replace(/\s/g, ''),
       ifsc_code: String(bankAccount.ifscCode || '').trim().toUpperCase(),
       beneficiary_name: String(bankAccount.entityName || 'Vendor').trim(),
     };
@@ -221,6 +261,9 @@ export async function onboardVendor(input: VendorOnboardingInput): Promise<Onboa
   let productStatus = 'requested';
   let productId = 'route';
   let error: string | undefined;
+
+  const problems = validateOnboardingInput(input);
+  if (problems.length > 0) throw new Error(`Fix these details first: ${problems.join('; ')}.`);
 
   if (!accountId) {
     const account = await createLinkedAccount(input);
