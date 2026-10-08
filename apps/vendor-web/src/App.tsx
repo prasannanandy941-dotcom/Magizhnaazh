@@ -556,7 +556,7 @@ export function App() {
   }, [user, token]);
 
   useEffect(() => {
-    if (myVendor?.category === 'Venue' && activeTab === 'availability') {
+    if (activeTab === 'availability') {
       setActiveTab('dashboard');
     }
   }, [myVendor?.category, activeTab]);
@@ -4753,7 +4753,6 @@ export function App() {
     ...(myVendor?.category !== 'Venue' ? [{ key: 'facilities', label: facilitiesSectionLabel(myVendor?.category), short: 'Services', Icon: Sparkles }] : []),
     ...(myVendor?.category !== 'Wedding Planner' && myVendor?.category !== 'Event Host/Anchor' ? [{ key: 'packages', label: myVendor?.category === 'Venue' ? 'Halls' : 'Packages', count: (myVendor?.packages?.length ?? 0) || undefined, short: myVendor?.category === 'Venue' ? 'Halls' : 'Packages', Icon: myVendor?.category === 'Venue' ? Building2 : Gift }] : []),
     ...(myVendor?.category !== 'Security' ? [{ key: 'offers', label: 'Offers', count: deals.length || undefined, short: 'Offers', Icon: CreditCard }] : []),
-    { key: 'availability', label: 'Availability', short: 'Availability', Icon: CalendarDays },
     { key: 'portfolio', label: 'Local Disk Portfolio', short: 'Portfolio', Icon: Upload },
     { key: 'profile', label: 'Business Profile', short: 'Profile', Icon: Store },
   ];
@@ -7185,9 +7184,6 @@ export function App() {
                             </div>
                           </div>
 
-                          <p className="text-[11px] text-slate-400 pt-2 border-t border-slate-800/80">
-                            📅 Your hall is open every upcoming day. Mark the dates you cannot host on the <strong className="text-slate-200">Availability</strong> tab.
-                          </p>
 
                           <div className="grid grid-cols-2 gap-3">
                             <div>
